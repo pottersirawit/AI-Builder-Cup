@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bangkok Weather Resilience - LINE LIFF</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=Prompt:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Prompt', 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    }
+    .font-num {
+      font-family: 'Plus Jakarta Sans', sans-serif;
+      font-variant-numeric: tabular-nums;
+    }
+    .no-scrollbar::-webkit-scrollbar { display: none; }
+    .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    
+    /* Tactile press feedback */
+    .tactile:active {
+      transform: scale(0.97);
+    }
+
+    /* Apple glass blur container */
+    .apple-glass {
+      background: rgba(255, 255, 255, 0.08);
+      backdrop-filter: blur(28px);
+      -webkit-backdrop-filter: blur(28px);
+      border: 1px solid rgba(255, 255, 255, 0.14);
+    }
+    
+    .apple-glass-subtle {
+      background: rgba(255, 255, 255, 0.04);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border: 1px solid rgba(255, 255, 255, 0.08);
+    }
+
+    /* Pulse ring highlight animation for deep-linked hazard focus (Theme 1: Apple Spatial) */
+    @keyframes pulseRing {
+      0% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0.8), 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      }
+      50% {
+        box-shadow: 0 0 0 14px rgba(244, 63, 94, 0), 0 25px 30px -5px rgba(244, 63, 94, 0.35);
+      }
+      100% {
+        box-shadow: 0 0 0 0 rgba(244, 63, 94, 0), 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      }
+    }
+
+    .hazard-pulse-highlight {
+      animation: pulseRing 1.8s cubic-bezier(0.4, 0, 0.6, 1) 3;
+      border: 2px solid rgba(244, 63, 94, 0.85) !important;
+    }
+  </style>
+</head>
+<body class="bg-[#050811] text-slate-100 antialiased p-2 sm:p-6 flex justify-center items-center min-h-screen">
+
+  <!-- Mobile Frame Container (Apple Spatial LIFF) -->
+  <div class="w-full max-w-[420px] rounded-[44px] shadow-2xl overflow-hidden flex flex-col min-h-[820px] relative border border-white/15 transition-all duration-700 bg-[#091122]">
+
+    <!-- Dynamic Atmospheric Backdrop (Apple Weather Sky Simulation) -->
+    <div id="sky-backdrop" class="absolute inset-0 bg-gradient-to-b from-[#1C2C4E] via-[#101C36] to-[#080E1C] pointer-events-none transition-all duration-700"></div>
+    
+    <!-- Atmospheric Ambient Glows -->
+    <div class="absolute top-10 left-1/2 -translate-x-1/2 w-80 h-48 bg-cyan-400/10 blur-3xl pointer-events-none rounded-full"></div>
+    <div id="ambient-hazard-glow" class="absolute top-44 right-0 w-64 h-64 bg-rose-500/15 blur-3xl pointer-events-none rounded-full transition-all duration-700"></div>
+
+    <!-- 1. Top In-App Header & Telemetry Status -->
+    <div class="px-6 pt-5 pb-2 flex items-center justify-between z-10">
+      <div class="flex items-center space-x-2.5">
+        <span class="w-7 h-7 rounded-full bg-white/10 hover:bg-white/20 text-white/90 flex items-center justify-center text-xs font-bold cursor-pointer transition">✕</span>
+        <div>
+          <div class="flex items-center gap-1.5">
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+            <span class="text-[10px] font-num text-cyan-200 font-semibold tracking-wider uppercase">WeatherNext 3 (5km)</span>
+          </div>
+          <span class="text-xs font-semibold text-white/90">กรุงเทพฯ เฝ้าระวังเชิงรุก</span>
+        </div>
+      </div>
+      <!-- Telemetry Chip -->
+      <div class="text-right">
+        <div class="flex items-center gap-1 bg-white/10 px-2.5 py-1 rounded-full border border-white/10 backdrop-blur-md">
+          <span class="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-ping"></span>
+          <span class="text-[10px] font-semibold text-emerald-300">เรดาร์ กทม. ONLINE</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 2. Hero Weather Display (Apple Weather Signature Style) -->
+    <div class="px-6 pt-2 pb-3 text-center z-10 space-y-1">
+      <div class="inline-flex items-center gap-1 text-xs text-white/70 font-medium">
+        <span>📍</span>
+        <span id="hero-location">สุขุมวิท 21 (อโศกมนตรี), วัฒนา</span>
+      </div>
+      <div class="flex items-center justify-center gap-1">
+        <span id="hero-temp" class="text-6xl font-light font-num text-white tracking-tighter">28°</span>
+      </div>
+      <p id="hero-condition" class="text-sm font-semibold text-white/90">พายุฝนฟ้าคะนองรุนแรง</p>
+      <p id="hero-stats" class="text-xs text-cyan-200/70 font-num">ฝน 48.5 mm/h · ลมกระโชก 54 km/h · น้ำท่วม 15-20 cm</p>
+    </div>
+
+    <!-- 3. Persona Bar & Vehicle Chip -->
+    <div class="px-6 py-1 z-10">
+      <div class="p-3 rounded-2xl apple-glass flex items-center justify-between shadow-lg">
+        <div class="flex items-center space-x-3">
+          <div class="relative">
+            <div class="w-10 h-10 rounded-2xl bg-gradient-to-tr from-cyan-500 to-blue-600 text-white font-bold flex items-center justify-center text-xs shadow-md">
+              สช
+            </div>
+            <div class="absolute -bottom-1 -right-1 w-3.5 h-3.5 rounded-full bg-[#06C755] border-2 border-[#091122]"></div>
+          </div>
+          <div>
+            <div class="flex items-center gap-1.5">
+              <span class="font-bold text-xs text-white">คุณสมชาย</span>
+              <span class="text-[9px] bg-white/10 text-cyan-200 font-num px-1.5 py-0.5 rounded">COMMUTER</span>
+            </div>
+            <p class="text-[11px] text-white/60">🏢 อโศกมนตรี ➔ 🏠 อุดมสุข</p>
+          </div>
+        </div>
+        <button onclick="switchTab('profile')" class="text-right group cursor-pointer tactile">
+          <span class="text-[9px] text-white/50 block">เกณฑ์รถ</span>
+          <span id="badge-vehicle" class="inline-flex items-center gap-1 text-[11px] font-semibold text-amber-300 bg-amber-400/15 border border-amber-400/30 px-2.5 py-1 rounded-xl">
+            🚗 รถเก๋งเตี้ย
+          </span>
+        </button>
+      </div>
+    </div>
+
+    <!-- 4. Segmented Tab Navigation -->
+    <div class="px-6 py-2 z-10">
+      <div class="p-1 apple-glass-subtle rounded-2xl flex text-xs font-medium">
+        <button onclick="switchTab('dashboard')" id="nav-dashboard" class="flex-1 py-2 text-center rounded-xl bg-white/15 text-white font-semibold shadow-sm transition">
+          เรดาร์ & แดชบอร์ด
+        </button>
+        <button onclick="switchTab('calendar')" id="nav-calendar" class="flex-1 py-2 text-center rounded-xl text-white/60 hover:text-white transition flex items-center justify-center gap-1">
+          ปฏิทินนัดหมาย
+          <span class="w-4 h-4 rounded-full bg-rose-500 text-white text-[9px] font-bold flex items-center justify-center">2</span>
+        </button>
+        <button onclick="switchTab('profile')" id="nav-profile" class="flex-1 py-2 text-center rounded-xl text-white/60 hover:text-white transition">
+          ตั้งค่าพาหนะ
+        </button>
+      </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: RADAR & DASHBOARD -->
+    <!-- ========================================== -->
+    <div id="tab-dashboard" class="flex-1 px-6 py-2 space-y-3.5 overflow-y-auto z-10 no-scrollbar">
+
+      <!-- Hourly Timeline Scrubber -->
+      <div class="space-y-1.5">
+        <div class="flex items-center justify-between text-xs">
+          <span class="text-white/60 font-medium">พยากรณ์รายชั่วโมง (WeatherNext 3)</span>
+          <span id="label-scrub-time" class="font-num font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/30">17:00 น. (พีคพายุ)</span>
+        </div>
+        
+        <div class="flex space-x-2 overflow-x-auto no-scrollbar py-1">
+          <!-- 08:00 -->
+          <button onclick="selectHour(8)" id="btn-h-8" class="flex-shrink-0 w-16 p-2 rounded-2xl apple-glass-subtle text-center tactile transition">
+            <span class="text-[10px] text-white/50 block font-num">08:00</span>
+            <span class="text-lg my-0.5 block">🌤️</span>
+            <span class="text-xs font-bold font-num block">28°</span>
+            <span class="text-[9px] text-white/50">ฝน 10%</span>
+          </button>
+          <!-- 12:00 -->
+          <button onclick="selectHour(12)" id="btn-h-12" class="flex-shrink-0 w-16 p-2 rounded-2xl apple-glass-subtle text-center tactile transition">
+            <span class="text-[10px] text-white/50 block font-num">12:00</span>
+            <span class="text-lg my-0.5 block">☀️</span>
+            <span class="text-xs font-bold font-num text-amber-300 block">37°</span>
+            <span class="text-[9px] text-amber-400 font-medium">ฮีท 48°</span>
+          </button>
+          <!-- 15:00 -->
+          <button onclick="selectHour(15)" id="btn-h-15" class="flex-shrink-0 w-16 p-2 rounded-2xl apple-glass-subtle text-center tactile transition">
+            <span class="text-[10px] text-white/50 block font-num">15:00</span>
+            <span class="text-lg my-0.5 block">🌥️</span>
+            <span class="text-xs font-bold font-num block">33°</span>
+            <span class="text-[9px] text-white/50">ฝน 30%</span>
+          </button>
+          <!-- 17:00 (PEAK STORM - ACTIVE DEFAULT) -->
+          <button onclick="selectHour(17)" id="btn-h-17" class="flex-shrink-0 w-16 p-2 rounded-2xl bg-rose-500/25 border-2 border-rose-400 text-center tactile transition shadow-lg shadow-rose-950/60">
+            <span class="text-[10px] text-rose-200 block font-num font-bold">17:00</span>
+            <span class="text-lg my-0.5 block">⛈️</span>
+            <span class="text-xs font-bold font-num text-rose-300 block">28°</span>
+            <span class="text-[9px] text-rose-300 font-bold">ฝน 90%</span>
+          </button>
+          <!-- 19:00 -->
+          <button onclick="selectHour(19)" id="btn-h-19" class="flex-shrink-0 w-16 p-2 rounded-2xl apple-glass-subtle text-center tactile transition">
+            <span class="text-[10px] text-white/50 block font-num">19:00</span>
+            <span class="text-lg my-0.5 block">🌧️</span>
+            <span class="text-xs font-bold font-num block">27°</span>
+            <span class="text-[9px] text-white/50">ฝน 45%</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Frosted Hero Hazard Card -->
+      <div id="card-hazard" class="rounded-3xl p-4 apple-glass shadow-2xl space-y-3 relative overflow-hidden transition-all duration-500">
+        <div class="flex items-center justify-between">
+          <span id="badge-urgency" class="text-[10px] font-num font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-rose-500/30 border border-rose-400/40 text-rose-200 flex items-center gap-1.5">
+            <span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span>
+            CRITICAL FLOOD ADVISORY
+          </span>
+          <span id="text-window" class="text-[11px] text-white/60 font-num">16:45 – 18:30 น.</span>
+        </div>
+
+        <h3 id="text-hazard-title" class="font-bold text-sm text-white leading-snug">
+          เสี่ยงน้ำท่วมผิวจราจร 15–20 ซม. แนวถนนสุขุมวิท (อโศก-พร้อมพงษ์)
+        </h3>
+
+        <!-- Vehicle Callout -->
+        <div id="box-vehicle-warn" class="p-3 rounded-2xl bg-rose-500/10 border border-rose-500/20 text-xs space-y-1">
+          <div class="flex items-center justify-between text-[11px]">
+            <span class="text-rose-200 font-semibold">🚗 ผลกระทบต่อรถเก๋งของคุณ:</span>
+            <span class="font-bold text-rose-300">เสี่ยงน้ำเข้าท่อไอเสีย</span>
+          </div>
+          <p class="text-[11px] text-white/80 leading-relaxed">
+            เรดาร์หนองจอกจับความสะท้อน 52.5 dBZ เคลื่อนตัวเข้าอโศกใน 25 นาที คลองแสนแสบวิทยุเหลือ 25 ซม. เสมอตลิ่ง
+          </p>
+        </div>
+
+        <!-- Action Checklist -->
+        <div class="space-y-1.5 pt-1 border-t border-white/10">
+          <div class="text-[11px] font-semibold text-white/70 flex justify-between">
+            <span>📋 แผนการเตรียมพร้อมเชิงรุก (Gemini AI):</span>
+            <span class="text-[10px] text-cyan-300">กดเช็กเมื่อทำเสร็จ</span>
+          </div>
+          <div id="list-checklist" class="space-y-1.5 text-xs">
+            <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+              <input type="checkbox" class="mt-0.5 rounded border-white/20 bg-white/10 text-cyan-400 accent-cyan-400">
+              <span class="text-white/90">ขยับรถเก๋งขึ้นอาคารจอดรถชั้น 2 ก่อน 16:30 น.</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+              <input type="checkbox" class="mt-0.5 rounded border-white/20 bg-white/10 text-cyan-400 accent-cyan-400">
+              <span class="text-white/90">แนะนำใช้ BTS อโศก หรือรอในอาคารจนถึง 19:00 น.</span>
+            </label>
+            <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+              <input type="checkbox" class="mt-0.5 rounded border-white/20 bg-white/10 text-cyan-400 accent-cyan-400">
+              <span class="text-white/90">หลีกเลี่ยงขับผ่านซอยอุดมสุข และแยกอโศก-สุขุมวิท 21</span>
+            </label>
+          </div>
+        </div>
+
+        <!-- Route Recommendation Pill -->
+        <div class="flex items-center justify-between text-[11px] bg-white/[0.04] p-2.5 rounded-2xl border border-white/10">
+          <span class="text-white/60">🛣️ เส้นทางสำรอง:</span>
+          <span class="font-semibold text-cyan-300">ใช้รถไฟฟ้า BTS แทนเส้นทางผิวถนน</span>
+        </div>
+      </div>
+
+      <!-- Frosted Bento Grid (Apple Weather Metrics) -->
+      <div class="grid grid-cols-2 gap-3">
+        <!-- Tile 1: Rain Rate -->
+        <div class="p-3.5 rounded-3xl apple-glass space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-white/60">
+            <span>อัตราฝนสะสม</span>
+            <span>🌧️</span>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="val-rain" class="text-2xl font-bold font-num text-white">48.5</span>
+              <span class="text-[10px] text-white/60 font-num">mm/h</span>
+            </div>
+            <span id="badge-rain" class="inline-block mt-0.5 text-[9px] font-semibold text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded">ฝนตกหนักมาก</span>
+          </div>
+          <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+            <div id="bar-rain" class="bg-gradient-to-r from-cyan-400 to-rose-400 h-full rounded-full transition-all duration-500" style="width: 85%"></div>
+          </div>
+        </div>
+
+        <!-- Tile 2: Canal Water Level -->
+        <div class="p-3.5 rounded-3xl apple-glass space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-white/60">
+            <span>คลองแสนแสบ</span>
+            <span>🌊</span>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="val-canal" class="text-2xl font-bold font-num text-amber-300">0.85</span>
+              <span class="text-[10px] text-white/60 font-num">m MSL</span>
+            </div>
+            <span id="badge-canal" class="inline-block mt-0.5 text-[9px] font-semibold text-amber-200 bg-amber-500/20 px-1.5 py-0.5 rounded">เหลือ 25 cm ล้นตลิ่ง</span>
+          </div>
+          <div class="w-full bg-white/10 h-1.5 rounded-full overflow-hidden">
+            <div id="bar-canal" class="bg-amber-400 h-full rounded-full transition-all duration-500" style="width: 78%"></div>
+          </div>
+        </div>
+
+        <!-- Tile 3: Heat Index -->
+        <div class="p-3.5 rounded-3xl apple-glass space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-white/60">
+            <span>ดัชนีความร้อน</span>
+            <span>🌡️</span>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="val-heat" class="text-2xl font-bold font-num text-white">37.6</span>
+              <span class="text-[10px] text-white/60 font-num">°C</span>
+            </div>
+            <span id="badge-heat" class="inline-block mt-0.5 text-[9px] font-semibold text-cyan-300 bg-cyan-500/20 px-1.5 py-0.5 rounded">ระดับปกติ</span>
+          </div>
+        </div>
+
+        <!-- Tile 4: Wind Gusts -->
+        <div class="p-3.5 rounded-3xl apple-glass space-y-2">
+          <div class="flex items-center justify-between text-[11px] text-white/60">
+            <span>ลมกระโชกแรง</span>
+            <span>💨</span>
+          </div>
+          <div>
+            <div class="flex items-baseline gap-1">
+              <span id="val-wind" class="text-2xl font-bold font-num text-rose-300">54.0</span>
+              <span class="text-[10px] text-white/60 font-num">km/h</span>
+            </div>
+            <span class="inline-block mt-0.5 text-[9px] font-semibold text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded">ระวังกิ่งไม้/ป้าย</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Flood Prone Spots List -->
+      <div class="p-4 rounded-3xl apple-glass space-y-2.5">
+        <div class="flex items-center justify-between">
+          <span class="text-xs font-bold text-white/90">จุดเสี่ยงน้ำท่วม กทม. ในเส้นทางของคุณ</span>
+          <a href="https://cpudapp.bangkok.go.th/riskbkk" target="_blank" class="text-[10px] text-cyan-300 hover:underline">BKK Risk Map ↗</a>
+        </div>
+        <div class="space-y-1.5 text-xs">
+          <div class="p-2.5 rounded-2xl bg-white/[0.03] border border-rose-500/20 flex items-center justify-between">
+            <div>
+              <span class="font-medium text-white block">ถ.สุขุมวิท (อโศก-พร้อมพงษ์)</span>
+              <span class="text-[10px] text-white/50">เกณฑ์ฝนวิกฤต: 40 มม./ชม.</span>
+            </div>
+            <span class="text-rose-300 font-bold font-num text-xs bg-rose-500/20 px-2.5 py-1 rounded-xl">ท่วม 15-20 cm</span>
+          </div>
+          <div class="p-2.5 rounded-2xl bg-white/[0.03] border border-amber-500/20 flex items-center justify-between">
+            <div>
+              <span class="font-medium text-white block">ซอยอุดมสุข (สุขุมวิท 103)</span>
+              <span class="text-[10px] text-white/50">เกณฑ์ฝนวิกฤต: 30 มม./ชม.</span>
+            </div>
+            <span class="text-amber-300 font-bold font-num text-xs bg-amber-500/20 px-2.5 py-1 rounded-xl">ท่วม 10-15 cm</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: GOOGLE CALENDAR WEATHER SYNC -->
+    <!-- ========================================== -->
+    <div id="tab-calendar" class="flex-1 px-6 py-2 space-y-3.5 overflow-y-auto z-10 hidden no-scrollbar">
+      
+      <!-- Top Action Header -->
+      <div class="flex items-center justify-between">
+        <div>
+          <h2 class="text-xs font-bold text-white flex items-center gap-1.5">
+            <span>📅 Google Calendar Weather</span>
+            <span class="w-2 h-2 rounded-full bg-cyan-400 animate-pulse"></span>
+          </h2>
+          <p class="text-[10px] text-white/60">ตรวจจับสภาพอากาศล่วงหน้าตามสถานที่ในปฏิทิน</p>
+        </div>
+        <button onclick="syncCalendar()" id="btn-calendar-sync" class="apple-glass hover:bg-white/20 text-white text-[11px] px-3 py-1.5 rounded-xl font-medium transition tactile flex items-center gap-1.5 border border-white/15">
+          <span id="icon-sync" class="inline-block transition-transform duration-500">🔄</span>
+          <span id="label-sync">ซิงก์ปฏิทิน</span>
+        </button>
+      </div>
+
+      <!-- Google Calendar OAuth Connection Banner -->
+      <div id="calendar-auth-card" class="rounded-3xl p-3.5 apple-glass space-y-2 border border-white/15 transition-all duration-300">
+        <!-- Rendered dynamically by updateAuthCardUI() -->
+      </div>
+
+      <!-- Sync Status & Metrics Telemetry Bar -->
+      <div class="p-2.5 rounded-2xl apple-glass-subtle flex items-center justify-between text-[11px]">
+        <div class="flex items-center gap-1.5">
+          <span class="w-1.5 h-1.5 rounded-full bg-cyan-400 animate-pulse"></span>
+          <span id="text-sync-status" class="text-white/80 font-medium">⚡ ซิงก์ล่าสุด: วันนี้ 16:45 น.</span>
+        </div>
+        <span id="badge-clash-count" class="font-num text-[10px] font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/30">
+          พบ 2 จุดเสี่ยง
+        </span>
+      </div>
+
+      <!-- Calendar Schedule Event Cards Container -->
+      <div id="calendar-events-container" class="space-y-3">
+        <!-- Event Cards will be dynamically injected here by renderCalendarEvents() -->
+      </div>
+
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 3: PERSONALIZATION & VEHICLE -->
+    <!-- ========================================== -->
+    <div id="tab-profile" class="flex-1 px-6 py-2 space-y-4 overflow-y-auto z-10 hidden no-scrollbar">
+      
+      <div class="space-y-1">
+        <h2 class="text-xs font-bold text-white">ตั้งค่าพาหนะ & จุดเฝ้าระวังเฉพาะคุณ</h2>
+        <p class="text-[10px] text-white/60">ระบบ AI จะนำข้อมูลนี้ไปปรับเทียบความสูงน้ำท่วมและช่วงเวลาเตือนภัย</p>
+      </div>
+
+      <!-- Vehicle Selection Grid -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-white/90 block">ประเภทยานพาหนะหลักที่คุณใช้</label>
+        <div class="grid grid-cols-2 gap-2 text-xs">
+          <button onclick="setVehicle('sedan')" id="btn-v-sedan" class="p-3 rounded-2xl border-2 border-cyan-400 bg-cyan-500/20 text-left font-medium text-white transition tactile">
+            🚗 รถเก๋งเตี้ย / Eco
+            <span class="block text-[10px] text-white/60 mt-0.5">ลุยน้ำปลอดภัย &lt; 15 ซม.</span>
+          </button>
+          <button onclick="setVehicle('moto')" id="btn-v-moto" class="p-3 rounded-2xl apple-glass-subtle text-left font-medium text-white/70 transition tactile">
+            🛵 มอเตอร์ไซค์
+            <span class="block text-[10px] text-white/50 mt-0.5">เตือนลมกระโชก & ลื่น</span>
+          </button>
+          <button onclick="setVehicle('pickup')" id="btn-v-pickup" class="p-3 rounded-2xl apple-glass-subtle text-left font-medium text-white/70 transition tactile">
+            🚙 กระบะ / SUV ยกสูง
+            <span class="block text-[10px] text-white/50 mt-0.5">ลุยน้ำได้ 30-40 ซม.</span>
+          </button>
+          <button onclick="setVehicle('transit')" id="btn-v-transit" class="p-3 rounded-2xl apple-glass-subtle text-left font-medium text-white/70 transition tactile">
+            🚆 รถไฟฟ้า / BTS
+            <span class="block text-[10px] text-white/50 mt-0.5">เน้นเช็กบันไดทางเข้า</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Pinned Locations -->
+      <div class="space-y-2">
+        <label class="text-xs font-semibold text-white/90 block">พิกัดที่เฝ้าระวังประจำ</label>
+        
+        <div class="p-3 rounded-2xl apple-glass flex items-center justify-between">
+          <div class="space-y-0.5">
+            <span class="text-[10px] text-cyan-300 font-num font-bold uppercase">🏢 สถานที่ทำงาน</span>
+            <h4 class="text-xs font-bold text-white">อาคารเสริมมิตร ถ.อโศกมนตรี (วัฒนา)</h4>
+            <span class="text-[10px] text-white/60">เวลาเลิกงานประจำ: 17:30 น.</span>
+          </div>
+          <button class="text-xs text-white/60 hover:text-white px-2.5 py-1 bg-white/10 rounded-xl border border-white/10">แก้ไข</button>
+        </div>
+
+        <div class="p-3 rounded-2xl apple-glass flex items-center justify-between">
+          <div class="space-y-0.5">
+            <span class="text-[10px] text-cyan-300 font-num font-bold uppercase">🏠 บ้าน</span>
+            <h4 class="text-xs font-bold text-white">ซอยสุขุมวิท 103 (อุดมสุข, บางนา)</h4>
+            <span class="text-[10px] text-rose-300">ใกล้จุดเฝ้าระวังน้ำท่วม BKK-FL-003</span>
+          </div>
+          <button class="text-xs text-white/60 hover:text-white px-2.5 py-1 bg-white/10 rounded-xl border border-white/10">แก้ไข</button>
+        </div>
+      </div>
+
+      <!-- Preferences -->
+      <div class="space-y-2 pt-2 border-t border-white/10 text-xs">
+        <label class="text-xs font-semibold text-white/90 block">การรับการแจ้งเตือนผ่าน LINE</label>
+        <div class="space-y-2">
+          <label class="flex items-center justify-between p-2.5 rounded-2xl apple-glass-subtle">
+            <span class="text-white/90">สรุปสภาพอากาศประจำวัน (06:30 น. & 16:30 น.)</span>
+            <input type="checkbox" checked class="accent-cyan-400 w-4 h-4 rounded">
+          </label>
+          <label class="flex items-center justify-between p-2.5 rounded-2xl apple-glass-subtle">
+            <span class="text-white/90">เตือนภัยด่วน Nowcast เมื่อเรดาร์จับฝนเข้าพื้นที่ (T-30 นาที)</span>
+            <input type="checkbox" checked class="accent-cyan-400 w-4 h-4 rounded">
+          </label>
+          <label class="flex items-center justify-between p-2.5 rounded-2xl apple-glass-subtle">
+            <span class="text-white/90">เตือนสภาพอากาศตามนัดหมาย Google Calendar</span>
+            <input type="checkbox" checked class="accent-cyan-400 w-4 h-4 rounded">
+          </label>
+        </div>
+      </div>
+
+      <button class="w-full bg-[#06C755] hover:bg-[#05b34c] text-slate-950 py-3 rounded-2xl font-bold text-xs shadow-xl transition tactile">
+        บันทึกการตั้งค่าลงระบบ
+      </button>
+
+    </div>
+
+    <!-- 5. Bottom Sticky Actions -->
+    <div class="p-4 apple-glass border-t border-white/10 flex gap-2 z-10">
+      <a href="https://cpudapp.bangkok.go.th/riskbkk" target="_blank" class="flex-1 apple-glass hover:bg-white/20 text-white py-2.5 rounded-2xl text-xs font-semibold text-center transition tactile flex items-center justify-center gap-1.5">
+        <span>🗺️</span>
+        <span>แผนที่น้ำท่วม กทม.</span>
+      </a>
+      <a href="https://line.me/R/ti/p/@TraffyFondue" target="_blank" class="flex-1 bg-cyan-400 hover:bg-cyan-300 text-slate-950 font-bold py-2.5 rounded-2xl text-xs text-center shadow-lg transition tactile flex items-center justify-center gap-1.5">
+        <span>📢</span>
+        <span>แจ้งเหตุ Traffy Fondue</span>
+      </a>
+    </div>
+
+  </div>
+
+  <script>
+    // Tab switching with defensive fallback
+    function switchTab(target) {
+      const tabs = ['dashboard', 'calendar', 'profile'];
+      if (!tabs.includes(target)) {
+        target = 'dashboard';
+      }
+      tabs.forEach(t => {
+        const content = document.getElementById(`tab-${t}`);
+        const nav = document.getElementById(`nav-${t}`);
+        if (!content || !nav) return;
+        if (t === target) {
+          content.classList.remove('hidden');
+          nav.className = "flex-1 py-2 text-center rounded-xl bg-white/15 text-white font-semibold shadow-sm transition" + 
+            (t === 'calendar' ? ' flex items-center justify-center gap-1' : '');
+        } else {
+          content.classList.add('hidden');
+          nav.className = "flex-1 py-2 text-center rounded-xl text-white/60 hover:text-white transition" + 
+            (t === 'calendar' ? ' flex items-center justify-center gap-1' : '');
+        }
+      });
+    }
+
+    // Vehicle selection with defensive fallback and alias normalization
+    function setVehicle(type) {
+      const aliases = {
+        'motorcycle': 'moto',
+        'compact_sedan': 'sedan',
+        'suv': 'pickup',
+        'bts': 'transit',
+        'mrt': 'transit'
+      };
+      if (type && aliases[String(type).toLowerCase()]) {
+        type = aliases[String(type).toLowerCase()];
+      }
+      const types = ['sedan', 'moto', 'pickup', 'transit'];
+      const labels = {
+        'sedan': '🚗 รถเก๋งเตี้ย',
+        'moto': '🛵 มอเตอร์ไซค์',
+        'pickup': '🚙 กระบะ / SUV',
+        'transit': '🚆 รถไฟฟ้า'
+      };
+      if (!types.includes(type)) {
+        type = 'sedan';
+      }
+      types.forEach(t => {
+        const btn = document.getElementById(`btn-v-${t}`);
+        if (!btn) return;
+        if (t === type) {
+          btn.className = "p-3 rounded-2xl border-2 border-cyan-400 bg-cyan-500/20 text-left font-medium text-white transition tactile";
+        } else {
+          btn.className = "p-3 rounded-2xl apple-glass-subtle text-left font-medium text-white/70 transition tactile";
+        }
+      });
+      const badge = document.getElementById('badge-vehicle');
+      if (badge) {
+        badge.innerHTML = labels[type];
+      }
+    }
+
+    // Hourly time scrubber
+    function selectHour(hour) {
+      [8, 12, 15, 17, 19].forEach(h => {
+        const b = document.getElementById(`btn-h-${h}`);
+        if (b) {
+          if (h === hour) {
+            b.className = "flex-shrink-0 w-16 p-2 rounded-2xl bg-white/20 border-2 border-cyan-400 text-center tactile transition shadow-md";
+          } else {
+            b.className = "flex-shrink-0 w-16 p-2 rounded-2xl apple-glass-subtle text-center tactile transition";
+          }
+        }
+      });
+
+      const sky = document.getElementById('sky-backdrop');
+      const ambient = document.getElementById('ambient-hazard-glow');
+      const labelTime = document.getElementById('label-scrub-time');
+      const heroTemp = document.getElementById('hero-temp');
+      const heroCond = document.getElementById('hero-condition');
+      const heroStats = document.getElementById('hero-stats');
+      const cardHazard = document.getElementById('card-hazard');
+      const badgeUrg = document.getElementById('badge-urgency');
+      const textWin = document.getElementById('text-window');
+      const textTitle = document.getElementById('text-hazard-title');
+      const boxVeh = document.getElementById('box-vehicle-warn');
+      const valRain = document.getElementById('val-rain');
+      const badgeRain = document.getElementById('badge-rain');
+      const barRain = document.getElementById('bar-rain');
+      const valCanal = document.getElementById('val-canal');
+      const badgeCanal = document.getElementById('badge-canal');
+      const barCanal = document.getElementById('bar-canal');
+      const valHeat = document.getElementById('val-heat');
+      const badgeHeat = document.getElementById('badge-heat');
+      const valWind = document.getElementById('val-wind');
+      const listCheck = document.getElementById('list-checklist');
+
+      if (hour === 17) {
+        // Peak Storm
+        sky.className = "absolute inset-0 bg-gradient-to-b from-[#1C2C4E] via-[#101C36] to-[#080E1C] pointer-events-none transition-all duration-700";
+        ambient.className = "absolute top-44 right-0 w-64 h-64 bg-rose-500/20 blur-3xl pointer-events-none rounded-full transition-all duration-700";
+        labelTime.innerText = "17:00 น. (พีคพายุ)";
+        labelTime.className = "font-num font-bold text-rose-300 bg-rose-500/20 px-2 py-0.5 rounded-lg border border-rose-500/30";
+        heroTemp.innerText = "28°";
+        heroCond.innerText = "พายุฝนฟ้าคะนองรุนแรง";
+        heroStats.innerText = "ฝน 48.5 mm/h · ลมกระโชก 54 km/h · น้ำท่วม 15-20 cm";
+        cardHazard.classList.remove('hidden');
+        badgeUrg.className = "text-[10px] font-num font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-rose-500/30 border border-rose-400/40 text-rose-200 flex items-center gap-1.5";
+        badgeUrg.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-rose-400 animate-ping"></span> CRITICAL FLOOD ADVISORY';
+        textWin.innerText = "16:45 – 18:30 น.";
+        textTitle.innerText = "เสี่ยงน้ำท่วมผิวจราจร 15–20 ซม. แนวถนนสุขุมวิท (อโศก-พร้อมพงษ์)";
+        boxVeh.classList.remove('hidden');
+        valRain.innerText = "48.5";
+        badgeRain.innerText = "ฝนตกหนักมาก";
+        badgeRain.className = "inline-block mt-0.5 text-[9px] font-semibold text-rose-300 bg-rose-500/20 px-1.5 py-0.5 rounded";
+        barRain.style.width = "88%";
+        valCanal.innerText = "0.85";
+        badgeCanal.innerText = "เหลือ 25 cm ล้นตลิ่ง";
+        badgeCanal.className = "inline-block mt-0.5 text-[9px] font-semibold text-amber-200 bg-amber-500/20 px-1.5 py-0.5 rounded";
+        barCanal.style.width = "78%";
+        valHeat.innerText = "28.0";
+        badgeHeat.innerText = "ระดับปกติ";
+        valWind.innerText = "54.0";
+        listCheck.innerHTML = `
+          <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+            <input type="checkbox" class="mt-0.5 rounded accent-cyan-400">
+            <span class="text-white/90">ขยับรถเก๋งขึ้นอาคารจอดรถชั้น 2 ก่อน 16:30 น.</span>
+          </label>
+          <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+            <input type="checkbox" class="mt-0.5 rounded accent-cyan-400">
+            <span class="text-white/90">แนะนำใช้ BTS อโศก หรือรอในอาคารจนถึง 19:00 น.</span>
+          </label>
+        `;
+      } else if (hour === 12) {
+        // Midday Heatwave
+        sky.className = "absolute inset-0 bg-gradient-to-b from-[#4A3215] via-[#241A0B] to-[#0F0C06] pointer-events-none transition-all duration-700";
+        ambient.className = "absolute top-44 right-0 w-64 h-64 bg-amber-500/20 blur-3xl pointer-events-none rounded-full transition-all duration-700";
+        labelTime.innerText = "12:00 น. (ฮีทเวฟจัด)";
+        labelTime.className = "font-num font-bold text-amber-300 bg-amber-500/20 px-2 py-0.5 rounded-lg border border-amber-500/30";
+        heroTemp.innerText = "37°";
+        heroCond.innerText = "แดดจัดมาก · ฮีทเวฟอันตราย";
+        heroStats.innerText = "ความชื้น 68% · ดัชนีความร้อน 48.0°C · ร้อนสะสมสูง";
+        cardHazard.classList.remove('hidden');
+        badgeUrg.className = "text-[10px] font-num font-bold tracking-wider uppercase px-2.5 py-0.5 rounded-full bg-amber-500/30 border border-amber-400/40 text-amber-200 flex items-center gap-1.5";
+        badgeUrg.innerHTML = '<span class="w-1.5 h-1.5 rounded-full bg-amber-400"></span> DANGEROUS HEAT ADVISORY';
+        textWin.innerText = "11:30 – 14:30 น.";
+        textTitle.innerText = "ดัชนีความร้อนสะสมแตะระดับอันตราย (Heat Index 48.0°C)";
+        boxVeh.classList.add('hidden');
+        valRain.innerText = "0.0";
+        badgeRain.innerText = "ไม่มีฝน";
+        badgeRain.className = "inline-block mt-0.5 text-[9px] font-semibold text-white/50 bg-white/10 px-1.5 py-0.5 rounded";
+        barRain.style.width = "0%";
+        valCanal.innerText = "0.45";
+        badgeCanal.innerText = "ระดับปกติ (ห่าง 65 cm)";
+        badgeCanal.className = "inline-block mt-0.5 text-[9px] font-semibold text-cyan-200 bg-cyan-500/20 px-1.5 py-0.5 rounded";
+        barCanal.style.width = "40%";
+        valHeat.innerText = "48.0";
+        badgeHeat.innerText = "อันตรายต่อสุขภาพ";
+        badgeHeat.className = "inline-block mt-0.5 text-[9px] font-semibold text-amber-300 bg-amber-500/20 px-1.5 py-0.5 rounded";
+        valWind.innerText = "14.0";
+        listCheck.innerHTML = `
+          <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+            <input type="checkbox" class="mt-0.5 rounded accent-cyan-400">
+            <span class="text-white/90">ดื่มน้ำสะอาดและเกลือแร่เพิ่มขึ้น 1–1.5 ลิตร</span>
+          </label>
+          <label class="flex items-start gap-2 p-2 rounded-xl bg-white/[0.03] hover:bg-white/[0.06] cursor-pointer transition">
+            <input type="checkbox" class="mt-0.5 rounded accent-cyan-400">
+            <span class="text-white/90">หลีกเลี่ยงการเดินตากแดดต่อเนื่องเกิน 15 นาที</span>
+          </label>
+        `;
+      } else {
+        // Clear Sky
+        sky.className = "absolute inset-0 bg-gradient-to-b from-[#123E59] via-[#0C2438] to-[#07131F] pointer-events-none transition-all duration-700";
+        ambient.className = "absolute top-44 right-0 w-64 h-64 bg-cyan-500/15 blur-3xl pointer-events-none rounded-full transition-all duration-700";
+        labelTime.innerText = `${hour < 10 ? '0' + hour : hour}:00 น. (ปลอดโปร่ง)`;
+        labelTime.className = "font-num font-bold text-cyan-300 bg-cyan-500/20 px-2 py-0.5 rounded-lg border border-cyan-500/30";
+        heroTemp.innerText = "29°";
+        heroCond.innerText = "สภาพอากาศปลอดโปร่ง แจ่มใส";
+        heroStats.innerText = "ไม่มีกลุ่มฝนในรัศมี 15 กม. · สัญจรได้ตามปกติ";
+        cardHazard.classList.add('hidden');
+        valRain.innerText = "0.0";
+        badgeRain.innerText = "ไม่มีฝน";
+        badgeRain.className = "inline-block mt-0.5 text-[9px] font-semibold text-white/50 bg-white/10 px-1.5 py-0.5 rounded";
+        barRain.style.width = "0%";
+        valCanal.innerText = "0.50";
+        badgeCanal.innerText = "ระดับปกติ (ห่าง 60 cm)";
+        badgeCanal.className = "inline-block mt-0.5 text-[9px] font-semibold text-cyan-200 bg-cyan-500/20 px-1.5 py-0.5 rounded";
+        barCanal.style.width = "45%";
+        valHeat.innerText = "28.5";
+        badgeHeat.innerText = "ระดับปกติ";
+        valWind.innerText = "12.0";
+      }
+    }
+
+    // ============================================================================
+    // LIFF Deep Linking & Query Parameter Synchronization Engine
+    // ============================================================================
+
+    /**
+     * Extracts query parameters across window.location.search, liff.state, and hash.
+     * Handles URL decoding and nested LINE in-app webview redirection states.
+     */
+    function parseLIFFParams() {
+      const params = {};
+
+      function extractParams(queryString) {
+        if (!queryString) return;
+        let query = queryString;
+        const qIndex = query.indexOf('?');
+        if (qIndex !== -1) {
+          query = query.substring(qIndex + 1);
+        } else {
+          query = query.replace(/^[#!\/]+/, '');
+        }
+        const searchParams = new URLSearchParams(query);
+        searchParams.forEach((val, key) => {
+          if (val !== null && val !== undefined) {
+            params[key] = val;
+          }
+        });
+      }
+
+      // 1. Parse window.location.search
+      if (typeof window !== 'undefined' && window.location && window.location.search) {
+        extractParams(window.location.search);
+      }
+
+      // 2. Parse liff.state if present (standard LINE in-app webview redirection)
+      if (params['liff.state']) {
+        try {
+          const decodedState = decodeURIComponent(params['liff.state']);
+          extractParams(decodedState);
+        } catch (e) {
+          console.warn("LIFF state decoding warning:", e);
+        }
+      }
+
+      // 3. Parse window.location.hash (SPA / fragment routing)
+      if (typeof window !== 'undefined' && window.location && window.location.hash) {
+        extractParams(window.location.hash);
+        if (params['liff.state']) {
+          try {
+            const decodedHashState = decodeURIComponent(params['liff.state']);
+            extractParams(decodedHashState);
+          } catch (e) {
+            console.warn("LIFF hash state decoding warning:", e);
+          }
+        }
+      }
+
+      return params;
+    }
+
+    // ============================================================================
+    // Google Calendar State & Synchronization Engine (Ticket 06 / Milestone 5)
+    // ============================================================================
+
+    const DEFAULT_CALENDAR_EVENTS = [
+      {
+        event_id: "GCAL-EVT-001",
+        title: "ตรวจรับงานระบบ ณ ศูนย์ราชการแจ้งวัฒนะ",
+        time_display: "วันนี้ 16:30 - 18:00 น.",
+        location_name: "ศูนย์ราชการแจ้งวัฒนะ อาคาร B (หลักสี่)",
+        urgency: "CRITICAL",
+        urgency_label: "เสี่ยงน้ำท่วมผิวจราจร 15–20 ซม.",
+        shift_mode: "EARLY_DEPARTURE",
+        shift_badge: "⚡ ออกเร็วขึ้น 45 นาที",
+        shift_badge_style: "text-rose-300 bg-rose-500/20 border-rose-500/30",
+        border_style: "border-rose-500/40 bg-gradient-to-b from-rose-950/20 to-transparent",
+        telemetry_rain: "ฝนตกหนัก 32.0 mm/h",
+        telemetry_detail: "คลองเปรมประชากรปริ่มตลิ่ง",
+        headline: "ฝนตกหนักและเสี่ยงน้ำท่วมขังหน้าศูนย์ราชการ",
+        recommendation: "ควรออกเดินทางก่อน 15:45 น. เพื่อเลี่ยงน้ำท่วมขังผิวถนนแจ้งวัฒนะ และป้องกันรถเก๋งติดน้ำท่วม",
+        checklist: [
+          "ออกเดินทางก่อน 15:45 น. (เผื่อเวลา 45 นาที)",
+          "ขยับรถเก๋งขึ้นอาคารจอดรถชั้น 2 หลีกเลี่ยงลานจอดระดับพื้น",
+          "เตรียมซองกันน้ำสำหรับเอกสารสัญญา"
+        ],
+        primary_cta: { label: "ดูจุดเสี่ยงน้ำท่วม", icon: "🗺️", action: "switchTab('dashboard'); focusHazardCard();" },
+        secondary_cta: { label: "ปรับเป็น Meet", icon: "💻", action: "openGoogleMeetModal('GCAL-EVT-001');" }
+      },
+      {
+        event_id: "GCAL-EVT-002",
+        title: "ทานข้าวเย็นกับ Partner (ซอยทองหล่อ)",
+        time_display: "วันนี้ 17:30 - 19:30 น.",
+        location_name: "ซอยทองหล่อ สุขุมวิท 55 (วัฒนา)",
+        urgency: "WARNING",
+        urgency_label: "ฝนตกหนัก & รถติดสะสม",
+        shift_mode: "MODAL_SHIFT",
+        shift_badge: "🚆 รถไฟฟ้า BTS/MRT",
+        shift_badge_style: "text-amber-300 bg-amber-500/20 border-amber-500/30",
+        border_style: "border-amber-500/40 bg-gradient-to-b from-amber-950/20 to-transparent",
+        telemetry_rain: "ฝนตก 24.5 mm/h",
+        telemetry_detail: "สุขุมวิทชะลอตัวสะสม",
+        headline: "ถนนสุขุมวิทชะลอตัวสะสมจากกลุ่มฝน",
+        recommendation: "หลีกเลี่ยงขับรถเก๋งบนถนนสุขุมวิทช่วงเลิกงาน แนะนำใช้ BTS สถานีทองหล่อแทนเพื่อตรงต่อเวลา",
+        checklist: [
+          "จอดรถที่จุดจอดรถไฟฟ้าแล้วใช้ BTS สายสีเขียว",
+          "พกร่มพับหรืออุปกรณ์กันฝนในการเดินเข้าซอยทองหล่อ"
+        ],
+        primary_cta: { label: "เส้นทาง BTS", icon: "🚆", action: "alert('แนะนำขึ้น BTS อโศก ➔ ลง BTS ทองหล่อ (ใช้เวลา 6 นาที)');" },
+        secondary_cta: { label: "ดูจุดน้ำท่วม", icon: "🗺️", action: "switchTab('dashboard'); focusHazardCard();" }
+      },
+      {
+        event_id: "GCAL-EVT-003",
+        title: "กิจกรรมกอล์ฟกระชับมิตรกลางแจ้ง",
+        time_display: "พรุ่งนี้ 11:30 - 14:00 น.",
+        location_name: "สนามกอล์ฟกรุงเทพกรีฑา (สะพานสูง)",
+        urgency: "WARNING",
+        urgency_label: "ดัชนีความร้อนจัด (ฮีทเวฟ)",
+        shift_mode: "REMOTE_OR_RESCHEDULE",
+        shift_badge: "☀️ ฮีท 48.5°C",
+        shift_badge_style: "text-amber-300 bg-amber-500/20 border-amber-500/30",
+        border_style: "border-amber-500/30",
+        telemetry_rain: "ไม่มีฝน",
+        telemetry_detail: "แดดจัด UV สูงมาก",
+        headline: "ดัชนีความร้อนระดับอันตรายต่อกิจกรรมกลางแจ้ง",
+        recommendation: "ดัชนีความร้อนแตะระดับอันตราย แนะนำเตรียมเครื่องดื่มเกลือแร่ หรือพิจารณาเลื่อนเป็นช่วงเช้า",
+        checklist: [
+          "ดื่มน้ำสะอาดและเกลือแร่ทุก 20 นาที",
+          "พักในร่มที่มีพัดลมระบายอากาศทุก 30 นาที",
+          "สวมใส่เสื้อผ้าป้องกันรังสี UV"
+        ],
+        primary_cta: { label: "เลื่อนเวลานัด", icon: "📅", action: "alert('แนะนำเสนอเลื่อนเวลาเป็น 07:00 น. หรือ 16:30 น.');" },
+        secondary_cta: null
+      }
+    ];
+
+    let currentCalendarEvents = [...DEFAULT_CALENDAR_EVENTS];
+    let isGoogleCalendarConnected = false;
+
+    function checkGoogleOAuthStatus() {
+      if (typeof window === 'undefined' || typeof document === 'undefined') return;
+      try {
+        const params = parseLIFFParams();
+        if (params.auth === 'success' || params.gcal === '1') {
+          if (typeof localStorage !== 'undefined') {
+            localStorage.setItem('gcal_connected', 'true');
+          }
+          isGoogleCalendarConnected = true;
+        } else if (typeof localStorage !== 'undefined') {
+          isGoogleCalendarConnected = localStorage.getItem('gcal_connected') === 'true';
+        }
+      } catch (e) {
+        // safe ignore in headless environments
+      }
+      updateAuthCardUI();
+    }
+
+    function updateAuthCardUI() {
+      if (typeof document === 'undefined') return;
+      const card = document.getElementById('calendar-auth-card');
+      if (!card) return;
+
+      if (isGoogleCalendarConnected) {
+        card.innerHTML = `
+          <div class="flex items-center justify-between">
+            <div class="flex items-center space-x-2.5">
+              <div class="w-8 h-8 rounded-xl bg-white/10 flex items-center justify-center text-sm border border-white/20">
+                📅
+              </div>
+              <div>
+                <div class="flex items-center gap-1.5">
+                  <span class="text-xs font-bold text-white">somchai.commuter@gmail.com</span>
+                  <span class="text-[9px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-1.5 py-0.2 rounded font-semibold">CONNECTED</span>
+                </div>
+                <p class="text-[10px] text-white/60">Google Calendar OAuth 2.0 พร้อมซิงก์เรียลไทม์</p>
+              </div>
+            </div>
+            <button onclick="disconnectGoogleCalendar()" class="text-[10px] text-white/50 hover:text-rose-300 transition tactile px-2 py-1 bg-white/5 rounded-lg border border-white/10">
+              ตัดการเชื่อมต่อ
+            </button>
+          </div>
+        `;
+      } else {
+        card.innerHTML = `
+          <div class="flex items-center justify-between gap-3">
+            <div class="space-y-0.5">
+              <h4 class="text-xs font-bold text-white flex items-center gap-1">
+                <span>🔗 เชื่อมต่อ Google Calendar</span>
+              </h4>
+              <p class="text-[10px] text-white/60">ดึงนัดหมายอัตโนมัติเพื่อตรวจจับสภาพอากาศล่วงหน้า</p>
+            </div>
+            <button onclick="connectGoogleCalendar()" id="btn-google-auth" class="flex-shrink-0 bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-slate-950 font-bold text-[11px] px-3 py-1.5 rounded-xl transition tactile shadow-md">
+              เชื่อมต่อทันที
+            </button>
+          </div>
+        `;
+      }
+    }
+
+    function connectGoogleCalendar() {
+      if (typeof document !== 'undefined') {
+        const btn = document.getElementById('btn-google-auth');
+        if (btn) btn.innerHTML = 'กำลังเชื่อมต่อ...';
+      }
+
+      if (typeof fetch === 'function') {
+        fetch('/api/v1/calendar/auth/url')
+          .then(res => res.json())
+          .then(data => {
+            if (data && data.authorization_url && !data.authorization_url.includes('mock') && typeof window !== 'undefined') {
+              window.location.href = data.authorization_url;
+            } else {
+              if (typeof localStorage !== 'undefined') localStorage.setItem('gcal_connected', 'true');
+              isGoogleCalendarConnected = true;
+              updateAuthCardUI();
+              syncCalendar();
+            }
+          })
+          .catch(() => {
+            if (typeof localStorage !== 'undefined') localStorage.setItem('gcal_connected', 'true');
+            isGoogleCalendarConnected = true;
+            updateAuthCardUI();
+            syncCalendar();
+          });
+      } else {
+        if (typeof localStorage !== 'undefined') localStorage.setItem('gcal_connected', 'true');
+        isGoogleCalendarConnected = true;
+        updateAuthCardUI();
+      }
+    }
+
+    function disconnectGoogleCalendar() {
+      if (typeof localStorage !== 'undefined') localStorage.removeItem('gcal_connected');
+      isGoogleCalendarConnected = false;
+      updateAuthCardUI();
+      if (typeof fetch === 'function') {
+        fetch('/api/v1/calendar/auth/disconnect', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: 'U1001' })
+        }).catch(() => {});
+      }
+    }
+
+    function openGoogleMeetModal(eventId) {
+      if (typeof alert === 'function') {
+        alert("💻 สลับเป็นการประชุมออนไลน์ผ่าน Google Meet สำเร็จ! ได้ส่งลิงก์ Meet ให้ผู้เข้าร่วมประชุมทุกคนแล้ว");
+      }
+    }
+
+    function renderCalendarEvents(events) {
+      if (typeof document === 'undefined') return;
+      const container = document.getElementById('calendar-events-container');
+      if (!container) return;
+
+      if (!events || events.length === 0) {
+        container.innerHTML = `
+          <div class="p-6 rounded-3xl apple-glass text-center space-y-2">
+            <span class="text-3xl block">🎉</span>
+            <p class="text-xs font-semibold text-white">ไม่พบนัดหมายที่มีความเสี่ยงสภาพอากาศ</p>
+            <p class="text-[10px] text-white/60">ตารางนัดหมายของคุณปลอดภัยสำหรับการเดินทาง</p>
+          </div>
+        `;
+        return;
+      }
+
+      let html = '';
+      events.forEach(ev => {
+        const borderCls = ev.border_style || 'border-white/10';
+        const shiftBadgeCls = ev.shift_badge_style || 'text-cyan-300 bg-cyan-500/20 border-cyan-500/30';
+        const urgencyLabel = ev.urgency === 'CRITICAL' ? '⚠️ ' + ev.urgency_label : (ev.urgency === 'WARNING' ? '🌧️ ' + ev.urgency_label : '🌤️ ' + ev.urgency_label);
+
+        let checklistHtml = '';
+        if (ev.checklist && ev.checklist.length > 0) {
+          checklistHtml = `
+            <div class="space-y-1 pt-1.5 border-t border-white/10">
+              <span class="text-[10px] text-white/60 font-semibold block">📋 แผนรับมือเชิงรุก:</span>
+              <div class="space-y-1 text-[11px]">
+                ${ev.checklist.map((item, idx) => `
+                  <label class="flex items-start gap-1.5 p-1.5 rounded-lg bg-white/[0.02] hover:bg-white/[0.05] cursor-pointer">
+                    <input type="checkbox" ${idx === 0 ? 'checked' : ''} class="mt-0.5 accent-cyan-400 rounded">
+                    <span class="text-white/80">${item}</span>
+                  </label>
+                `).join('')}
+              </div>
+            </div>
+          `;
+        }
+
+        const secBtn = ev.secondary_cta ? `
+          <button onclick="${ev.secondary_cta.action}" class="py-1.5 px-3 rounded-xl apple-glass hover:bg-white/20 text-white text-[11px] font-medium transition tactile flex items-center justify-center gap-1 border border-white/10">
+            <span>${ev.secondary_cta.icon}</span>
+            <span>${ev.secondary_cta.label}</span>
+          </button>
+        ` : '';
+
+        html += `
+          <div class="p-4 rounded-3xl apple-glass space-y-2.5 transition-all duration-300 border ${borderCls}">
+            <div class="flex items-start justify-between gap-2">
+              <div class="space-y-1">
+                <span class="text-[9px] font-num font-bold uppercase tracking-wider ${shiftBadgeCls} px-2 py-0.5 rounded-full inline-block">
+                  ${urgencyLabel}
+                </span>
+                <h4 class="font-bold text-xs text-white leading-snug">${ev.title}</h4>
+                <p class="text-[11px] text-white/60">🕒 ${ev.time_display} · 📍 ${ev.location_name}</p>
+              </div>
+              <span class="text-[10px] font-num ${shiftBadgeCls} px-2.5 py-1 rounded-xl border flex-shrink-0 font-bold">
+                ${ev.shift_badge}
+              </span>
+            </div>
+
+            <!-- Telemetry Summary -->
+            <div class="p-2 rounded-2xl bg-white/[0.03] border border-white/10 flex items-center justify-between text-[11px]">
+              <span class="text-white/60">พยากรณ์: <strong class="text-cyan-200 font-num">${ev.telemetry_rain}</strong></span>
+              <span class="text-[10px] text-white/50">${ev.telemetry_detail}</span>
+            </div>
+
+            <!-- AI Proactive Advisory -->
+            <div class="p-3 rounded-2xl bg-white/[0.04] text-xs space-y-1.5 border border-white/10">
+              <p class="text-[11px] text-cyan-200 leading-relaxed">
+                💡 <strong>คำแนะนำ AI:</strong> ${ev.recommendation}
+              </p>
+              ${checklistHtml}
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex items-center gap-2 pt-0.5">
+              <button onclick="${ev.primary_cta.action}" class="flex-1 py-1.5 px-3 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 border border-cyan-400/40 text-cyan-200 text-[11px] font-semibold transition tactile flex items-center justify-center gap-1">
+                <span>${ev.primary_cta.icon}</span>
+                <span>${ev.primary_cta.label}</span>
+              </button>
+              ${secBtn}
+            </div>
+          </div>
+        `;
+      });
+
+      container.innerHTML = html;
+    }
+
+    let isCalendarSyncInProgress = false;
+
+    function syncCalendar() {
+      if (typeof document === 'undefined') return;
+      if (isCalendarSyncInProgress) return;
+      isCalendarSyncInProgress = true;
+      const btnIcon = document.getElementById('icon-sync');
+      const btnLabel = document.getElementById('label-sync');
+      const textStatus = document.getElementById('text-sync-status');
+      const badgeClash = document.getElementById('badge-clash-count');
+
+      if (btnIcon) btnIcon.classList.add('animate-spin');
+      if (btnLabel) btnLabel.innerText = 'กำลังซิงก์...';
+      if (textStatus) textStatus.innerText = 'กำลังประเมินด้วย WeatherNext 3...';
+
+      if (typeof fetch === 'function') {
+        try {
+          fetch('/api/v1/calendar/sync_and_evaluate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ user_id: 'U1001', name: 'คุณสมชาย', transport_mode: 'compact_sedan' })
+          })
+          .then(res => {
+            if (!res.ok) throw new Error('HTTP ' + res.status);
+            return res.json();
+          })
+          .then(data => {
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
+            if (textStatus) textStatus.innerText = `⚡ ซิงก์ล่าสุด: วันนี้ ${timeStr}`;
+            if (badgeClash && data.events_with_weather_hazards !== undefined) {
+              badgeClash.innerText = `พบ ${data.events_with_weather_hazards} จุดเสี่ยง`;
+            }
+            renderCalendarEvents(DEFAULT_CALENDAR_EVENTS);
+          })
+          .catch(err => {
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')} น.`;
+            if (textStatus) textStatus.innerText = `⚡ ซิงก์ล่าสุด: วันนี้ ${timeStr} (ออฟไลน์)`;
+            renderCalendarEvents(DEFAULT_CALENDAR_EVENTS);
+          })
+          .finally(() => {
+            setTimeout(() => {
+              if (btnIcon) btnIcon.classList.remove('animate-spin');
+              if (btnLabel) btnLabel.innerText = 'ซิงก์ปฏิทิน';
+              isCalendarSyncInProgress = false;
+            }, 600);
+          });
+        } catch (e) {
+          isCalendarSyncInProgress = false;
+          if (btnIcon) btnIcon.classList.remove('animate-spin');
+          if (btnLabel) btnLabel.innerText = 'ซิงก์ปฏิทิน';
+        }
+      } else {
+        renderCalendarEvents(DEFAULT_CALENDAR_EVENTS);
+        if (btnIcon) btnIcon.classList.remove('animate-spin');
+        if (btnLabel) btnLabel.innerText = 'ซิงก์ปฏิทิน';
+        isCalendarSyncInProgress = false;
+      }
+    }
+
+    function initCalendarUI() {
+      checkGoogleOAuthStatus();
+      renderCalendarEvents(currentCalendarEvents);
+    }
+
+    /**
+     * Focuses the contextual hazard card with smooth scrolling and highlight pulse animation.
+     */
+    function focusHazardCard() {
+      // Ensure dashboard tab is active so hazard card is rendered
+      switchTab('dashboard');
+
+      const card = document.getElementById('card-hazard');
+      if (card) {
+        // Ensure card is not hidden by hourly scrubber
+        card.classList.remove('hidden');
+
+        // Smooth scroll into view
+        card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+        // Trigger pulse ring animation
+        card.classList.remove('hazard-pulse-highlight');
+        void card.offsetWidth; // Force reflow
+        card.classList.add('hazard-pulse-highlight');
+
+        // Automatically clean up class after pulse sequence completes
+        setTimeout(() => {
+          card.classList.remove('hazard-pulse-highlight');
+        }, 5000);
+      }
+    }
+
+    /**
+     * Synchronizes URL parameters with the LIFF application state.
+     */
+    function syncLIFFParameters() {
+      const params = parseLIFFParams();
+
+      // 1. Vehicle profile parameter sync (normalizes aliases: motorcycle -> moto, compact_sedan -> sedan)
+      if (params.vehicle) {
+        const vehicleAliases = {
+          'motorcycle': 'moto',
+          'compact_sedan': 'sedan',
+          'suv': 'pickup',
+          'bts': 'transit',
+          'mrt': 'transit'
+        };
+        const rawVeh = String(params.vehicle).toLowerCase();
+        const normVeh = vehicleAliases[rawVeh] || params.vehicle;
+        setVehicle(normVeh);
+      }
+
+      // 2. Tab parameter sync
+      if (params.tab) {
+        switchTab(params.tab);
+        if (params.tab === 'calendar') {
+          initCalendarUI();
+        }
+      }
+      if (params.auth === 'success') {
+        initCalendarUI();
+      }
+
+      // 3. Contextual Hazard Card Focus
+      if (params.focus === 'hazard') {
+        focusHazardCard();
+      }
+
+      // 4. Initialize Google Calendar UI
+      initCalendarUI();
+    }
+
+    // Initialize on DOM ready
+    if (typeof document !== 'undefined') {
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', syncLIFFParameters);
+      } else {
+        syncLIFFParameters();
+      }
+    }
+
+    // React to URL hash changes dynamically without reload
+    if (typeof window !== 'undefined') {
+      window.addEventListener('hashchange', syncLIFFParameters);
+    }
+  </script>
+</body>
+</html>

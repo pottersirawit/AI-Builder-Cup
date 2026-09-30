@@ -1,0 +1,26 @@
+# Virtual Environments
+venv/
+.venv/
+env/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Version Control & IDE
+.git/
+.gitignore
+.vscode/
+.idea/
+
+# Agent Metadata & Logs
+.agents/
+.scratch/
+*.log
+
+# Compiled Go Binaries & Temp Artifacts
+gateway/bin/
+.pytest_cache/
+.coverage
+htmlcov/
+.DS_Store

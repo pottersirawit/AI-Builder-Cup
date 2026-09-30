@@ -1,0 +1,20 @@
+# Version control
+.git
+.gitignore
+
+# Compiled binaries and local build outputs
+bin/
+gateway
+gateway-bin
+*.exe
+*.test
+__debug_bin*
+
+# Test coverage and profiling
+coverage.out
+*.prof
+
+# Documentation and temporary files
+*.md
+*.tmp
+.DS_Store

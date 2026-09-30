@@ -1,0 +1,36 @@
+# Domain Context: Bangkok Weather Resilience & Disaster Preparedness
+
+This document defines the ubiquitous domain language for the Bangkok Weather Resilience system, aligning agents and developers on terminology, data contracts, and boundaries according to the Matt Pocock engineering principles.
+
+---
+
+## 1. Domain Entities & Telemetry
+
+- **WeatherNext 3 (WN3)**: Google DeepMind's flagship 5km spatial grid numerical weather prediction model operating on raw geostationary satellite telemetry, updated hourly. Provides precipitation rate ($\text{mm/h}$), surface wind gust ($\text{km/h}$), temperature, and atmospheric pressure.
+- **BMA Radar Composite**: Dual C-Band Doppler radar network operated by the Bangkok Metropolitan Administration (Nong Chok Radar in East Bangkok, Nong Khaem Radar in West Bangkok). Yields radar reflectivity measured in $\text{dBZ}$ (where $\ge 50\text{ dBZ}$ represents intense convective cloudbursts).
+- **ThaiWater Telemetry**: Standard national hydrological telemetric data stream (`standard.thaiwater.net`) reporting precipitation accumulation and canal/river stage levels relative to Mean Sea Level ($\text{m MSL}$).
+- **BMA Flood Spot**: One of 70+ designated historical flood-prone road segments and intersections in Bangkok (e.g., Sukhumvit 21 Asok, Chaeng Watthana Road, Udomsuk). Each spot has a critical rain threshold (e.g. $40\text{ mm/h}$) and vehicle inundation vulnerability thresholds.
+- **Vehicle Clearance Profile**: Persona parameter categorizing vehicle floor/exhaust height:
+  - `sedan`: Sedan / Eco-car (water clearance threshold $< 15\text{ cm}$).
+  - `moto`: Motorcycle (vulnerable to flash floods and sudden wind gusts $> 45\text{ km/h}$).
+  - `pickup`: Pickup / High-clearance SUV (safe up to $35\text{ cm}$).
+  - `transit`: Public Transit / BTS / MRT (inundation safety independent of road water level).
+
+---
+
+## 2. Decision Logic & Proactive Triggering
+
+- **Nowcast Horizon**: The $0 - 2$ hour lead-time window where BMA radar tracking vectors project storm velocity into user geofences.
+- **Calendar Weather Clash**: When a user's scheduled calendar appointment coincides in time ($t_{\text{start}} - 30\text{m} \le t \le t_{\text{end}}$) and spatial radius ($< 3\text{km}$) with a forecasted severe weather event or road flood spot.
+- **Proactive Shift Advisory**: Actionable mitigation strategy suggested by Gemini 1.5 Reasoner:
+  - *Early Departure*: Leave $30-45$ minutes earlier before convective cell arrival.
+  - *Remote Shift*: Recommending converting the in-person meeting into a Google Meet.
+  - *Modal Shift*: Diverting from street vehicles to elevated skytrain (BTS/MRT).
+
+---
+
+## 3. Architecture & Seams
+
+- **Gateway Seam (`gateway/`)**: High-concurrency Go service responsible for LINE Messaging API webhooks, HMAC-SHA256 signature verification, user profile caching, and serving the LINE LIFF Web App.
+- **Engine Seam (`engine/`)**: Python FastAPI service handling spatial indexing (Haversine/Shapely), ThaiWater/BMA radar polling, and Gemini 1.5 multimodal reasoning.
+- **LIFF Experience (`gateway/static/liff/`)**: Mobile Web App adhering strictly to **Theme 1: Apple Spatial Weather** (frosted glassmorphism, dynamic sky backdrop, tactile vehicle toggles, interactive hourly scrubber).

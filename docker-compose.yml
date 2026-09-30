@@ -1,0 +1,118 @@
+# ==============================================================================
+# Bangkok Weather Resilience & Disaster Preparedness System
+# Docker Compose Multi-Service Orchestration Specification (Phase 1, Ticket 05, R5)
+# Modern Compose Specification (Docker Compose v2 standard: no obsolete top-level version)
+# ==============================================================================
+
+services:
+  # ----------------------------------------------------------------------------
+  # Redis Cache & Session Store (5-Minute Radar Telemetry & User State)
+  # ----------------------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: weather_redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    command: redis-server --appendonly yes
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 3s
+    volumes:
+      - redis_data:/data
+    restart: unless-stopped
+    networks:
+      - weather-resilience-net
+
+  # ----------------------------------------------------------------------------
+  # Python AI & Geospatial Analytics Engine (FastAPI + WeatherNext 3 + Gemini)
+  # ----------------------------------------------------------------------------
+  engine:
+    build:
+      context: .
+      dockerfile: engine/Dockerfile
+    container_name: weather_engine
+    ports:
+      - "${ENGINE_PORT:-8000}:8000"
+    environment:
+      - PORT=8000
+      - ENGINE_PORT=8000
+      - REDIS_URL=redis://redis:6379
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - GEMINI_API_KEY=${GEMINI_API_KEY:-}
+      - GEMINI_MODEL=${GEMINI_MODEL:-gemini-1.5-flash}
+      - GOOGLE_MAPS_WEATHER_API_KEY=${GOOGLE_MAPS_WEATHER_API_KEY:-}
+      - WEATHER_DATA_MODE=${WEATHER_DATA_MODE:-mock}
+      - THAIWATER_DATA_MODE=${THAIWATER_DATA_MODE:-mock}
+      - BMA_RADAR_DATA_MODE=${BMA_RADAR_DATA_MODE:-mock}
+      - PYTHONUNBUFFERED=1
+      - TZ=Asia/Bangkok
+    volumes:
+      - ./data:/app/data:ro
+    depends_on:
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - weather-resilience-net
+
+  # ----------------------------------------------------------------------------
+  # Go API Gateway, LINE Webhook Receiver, Thai NLP Router & LIFF Host
+  # ----------------------------------------------------------------------------
+  gateway:
+    build:
+      context: ./gateway
+      dockerfile: Dockerfile
+    container_name: weather_gateway
+    ports:
+      - "${PORT:-8080}:8080"
+    environment:
+      - PORT=8080
+      - GATEWAY_PORT=8080
+      - LINE_CHANNEL_SECRET=${LINE_CHANNEL_SECRET:-}
+      - LINE_CHANNEL_TOKEN=${LINE_CHANNEL_TOKEN:-${LINE_CHANNEL_ACCESS_TOKEN:-}}
+      - LINE_CHANNEL_ACCESS_TOKEN=${LINE_CHANNEL_ACCESS_TOKEN:-${LINE_CHANNEL_TOKEN:-}}
+      - LIFF_ENDPOINT_URL=${LIFF_ENDPOINT_URL:-}
+      - ENGINE_BASE_URL=http://engine:8000
+      - REDIS_URL=redis://redis:6379
+      - WORKER_POOL_SIZE=20
+      - TZ=Asia/Bangkok
+    depends_on:
+      engine:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8080/health || exit 1"]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+      start_period: 5s
+    restart: unless-stopped
+    networks:
+      - weather-resilience-net
+
+# ------------------------------------------------------------------------------
+# Isolated Bridge Network
+# ------------------------------------------------------------------------------
+networks:
+  weather-resilience-net:
+    name: weather-resilience-net
+    driver: bridge
+
+# ------------------------------------------------------------------------------
+# Named Persistent Volumes
+# ------------------------------------------------------------------------------
+volumes:
+  redis_data:
+    name: weather_redis_data
+    driver: local

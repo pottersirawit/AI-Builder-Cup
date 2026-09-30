@@ -1,0 +1,44 @@
+# Environment and credentials
+.env
+.env.*
+!.env.example
+*.key
+*credentials*.json
+google_credentials.json
+
+# Virtual environment
+venv/
+.venv/
+env/
+ENV/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.pytest_cache/
+.coverage
+htmlcov/
+
+# Go build artifacts
+gateway/bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Node / JS
+node_modules/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs & temp
+*.log
+.scratch/
+.agents/teamwork/
