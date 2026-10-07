@@ -1,0 +1,150 @@
+// Package domain holds the shared vocabulary of the ฝนตกไหม API (see CONTEXT.md)
+// and the seams (interfaces) that every data source plugs into.
+package domain
+
+import (
+	"context"
+	"time"
+)
+
+// Bangkok is Indochina Time. A fixed zone keeps distroless images free of tzdata.
+var Bangkok = time.FixedZone("ICT", 7*60*60)
+
+type LatLng struct {
+	Lat float64 `json:"lat"`
+	Lng float64 `json:"lng"`
+}
+
+// Mode is how the traveller moves. Each mode maps to a Vehicle Clearance Profile.
+type Mode string
+
+const (
+	ModeCar     Mode = "car"
+	ModeTransit Mode = "transit"
+	ModeMoto    Mode = "moto"
+)
+
+var AllModes = []Mode{ModeCar, ModeTransit, ModeMoto}
+
+func (m Mode) Valid() bool { return m == ModeCar || m == ModeTransit || m == ModeMoto }
+
+// NameTH is the label shown to the user.
+func (m Mode) NameTH() string {
+	switch m {
+	case ModeTransit:
+		return "BTS / MRT"
+	case ModeMoto:
+		return "มอเตอร์ไซค์"
+	default:
+		return "รถยนต์"
+	}
+}
+
+type Place struct {
+	NameTH string  `json:"name_th"`
+	Lat    float64 `json:"lat"`
+	Lng    float64 `json:"lng"`
+}
+
+func (p Place) Point() LatLng { return LatLng{p.Lat, p.Lng} }
+
+type Trip struct {
+	ID          string    `json:"id"`
+	TitleTH     string    `json:"title_th"`
+	Source      string    `json:"source"`
+	Origin      Place     `json:"origin"`
+	Destination Place     `json:"destination"`
+	ArriveBy    time.Time `json:"arrive_by"`
+	Mode        Mode      `json:"mode"`
+}
+
+// Route is one way of getting from origin to destination with one mode.
+type Route struct {
+	Mode        Mode     `json:"mode"`
+	Polyline    []LatLng `json:"-"`
+	DurationMin int      `json:"duration_min"`
+	ViaTH       []string `json:"via_th"`
+	Source      string   `json:"source"`
+}
+
+// RainSample is precipitation intensity valid from Time until the next sample.
+type RainSample struct {
+	Time    time.Time `json:"time"`
+	MMPerHr float64   `json:"mm_per_hr"`
+}
+
+type CanalReading struct {
+	StationID string  `json:"station_id"`
+	NameTH    string  `json:"name_th"`
+	Lat       float64 `json:"lat"`
+	Lng       float64 `json:"lng"`
+	LevelM    float64 `json:"level_m"`
+	BankM     float64 `json:"bank_m"`
+	RiseCM2h  float64 `json:"rise_cm_2h"`
+	Source    string  `json:"source"`
+}
+
+// Passable is the per-mode verdict of a flood photo: yes, slow or no.
+type Passable struct {
+	Car     string `json:"car"`
+	Transit string `json:"transit"`
+	Moto    string `json:"moto"`
+}
+
+// Report is a community flood photo report, assessed by Gemini vision.
+type Report struct {
+	ID            string    `json:"id"`
+	Lat           float64   `json:"lat"`
+	Lng           float64   `json:"lng"`
+	CreatedAt     time.Time `json:"created_at"`
+	DepthCMMin    int       `json:"depth_cm_min"`
+	DepthCMMax    int       `json:"depth_cm_max"`
+	Confidence    float64   `json:"confidence"`
+	DescriptionTH string    `json:"description_th"`
+	Passable      Passable  `json:"passable"`
+	GeneratedBy   string    `json:"generated_by,omitempty"`
+}
+
+func (r Report) Point() LatLng { return LatLng{r.Lat, r.Lng} }
+
+// MockUser is a commuter whose usual route we know, used for report fan-out.
+type MockUser struct {
+	ID    string
+	Route []LatLng
+}
+
+// Clock tells the current time. The demo clock replays the พลอย scenario.
+type Clock interface {
+	Now() time.Time
+}
+
+// WeatherProvider forecasts rain at a point between from and to.
+type WeatherProvider interface {
+	Rain(ctx context.Context, at LatLng, from, to time.Time) ([]RainSample, error)
+	Name() string
+}
+
+// RouteProvider plans a route for one mode departing at a given time.
+type RouteProvider interface {
+	Route(ctx context.Context, from, to LatLng, mode Mode, departAt time.Time) (Route, error)
+	Name() string
+}
+
+// CanalProvider reports canal stage levels near a point at a given time.
+type CanalProvider interface {
+	Canals(ctx context.Context, near LatLng, at time.Time) ([]CanalReading, error)
+	Name() string
+}
+
+// ReportStore keeps community flood reports.
+type ReportStore interface {
+	Add(ctx context.Context, r Report) (Report, error)
+	// Near returns reports within radiusM of center created in [since, until].
+	Near(ctx context.Context, center LatLng, radiusM float64, since, until time.Time) ([]Report, error)
+}
+
+// TravelTimer is an optional RouteProvider capability: cheap duration lookups
+// for many candidate departures, used to search for the latest safe departure.
+type TravelTimer interface {
+	TravelMinutes(from, to LatLng, mode Mode, departAt time.Time) int
+}

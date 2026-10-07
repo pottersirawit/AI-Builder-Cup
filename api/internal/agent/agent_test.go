@@ -1,0 +1,236 @@
+package agent
+
+import (
+	"context"
+	"errors"
+	"path/filepath"
+	"runtime"
+	"strings"
+	"testing"
+	"time"
+
+	"google.golang.org/genai"
+
+	"github.com/pottersirawit/fontokmai/api/internal/decision"
+	"github.com/pottersirawit/fontokmai/api/internal/domain"
+	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
+	"github.com/pottersirawit/fontokmai/api/internal/planner"
+	"github.com/pottersirawit/fontokmai/api/internal/reports"
+	"github.com/pottersirawit/fontokmai/api/internal/scenario"
+)
+
+func at(hh, mm int) time.Time { return time.Date(2026, 9, 29, hh, mm, 0, 0, domain.Bangkok) }
+
+func session(t *testing.T, now time.Time) *planner.Session {
+	t.Helper()
+	_, file, _, _ := runtime.Caller(0)
+	spots, err := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	p := &planner.Planner{Spots: spots, Trips: scenario.Trips}
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	s, err := p.NewSession(context.Background(), prov, now, "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+func TestParseQuestionTH(t *testing.T) {
+	now := at(16, 10)
+	transit, moto, car := domain.ModeTransit, domain.ModeMoto, domain.ModeCar
+	tests := []struct {
+		q        string
+		wantTime string // "" means no change
+		wantMode *domain.Mode
+	}{
+		{"ถ้ารอถึงสองทุ่มค่อยกลับล่ะ", "20:00", nil},
+		{"ไป BTS แทนดีไหม", "", &transit},
+		{"นั่งมอไซค์ไปตอนห้าโมงครึ่งได้ไหม", "17:30", &moto},
+		{"ทุ่มนึงค่อยออก", "19:00", nil},
+		{"สามทุ่มครึ่งขับรถกลับ", "21:30", &car},
+		{"ออก 18:45 ได้ไหม", "18:45", nil},
+		{"ออก 19.15", "19:15", nil},
+		{"หกโมงเย็นเรียกแท็กซี่", "18:00", &car},
+		{"อีก 30 นาทีค่อยออก", "16:40", nil},
+		{"อีกชั่วโมงนึง", "17:10", nil},
+		{"อีกครึ่งชั่วโมง", "16:40", nil},
+		{"บ่ายสามโมง", "15:00", nil}, // already past: moves to tomorrow, checked below
+		{"ฝนตกไหม", "", nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.q, func(t *testing.T) {
+			got := ParseQuestionTH(tt.q, now)
+			gotTime := ""
+			if got.DepartAt != nil {
+				gotTime = got.DepartAt.Format("15:04")
+			}
+			if gotTime != tt.wantTime {
+				t.Errorf("time = %q, want %q", gotTime, tt.wantTime)
+			}
+			if (got.Mode == nil) != (tt.wantMode == nil) || (got.Mode != nil && *got.Mode != *tt.wantMode) {
+				t.Errorf("mode = %v, want %v", got.Mode, tt.wantMode)
+			}
+		})
+	}
+	if got := ParseQuestionTH("บ่ายสามโมง", now); got.DepartAt.Day() != 30 {
+		t.Errorf("a time already past should roll to tomorrow, got %v", got.DepartAt)
+	}
+}
+
+func TestDecideFallbackHero(t *testing.T) {
+	s := session(t, at(16, 10))
+	resp, err := Decide(context.Background(), nil, s, Request{TripID: "cal-dinner"}, []string{"x"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.GeneratedBy != "fallback" || resp.Verdict != decision.LeaveNow || resp.HeadlineTH != "ออกก่อน 16:45" {
+		t.Fatalf("got %s %s %q", resp.GeneratedBy, resp.Verdict, resp.HeadlineTH)
+	}
+	var tools []string
+	for _, c := range resp.Reasoning {
+		tools = append(tools, c.Tool)
+		if c.SummaryTH == "" {
+			t.Errorf("empty summary for %s", c.Tool)
+		}
+	}
+	if strings.Join(tools, ",") != strings.Join(fallbackTools, ",") {
+		t.Fatalf("reasoning tools = %v", tools)
+	}
+}
+
+func TestDecideRequests(t *testing.T) {
+	tests := []struct {
+		name         string
+		req          Request
+		wantVerdict  decision.Verdict
+		wantHeadline string
+		wantMode     domain.Mode
+		wantFirst    string
+		wantErr      bool
+	}{
+		{"question: wait until 20:00", Request{QuestionTH: "ถ้ารอถึงสองทุ่มค่อยกลับล่ะ"}, decision.LeaveNow, "ออก 20:00 ได้ แต่เลยนัด 18:30", domain.ModeCar, "parse_question_fallback", false},
+		{"question: switch to BTS", Request{QuestionTH: "ไป BTS แทนดีไหม"}, decision.LeaveNow, "", domain.ModeTransit, "parse_question_fallback", false},
+		{"slider: motorbike at 17:15", Request{DepartAt: "2026-09-29T17:15:00+07:00", Mode: "moto"}, decision.SwitchMode, "เปลี่ยนไป BTS / MRT ดีกว่า", domain.ModeMoto, "get_trip", false},
+		{"bad mode", Request{Mode: "boat"}, "", "", "", "", true},
+		{"bad time", Request{DepartAt: "soon"}, "", "", "", "", true},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := Decide(context.Background(), nil, session(t, at(16, 10)), tt.req, nil)
+			if tt.wantErr {
+				if !errors.Is(err, ErrBadRequest) {
+					t.Fatalf("want ErrBadRequest, got %v", err)
+				}
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.Verdict != tt.wantVerdict || resp.Mode != tt.wantMode || (tt.wantHeadline != "" && resp.HeadlineTH != tt.wantHeadline) {
+				t.Fatalf("got %s %s %q", resp.Verdict, resp.Mode, resp.HeadlineTH)
+			}
+			if resp.Reasoning[0].Tool != tt.wantFirst {
+				t.Fatalf("first reasoning step = %s, want %s", resp.Reasoning[0].Tool, tt.wantFirst)
+			}
+		})
+	}
+}
+
+// scriptedGemini plays back canned responses and records what it was sent.
+type scriptedGemini struct {
+	replies []*genai.GenerateContentResponse
+	err     error
+	seen    [][]*genai.Content
+}
+
+func (f *scriptedGemini) GenerateContent(_ context.Context, _ string, contents []*genai.Content, _ *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+	f.seen = append(f.seen, contents)
+	if f.err != nil {
+		return nil, f.err
+	}
+	if len(f.replies) == 0 {
+		return nil, errors.New("script exhausted")
+	}
+	r := f.replies[0]
+	f.replies = f.replies[1:]
+	return r, nil
+}
+
+func reply(parts ...*genai.Part) *genai.GenerateContentResponse {
+	return &genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Role: genai.RoleModel, Parts: parts}}}}
+}
+
+func call(name string, args map[string]any) *genai.Part {
+	return &genai.Part{FunctionCall: &genai.FunctionCall{ID: name + "-1", Name: name, Args: args}}
+}
+
+func TestDecideWithGeminiAgent(t *testing.T) {
+	final := `{"verdict":"leave_now","headline_th":"ออกก่อน 16:45 นะ","summary_th":"ฝนก้อนใหญ่ถึงพระราม 4 ราวห้าโมงครึ่ง ออกตอนนี้ถึงบ้าน 17:00","leave_by":"16:45","confidence":0.8,
+	  "reasoning":[{"tool":"get_rain_along_route","summary_th":"ฝนถึงพระราม 4 ราว 17:30"}]}`
+	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{
+		reply(call("get_trip", nil), call("get_rain_along_route", nil)),
+		reply(call("evaluate_departure", map[string]any{"mode": "car"})),
+		reply(&genai.Part{Text: "```json\n" + final + "\n```"}),
+	}}
+	resp, err := Decide(context.Background(), &Gemini{Gen: fake, Model: "test"}, session(t, at(16, 10)), Request{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.GeneratedBy != "gemini" || resp.HeadlineTH != "ออกก่อน 16:45 นะ" || resp.Confidence != 0.8 || resp.LeaveBy.Format("15:04") != "16:45" {
+		t.Fatalf("got %+v", resp)
+	}
+	if len(resp.Reasoning) != 3 || resp.Reasoning[1].Tool != "get_rain_along_route" || resp.Reasoning[1].SummaryTH != "ฝนถึงพระราม 4 ราว 17:30" {
+		t.Fatalf("reasoning = %+v", resp.Reasoning)
+	}
+	if !strings.Contains(resp.Reasoning[2].SummaryTH, "ความเสี่ยงต่ำ") {
+		t.Fatalf("tools without agent text keep the tool summary, got %q", resp.Reasoning[2].SummaryTH)
+	}
+	// Round two must carry the function responses back to the model with matching IDs.
+	last := fake.seen[1][len(fake.seen[1])-1]
+	if last.Parts[0].FunctionResponse == nil || last.Parts[0].FunctionResponse.ID != "get_trip-1" {
+		t.Fatalf("function response not sent back: %+v", last.Parts[0])
+	}
+}
+
+func TestGeminiAgentGuardrailsAndFallback(t *testing.T) {
+	unsafe := `{"verdict":"leave_now","headline_th":"ไปเลย","summary_th":"ไม่เป็นไร","confidence":0.9}`
+	tests := []struct {
+		name        string
+		gen         *scriptedGemini
+		req         Request
+		wantBy      string
+		wantVerdict decision.Verdict
+	}{
+		{"API error falls back", &scriptedGemini{err: errors.New("quota")}, Request{}, "fallback", decision.LeaveNow},
+		{"answer without tools falls back", &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: unsafe})}}, Request{}, "fallback", decision.LeaveNow},
+		{"unsafe leave_now into deep water is overridden", &scriptedGemini{replies: []*genai.GenerateContentResponse{
+			reply(call("get_flood_spots_on_route", nil)), reply(&genai.Part{Text: unsafe}),
+		}}, Request{DepartAt: "18:00", Mode: "car"}, "gemini", decision.SwitchMode},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := Decide(context.Background(), &Gemini{Gen: tt.gen, Model: "test"}, session(t, at(16, 10)), tt.req, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.GeneratedBy != tt.wantBy || resp.Verdict != tt.wantVerdict {
+				t.Fatalf("got %s %s %q", resp.GeneratedBy, resp.Verdict, resp.HeadlineTH)
+			}
+		})
+	}
+}
+
+func TestParseQuestionWithGemini(t *testing.T) {
+	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: `{"depart_at":"20:00","mode":"transit"}`})}}
+	in, by := ParseQuestion(context.Background(), &Gemini{Gen: fake, Model: "test"}, "สองทุ่มนั่งรถไฟฟ้า", at(16, 10), scenario.Trips(at(16, 10))[0])
+	if by != "gemini" || in.DepartAt.Format("15:04") != "20:00" || *in.Mode != domain.ModeTransit {
+		t.Fatalf("got %v %+v", by, in)
+	}
+	broken := &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: "ขอโทษค่ะ"})}}
+	in, by = ParseQuestion(context.Background(), &Gemini{Gen: broken, Model: "test"}, "สองทุ่ม", at(16, 10), domain.Trip{})
+	if by != "fallback" || in.DepartAt.Format("15:04") != "20:00" {
+		t.Fatalf("got %v %+v", by, in)
+	}
+}
