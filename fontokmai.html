@@ -1,0 +1,659 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ฝนตกไหม</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#dfeeff; --bg2:#eef6ff; --card:#ffffff; --ink:#0b1f3a; --muted:#5b6b82; --line:#d6e4f5;
+    --blue:#1a73e8; --blue2:#4285f4; --violet:#9b72cb; --pink:#d96570;
+    --ok:#1e8e3e; --ok-bg:#e6f4ea; --warn:#e37400; --warn-bg:#fef3e0; --bad:#d93025; --bad-bg:#fce8e6;
+    --rain0:#e3efff; --rain1:#9cc4ff; --rain2:#4a8ff5; --rain3:#1a4fb8;
+    --r:22px;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%}
+  body{
+    font-family:'Chakra Petch',system-ui,sans-serif; color:var(--ink);
+    background:radial-gradient(1200px 600px at 20% -10%,#cfe4ff 0%,#f3f8ff 60%,#f7fafe 100%);
+    display:flex;flex-direction:column;align-items:center;gap:18px;padding:22px 16px 40px;min-height:100%;
+  }
+  /* ---------- phone frame ---------- */
+  .phone{
+    width:390px;height:844px;border-radius:52px;background:#0a0f1a;padding:12px;
+    box-shadow:0 30px 80px rgba(10,40,90,.35),inset 0 0 0 2px #2b3446;position:relative;flex:none;
+  }
+  .phone .notch{position:absolute;top:22px;left:50%;transform:translateX(-50%);width:120px;height:34px;background:#0a0f1a;border-radius:20px;z-index:20}
+  .display{width:100%;height:100%;border-radius:42px;overflow:hidden;background:var(--bg);position:relative}
+  .screen{position:absolute;inset:0;display:none;flex-direction:column;overflow:hidden}
+  .screen.active{display:flex}
+  .scroll{flex:1;overflow-y:auto;padding:0 16px 24px;scrollbar-width:none}
+  .scroll::-webkit-scrollbar{display:none}
+  .statusbar{height:54px;display:flex;align-items:flex-end;justify-content:space-between;padding:0 28px 6px;font-size:14px;font-weight:600}
+  .statusbar .icons{display:flex;gap:5px;font-size:12px}
+
+  /* ---------- typography ---------- */
+  h1,h2,h3{margin:0;font-weight:700;letter-spacing:-.01em}
+  .eyebrow{font-size:12px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+  .src{font-size:11px;color:var(--muted);display:flex;align-items:center;gap:6px;margin-top:10px}
+  .src::before{content:"";width:6px;height:6px;border-radius:50%;background:var(--blue2);display:inline-block}
+  .muted{color:var(--muted)}
+  .small{font-size:13px}
+
+  /* ---------- components ---------- */
+  .card{background:var(--card);border-radius:var(--r);padding:16px;box-shadow:0 6px 24px rgba(20,60,120,.08);margin-top:12px;border:1px solid rgba(214,228,245,.7)}
+  .card.tap{cursor:pointer;transition:transform .12s}
+  .card.tap:active{transform:scale(.985)}
+  .row{display:flex;align-items:center;gap:10px}
+  .row.between{justify-content:space-between}
+  .pill{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:600;background:var(--bg2);color:var(--blue)}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)} .pill.warn{background:var(--warn-bg);color:var(--warn)} .pill.bad{background:var(--bad-bg);color:var(--bad)}
+  .btn{appearance:none;border:0;border-radius:14px;padding:12px 16px;font:inherit;font-weight:600;font-size:14px;cursor:pointer;background:var(--blue);color:#fff;box-shadow:0 6px 16px rgba(26,115,232,.28)}
+  .btn.ghost{background:var(--bg2);color:var(--blue);box-shadow:none}
+  .btn.block{width:100%}
+  .btn:active{transform:translateY(1px)}
+  .gem{background:linear-gradient(90deg,var(--blue2),var(--violet) 60%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent;font-weight:700}
+  .logo{display:inline-flex;align-items:center;gap:8px;font-weight:700;font-size:15px}
+  .logo i{width:22px;height:22px;border-radius:7px;background:linear-gradient(135deg,var(--blue2),var(--violet));display:inline-block;position:relative}
+  .logo i::after{content:"";position:absolute;left:6px;top:6px;width:10px;height:10px;border-radius:50% 50% 50% 0;background:#fff;transform:rotate(-45deg)}
+
+  /* verdict card */
+  .verdict{border-radius:26px;padding:20px;color:#fff;margin-top:14px;position:relative;overflow:hidden}
+  .verdict.ok{background:linear-gradient(135deg,#1e8e3e,#34a853)} .verdict.warn{background:linear-gradient(135deg,#e37400,#f9ab00)} .verdict.bad{background:linear-gradient(135deg,#c5221f,#ea4335)}
+  .verdict::after{content:"";position:absolute;right:-30px;top:-30px;width:140px;height:140px;border-radius:50%;background:rgba(255,255,255,.14)}
+  .verdict .big{font-size:30px;font-weight:700;line-height:1.1;margin:6px 0 8px}
+  .verdict p{margin:0;font-size:14px;line-height:1.5;opacity:.96}
+  .verdict .eyebrow{color:rgba(255,255,255,.85)}
+
+  /* timeline */
+  .tl{display:grid;grid-template-columns:repeat(20,1fr);gap:3px;align-items:end;height:54px;margin-top:10px}
+  .tl b{display:block;border-radius:4px 4px 2px 2px;background:var(--rain1);min-height:6px}
+  .tl b.r0{background:var(--rain0);height:6px}.tl b.r1{background:var(--rain1);height:22px}.tl b.r2{background:var(--rain2);height:38px}.tl b.r3{background:var(--rain3);height:54px}
+    .tlx{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+
+  /* lock screen */
+  #lock{background:linear-gradient(180deg,#6fb1ff 0%,#3a7ee6 45%,#243e7a 100%);color:#fff}
+  #lock .clock{text-align:center;margin-top:70px}
+  #lock .clock .t{font-size:78px;font-weight:300;line-height:1}
+  #lock .clock .d{font-size:16px;opacity:.9;margin-top:6px}
+  .notif{margin:26px 14px 0;background:rgba(255,255,255,.92);color:var(--ink);border-radius:22px;padding:14px 16px;backdrop-filter:blur(10px);cursor:pointer;box-shadow:0 12px 30px rgba(0,0,0,.25);animation:pop .5s cubic-bezier(.2,.9,.3,1.2)}
+  @keyframes pop{from{transform:translateY(-18px);opacity:0}to{transform:none;opacity:1}}
+  .notif .hd{display:flex;justify-content:space-between;align-items:center;font-size:12px;color:var(--muted);margin-bottom:6px}
+  .notif .ti{font-weight:700;font-size:16px}
+  .notif .bo{font-size:14px;line-height:1.45;margin-top:4px}
+  .cloud{position:absolute;border-radius:50%;background:rgba(255,255,255,.18);filter:blur(2px)}
+
+  /* header bar */
+  .top{display:flex;align-items:center;justify-content:space-between;padding:8px 16px 4px}
+  .back{background:none;border:0;font:inherit;font-size:14px;color:var(--blue);font-weight:600;cursor:pointer;padding:6px 0}
+
+  /* slider */
+  input[type=range]{width:100%;accent-color:var(--blue);margin:10px 0 2px}
+  .modes{display:flex;gap:8px;margin-top:10px}
+  .mode{flex:1;border:1.5px solid var(--line);background:#fff;border-radius:14px;padding:10px 6px;text-align:center;font:inherit;font-size:13px;font-weight:600;cursor:pointer;color:var(--muted)}
+  .mode.on{border-color:var(--blue);color:var(--blue);background:var(--bg2)}
+  .mode span{display:block;font-size:20px;margin-bottom:2px}
+  .route{margin-top:14px}
+  .seg{display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px dashed var(--line);font-size:13px}
+  .seg:last-child{border:0}
+  .dot{width:12px;height:12px;border-radius:50%;flex:none}
+  .dot.ok{background:var(--ok)} .dot.warn{background:var(--warn)} .dot.bad{background:var(--bad)}
+  .reasons li{margin:6px 0;font-size:13px;line-height:1.45}
+  .reasons{padding-left:18px;margin:8px 0 0}
+
+  /* chat */
+  .msgs{display:flex;flex-direction:column;gap:10px;padding-top:8px}
+  .m{max-width:84%;padding:11px 14px;border-radius:18px;font-size:14px;line-height:1.5;animation:pop .35s ease-out}
+  .m.ai{background:#fff;border:1px solid var(--line);border-bottom-left-radius:6px;align-self:flex-start}
+  .m.me{background:var(--blue);color:#fff;border-bottom-right-radius:6px;align-self:flex-end}
+  .chips{display:flex;flex-direction:column;gap:8px;padding:12px 16px 16px;border-top:1px solid var(--line);background:#fff}
+  .chip{border:1.5px solid var(--blue);background:#fff;color:var(--blue);border-radius:999px;padding:10px 14px;font:inherit;font-size:13px;font-weight:600;cursor:pointer;text-align:left}
+  .chip:disabled{opacity:.35;cursor:default}
+
+  /* report */
+  .cam{border-radius:22px;overflow:hidden;margin-top:12px;position:relative;background:#111}
+  .cam svg{display:block;width:100%;height:auto}
+  .cam .shutter{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);width:62px;height:62px;border-radius:50%;background:#fff;border:5px solid rgba(255,255,255,.5);cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,.4)}
+  .cam .tag{position:absolute;left:12px;top:12px;background:rgba(0,0,0,.55);color:#fff;font-size:12px;padding:4px 8px;border-radius:8px}
+  .scanline{position:absolute;left:0;right:0;height:3px;background:linear-gradient(90deg,transparent,var(--blue2),var(--violet),transparent);animation:scan 1.3s linear infinite;display:none}
+  .cam.scanning .scanline{display:block}
+  @keyframes scan{from{top:0}to{top:100%}}
+  .hidden{display:none !important}
+
+  /* flood (dark) */
+  #flood{background:#0b1a33;color:#e6efff}
+  #flood .card{background:#12264a;border-color:#1f3a66;color:#e6efff;box-shadow:none}
+  #flood .muted,#flood .src,#flood .eyebrow{color:#9fb4d6}
+  #flood .src::before{background:#ff8a80}
+  #flood .back{color:#9cc4ff}
+  .alert{margin-top:14px;border-radius:26px;padding:20px;background:linear-gradient(135deg,#b3261e,#e5533d);color:#fff}
+  .alert .big{font-size:28px;font-weight:700;line-height:1.15;margin:6px 0 8px}
+  .alert p{margin:0;font-size:14px;line-height:1.5}
+  .alert .eyebrow{color:rgba(255,255,255,.85)}
+  .gauge{height:10px;border-radius:6px;background:#1f3a66;overflow:hidden;margin-top:8px}
+  .gauge i{display:block;height:100%;width:78%;background:linear-gradient(90deg,#4a8ff5,#ff8a80);animation:fill 1.4s ease-out}
+  @keyframes fill{from{width:20%}}
+  .todo{list-style:none;padding:0;margin:8px 0 0}
+  .todo li{display:flex;gap:10px;align-items:flex-start;padding:8px 0;border-bottom:1px dashed #1f3a66;font-size:14px}
+  .todo li:last-child{border:0}
+  .todo .n{width:22px;height:22px;border-radius:50%;background:#ff8a80;color:#0b1a33;font-weight:700;font-size:12px;display:inline-flex;align-items:center;justify-content:center;flex:none}
+
+  /* ask bar + places */
+  .ask{display:flex;gap:8px;margin-top:12px;background:#fff;border:1.5px solid var(--line);border-radius:16px;padding:6px 6px 6px 14px;box-shadow:0 6px 24px rgba(20,60,120,.08)}
+  .ask input{flex:1;border:0;outline:0;font:inherit;font-size:14px;background:transparent;color:var(--ink);min-width:0}
+  .ask input::placeholder{color:#8a99b3}
+  .ask button{border:0;border-radius:11px;width:38px;height:38px;background:linear-gradient(135deg,var(--blue2),var(--violet));color:#fff;font-size:16px;cursor:pointer;flex:none}
+  .places{display:flex;gap:8px;margin-top:10px;overflow-x:auto;scrollbar-width:none;padding-bottom:2px}
+  .places::-webkit-scrollbar{display:none}
+  .place{flex:none;border:1.5px solid var(--line);background:#fff;border-radius:999px;padding:7px 12px;font:inherit;font-size:13px;font-weight:600;color:var(--ink);cursor:pointer}
+  .place:active{background:var(--bg2)}
+  .gearbtn{border:0;background:var(--bg2);color:var(--blue);width:36px;height:36px;border-radius:12px;font-size:18px;cursor:pointer}
+  /* settings */
+  .srow{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:1px dashed var(--line);font-size:14px}
+  .srow:last-of-type{border-bottom:0}
+  .srow>div{flex:1} .srow b{font-weight:600}
+  .srow .ic{width:34px;height:34px;border-radius:10px;background:var(--bg2);display:inline-flex;align-items:center;justify-content:center;flex:none}
+  .srow .edit{font-size:13px;color:var(--blue);font-weight:600}
+  .sw{width:44px;height:26px;border-radius:13px;background:#c9d6e8;position:relative;flex:none;cursor:pointer;transition:background .2s}
+  .sw::after{content:"";position:absolute;top:3px;left:3px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .2s;box-shadow:0 1px 3px rgba(0,0,0,.2)}
+  .sw.on{background:var(--blue)} .sw.on::after{left:21px}
+  .sw.dis{opacity:.4;cursor:default}
+
+  /* presenter strip (outside phone) */
+  .deck{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:760px}
+  .deck button{font:inherit;font-size:13px;font-weight:600;border:1.5px solid var(--line);background:#fff;color:var(--muted);border-radius:999px;padding:8px 14px;cursor:pointer}
+  .deck button.on{border-color:var(--blue);color:var(--blue);background:var(--bg2)}
+  .hint{font-size:12px;color:var(--muted)}
+  .hint a{color:var(--blue);font-weight:600}
+  @media (max-width:440px){.phone{width:100%;height:auto;min-height:760px;border-radius:0;padding:0;box-shadow:none;background:transparent}.display{border-radius:0}.phone .notch{display:none}.deck{display:none}}
+</style>
+</head>
+<body>
+
+<div class="phone">
+  <div class="notch"></div>
+  <div class="display">
+
+    <!-- 1. LOCK SCREEN -->
+    <section class="screen active" id="lock">
+      <span class="cloud" style="width:260px;height:120px;left:-60px;top:140px"></span>
+      <span class="cloud" style="width:200px;height:90px;right:-40px;top:220px"></span>
+      <div class="clock">
+        <div class="t">16:10</div>
+        <div class="d">อังคาร 29 กันยายน</div>
+      </div>
+      <div class="notif" onclick="go('home')">
+        <div class="hd"><span class="logo"><i></i>ฝนตกไหม</span><span>ตอนนี้</span></div>
+        <div class="ti">ออกก่อน 16:45 ทันนัดกินข้าวที่บ้าน</div>
+        <div class="bo">ฝนก้อนใหญ่จะถึงพระราม 4 ราวห้าโมงครึ่ง ถ้ารอถึงหกโมงจะเจอเต็ม ๆ และเลยนัด 18:30 แน่</div>
+      </div>
+      <div style="margin-top:auto;text-align:center;padding-bottom:30px;font-size:13px;opacity:.85">แตะแจ้งเตือนเพื่อเปิดแอป</div>
+    </section>
+
+    <!-- 2. HOME -->
+    <section class="screen" id="home">
+      <div class="statusbar"><span>16:10</span><span class="icons">▲▲▲ ▮▮▮ ▐</span></div>
+      <div class="scroll">
+        <div class="row between" style="margin-top:6px">
+          <div>
+            <div class="eyebrow">สีลม · ตอนนี้ครึ้ม 30°</div>
+            <h1 style="font-size:24px">สวัสดีพลอย</h1>
+          </div>
+          <div class="row" style="gap:8px"><span class="logo"><i></i>ฝนตกไหม</span><button class="gearbtn" onclick="go('settings')" aria-label="ตั้งค่า">⚙</button></div>
+        </div>
+
+        <form class="ask" onsubmit="return askTrip(event)">
+          <input id="askInput" placeholder="ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม" autocomplete="off">
+          <button type="submit" aria-label="ถาม">➤</button>
+        </form>
+        <div class="places">
+          <button class="place" onclick="openTrip('home')">🏠 บ้าน</button>
+          <button class="place" onclick="openTrip('siam')">🛍 สยาม</button>
+          <button class="place" onclick="openTrip('thonglor')">🍸 ทองหล่อ</button>
+          <button class="place" onclick="openTrip('impact')">🎤 อิมแพ็ค</button>
+        </div>
+        <div class="src" id="askHint" style="margin-top:8px;padding-left:4px">Gemini แกะคำถามภาษาคนเป็นทริป · สถานที่จาก Google Maps ที่บันทึกไว้</div>
+
+        <div class="verdict ok" id="homeVerdict">
+          <div class="eyebrow">กลับบ้านลาดพร้าว · รถยนต์</div>
+          <div class="big">ออกก่อน 16:45</div>
+          <p>ฝนถึงพระราม 4 ประมาณ 17:30 ถ้าออกตอนนี้ถึงบ้านราว 17:00 ก่อนฝนพอดี และทันกินข้าว 18:30 สบาย</p>
+          <div class="row" style="margin-top:14px;gap:8px">
+            <button class="btn" style="background:#fff;color:var(--ok);box-shadow:none" onclick="openTrip('home')">ดูเหตุผล / เลื่อนเวลา</button>
+            <button class="btn ghost" style="background:rgba(255,255,255,.22);color:#fff" onclick="go('chat')">ถามต่อ</button>
+          </div>
+        </div>
+        <div class="src" style="padding-left:4px">Gemini ตัดสินจาก Calendar + Google Weather + Routes · อัปเดต 16:05</div>
+
+        <div class="card">
+          <div class="row between"><h3 style="font-size:15px">ฝนบนเส้นทาง 16:00 ถึง 21:00</h3><span class="pill">ตอนนี้ 16:10</span></div>
+          <div class="tl" id="homeTl"></div>
+          <div class="tlx"><span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span><span>20:00</span><span>21:00</span></div>
+          <div class="src">Google Weather API รายชั่วโมง 3 กม. · กรมอุตุฯ NWP</div>
+        </div>
+
+        <div class="card">
+          <div class="eyebrow">ทำไมถึงเตือนตอนนี้</div>
+          <div class="row" style="margin-top:8px">
+            <div style="width:44px;height:44px;border-radius:12px;background:var(--bg2);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--blue)"><span>ก.ย.</span><span style="font-size:16px">29</span></div>
+            <div>
+              <div style="font-weight:700">18:30 กินข้าวเย็นกับที่บ้าน</div>
+              <div class="small muted">บ้านลาดพร้าว · ต้องถึงก่อนหกโมงครึ่ง</div>
+            </div>
+          </div>
+          <div class="src">Google Calendar</div>
+        </div>
+
+        <div class="card tap" onclick="go('flood')">
+          <div class="row between">
+            <div>
+              <div class="eyebrow">บ้านลาดพร้าว</div>
+              <div style="font-weight:700;margin-top:4px">คืนนี้เสี่ยงน้ำท่วม: ปานกลาง</div>
+              <div class="small muted">คลองลาดพร้าว 1.4 ม. ต่ำกว่าตลิ่ง 0.4 ม. ฝนสะสมคืนนี้อาจถึง 60 มม.</div>
+            </div>
+            <span class="pill warn">จับตา</span>
+          </div>
+          <div class="src">ThaiWater (HII) สะท้อนข้อมูลสำนักการระบายน้ำ · รายงานจากผู้ใช้ 3 คนใน 20 นาที</div>
+        </div>
+
+        <div class="card">
+          <div class="row between">
+            <div>
+              <div class="eyebrow">เจอในอีเมล</div>
+              <div style="font-weight:700;margin-top:4px">ตั๋วคอนเสิร์ต เสาร์ 3 ต.ค. 19:00</div>
+              <div class="small muted">อิมแพ็ค เมืองทองธานี · จะเตือนบ่ายวันเสาร์ว่าออกกี่โมงดี</div>
+            </div>
+            <span class="pill">เพิ่มแล้ว</span>
+          </div>
+          <div class="src">Gmail · อ่านเฉพาะอีเมลยืนยันตั๋วเมื่ออนุญาต</div>
+        </div>
+
+        <button class="btn ghost block" style="margin-top:14px" onclick="go('report')">📷 เจอน้ำท่วม? ถ่ายรูปบอกเพื่อนร่วมทาง</button>
+      </div>
+    </section>
+
+    <!-- 3. WHY / SLIDER -->
+    <section class="screen" id="why">
+      <div class="statusbar"><span>16:10</span><span class="icons">▲▲▲ ▮▮▮ ▐</span></div>
+      <div class="top"><button class="back" onclick="go('home')">‹ กลับ</button><span class="logo"><i></i>ฝนตกไหม</span><span style="width:48px"></span></div>
+      <div class="scroll">
+        <div class="eyebrow" id="tripLine" style="margin-top:6px"></div>
+        <h2 style="font-size:20px;margin-top:4px">ถ้าออก <span id="tLabel" class="gem">16:15</span> ล่ะ?</h2>
+        <input type="range" id="tRange" min="0" max="16" step="1" value="1">
+        <div class="tlx"><span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span><span>20:00</span></div>
+        <div class="modes">
+          <button class="mode on" data-mode="car"><span>🚗</span>รถยนต์</button>
+          <button class="mode" data-mode="bts"><span>🚈</span>BTS / MRT</button>
+          <button class="mode" data-mode="moto"><span>🛵</span>มอเตอร์ไซค์</button>
+        </div>
+
+        <div class="verdict ok" id="whyVerdict">
+          <div class="eyebrow" id="whyEyebrow"></div>
+          <div class="big" id="whyBig"></div>
+          <p id="whyText"></p>
+        </div>
+
+        <div class="card">
+          <div class="row between"><h3 style="font-size:15px" id="routeTitle">เส้นทาง สีลม → ลาดพร้าว</h3><span class="pill" id="etaPill"></span></div>
+          <div class="route" id="route"></div>
+          <div class="src">Google Routes API (traffic aware) · น้ำรอระบายจาก ThaiWater + รายงานผู้ใช้</div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:15px">Gemini คิดแบบนี้</h3>
+          <ul class="reasons" id="reasons"></ul>
+          <div class="src">Gemini on Vertex AI · เหตุผลจากข้อมูลจริง ไม่ใช่ข้อความสำเร็จรูป</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4. CHAT -->
+    <section class="screen" id="chat">
+      <div class="statusbar"><span>16:11</span><span class="icons">▲▲▲ ▮▮▮ ▐</span></div>
+      <div class="top"><button class="back" onclick="go('home')">‹ กลับ</button><span class="logo"><i></i>ถามต่อ</span><span style="width:48px"></span></div>
+      <div class="scroll">
+        <div class="msgs" id="msgs">
+          <div class="m ai">ตอนนี้แนะนำออกก่อน 16:45 นะ มีอะไรอยากถามต่อไหม</div>
+        </div>
+      </div>
+      <div class="chips">
+        <button class="chip" id="c1" onclick="ask(1)">ถ้ารอถึงสองทุ่มค่อยกลับล่ะ</button>
+        <button class="chip" id="c2" onclick="ask(2)">ไป BTS แทนดีไหม</button>
+      </div>
+    </section>
+
+    <!-- 5. REPORT -->
+    <section class="screen" id="report">
+      <div class="statusbar"><span>18:52</span><span class="icons">▲▲▲ ▮▮▮ ▐</span></div>
+      <div class="top"><button class="back" onclick="go('home')">‹ กลับ</button><span class="logo"><i></i>รายงานน้ำท่วม</span><span style="width:48px"></span></div>
+      <div class="scroll">
+        <div class="eyebrow">ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32 · 18:52</div>
+        <div class="cam" id="cam">
+          <span class="tag">📍 ตำแหน่งจาก GPS</span>
+          <div class="scanline"></div>
+          <svg viewBox="0 0 360 260" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <linearGradient id="sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5a6673"/><stop offset="1" stop-color="#9aa6b2"/></linearGradient>
+              <linearGradient id="water" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6d7f8c"/><stop offset="1" stop-color="#3f4f5c"/></linearGradient>
+            </defs>
+            <rect width="360" height="260" fill="url(#sky)"/>
+            <g fill="#3c4653"><rect x="0" y="70" width="70" height="90"/><rect x="80" y="50" width="60" height="110"/><rect x="150" y="80" width="50" height="80"/><rect x="230" y="40" width="70" height="120"/><rect x="310" y="75" width="50" height="85"/></g>
+            <g fill="#f5d67a" opacity=".8"><rect x="90" y="60" width="8" height="10"/><rect x="110" y="60" width="8" height="10"/><rect x="240" y="55" width="8" height="10"/><rect x="262" y="75" width="8" height="10"/></g>
+            <rect x="0" y="160" width="360" height="100" fill="url(#water)"/>
+            <g stroke="#b9c7d3" stroke-width="1.5" opacity=".5"><path d="M20 190 q30 -6 60 0 t60 0 t60 0 t60 0 t60 0"/><path d="M0 215 q30 -6 60 0 t60 0 t60 0 t60 0 t60 0 t60 0"/><path d="M40 240 q30 -6 60 0 t60 0 t60 0 t60 0 t60 0"/></g>
+            <g><rect x="120" y="150" width="120" height="40" rx="10" fill="#c93a3a"/><rect x="140" y="132" width="80" height="26" rx="8" fill="#a52f2f"/><rect x="148" y="136" width="28" height="16" rx="3" fill="#dfe9f2"/><rect x="184" y="136" width="28" height="16" rx="3" fill="#dfe9f2"/><rect x="118" y="178" width="124" height="14" fill="#4d5d6a" opacity=".85"/></g>
+            <g stroke="#dfe9f2" stroke-width="1.2" opacity=".55"><line x1="30" y1="0" x2="20" y2="40"/><line x1="90" y1="10" x2="80" y2="50"/><line x1="200" y1="0" x2="190" y2="40"/><line x1="290" y1="5" x2="280" y2="45"/><line x1="340" y1="20" x2="330" y2="60"/></g>
+          </svg>
+          <button class="shutter" id="shutter" onclick="snap()" aria-label="ถ่ายรูป"></button>
+        </div>
+        <p class="small muted" id="camHint" style="margin:10px 4px 0">แตะปุ่มถ่ายรูป Gemini จะประเมินระดับน้ำจากภาพ แล้วส่งให้คนที่กำลังจะผ่านจุดนี้</p>
+
+        <div id="result" class="hidden">
+          <div class="card">
+            <div class="row between"><span class="pill bad">น้ำสูงประมาณ 20 ถึง 25 ซม.</span><span class="small muted">มั่นใจ 84%</span></div>
+            <p style="margin:10px 0 0;font-size:14px;line-height:1.5">น้ำถึงประมาณครึ่งล้อรถเก๋ง เห็นทางเท้าจมแล้ว รถเก๋งผ่านได้ช้า ๆ ทางเลนขวา มอเตอร์ไซค์ไม่ควรผ่าน</p>
+            <div class="src">Gemini vision · เทียบกับความสูงล้อรถและขอบทาง</div>
+          </div>
+          <div class="card">
+            <div class="row between">
+              <div><div class="eyebrow">ส่งต่อแล้ว</div><div style="font-weight:700;margin-top:4px">แจ้งคน 27 คนที่กำลังจะผ่านจุดนี้ใน 30 นาที</div></div>
+              <span class="pill ok">✓</span>
+            </div>
+            <div class="small muted" style="margin-top:6px">รายงานของพลอยยืนยันกับอีก 2 รายงานในรัศมี 300 ม. ตอนนี้แผนที่ชุมชนขึ้นสีแดงจุดนี้แล้ว</div>
+            <div class="src">Pub/Sub → แจ้งเตือนเฉพาะคนที่เส้นทางผ่านจุดนี้</div>
+          </div>
+          <button class="btn block" style="margin-top:14px" onclick="go('flood')">ดูสถานการณ์ที่บ้าน</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6. FLOOD MODE (dark) -->
+    <section class="screen" id="flood">
+      <div class="statusbar"><span>21:40</span><span class="icons">▲▲▲ ▮▮▮ ▐</span></div>
+      <div class="top"><button class="back" onclick="go('home')">‹ กลับ</button><span class="logo" style="color:#e6efff"><i></i>โหมดน้ำท่วม</span><span style="width:48px"></span></div>
+      <div class="scroll">
+        <div class="eyebrow">คืนเดียวกัน 21:40 · บ้านลาดพร้าว</div>
+        <div class="alert">
+          <div class="eyebrow">คำถามเดิม ระดับใหม่</div>
+          <div class="big">น้ำจะถึงหน้าบ้านใน 40 นาที</div>
+          <p>คลองลาดพร้าวขึ้นถึงตลิ่งแล้ว ฝนสะสมวันนี้ 68 มม. บ้านพลอยอยู่จุดต่ำกว่าถนน 30 ซม. รอบก่อน (ต.ค. 65) น้ำเข้าบ้านหลังจากนี้ประมาณชั่วโมงเดียว</p>
+        </div>
+        <div class="src" style="padding-left:4px">ThaiWater (HII) ระดับคลอง 5 นาที/ครั้ง · Google Weather · รายงานผู้ใช้ 11 คนในซอย</div>
+
+        <div class="card">
+          <div class="row between"><span>ระดับน้ำคลองลาดพร้าว</span><span class="pill bad">1.8 / 1.8 ม.</span></div>
+          <div class="gauge"><i></i></div>
+          <div class="small muted" style="margin-top:6px">ขึ้น 40 ซม. ใน 2 ชั่วโมง เร็วกว่าปกติ 3 เท่า</div>
+        </div>
+
+        <div class="card">
+          <h3 style="font-size:15px">ทำตอนนี้ เรียงตามลำดับ</h3>
+          <ul class="todo">
+            <li><span class="n">1</span><span>ย้ายรถไปจอดที่ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม. ถนนยังแห้งอีก 25 นาที</span></li>
+            <li><span class="n">2</span><span>ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม.</span></li>
+            <li><span class="n">3</span><span>เตรียมกระสอบทรายหน้าประตู จุดแจก: สำนักงานเขตจตุจักร เปิดถึงเที่ยงคืน</span></li>
+          </ul>
+          <div class="src">Gemini เรียงตามเวลาที่เหลือและระยะทางจากบ้าน</div>
+        </div>
+
+        <div class="card">
+          <div class="row between">
+            <div><div class="eyebrow">เพื่อนบ้านในซอย</div><div style="font-weight:700;margin-top:4px">11 คนได้รับเตือนเดียวกัน</div></div>
+            <span class="pill" style="background:#1f3a66;color:#9cc4ff">แชร์</span>
+          </div>
+          <div class="small muted" style="margin-top:6px">ป้าสมศรีบ้านท้ายซอยไม่มีสมาร์ทโฟน แอปโทรอ่านข้อความนี้ให้ฟังแล้วเมื่อ 21:38</div>
+          <div class="src">Pub/Sub → SMS / โทรอ่านข้อความ สำหรับคนที่เข้าไม่ถึงแอป</div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 7. SETTINGS -->
+    <section class="screen" id="settings">
+      <div class="statusbar"><span>16:12</span><span class="icons">▲▲▲ ▮▮▮ ▐</span></div>
+      <div class="top"><button class="back" onclick="go('home')">‹ กลับ</button><span class="logo"><i></i>ตั้งค่า</span><span style="width:48px"></span></div>
+      <div class="scroll">
+        <div class="eyebrow" style="margin-top:8px">สถานที่ของฉัน</div>
+        <div class="card" style="padding:4px 16px 10px">
+          <div class="srow"><span class="ic">🏠</span><div><b>บ้าน</b><div class="small muted">ซอยลาดพร้าว 32 · ใกล้คลองลาดพร้าว</div></div><span class="edit">แก้</span></div>
+          <div class="srow"><span class="ic">🏢</span><div><b>ที่ทำงาน</b><div class="small muted">สีลม ซอย 3 · จันทร์ถึงศุกร์</div></div><span class="edit">แก้</span></div>
+          <div class="srow"><span class="ic">📍</span><div><b>ไปบ่อย</b><div class="small muted">สยาม · ทองหล่อ · อิมแพ็ค</div></div><span class="edit">+ เพิ่ม</span></div>
+          <div class="src">Google Maps สถานที่ที่บันทึกไว้ · แก้เองได้</div>
+        </div>
+
+        <div class="eyebrow" style="margin-top:16px">การเดินทาง</div>
+        <div class="card">
+          <div class="small muted">วิธีเดินทางประจำ</div>
+          <div class="modes" style="margin-top:8px">
+            <button class="mode on" data-mode="car"><span>🚗</span>รถยนต์</button>
+            <button class="mode" data-mode="bts"><span>🚈</span>BTS / MRT</button>
+            <button class="mode" data-mode="moto"><span>🛵</span>มอเตอร์ไซค์</button>
+          </div>
+          <div class="srow" style="border:0;padding-bottom:4px"><div><b>เตือนล่วงหน้า</b><div class="small muted">ก่อนเวลาที่ควรออกเดินทาง</div></div><span class="pill">2 ชั่วโมง ▾</span></div>
+        </div>
+
+        <div class="eyebrow" style="margin-top:16px">ให้แอปหาทริปให้เอง</div>
+        <div class="card" style="padding:4px 16px 10px">
+          <div class="srow"><span class="ic">📅</span><div><b>Google Calendar</b><div class="small muted">เฉพาะนัดที่มีสถานที่</div></div><span class="sw on"></span></div>
+          <div class="srow"><span class="ic">✉️</span><div><b>Gmail</b><div class="small muted">เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล</div></div><span class="sw on"></span></div>
+          <div class="srow"><span class="ic">🔁</span><div><b>เรียนรู้กิจวัตร</b><div class="small muted">รู้เองว่ากลับบ้านราวหกโมงทุกวัน · เร็ว ๆ นี้</div></div><span class="sw dis"></span></div>
+          <div class="src">ปิดได้ทีละอย่าง ถามเองยังใช้ได้เสมอ</div>
+        </div>
+
+        <div class="eyebrow" style="margin-top:16px">ชุมชนและน้ำท่วม</div>
+        <div class="card" style="padding:4px 16px 10px">
+          <div class="srow"><span class="ic">📷</span><div><b>แชร์รายงานน้ำท่วมของฉัน</b><div class="small muted">ไม่ระบุตัว เฉพาะตำแหน่งและระดับน้ำ</div></div><span class="sw on"></span></div>
+          <div class="srow"><span class="ic">🏠</span><div><b>เตือนน้ำท่วมที่บ้าน</b><div class="small muted">แม้ไม่ได้เปิดแอป</div></div><span class="sw on"></span></div>
+          <div class="srow"><span class="ic">📶</span><div><b>สำรองทาง SMS</b><div class="small muted">เมื่อไม่มีอินเทอร์เน็ต</div></div><span class="sw on"></span></div>
+        </div>
+      </div>
+    </section>
+
+  </div>
+</div>
+
+<div class="deck" id="deck">
+  <button data-s="lock" class="on">1 แจ้งเตือน</button>
+  <button data-s="home">2 หน้าหลัก</button>
+  <button data-s="why">3 เหตุผล + เลื่อนเวลา</button>
+  <button data-s="chat">4 ถามต่อ</button>
+  <button data-s="report">5 รายงานน้ำท่วม</button>
+  <button data-s="flood">6 โหมดน้ำท่วม</button>
+  <button data-s="settings">7 ตั้งค่า</button>
+</div>
+<div class="hint">ปุ่มลูกศร ← → เปลี่ยนหน้า · ข้อมูลทั้งหมดเป็นข้อมูลจำลอง · <a href="architecture.html">เบื้องหลังจอ (สถาปัตยกรรม)</a></div>
+
+<script>
+/* ---------- scenario model: minutes after 16:00, 15-min steps, 16:00 → 21:00 ---------- */
+// rain intensity on the route 0..3 per 15-min slot (20 slots: 16:00..20:45)
+const RAIN = [0,0,0,0, 0,1,1,2, 3,3,3,2, 2,1,1,0, 0,0,0,0];
+// road water on Ratchada 0..2 (starts after heavy rain, drains ~20:00)
+const WATER = [0,0,0,0, 0,0,0,0, 1,2,2,2, 2,2,2,1, 1,0,0,0];
+// traffic 1..3
+const TRAFFIC = [1,1,1,2, 2,2,3,3, 3,3,3,3, 3,3,3,2, 2,1,1,1];
+// BTS crowd 1..3
+const CROWD = [1,1,2,2, 2,3,3,3, 3,3,2,2, 2,1,1,1, 1,1,1,1];
+
+function hhmm(min){const h=16+Math.floor(min/60),m=min%60;return `${h}:${m.toString().padStart(2,'0')}`}
+function slot(min){return Math.min(19,Math.floor(min/15))}
+function win(min,len){ // max over travel window
+  let r=0,w=0,t=0,c=0; for(let m=min;m<min+len;m+=15){const s=slot(m);r=Math.max(r,RAIN[s]);w=Math.max(w,WATER[s]);t=Math.max(t,TRAFFIC[s]);c=Math.max(c,CROWD[s]);} return {r,w,t,c};
+}
+
+const MODE = {
+  car:{name:'รถยนต์',icon:'🚗'},
+  bts:{name:'BTS / MRT',icon:'🚈'},
+  moto:{name:'มอเตอร์ไซค์',icon:'🛵'}
+};
+// destinations: base travel minutes from Silom, optional deadline (minutes after 16:00), whether the route crosses a flood-prone road
+const DESTS = {
+  home:{name:'บ้านลาดพร้าว',short:'บ้าน',base:{car:45,bts:40,moto:30},deadline:150,deadlineLabel:'นัด 18:30 กินข้าวที่บ้าน (Calendar)',water:true,waterRoad:'รัชดา',btsLine:'ศาลาแดง → ลาดพร้าว',
+    segs:{car:['สีลม → ถ.พระราม 4','พระราม 4 → อโศก / รัชดา','รัชดา → ซอยลาดพร้าว 32'],bts:['เดิน 8 นาที → BTS ศาลาแดง','BTS สีลม → สุขุมวิท → MRT ลาดพร้าว','เดิน 7 นาทีเข้าซอย']}},
+  siam:{name:'สยาม',short:'สยาม',base:{car:25,bts:12,moto:15},deadline:null,water:false,btsLine:'ศาลาแดง → สยาม',
+    segs:{car:['สีลม → ถ.พระราม 4','พระราม 4 → ราชดำริ','ราชดำริ → สยาม'],bts:['เดิน 8 นาที → BTS ศาลาแดง','BTS ศาลาแดง → สยาม 2 สถานี','เดิน 3 นาทีถึงห้าง']}},
+  thonglor:{name:'ทองหล่อ',short:'ทองหล่อ',base:{car:35,bts:25,moto:25},deadline:null,water:true,waterRoad:'สุขุมวิท',btsLine:'ศาลาแดง → ทองหล่อ',
+    segs:{car:['สีลม → ถ.พระราม 4','พระราม 4 → สุขุมวิท','สุขุมวิท → ซอยทองหล่อ'],bts:['เดิน 8 นาที → BTS ศาลาแดง','BTS ศาลาแดง → สยาม → ทองหล่อ','เดิน 5 นาทีเข้าซอย']}},
+  impact:{name:'อิมแพ็ค เมืองทองธานี',short:'อิมแพ็ค',base:{car:60,bts:75,moto:50},deadline:null,water:false,btsLine:'ศาลาแดง → หมอชิต → ต่อรถ',
+    segs:{car:['สีลม → ทางด่วนศรีรัช','ทางด่วน → แจ้งวัฒนะ','แจ้งวัฒนะ → อิมแพ็ค'],bts:['BTS ศาลาแดง → หมอชิต','รถเมล์ / แท็กซี่ → เมืองทอง','เดิน 10 นาทีเข้าฮอลล์']}}
+};
+
+function evaluate(dep,mode,dkey){
+  const D=DESTS[dkey], M=MODE[mode];
+  let travel=D.base[mode], x=win(dep,travel); if(!D.water) x.w=0;
+  if(mode==='car') travel += (x.t-1)*Math.round(D.base.car/3) + x.r*8 + x.w*20;
+  if(mode==='bts') travel += (x.c-1)*10 + (x.r>=2?5:0);
+  if(mode==='moto') travel += (x.t-1)*5 + x.r*10 + x.w*15;
+  x=win(dep,travel); if(!D.water) x.w=0;
+  const arrive=dep+travel, at=hhmm(arrive);
+  const hasDl=D.deadline!=null, late=hasDl&&arrive>D.deadline;
+  const dl = hasDl ? (late?` เลยนัด ${hhmm(D.deadline)} ไป ${arrive-D.deadline} นาที บอกที่บ้านก่อน`:` ทันนัด ${hhmm(D.deadline)}`) : '';
+  const early = slot(dep)<=15;
+  let level,big,text;
+
+  if(mode==='car'){
+    if(x.r===0){level='ok';big='ออกได้เลย';text=`ถึง${D.short}ราว ${at} ก่อนฝนถึงตอน 17:30 พอดี${dl}`;}
+    else if(x.w>=1&&early){level='bad';big='อย่าเพิ่งออก';text=`ฝนหนักและ${D.waterRoad}มีน้ำรอระบายถึงประมาณ 20:00 ใช้เวลา ${travel} นาที ถึงราว ${at}${dl} รอฝนซาหลัง 19:15 ดีกว่า`;}
+    else if(x.w>=1){level='warn';big='ฝนซาแล้ว ถนนยังมีน้ำ';text=`${D.waterRoad}ยังมีน้ำขังบางจุด รถติดสะสม ใช้เวลา ${travel} นาที ถึงราว ${at}${dl}`;}
+    else if(x.r>=2){level='warn';big='รอฝนซาก่อนดีกว่า';text=`ฝนหนักช่วงนี้ ในเมืองรถติดหนัก ใช้เวลา ${travel} นาที ถึง${D.short}ราว ${at}${dl} ถ้าไม่รีบรอถึง 19:15`;}
+    else {level=late?'warn':'ok';big=late?'ออกได้ แต่เลยนัด':'ออกได้ แต่จะเจอฝน';text=`ฝนเบา ๆ ระหว่างทาง${x.t>=3?' รถติดสะสม':''} ถึง${D.short}ราว ${at}${dl}`;}
+  }
+  if(mode==='bts'){
+    if(x.r===0){level='ok';big='ไปได้เลย';text=`${D.btsLine} ${travel} นาที ถึง ${at} ก่อนฝนมา ไม่ต้องพกร่มก็ได้${dl}`;}
+    else if(x.c>=3){level='warn';big='ไปได้ แต่ชานชาลาแน่น';text=`ฝนไม่กระทบขบวน แต่คนแน่นช่วง 17:30 ถึง 18:30 เผื่อรอ 2 ถึง 3 ขบวน ถึง${D.short}ราว ${at}${dl} ช่วงเดินออกจากสถานีจะเจอฝน พกร่ม`;}
+    else {level=late?'warn':'ok';big='ไปได้ พกร่ม';text=`ฝนยังตกช่วงเดินออกจากสถานี ${travel} นาที ถึง${D.short}ราว ${at}${dl}`;}
+  }
+  if(mode==='moto'){
+    if(x.r===0){level='ok';big='ออกตอนนี้ ทันพอดี';text=`ถึง${D.short}ราว ${at} ฝนถึงเส้นทางตอน 17:30 ถ้าช้ากว่านี้ 15 นาทีจะโดนกลางทาง${dl}`;}
+    else if(x.r===1&&x.w===0&&early){level='bad';big='เสี่ยงเกินไป';text=`ฝนเริ่มตกบนเส้นทางแล้ว ถนนลื่นและมองไม่เห็น เปลี่ยนเป็น BTS ดีกว่า`;}
+    else if(x.r>=2||x.w>=1){level='bad';big='ห้ามออกเลย';text=x.w>=1?`ฝนหนัก น้ำท่วม${D.waterRoad}ถึงครึ่งล้อ มอเตอร์ไซค์ผ่านไม่ได้ รอถึงหลัง 20:00 หรือเปลี่ยนเป็น BTS`:`ฝนหนัก มองไม่เห็นทาง ถนนลื่น รอฝนซาหลัง 19:15 หรือเปลี่ยนเป็น BTS`;}
+    else {level='warn';big='ฝนเบาแล้ว ขับช้า ๆ';text=`ถนนยังเปียก ${travel} นาที ถึง${D.short}ราว ${at}${dl}`;}
+  }
+
+  const reasons=[];
+  reasons.push(hasDl?`${D.deadlineLabel} = ต้องถึงก่อน ${hhmm(D.deadline)}`:`ไม่มีนัดผูกเวลา เลยเทียบให้ว่าช่วงไหนแห้งและเร็วที่สุด`);
+  reasons.push(`ออก ${hhmm(dep)} ด้วย${M.name} ใช้เวลา ${travel} นาที ถึง ${at}${hasDl?(late?' (เลยนัด)':' (ทันนัด)'):''}`);
+  reasons.push(x.r===0?`ไม่มีฝนบนเส้นทางตลอดช่วงเดินทาง`:`ฝนบนเส้นทางระดับ ${['ไม่มี','เบา','ปานกลาง','หนัก'][x.r]} ระหว่างเดินทาง`);
+  if(mode!=='bts'&&D.water) reasons.push(x.w===0?`${D.waterRoad}ยังไม่มีน้ำขัง`:`${D.waterRoad}มีน้ำรอระบาย ${x.w===2?'ถึงครึ่งล้อ (รายงานผู้ใช้ 3 คน)':'เริ่มขัง'}`);
+  if(mode!=='bts'&&!D.water) reasons.push(`เส้นทางนี้ไม่มีจุดน้ำขังในรายงาน 24 ชม. ล่าสุด`);
+  if(mode==='bts') reasons.push(`ความหนาแน่นชานชาลา ${['','ปกติ','ค่อนข้างแน่น','แน่นมาก'][x.c]}`);
+  if(mode==='car') reasons.push(`การจราจร ${['','คล่อง','หนาแน่น','ติดหนัก'][x.t]} (Routes API)`);
+
+  const names=D.segs[mode==='bts'?'bts':'car'];
+  const st=mode==='bts'
+    ?[x.r>=1?'warn':'ok', x.c>=3?'warn':'ok', x.r>=2?'bad':x.r===1?'warn':'ok']
+    :[x.r>=2?'bad':x.r===1?'warn':'ok', x.w>=1?'bad':x.r>=1?'warn':'ok', x.w>=2?'bad':(x.w===1||x.r>=2)?'warn':'ok'];
+  return {level,big,text,reasons,segs:names.map((n,i)=>({n,s:st[i]})),travel,at,late};
+}
+
+/* ---------- render ---------- */
+let mode='car', curDest='home', askedLine='';
+const tRange=document.getElementById('tRange');
+function renderWhy(){
+  const dep=+tRange.value*15, D=DESTS[curDest];
+  document.getElementById('tLabel').textContent=hhmm(dep);
+  document.getElementById('tripLine').textContent=`สีลม → ${D.name}` + (D.deadline!=null?` · ${D.deadlineLabel}`:' · ไม่มีนัดผูกเวลา') + (askedLine?` · ${askedLine}`:'');
+  document.getElementById('routeTitle').textContent=`เส้นทาง สีลม → ${D.short}`;
+  const v=evaluate(dep,mode,curDest);
+  const box=document.getElementById('whyVerdict');
+  box.className='verdict '+v.level;
+  document.getElementById('whyEyebrow').textContent=`ออก ${hhmm(dep)} · ${MODE[mode].icon} ${MODE[mode].name}`;
+  document.getElementById('whyBig').textContent=v.big;
+  document.getElementById('whyText').textContent=v.text;
+  document.getElementById('etaPill').textContent=`${v.travel} นาที · ถึง ${v.at}`;
+  document.getElementById('etaPill').className='pill '+v.level;
+  document.getElementById('route').innerHTML=v.segs.map(s=>`<div class="seg"><span class="dot ${s.s}"></span>${s.n}</div>`).join('');
+  document.getElementById('reasons').innerHTML=v.reasons.map(r=>`<li>${r}</li>`).join('');
+}
+function setMode(m){mode=m;document.querySelectorAll('.mode').forEach(x=>x.classList.toggle('on',x.dataset.mode===m));renderWhy();}
+function openTrip(dkey,dep,asked){
+  curDest=dkey; askedLine=asked||'';
+  if(dep!=null) tRange.value=Math.max(0,Math.min(16,Math.round(dep/15)));
+  renderWhy(); go('why');
+}
+tRange.addEventListener('input',renderWhy);
+document.querySelectorAll('.mode').forEach(b=>b.addEventListener('click',()=>setMode(b.dataset.mode)));
+document.querySelectorAll('.sw:not(.dis)').forEach(sw=>sw.addEventListener('click',()=>sw.classList.toggle('on')));
+renderWhy();
+
+/* ---------- natural-language ask (stand-in for Gemini structured output) ---------- */
+const NUM={'หนึ่ง':1,'สอง':2,'สาม':3,'สี่':4,'ห้า':5,'หก':6,'เจ็ด':7,'แปด':8};
+const PLACE_WORDS={home:['บ้าน','ลาดพร้าว'],siam:['สยาม','พารากอน','เซ็นทรัลเวิลด์','เซ็นทรัลเวิล์ด'],thonglor:['ทองหล่อ','เอกมัย'],impact:['อิมแพ็ค','เมืองทอง','คอนเสิร์ต']};
+function parseAsk(t){
+  t=t.trim(); let dkey=null;
+  for(const [k,words] of Object.entries(PLACE_WORDS)) if(words.some(w=>t.includes(w))) dkey=k;
+  let min=null,m;
+  if((m=t.match(/(\d{1,2})[:.](\d{2})/))) min=(+m[1])*60+(+m[2]);
+  else if((m=t.match(/(\d{1,2})\s*(โมง|น\.|นาฬิกา)/))){let h=+m[1]; if(h<=6) h+=12; min=h*60;}
+  else if((m=t.match(/บ่าย(โมง|สอง|สาม)/))) min=(m[1]==='โมง'?13:12+NUM[m[1]])*60;
+  else if((m=t.match(/(สี่|ห้า|หก)โมง/))) min=(12+NUM[m[1]])*60;
+  else if((m=t.match(/(หนึ่ง|สอง|สาม|สี่)?ทุ่ม/))) min=(18+(m[1]?NUM[m[1]]:1))*60;
+  else if(/เที่ยง/.test(t)) min=12*60;
+  else if(/ตอนนี้|เดี๋ยวนี้/.test(t)) min=16*60+15;
+  if(min!=null&&/ครึ่ง/.test(t)) min+=30;
+  let note='';
+  if(min!=null&&min<16*60+10){min=16*60+15;note='เวลานั้นผ่านแล้ว เลยดูจากตอนนี้';}
+  else if(min!=null&&min>20*60){min=20*60;note='ต้นแบบดูได้ถึง 20:00';}
+  return {dkey,dep:min!=null?min-16*60:null,note};
+}
+function askTrip(e){
+  e.preventDefault();
+  const inp=document.getElementById('askInput'), hint=document.getElementById('askHint');
+  const p=parseAsk(inp.value);
+  if(!p.dkey){hint.textContent='บอกที่หมายด้วยนะ เช่น "ห้าโมงไปสยาม" หรือ "สองทุ่มไปทองหล่อ"';hint.style.color='var(--bad)';return false;}
+  hint.style.color='';
+  hint.textContent='Gemini แกะคำถามภาษาคนเป็นทริป · สถานที่จาก Google Maps ที่บันทึกไว้';
+  openTrip(p.dkey,p.dep,`Gemini เข้าใจว่า: ไป${DESTS[p.dkey].short}${p.dep!=null?' ออก '+hhmm(p.dep):''}${p.note?' ('+p.note+')':''}`);
+  inp.value=''; return false;
+}
+
+document.getElementById('homeTl').innerHTML=RAIN.map((r,i)=>`<b class="r${r}" title="${hhmm(i*15)}"></b>`).join('');
+
+/* ---------- chat ---------- */
+const ANS={
+  1:`ได้นะ แต่จะเจอรถติดสะสม รัชดาน้ำเริ่มลดหลัง 20:00 ออกสองทุ่มถึงบ้านราว 21:05 เลยนัด 18:30 ไป 2 ชั่วโมงครึ่ง ถ้าเอาแบบนี้เดี๋ยวส่งบอกที่บ้านให้ว่า "ฝนหนัก กลับสามทุ่ม กินก่อนได้เลย" เอาไหม`,
+  2:`ดีเลยถ้าออกหลัง 17:00 เพราะรถไฟฟ้าไม่สนฝน ศาลาแดง → ลาดพร้าว 40 นาที แต่ช่วง 17:30 ถึง 18:30 ชานชาลาแน่นมาก เผื่อรอ 2 ถึง 3 ขบวน และเดินเข้าซอย 7 นาทีจะเปียก มีร่มไหม ถ้าไม่มีที่ตึกมีร้านสะดวกซื้อชั้นล่างนะ`
+};
+const Q={1:'ถ้ารอถึงสองทุ่มค่อยกลับล่ะ',2:'ไป BTS แทนดีไหม'};
+function ask(n){
+  const box=document.getElementById('msgs'); document.getElementById('c'+n).disabled=true;
+  box.insertAdjacentHTML('beforeend',`<div class="m me">${Q[n]}</div>`);
+  const typing=document.createElement('div'); typing.className='m ai'; typing.textContent='กำลังคิด…'; box.appendChild(typing);
+  setTimeout(()=>{typing.textContent=ANS[n]; typing.scrollIntoView({behavior:'smooth'})},700);
+}
+
+/* ---------- report ---------- */
+function snap(){
+  const cam=document.getElementById('cam'); cam.classList.add('scanning');
+  document.getElementById('shutter').classList.add('hidden');
+  document.getElementById('camHint').textContent='Gemini กำลังดูภาพ…';
+  setTimeout(()=>{cam.classList.remove('scanning');document.getElementById('result').classList.remove('hidden');document.getElementById('camHint').classList.add('hidden');document.getElementById('result').scrollIntoView({behavior:'smooth',block:'start'})},1500);
+}
+
+/* ---------- navigation ---------- */
+const ORDER=['lock','home','why','chat','report','flood','settings'];
+function go(id){
+  document.querySelectorAll('.screen').forEach(s=>s.classList.toggle('active',s.id===id));
+  document.querySelectorAll('#deck button').forEach(b=>b.classList.toggle('on',b.dataset.s===id));
+  const sc=document.querySelector('#'+id+' .scroll'); if(sc) sc.scrollTop=0;
+}
+document.querySelectorAll('#deck button').forEach(b=>b.addEventListener('click',()=>go(b.dataset.s)));
+document.addEventListener('keydown',e=>{
+  const cur=ORDER.indexOf(document.querySelector('.screen.active').id);
+  if(e.key==='ArrowRight') go(ORDER[Math.min(ORDER.length-1,cur+1)]);
+  if(e.key==='ArrowLeft') go(ORDER[Math.max(0,cur-1)]);
+});
+// deep links: #why, #report-result, #chat-full, #why-1730-moto, #why-1500-car-siam
+(function(){
+  const h=location.hash.slice(1); if(!h) return;
+  const [id,...args]=h.split('-');
+  if(!ORDER.includes(id)) return;
+  go(id);
+  if(id==='report'&&args[0]==='result') snap();
+  if(id==='chat'&&args[0]==='full'){ask(1);ask(2);}
+  if(id==='why'&&args[0]){ if(args[2]&&DESTS[args[2]]) curDest=args[2]; if(args[1]&&MODE[args[1]]) setMode(args[1]); openTrip(curDest,(+args[0].slice(0,2)-16)*60+ +args[0].slice(2)); }
+})();
+</script>
+</body>
+</html>
