@@ -18,6 +18,14 @@ func TestMemoryStoreNear(t *testing.T) {
 	if added.ID != "r1" {
 		t.Fatalf("first id = %q, want r1", added.ID)
 	}
+	testNear(t, s)
+}
+
+// testNear is the ReportStore contract every store must meet, given the
+// scenario seed plus พลอย's 18:52 report.
+func testNear(t *testing.T, s domain.ReportStore) {
+	t.Helper()
+	ctx := context.Background()
 	tests := []struct {
 		name         string
 		since, until time.Time

@@ -48,13 +48,22 @@ type Place struct {
 
 func (p Place) Point() LatLng { return LatLng{p.Lat, p.Lng} }
 
+// SavedPlace is a place the user has named in the app (บ้าน, ที่ทำงาน, ...).
+// Keywords are the words that point at it in a typed Thai question.
+type SavedPlace struct {
+	ID      string `json:"id"`
+	LabelTH string `json:"label_th"`
+	Place
+	Keywords []string `json:"-"`
+}
+
 type Trip struct {
 	ID          string    `json:"id"`
 	TitleTH     string    `json:"title_th"`
 	Source      string    `json:"source"`
 	Origin      Place     `json:"origin"`
 	Destination Place     `json:"destination"`
-	ArriveBy    time.Time `json:"arrive_by"`
+	ArriveBy    time.Time `json:"arrive_by,omitzero"` // zero for a typed trip with no deadline
 	Mode        Mode      `json:"mode"`
 }
 

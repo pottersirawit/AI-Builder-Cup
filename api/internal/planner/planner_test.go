@@ -24,7 +24,7 @@ func newPlanner(t *testing.T) *Planner {
 	if err != nil {
 		t.Fatal(err)
 	}
-	return &Planner{Spots: spots, Trips: scenario.Trips}
+	return &Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts}
 }
 
 func scenarioProviders() Providers {
@@ -40,7 +40,9 @@ func TestNewSessionTrips(t *testing.T) {
 	}{
 		{"", "cal-dinner", false},
 		{"gmail-concert", "gmail-concert", false},
+		{"adhoc-siam", "adhoc-siam", false}, // the app re-asks with the slider using the returned trip id
 		{"nope", "", true},
+		{"adhoc-mars", "", true},
 	}
 	for _, tt := range tests {
 		s, err := p.NewSession(context.Background(), scenarioProviders(), at(16, 10), tt.id)
@@ -124,5 +126,75 @@ func TestParseTime(t *testing.T) {
 	}
 	if _, err := ParseTime("soon", now); err == nil {
 		t.Error("want error for garbage")
+	}
+}
+
+func TestTripTo(t *testing.T) {
+	saturday := time.Date(2026, 10, 3, 16, 10, 0, 0, domain.Bangkok)
+	tests := []struct {
+		name       string
+		now        time.Time
+		place      string
+		wantID     string
+		wantOrigin domain.Place
+	}{
+		{"typed destination from the office", at(16, 10), "siam", "adhoc-siam", scenario.Silom},
+		{"home is tonight's Calendar dinner", at(16, 10), "home", "cal-dinner", scenario.Silom},
+		{"going to the office while there starts from home", at(16, 10), "work", "adhoc-work", scenario.Home},
+		{"concert days away stays ad hoc", at(16, 10), "impact", "adhoc-impact", scenario.Silom},
+		{"concert tonight is the Gmail trip", saturday, "impact", "gmail-concert", scenario.Silom},
+		{"weekend evening starts from home", saturday, "thonglor", "adhoc-thonglor", scenario.Home},
+	}
+	p := newPlanner(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			trip, err := p.TripTo(tt.now, tt.place)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if trip.ID != tt.wantID || trip.Origin != tt.wantOrigin {
+				t.Fatalf("got %s from %v", trip.ID, trip.Origin)
+			}
+			if strings.HasPrefix(trip.ID, AdHocPrefix) && (!trip.ArriveBy.IsZero() || trip.Source != "question" || trip.Mode != domain.ModeCar) {
+				t.Fatalf("ad-hoc trip = %+v", trip)
+			}
+		})
+	}
+	if _, err := p.TripTo(at(16, 10), "mars"); !errors.Is(err, ErrUnknownTrip) {
+		t.Fatalf("want ErrUnknownTrip, got %v", err)
+	}
+}
+
+func TestPlanToReplacesTheTripAndItsCaches(t *testing.T) {
+	s, _ := newPlanner(t).NewSession(context.Background(), scenarioProviders(), at(16, 10), "cal-dinner")
+	if _, err := s.Call("get_route", map[string]any{"mode": "car"}); err != nil {
+		t.Fatal(err)
+	}
+	if err := s.PlanTo("siam"); err != nil {
+		t.Fatal(err)
+	}
+	if s.Trip.ID != "adhoc-siam" || s.Trip.Destination != scenario.Siam {
+		t.Fatalf("trip = %+v", s.Trip)
+	}
+	s.Call("get_trip", nil)
+	s.Call("get_route", map[string]any{"mode": "car"})
+	calls := s.Calls()
+	if !strings.Contains(calls[1].SummaryTH, "ไปสยาม") || !strings.Contains(calls[1].SummaryTH, "ไม่มีเวลานัด") {
+		t.Errorf("get_trip summary = %q", calls[1].SummaryTH)
+	}
+	if strings.Contains(calls[2].SummaryTH, "รัชดาภิเษก") || strings.HasSuffix(calls[2].SummaryTH, "ผ่าน ") {
+		t.Errorf("route to Siam reused the Lat Phrao corridor: %q", calls[2].SummaryTH)
+	}
+	if err := s.PlanTo("mars"); !errors.Is(err, ErrUnknownTrip) {
+		t.Fatalf("want ErrUnknownTrip, got %v", err)
+	}
+}
+
+func TestResetCalls(t *testing.T) {
+	s, _ := newPlanner(t).NewSession(context.Background(), scenarioProviders(), at(16, 10), "")
+	s.Call("get_trip", nil)
+	s.ResetCalls()
+	if c := s.Calls(); len(c) != 0 {
+		t.Fatalf("calls after reset = %+v", c)
 	}
 }

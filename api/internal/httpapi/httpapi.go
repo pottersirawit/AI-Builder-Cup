@@ -37,6 +37,7 @@ func (s *Server) Handler() http.Handler {
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
 	})
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
+	mux.HandleFunc("GET /v1/places", s.withClock(s.places))
 	mux.HandleFunc("POST /v1/decide", s.withClock(s.decide))
 	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
 	mux.HandleFunc("GET /v1/reports", s.withClock(s.listReports))
@@ -67,6 +68,20 @@ func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) h
 
 func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	writeJSON(w, http.StatusOK, map[string]any{"trips": s.Planner.Trips(rc.now)})
+}
+
+// places lists the saved places a question can name, and which one the user
+// is at now (the origin of an ad-hoc trip).
+func (s *Server) places(w http.ResponseWriter, r *http.Request, rc reqCtx) {
+	current := ""
+	if s.Planner.Whereabouts != nil {
+		current = s.Planner.Whereabouts(rc.now)
+	}
+	places := s.Planner.Places
+	if places == nil {
+		places = []domain.SavedPlace{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"places": places, "current_place_id": current})
 }
 
 func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {

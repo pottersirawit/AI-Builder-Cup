@@ -7,7 +7,7 @@
 | งาน | ไฟล์ | Gemini ทำ | ถ้าไม่มี key หรือเรียกไม่สำเร็จ |
 |---|---|---|---|
 | ตัดสินใจเดินทาง (agent) | `api/internal/agent/decide.go` (`systemPrompt`, `toolDeclarations`, `runAgent`) | เรียก tools ตามลำดับที่ตัดสินใจเอง แล้วเขียน verdict เป็นภาษาไทยพร้อมเหตุผล | `decision` core เรียก tools ชุดเดียวกันตามลำดับคงที่ และใช้ข้อความ template |
-| แปลคำถามภาษาไทย | `api/internal/agent/question.go` (`ParseQuestion`) | แปลงคำถามเป็นเวลาออกและโหมดเดินทาง | regex `ParseQuestionTH` (เช่น "สองทุ่ม", "BTS", "มอไซค์") |
+| แปลคำถามภาษาไทย | `api/internal/agent/question.go` (`ParseQuestion`) | แปลงคำถามเป็นเวลาออก โหมดเดินทาง และปลายทาง (id ของสถานที่ที่บันทึกไว้ เช่น "ไปสยามตอนหกโมง" → `siam`) | regex `ParseQuestionTH` (เช่น "สองทุ่ม", "BTS", "มอไซค์") + keyword `MatchPlace` |
 | ประเมินรูปน้ำท่วม | `api/internal/vision/vision.go` (`prompt`, `Assess`) | ประเมินความลึก ความมั่นใจ และว่ารถแต่ละแบบผ่านได้ไหม เป็น JSON ตาม schema | คืนค่าจาก scenario |
 | โหมดน้ำท่วมที่บ้าน | `api/internal/homestatus` | ยังไม่ใช้ Gemini (ใช้ rules) | — |
 

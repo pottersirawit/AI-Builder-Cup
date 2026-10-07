@@ -18,11 +18,16 @@ import (
 type Intent struct {
 	DepartAt *time.Time
 	Mode     *domain.Mode
+	// Place is the saved place the question asks to go to, if any.
+	Place *domain.SavedPlace
 }
 
 // SummaryTH describes the intent for the reasoning trace.
 func (i Intent) SummaryTH() string {
 	var parts []string
+	if i.Place != nil {
+		parts = append(parts, "ไป"+i.Place.LabelTH)
+	}
 	if i.DepartAt != nil {
 		parts = append(parts, "ออก "+i.DepartAt.Format("15:04"))
 	}
@@ -30,7 +35,7 @@ func (i Intent) SummaryTH() string {
 		parts = append(parts, "ไปด้วย"+i.Mode.NameTH())
 	}
 	if len(parts) == 0 {
-		return "ไม่พบเวลาหรือวิธีเดินทางใหม่ในคำถาม ใช้แผนเดิม"
+		return "ไม่พบปลายทาง เวลา หรือวิธีเดินทางใหม่ในคำถาม ใช้แผนเดิม"
 	}
 	return "ตีความคำถามว่า " + strings.Join(parts, " ")
 }
@@ -138,34 +143,96 @@ func ParseQuestionTH(q string, now time.Time) Intent {
 	return in
 }
 
-// ParseQuestion asks Gemini for structured intent and falls back to the regex.
-func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip domain.Trip) (Intent, string) {
+// MatchPlace is the keyword fallback for the destination: the saved place whose
+// keyword appears in q, ignoring places marked as the origin ("จากสีลม").
+// The longest keyword wins, then the earliest.
+func MatchPlace(q string, places []domain.SavedPlace) (domain.SavedPlace, bool) {
+	q = strings.ToLower(q)
+	best, bestLen, bestPos := -1, 0, 0
+	for i, p := range places {
+		for _, kw := range p.Keywords {
+			kw = strings.ToLower(kw)
+			for from := 0; ; {
+				j := strings.Index(q[from:], kw)
+				if j < 0 {
+					break
+				}
+				pos := from + j
+				from = pos + len(kw)
+				if strings.HasSuffix(strings.TrimSpace(q[:pos]), "จาก") {
+					continue
+				}
+				if n := len([]rune(kw)); n > bestLen || (n == bestLen && pos < bestPos) {
+					best, bestLen, bestPos = i, n, pos
+				}
+			}
+		}
+	}
+	if best < 0 {
+		return domain.SavedPlace{}, false
+	}
+	return places[best], true
+}
+
+func parseFallback(q string, now time.Time, places []domain.SavedPlace) Intent {
+	in := ParseQuestionTH(q, now)
+	if p, ok := MatchPlace(q, places); ok {
+		in.Place = &p
+	}
+	return in
+}
+
+// ParseQuestion asks Gemini for structured intent (time, mode and destination
+// among the saved places) and falls back to the regex and keyword matching.
+func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip domain.Trip, places []domain.SavedPlace) (Intent, string) {
 	if !g.Available() {
-		return ParseQuestionTH(q, now), "fallback"
+		return parseFallback(q, now, places), "fallback"
 	}
 	cfg := &genai.GenerateContentConfig{
 		Temperature:      temperature(0),
 		ResponseMIMEType: "application/json",
 		ResponseSchema: &genai.Schema{Type: genai.TypeObject, Properties: map[string]*genai.Schema{
-			"depart_at": {Type: genai.TypeString, Description: "เวลาออกเดินทางแบบ HH:MM 24 ชั่วโมง หรือว่างถ้าไม่ได้พูดถึงเวลา"},
-			"mode":      {Type: genai.TypeString, Description: "car, transit หรือ moto หรือว่างถ้าไม่ได้พูดถึง"},
+			"depart_at":   {Type: genai.TypeString, Description: "เวลาออกเดินทางแบบ HH:MM 24 ชั่วโมง หรือว่างถ้าไม่ได้พูดถึงเวลา"},
+			"mode":        {Type: genai.TypeString, Description: "car, transit หรือ moto หรือว่างถ้าไม่ได้พูดถึง"},
+			"destination": {Type: genai.TypeString, Description: "id ของสถานที่ที่บันทึกไว้ซึ่งผู้ใช้จะไป หรือว่างถ้าไม่ได้พูดถึงปลายทาง"},
 		}},
 	}
-	prompt := fmt.Sprintf("ตอนนี้ %s (เวลาไทย) ผู้ใช้กำลังจะเดินทาง %s จาก %s ไป %s ต้องถึงก่อน %s ด้วย %s\n"+
-		"คำถาม: %q\nแปลงคำถามเป็นเวลาออกเดินทางที่ผู้ใช้หมายถึง (เช่น สองทุ่ม = 20:00, ห้าโมงครึ่ง = 17:30) และวิธีเดินทางถ้าเปลี่ยน (BTS/MRT = transit, มอไซค์ = moto, รถยนต์/แท็กซี่ = car)",
-		now.Format("15:04"), trip.TitleTH, trip.Origin.NameTH, trip.Destination.NameTH, trip.ArriveBy.Format("15:04"), trip.Mode, q)
+	var saved []string
+	for _, p := range places {
+		saved = append(saved, fmt.Sprintf("%s = %s (%s)", p.ID, p.LabelTH, p.NameTH))
+	}
+	deadline := "ไม่มีเวลานัด"
+	if !trip.ArriveBy.IsZero() {
+		deadline = "ต้องถึงก่อน " + trip.ArriveBy.Format("15:04")
+	}
+	prompt := fmt.Sprintf("ตอนนี้ %s (เวลาไทย) ทริปปัจจุบันของผู้ใช้คือ %s จาก %s ไป %s %s ด้วย %s\n"+
+		"สถานที่ที่บันทึกไว้: %s\n"+
+		"คำถาม: %q\nแปลงคำถามเป็นเวลาออกเดินทางที่ผู้ใช้หมายถึง (เช่น สองทุ่ม = 20:00, ห้าโมงครึ่ง = 17:30), วิธีเดินทางถ้าเปลี่ยน (BTS/MRT = transit, มอไซค์ = moto, รถยนต์/แท็กซี่ = car) "+
+		"และ id ของสถานที่ปลายทางถ้าคำถามระบุว่าจะไปที่ไหน (สถานที่ที่ใกล้ที่สุดในรายการ เช่น สุขุมวิท 55 = thonglor) ห้ามใส่ต้นทาง",
+		now.Format("15:04"), trip.TitleTH, trip.Origin.NameTH, trip.Destination.NameTH, deadline, trip.Mode, strings.Join(saved, ", "), q)
 	resp, err := g.Gen.GenerateContent(ctx, g.Model, []*genai.Content{genai.NewContentFromText(prompt, genai.RoleUser)}, cfg)
 	if err != nil {
-		return ParseQuestionTH(q, now), "fallback"
+		return parseFallback(q, now, places), "fallback"
 	}
 	var out struct {
-		DepartAt string `json:"depart_at"`
-		Mode     string `json:"mode"`
+		DepartAt    string `json:"depart_at"`
+		Mode        string `json:"mode"`
+		Destination string `json:"destination"`
 	}
 	if err := decodeJSON(resp.Text(), &out); err != nil {
-		return ParseQuestionTH(q, now), "fallback"
+		return parseFallback(q, now, places), "fallback"
 	}
 	var in Intent
+	for i := range places {
+		if places[i].ID == out.Destination {
+			in.Place = &places[i]
+		}
+	}
+	if in.Place == nil {
+		if p, ok := MatchPlace(q, places); ok {
+			in.Place = &p
+		}
+	}
 	if out.DepartAt != "" {
 		if t, err := planner.ParseTime(out.DepartAt, now); err == nil {
 			if t.Before(now.Add(-30 * time.Minute)) {

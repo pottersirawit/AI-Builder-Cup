@@ -28,7 +28,7 @@ func session(t *testing.T, now time.Time) *planner.Session {
 	if err != nil {
 		t.Fatal(err)
 	}
-	p := &planner.Planner{Spots: spots, Trips: scenario.Trips}
+	p := &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts}
 	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
 	s, err := p.NewSession(context.Background(), prov, now, "cal-dinner")
 	if err != nil {
@@ -224,13 +224,100 @@ func TestGeminiAgentGuardrailsAndFallback(t *testing.T) {
 
 func TestParseQuestionWithGemini(t *testing.T) {
 	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: `{"depart_at":"20:00","mode":"transit"}`})}}
-	in, by := ParseQuestion(context.Background(), &Gemini{Gen: fake, Model: "test"}, "สองทุ่มนั่งรถไฟฟ้า", at(16, 10), scenario.Trips(at(16, 10))[0])
+	in, by := ParseQuestion(context.Background(), &Gemini{Gen: fake, Model: "test"}, "สองทุ่มนั่งรถไฟฟ้า", at(16, 10), scenario.Trips(at(16, 10))[0], scenario.Places)
 	if by != "gemini" || in.DepartAt.Format("15:04") != "20:00" || *in.Mode != domain.ModeTransit {
 		t.Fatalf("got %v %+v", by, in)
 	}
 	broken := &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: "ขอโทษค่ะ"})}}
-	in, by = ParseQuestion(context.Background(), &Gemini{Gen: broken, Model: "test"}, "สองทุ่ม", at(16, 10), domain.Trip{})
+	in, by = ParseQuestion(context.Background(), &Gemini{Gen: broken, Model: "test"}, "สองทุ่ม", at(16, 10), domain.Trip{}, nil)
 	if by != "fallback" || in.DepartAt.Format("15:04") != "20:00" {
 		t.Fatalf("got %v %+v", by, in)
+	}
+}
+
+func TestMatchPlace(t *testing.T) {
+	tests := []struct{ q, want string }{
+		{"ไปสยามตอนหกโมงดีไหม", "siam"},
+		{"แวะพารากอนก่อนกลับ", "siam"},
+		{"ไปทองหล่อกี่โมงดี", "thonglor"},
+		{"คอนเสิร์ตที่อิมแพ็คเมืองทองธานี", "impact"},
+		{"กลับบ้านตอนสองทุ่ม", "home"},
+		{"จากสีลมไปสยาม", "siam"}, // "จาก" marks the origin, not the destination
+		{"ไป Siam Paragon", "siam"},
+		{"ถ้ารอถึงสองทุ่มค่อยกลับล่ะ", ""},
+	}
+	for _, tt := range tests {
+		got, ok := MatchPlace(tt.q, scenario.Places)
+		if got.ID != tt.want || ok != (tt.want != "") {
+			t.Errorf("MatchPlace(%q) = %q %v, want %q", tt.q, got.ID, ok, tt.want)
+		}
+	}
+}
+
+func TestDecideAdHocDestination(t *testing.T) {
+	tests := []struct {
+		name       string
+		req        Request
+		wantTrip   string
+		wantDepart string
+	}{
+		{"typed destination plans a new trip", Request{QuestionTH: "ไปสยามตอนหกโมงดีไหม"}, "adhoc-siam", "18:00"},
+		{"home means tonight's dinner", Request{QuestionTH: "กลับบ้านตอนหนึ่งทุ่ม"}, "cal-dinner", "19:00"},
+		{"an explicit trip id wins over the question", Request{TripID: "cal-dinner", QuestionTH: "ไปสยามตอนหกโมงดีไหม"}, "cal-dinner", "18:00"},
+		{"no destination keeps the trip", Request{QuestionTH: "ถ้ารอถึงสองทุ่มค่อยกลับล่ะ"}, "cal-dinner", "20:00"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			resp, err := Decide(context.Background(), nil, session(t, at(16, 10)), tt.req, nil)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if resp.Trip.ID != tt.wantTrip || resp.DepartAt.Format("15:04") != tt.wantDepart {
+				t.Fatalf("got trip %s depart %s", resp.Trip.ID, resp.DepartAt.Format("15:04"))
+			}
+		})
+	}
+	resp, _ := Decide(context.Background(), nil, session(t, at(16, 10)), Request{QuestionTH: "ไปสยามตอนหกโมงดีไหม"}, nil)
+	if resp.Trip.Origin != scenario.Silom || resp.Trip.Destination != scenario.Siam || !resp.Trip.ArriveBy.IsZero() {
+		t.Fatalf("trip = %+v", resp.Trip)
+	}
+	if !strings.Contains(resp.Reasoning[0].SummaryTH, "ไปสยาม") {
+		t.Errorf("parse step should name the destination, got %q", resp.Reasoning[0].SummaryTH)
+	}
+	for _, c := range resp.Reasoning {
+		if strings.Contains(c.SummaryTH, "รัชดาภิเษก") || strings.Contains(c.SummaryTH, "บ้านลาดพร้าว") {
+			t.Errorf("Siam trip still mentions the Lat Phrao trip: %s %q", c.Tool, c.SummaryTH)
+		}
+	}
+}
+
+func TestParseQuestionWithGeminiDestination(t *testing.T) {
+	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: `{"depart_at":"18:00","mode":"","destination":"thonglor"}`})}}
+	in, by := ParseQuestion(context.Background(), &Gemini{Gen: fake, Model: "test"}, "หกโมงไปกินข้าวแถวสุขุมวิท 55", at(16, 10), scenario.Trips(at(16, 10))[0], scenario.Places)
+	if by != "gemini" || in.Place == nil || in.Place.ID != "thonglor" || in.DepartAt.Format("15:04") != "18:00" {
+		t.Fatalf("got %v %+v", by, in)
+	}
+	unknown := &scriptedGemini{replies: []*genai.GenerateContentResponse{reply(&genai.Part{Text: `{"depart_at":"","mode":"","destination":"moon"}`})}}
+	in, _ = ParseQuestion(context.Background(), &Gemini{Gen: unknown, Model: "test"}, "ไปสยาม", at(16, 10), domain.Trip{}, scenario.Places)
+	if in.Place == nil || in.Place.ID != "siam" {
+		t.Fatalf("unknown Gemini place should fall back to keywords, got %+v", in.Place)
+	}
+}
+
+func TestGeminiFailureMidLoopDoesNotDuplicateReasoning(t *testing.T) {
+	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{
+		reply(call("get_trip", nil), call("get_rain_along_route", nil)),
+		// then the script runs out: the second round errors
+	}}
+	resp, err := Decide(context.Background(), &Gemini{Gen: fake, Model: "test"}, session(t, at(16, 10)), Request{}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var tools []string
+	for _, c := range resp.Reasoning {
+		tools = append(tools, c.Tool)
+	}
+	if resp.GeneratedBy != "fallback" || strings.Join(tools, ",") != strings.Join(fallbackTools, ",") {
+		t.Fatalf("got %s reasoning %v", resp.GeneratedBy, tools)
 	}
 }

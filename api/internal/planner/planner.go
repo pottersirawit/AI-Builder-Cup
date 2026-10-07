@@ -30,9 +30,72 @@ type Providers struct {
 type Planner struct {
 	Spots []floodspot.Spot
 	Trips func(now time.Time) []domain.Trip
+	// Places are the user's saved places; Whereabouts names the one they are
+	// at now. Together they turn "ไปสยามตอนหกโมง" into a trip.
+	Places      []domain.SavedPlace
+	Whereabouts func(now time.Time) string
 }
 
 var ErrUnknownTrip = errors.New("unknown trip")
+
+// AdHocPrefix marks trips typed as a question rather than found in Calendar or
+// Gmail; the rest of the ID is the saved place ID, e.g. "adhoc-siam".
+const AdHocPrefix = "adhoc-"
+
+// tripWindow is how close an upcoming trip must be for a typed destination to
+// mean that trip ("กลับบ้าน" at 16:10 is tonight's dinner).
+const tripWindow = 12 * time.Hour
+
+// sameSpotM is how close a trip's destination must be to a saved place.
+const sameSpotM = 300
+
+func (p *Planner) place(id string) (domain.SavedPlace, bool) {
+	for _, pl := range p.Places {
+		if pl.ID == id {
+			return pl, true
+		}
+	}
+	return domain.SavedPlace{}, false
+}
+
+// TripTo is the trip to a saved place as of now: an upcoming Calendar or Gmail
+// trip going there within tripWindow, otherwise an ad-hoc trip from where the
+// user is now, by car, with no deadline.
+func (p *Planner) TripTo(now time.Time, placeID string) (domain.Trip, error) {
+	dest, ok := p.place(placeID)
+	if !ok {
+		return domain.Trip{}, fmt.Errorf("%w: no saved place %q", ErrUnknownTrip, placeID)
+	}
+	for _, t := range p.Trips(now) {
+		if geo.HaversineM(t.Destination.Point(), dest.Point()) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
+			return t, nil
+		}
+	}
+	return p.adHocTrip(now, dest), nil
+}
+
+func (p *Planner) adHocTrip(now time.Time, dest domain.SavedPlace) domain.Trip {
+	return domain.Trip{
+		ID: AdHocPrefix + dest.ID, TitleTH: "ไป" + dest.LabelTH, Source: "question",
+		Origin: p.origin(now, dest.ID).Place, Destination: dest.Place, Mode: domain.ModeCar,
+	}
+}
+
+// origin is where the user is now; asking to go where they already are means
+// the other end of the commute (home <-> work).
+func (p *Planner) origin(now time.Time, destID string) domain.SavedPlace {
+	id := ""
+	if p.Whereabouts != nil {
+		id = p.Whereabouts(now)
+	}
+	if id == destID {
+		id = map[bool]string{true: "work", false: "home"}[destID == "home"]
+	}
+	if pl, ok := p.place(id); ok {
+		return pl
+	}
+	return p.Places[0]
+}
 
 // Call is one tool invocation, as shown in the "Gemini คิดแบบนี้" trace.
 type Call struct {
@@ -72,10 +135,33 @@ func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time,
 			return s, nil
 		}
 	}
+	if placeID, ok := strings.CutPrefix(tripID, AdHocPrefix); ok {
+		if dest, known := p.place(placeID); known {
+			s.Trip = p.adHocTrip(now, dest)
+			return s, nil
+		}
+	}
 	return nil, fmt.Errorf("%w %q", ErrUnknownTrip, tripID)
 }
 
+// PlanTo switches the session to the trip to a saved place (see TripTo),
+// dropping everything cached for the previous trip.
+func (s *Session) PlanTo(placeID string) error {
+	t, err := s.p.TripTo(s.Now, placeID)
+	if err != nil {
+		return err
+	}
+	s.Trip, s.routes, s.rain, s.rainSet = t, map[string]domain.Route{}, nil, false
+	return nil
+}
+
+func (s *Session) Places() []domain.SavedPlace { return s.p.Places }
+
 func (s *Session) Calls() []Call { return append([]Call(nil), s.calls...) }
+
+// ResetCalls forgets the logged tool calls, so a fallback after a failed agent
+// run does not list the agent's calls twice.
+func (s *Session) ResetCalls() { s.calls = nil }
 
 func (s *Session) route(mode domain.Mode, depart time.Time) (domain.Route, error) {
 	key := string(mode) + depart.Format(time.RFC3339)
@@ -237,8 +323,11 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 	switch name {
 	case "get_trip":
 		t := s.Trip
-		return map[string]any{"trip": t, "now": s.Now.Format(time.RFC3339)},
-			fmt.Sprintf("นัด%s ต้องถึง%sก่อน %s (%s)", t.TitleTH, t.Destination.NameTH, hhmm(t.ArriveBy), sourceTH(t.Source)), nil
+		summary := fmt.Sprintf("นัด%s ต้องถึง%sก่อน %s (%s)", t.TitleTH, t.Destination.NameTH, hhmm(t.ArriveBy), sourceTH(t.Source))
+		if t.ArriveBy.IsZero() {
+			summary = fmt.Sprintf("%s จาก%s ไม่มีเวลานัด (%s)", t.TitleTH, t.Origin.NameTH, sourceTH(t.Source))
+		}
+		return map[string]any{"trip": t, "now": s.Now.Format(time.RFC3339)}, summary, nil
 
 	case "get_route":
 		r, err := s.route(mode, depart)
@@ -250,9 +339,12 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 			return nil, "", err
 		}
 		mins := in.Travel(mode, depart)
-		via := strings.Join(r.ViaTH, " → ")
+		summary := fmt.Sprintf("%s ออก %s ใช้เวลา %d นาที", mode.NameTH(), hhmm(depart), mins)
+		if len(r.ViaTH) > 0 {
+			summary += " ผ่าน " + strings.Join(r.ViaTH, " → ")
+		}
 		return map[string]any{"mode": mode, "depart_at": depart.Format(time.RFC3339), "duration_min": mins, "via_th": r.ViaTH, "source": r.Source},
-			fmt.Sprintf("%s ออก %s ใช้เวลา %d นาที ผ่าน %s", mode.NameTH(), hhmm(depart), mins, via), nil
+			summary, nil
 
 	case "get_rain_along_route":
 		road, err := s.route(domain.ModeCar, s.Now)

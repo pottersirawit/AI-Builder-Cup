@@ -20,6 +20,9 @@ var (
 	Silom  = domain.Place{NameTH: "สีลม ซอย 3", Lat: 13.7263, Lng: 100.5340}
 	Home   = domain.Place{NameTH: "บ้านลาดพร้าว", Lat: 13.8160, Lng: 100.5900}
 	Impact = domain.Place{NameTH: "อิมแพ็ค เมืองทองธานี", Lat: 13.9119, Lng: 100.5480}
+	// Siam is BTS Siam / Siam Paragon; Thonglor is BTS Thong Lo on Sukhumvit.
+	Siam     = domain.Place{NameTH: "สยาม", Lat: 13.7456, Lng: 100.5341}
+	Thonglor = domain.Place{NameTH: "ทองหล่อ", Lat: 13.7243, Lng: 100.5853}
 	// HeroReportPoint is ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32, where พลอย takes the 18:52 photo.
 	HeroReportPoint = domain.LatLng{Lat: 13.8130, Lng: 100.5760}
 )
@@ -193,17 +196,47 @@ func sortByDistance(rs []domain.CanalReading, p domain.LatLng) {
 	}
 }
 
-// Trips are พลอย's upcoming trips as of now: the Calendar dinner tonight and the
-// concert ticket found in Gmail.
+// Places are พลอย's saved places, in the order the app lists them.
+var Places = []domain.SavedPlace{
+	{ID: "home", LabelTH: "บ้าน", Place: Home, Keywords: []string{"บ้าน", "ลาดพร้าว", "home"}},
+	{ID: "work", LabelTH: "ที่ทำงาน", Place: Silom, Keywords: []string{"ที่ทำงาน", "ออฟฟิศ", "office", "สีลม", "silom", "work"}},
+	{ID: "siam", LabelTH: "สยาม", Place: Siam, Keywords: []string{"สยามพารากอน", "สยาม", "พารากอน", "siam", "paragon"}},
+	{ID: "thonglor", LabelTH: "ทองหล่อ", Place: Thonglor, Keywords: []string{"ทองหล่อ", "thonglor", "thong lo"}},
+	{ID: "impact", LabelTH: "อิมแพ็ค", Place: Impact, Keywords: []string{"อิมแพ็ค", "อิมแพค", "เมืองทองธานี", "เมืองทอง", "impact"}},
+}
+
+// Whereabouts is the saved place พลอย is at: the Silom office during weekday
+// working hours (08:00-19:00), home otherwise.
+func Whereabouts(now time.Time) string {
+	now = now.In(domain.Bangkok)
+	m := minuteOfDay(now)
+	if wd := now.Weekday(); wd != time.Saturday && wd != time.Sunday && m >= 8*60 && m < 19*60 {
+		return "work"
+	}
+	return "home"
+}
+
+// tripGrace keeps tonight's dinner on the list for a while after 18:30, so the
+// later demo beats (18:55, 19:30) still talk about it; after that the next
+// dinner is tomorrow's.
+const tripGrace = 3 * time.Hour
+
+// Trips are พลอย's upcoming trips as of now: the Calendar dinner and the
+// concert ticket found in Gmail. They are relative to now, so live mode shows
+// today's dinner rather than the scenario date's.
 func Trips(now time.Time) []domain.Trip {
 	day := dayOf(now)
+	dinner := at(day, 18, 30)
+	if now.After(dinner.Add(tripGrace)) {
+		dinner = dinner.AddDate(0, 0, 1)
+	}
 	concert := at(day, 19, 0)
 	for concert.Weekday() != time.Saturday || !concert.After(now) {
 		concert = concert.AddDate(0, 0, 1)
 	}
 	return []domain.Trip{
 		{ID: "cal-dinner", TitleTH: "กินข้าวเย็นกับที่บ้าน", Source: "calendar", Origin: Silom, Destination: Home,
-			ArriveBy: at(day, 18, 30), Mode: domain.ModeCar},
+			ArriveBy: dinner, Mode: domain.ModeCar},
 		{ID: "gmail-concert", TitleTH: "คอนเสิร์ตที่อิมแพ็ค", Source: "gmail", Origin: Silom, Destination: Impact,
 			ArriveBy: concert, Mode: domain.ModeCar},
 	}

@@ -24,7 +24,7 @@ type Request struct {
 }
 
 // Response is the /v1/decide contract (docs/plan/merged-flow.md), plus the
-// departure and mode actually evaluated so the app can sync its slider.
+// departure, mode and trip actually evaluated so the app can sync its slider.
 type Response struct {
 	Verdict      decision.Verdict      `json:"verdict"`
 	HeadlineTH   string                `json:"headline_th"`
@@ -39,6 +39,9 @@ type Response struct {
 	GeneratedBy  string                `json:"generated_by"`
 	DepartAt     time.Time             `json:"depart_at"`
 	Mode         domain.Mode           `json:"mode"`
+	// Trip is the trip actually decided: the requested one, or the one the
+	// question pointed at ("ไปสยามตอนหกโมง" -> adhoc-siam).
+	Trip domain.Trip `json:"trip"`
 }
 
 var ErrBadRequest = errors.New("bad request")
@@ -69,7 +72,17 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 	}
 	var preface []planner.Call
 	if q := strings.TrimSpace(req.QuestionTH); q != "" {
-		intent, by := ParseQuestion(ctx, g, q, s.Now, s.Trip)
+		intent, by := ParseQuestion(ctx, g, q, s.Now, s.Trip, s.Places())
+		// A question without trip_id may name where to go; with trip_id the
+		// app has already picked the trip.
+		if req.TripID == "" && intent.Place != nil {
+			if err := s.PlanTo(intent.Place.ID); err != nil {
+				return Response{}, err
+			}
+			if req.Mode == "" {
+				mode = s.Trip.Mode
+			}
+		}
 		if intent.DepartAt != nil {
 			depart = *intent.DepartAt
 		}
@@ -94,7 +107,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		Verdict: baseline.Verdict, HeadlineTH: baseline.HeadlineTH, SummaryTH: baseline.SummaryTH,
 		LeaveBy: baseline.LeaveBy, Confidence: baseline.Confidence,
 		RainTimeline: baseline.RainTimeline, ModeOptions: baseline.ModeOptions, FloodSpots: baseline.FloodSpots,
-		Sources: sources, GeneratedBy: "fallback", DepartAt: depart, Mode: mode,
+		Sources: sources, GeneratedBy: "fallback", DepartAt: depart, Mode: mode, Trip: s.Trip,
 	}
 	if resp.FloodSpots == nil {
 		resp.FloodSpots = []decision.FloodSpot{}
@@ -108,6 +121,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 			return resp, nil
 		}
 		slog.Warn("gemini agent failed, using fallback", "err", err)
+		s.ResetCalls()
 	}
 
 	for _, tool := range fallbackTools {
@@ -169,8 +183,8 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 		Tools:             toolDeclarations(),
 		Temperature:       temperature(0.2),
 	}
-	user := fmt.Sprintf("ตอนนี้ %s ทริป %s ผู้ใช้อยากรู้ว่าถ้าออก %s ด้วย %s เป็นอย่างไร",
-		s.Now.Format(time.RFC3339), s.Trip.ID, depart.Format("15:04"), mode)
+	user := fmt.Sprintf("ตอนนี้ %s ทริป %s (%s จาก %s ไป %s) ผู้ใช้อยากรู้ว่าถ้าออก %s ด้วย %s เป็นอย่างไร",
+		s.Now.Format(time.RFC3339), s.Trip.ID, s.Trip.TitleTH, s.Trip.Origin.NameTH, s.Trip.Destination.NameTH, depart.Format("15:04"), mode)
 	if question != "" {
 		user += fmt.Sprintf("\nคำถามของผู้ใช้: %q", question)
 	}

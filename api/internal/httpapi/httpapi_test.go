@@ -10,6 +10,7 @@ import (
 	"runtime"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
@@ -18,7 +19,9 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
-func newServer(t *testing.T) http.Handler {
+func newServer(t *testing.T) http.Handler { return newServerMode(t, true) }
+
+func newServerMode(t *testing.T, demo bool) http.Handler {
 	t.Helper()
 	_, file, _, _ := runtime.Caller(0)
 	spots, err := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
@@ -26,7 +29,8 @@ func newServer(t *testing.T) http.Handler {
 		t.Fatal(err)
 	}
 	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
-	s := &Server{DemoMode: true, Planner: &planner.Planner{Spots: spots, Trips: scenario.Trips}, Scenario: prov, Live: prov,
+	s := &Server{DemoMode: demo, Planner: &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts},
+		Scenario: prov, Live: prov,
 		Users: scenario.MockUsers(), Home: homestatus.Home(scenario.HomeProfile)}
 	return s.Handler()
 }
@@ -90,7 +94,38 @@ func TestEndpoints(t *testing.T) {
 				t.Fatal(out["headline_th"])
 			}
 		}},
-		{"decide empty body uses the first trip", "POST", "/v1/decide", "", "", 200, nil},
+		{"decide empty body uses the first trip", "POST", "/v1/decide", "", "", 200, func(t *testing.T, out map[string]any) {
+			if trip := out["trip"].(map[string]any); trip["id"] != "cal-dinner" {
+				t.Fatal(trip)
+			}
+		}},
+		{"decide ad-hoc destination from the question", "POST", "/v1/decide", "16:10", `{"question_th":"ไปสยามตอนหกโมงดีไหม"}`, 200, func(t *testing.T, out map[string]any) {
+			trip := out["trip"].(map[string]any)
+			dest, origin := trip["destination"].(map[string]any), trip["origin"].(map[string]any)
+			if trip["id"] != "adhoc-siam" || dest["name_th"] != "สยาม" || origin["name_th"] != "สีลม ซอย 3" || out["depart_at"] != "2026-09-29T18:00:00+07:00" {
+				t.Fatal(out)
+			}
+			if _, ok := trip["arrive_by"]; ok {
+				t.Errorf("ad-hoc trip has no deadline, got arrive_by %v", trip["arrive_by"])
+			}
+		}},
+		{"decide follow-up on an ad-hoc trip id", "POST", "/v1/decide", "16:10", `{"trip_id":"adhoc-siam","mode":"transit"}`, 200, func(t *testing.T, out map[string]any) {
+			if out["trip"].(map[string]any)["id"] != "adhoc-siam" || out["mode"] != "transit" {
+				t.Fatal(out)
+			}
+		}},
+		{"places", "GET", "/v1/places", "16:10", "", 200, func(t *testing.T, out map[string]any) {
+			places := out["places"].([]any)
+			first := places[0].(map[string]any)
+			if len(places) != 5 || first["id"] != "home" || first["label_th"] != "บ้าน" || first["lat"] != 13.816 || out["current_place_id"] != "work" {
+				t.Fatal(out)
+			}
+		}},
+		{"places at night", "GET", "/v1/places", "22:00", "", 200, func(t *testing.T, out map[string]any) {
+			if out["current_place_id"] != "home" {
+				t.Fatal(out)
+			}
+		}},
 		{"decide unknown trip", "POST", "/v1/decide", "", `{"trip_id":"x"}`, 404, nil},
 		{"decide bad mode", "POST", "/v1/decide", "", `{"mode":"boat"}`, 400, nil},
 		{"decide bad JSON", "POST", "/v1/decide", "", `{`, 400, nil},
@@ -200,5 +235,22 @@ func TestCreateReportValidation(t *testing.T) {
 	}
 	if status, _ := do(t, h, "POST", "/v1/reports", "", bytes.NewBufferString("{}"), "application/json"); status != 400 {
 		t.Errorf("JSON body: status %d, want 400", status)
+	}
+}
+
+func TestLiveModeTripsFollowTheRealClock(t *testing.T) {
+	h := newServerMode(t, false)
+	before := time.Now()
+	_, out := do(t, h, "GET", "/v1/trips", "", nil, "")
+	arrive, err := time.Parse(time.RFC3339, out["trips"].([]any)[0].(map[string]any)["arrive_by"].(string))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if arrive.Before(before.Add(-4*time.Hour)) || arrive.After(before.Add(28*time.Hour)) {
+		t.Fatalf("live dinner %v is not around now %v", arrive, before)
+	}
+	_, dec := do(t, h, "POST", "/v1/decide", "", bytes.NewBufferString(`{}`), "application/json")
+	if dec["trip"].(map[string]any)["arrive_by"] != out["trips"].([]any)[0].(map[string]any)["arrive_by"] {
+		t.Fatalf("decide trip %v differs from /v1/trips", dec["trip"])
 	}
 }

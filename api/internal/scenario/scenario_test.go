@@ -100,3 +100,58 @@ func TestTripsAreAnchoredToTheClockDay(t *testing.T) {
 		t.Fatalf("concert should be on Saturday, got %v", trips[1].ArriveBy)
 	}
 }
+
+func TestTripsRollForwardOnceTheEveningIsOver(t *testing.T) {
+	// Live mode: the dinner is tonight's until well after 18:30, then tomorrow's.
+	oct8 := func(hh, mm int) time.Time { return time.Date(2026, 10, 8, hh, mm, 0, 0, domain.Bangkok) }
+	tests := []struct {
+		now  time.Time
+		want time.Time
+	}{
+		{oct8(9, 0), oct8(18, 30)},
+		{demo(18, 55), demo(18, 30)}, // demo beats after 18:30 still talk about tonight
+		{oct8(22, 0), oct8(18, 30).AddDate(0, 0, 1)},
+	}
+	for _, tt := range tests {
+		if got := Trips(tt.now)[0].ArriveBy; !got.Equal(tt.want) {
+			t.Errorf("Trips(%v) dinner = %v, want %v", tt.now, got, tt.want)
+		}
+	}
+}
+
+func TestSavedPlaces(t *testing.T) {
+	want := []string{"home", "work", "siam", "thonglor", "impact"}
+	if len(Places) != len(want) {
+		t.Fatalf("got %d places", len(Places))
+	}
+	for i, p := range Places {
+		if p.ID != want[i] || p.LabelTH == "" || p.NameTH == "" || len(p.Keywords) == 0 {
+			t.Errorf("place %d = %+v", i, p)
+		}
+		if p.Lat < 13.5 || p.Lat > 14.1 || p.Lng < 100.3 || p.Lng > 100.9 {
+			t.Errorf("%s is outside Bangkok: %v,%v", p.ID, p.Lat, p.Lng)
+		}
+	}
+	// Home and work are the hero trip's ends, so the hand-drawn corridor applies.
+	if Places[0].Place != Home || Places[1].Place != Silom {
+		t.Fatalf("home/work = %+v %+v", Places[0].Place, Places[1].Place)
+	}
+}
+
+func TestWhereabouts(t *testing.T) {
+	sat := time.Date(2026, 10, 3, 16, 10, 0, 0, domain.Bangkok)
+	tests := []struct {
+		now  time.Time
+		want string
+	}{
+		{demo(16, 10), "work"},
+		{demo(7, 30), "home"},
+		{demo(21, 40), "home"},
+		{sat, "home"},
+	}
+	for _, tt := range tests {
+		if got := Whereabouts(tt.now); got != tt.want {
+			t.Errorf("Whereabouts(%v) = %q, want %q", tt.now, got, tt.want)
+		}
+	}
+}
