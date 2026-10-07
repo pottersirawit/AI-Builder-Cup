@@ -1,0 +1,22 @@
+{
+  "trips": [
+    {
+      "id": "cal-dinner",
+      "title_th": "กินข้าวเย็นกับที่บ้าน",
+      "source": "calendar",
+      "origin": {"name_th": "สีลม ซอย 3", "lat": 13.7263, "lng": 100.5340},
+      "destination": {"name_th": "บ้านลาดพร้าว", "lat": 13.8160, "lng": 100.5900},
+      "arrive_by": "2026-09-29T18:30:00+07:00",
+      "mode": "car"
+    },
+    {
+      "id": "gmail-concert",
+      "title_th": "ตั๋วคอนเสิร์ต อิมแพ็ค",
+      "source": "gmail",
+      "origin": {"name_th": "บ้านลาดพร้าว", "lat": 13.8160, "lng": 100.5900},
+      "destination": {"name_th": "อิมแพ็ค เมืองทองธานี", "lat": 13.9126, "lng": 100.5489},
+      "arrive_by": "2026-10-03T19:00:00+07:00",
+      "mode": "car"
+    }
+  ]
+}
