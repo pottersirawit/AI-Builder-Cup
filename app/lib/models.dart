@@ -9,14 +9,12 @@ List<Json> _list(Object? v) => (v as List? ?? const []).cast<Json>();
 
 /// Travel mode as named on the wire.
 enum TravelMode {
-  car('car', 'รถยนต์', '🚗'),
-  transit('transit', 'BTS / MRT', '🚈'),
-  moto('moto', 'มอเตอร์ไซค์', '🛵');
+  car('car'),
+  transit('transit'),
+  moto('moto');
 
-  const TravelMode(this.wire, this.labelTh, this.emoji);
+  const TravelMode(this.wire);
   final String wire;
-  final String labelTh;
-  final String emoji;
 
   static TravelMode parse(Object? v) =>
       values.firstWhere((m) => m.wire == v, orElse: () => car);

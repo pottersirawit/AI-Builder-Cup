@@ -1,28 +1,35 @@
 import 'package:flutter/material.dart';
 
 import '../app_state.dart';
+import '../design/design.dart';
 import '../models.dart';
-import '../theme.dart';
-import '../widgets/common.dart';
 
 const suggestedQuestions = ['ถ้ารอถึงสองทุ่มค่อยกลับล่ะ', 'ไป BTS แทนดีไหม'];
 
 class _Message {
   const _Message.me(this.text)
       : mine = true,
-        decision = null;
-  const _Message.ai(this.text, [this.decision]) : mine = false;
+        decision = null,
+        failed = false;
+  const _Message.ai(this.text, [this.decision])
+      : mine = false,
+        failed = false;
+  const _Message.failed(this.text)
+      : mine = false,
+        decision = null,
+        failed = true;
   final bool mine;
   final String text;
   final Decision? decision;
+  final bool failed;
 }
 
-/// Chat-style follow-up: each question is POSTed to /v1/decide as question_th.
+/// Follow-up questions; each is POSTed to /v1/decide as question_th.
 class AskScreen extends StatefulWidget {
   const AskScreen({super.key, this.trip, this.opening});
   final Trip? trip;
 
-  /// Current headline, used in the opening message.
+  /// Current verdict headline, quoted in the opening message.
   final String? opening;
 
   @override
@@ -36,13 +43,12 @@ class _AskScreenState extends State<AskScreen> {
         : 'ตอนนี้แนะนำ “${widget.opening}” นะ มีอะไรอยากถามต่อไหม'),
   ];
   final _asked = <String>{};
-  final _input = TextEditingController();
   final _scroll = ScrollController();
   bool _thinking = false;
+  String? _lastQuestion;
 
   @override
   void dispose() {
-    _input.dispose();
     _scroll.dispose();
     super.dispose();
   }
@@ -56,164 +62,191 @@ class _AskScreenState extends State<AskScreen> {
       _messages.add(_Message.me(q));
       _asked.add(q);
       _thinking = true;
+      _lastQuestion = q;
     });
-    _input.clear();
     _scrollToEnd();
-    final d = state.track(await api.decide(DecideRequest(questionTh: q, tripId: widget.trip?.id)));
-    if (!mounted) return;
-    setState(() {
-      _messages.add(_Message.ai(d.summaryTh, d));
-      _thinking = false;
-    });
+    try {
+      final d = state.track(await api.decide(DecideRequest(questionTh: q, tripId: widget.trip?.id)));
+      if (!mounted) return;
+      setState(() => _messages.add(_Message.ai(d.summaryTh, d)));
+    } catch (_) {
+      if (!mounted) return;
+      setState(() => _messages.add(const _Message.failed('ตอบไม่ได้ในรอบนี้ เชื่อมต่อไม่ได้')));
+    }
+    setState(() => _thinking = false);
     _scrollToEnd();
   }
 
   void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (_scroll.hasClients) {
-          _scroll.animateTo(_scroll.position.maxScrollExtent,
-              duration: const Duration(milliseconds: 250), curve: Curves.easeOut);
-        }
+        if (!_scroll.hasClients) return;
+        final motion = Motion.of(context);
+        _scroll.animateTo(_scroll.position.maxScrollExtent + 200,
+            duration: motion.d(Motion.enter), curve: Motion.standard);
       });
 
   @override
   Widget build(BuildContext context) {
-    final p = Palette.of(context);
+    final state = AppScope.stateOf(context);
+    final sky = state.flood ? SkyState.flood : SkyState.clear;
+    final scheme = Theme.of(context).colorScheme;
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            const ClockBar(),
-            SizedBox(
-              width: double.infinity,
-              height: 44,
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  const Logo(label: 'ถามต่อ'),
-                  Positioned(
-                    left: 4,
-                    child: TextButton(
-                      onPressed: () => Navigator.maybePop(context),
-                      child: Text('‹ กลับ', style: txt(context, weight: FontWeight.w600, color: p.accent)),
+      body: Column(
+        children: [
+          SkyField(
+            state: sky,
+            height: double.infinity,
+            child: SafeArea(
+              bottom: false,
+              child: FieldHeader(
+                state: sky,
+                back: true,
+                title: 'ถามต่อ',
+                subtitle: widget.trip?.titleTh ?? 'ฝนตกไหม',
+                actions: [
+                  if (state.usingSample)
+                    const Padding(
+                      padding: EdgeInsets.only(right: Space.x3),
+                      child: SampleBadge(onField: true),
                     ),
+                ],
+              ),
+            ),
+          ),
+          Expanded(
+            child: ListView(
+              controller: _scroll,
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, Space.x4),
+              children: [
+                for (final m in _messages)
+                  _Bubble(message: m, onRetry: m.failed && _lastQuestion != null ? () => _ask(_lastQuestion!) : null),
+                if (_thinking)
+                  const Padding(
+                    padding: EdgeInsets.only(bottom: Space.x3),
+                    child: Row(children: [
+                      GeminiMark(size: 18),
+                      SizedBox(width: Space.x2),
+                      Skeleton(width: 160),
+                    ]),
                   ),
-                ],
-              ),
+              ],
             ),
-            Expanded(
-              child: ListView(
-                controller: _scroll,
-                padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-                children: [
-                  for (final m in _messages) _Bubble(message: m),
-                  if (_thinking) const _Bubble(message: _Message.ai('กำลังคิด…')),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 12, 16, 12),
-              decoration: BoxDecoration(
-                color: p.card,
-                border: Border(top: BorderSide(color: p.line)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  for (final q in suggestedQuestions)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
-                      child: OutlinedButton(
+          ),
+          Container(
+            color: scheme.surfaceContainerLow,
+            padding: EdgeInsets.fromLTRB(
+                Space.gutter, Space.x3, Space.gutter, Space.x3 + MediaQuery.paddingOf(context).bottom),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Wrap(
+                  spacing: Space.x2,
+                  runSpacing: Space.x2,
+                  children: [
+                    for (final q in suggestedQuestions)
+                      ActionChip(
+                        label: Text(q),
                         onPressed: _asked.contains(q) || _thinking ? null : () => _ask(q),
-                        style: OutlinedButton.styleFrom(
-                          alignment: Alignment.centerLeft,
-                          side: BorderSide(color: p.accent, width: 1.5),
-                          shape: const StadiumBorder(),
-                          padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                        ),
-                        child: Text(q, style: txt(context, size: 13, weight: FontWeight.w600, color: p.accent)),
                       ),
-                    ),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: TextField(
-                          controller: _input,
-                          onSubmitted: _ask,
-                          textInputAction: TextInputAction.send,
-                          style: txt(context),
-                          decoration: InputDecoration(
-                            isDense: true,
-                            hintText: 'พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ',
-                            hintStyle: txt(context, color: const Color(0xFF8A99B3)),
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(14)),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      IconButton.filled(
-                        tooltip: 'ส่ง',
-                        onPressed: _thinking ? null : () => _ask(_input.text),
-                        icon: const Icon(Icons.send_rounded),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: Space.x3),
+                AskBar(onSubmit: _ask, enabled: !_thinking, hint: 'พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ'),
+              ],
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
 }
 
 class _Bubble extends StatelessWidget {
-  const _Bubble({required this.message});
+  const _Bubble({required this.message, this.onRetry});
   final _Message message;
+  final VoidCallback? onRetry;
 
   @override
   Widget build(BuildContext context) {
-    final p = Palette.of(context);
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final c = FonColors.of(context);
     final d = message.decision;
-    final mine = message.mine;
-    return Align(
-      alignment: mine ? Alignment.centerRight : Alignment.centerLeft,
-      child: Container(
-        constraints: BoxConstraints(maxWidth: MediaQuery.sizeOf(context).width * .84),
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
-        decoration: BoxDecoration(
-          color: mine ? kBlue : p.card,
-          border: mine ? null : Border.all(color: p.line),
-          borderRadius: BorderRadius.only(
-            topLeft: const Radius.circular(18),
-            topRight: const Radius.circular(18),
-            bottomLeft: Radius.circular(mine ? 18 : 6),
-            bottomRight: Radius.circular(mine ? 6 : 18),
+    final maxW = MediaQuery.sizeOf(context).width * .86;
+
+    if (message.mine) {
+      return Align(
+        alignment: Alignment.centerRight,
+        child: Container(
+          constraints: BoxConstraints(maxWidth: maxW),
+          margin: const EdgeInsets.only(bottom: Space.x3),
+          padding: const EdgeInsets.symmetric(horizontal: Space.x4, vertical: Space.x3),
+          decoration: BoxDecoration(
+            color: scheme.primary,
+            borderRadius: const BorderRadius.only(
+              topLeft: Radius.circular(Radii.lg),
+              topRight: Radius.circular(Radii.lg),
+              bottomLeft: Radius.circular(Radii.lg),
+              bottomRight: Radius.circular(Radii.xs),
+            ),
           ),
+          child: Text(message.text, style: t.bodyLarge!.copyWith(color: scheme.onPrimary)),
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (d != null) ...[
-              Row(
+      );
+    }
+
+    if (d != null) {
+      return Padding(
+        padding: const EdgeInsets.only(bottom: Space.x3),
+        child: ConstrainedBox(
+          constraints: BoxConstraints(maxWidth: maxW + 24),
+          child: Pass(sections: [
+            PassSection(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Flexible(
-                    child: Text(d.headlineTh,
-                        style: txt(context, weight: FontWeight.w700, color: Tone.ofVerdict(d.verdict).fg)),
-                  ),
-                  const SizedBox(width: 8),
-                  Pill('มั่นใจ ${percent(d.confidence)}', tone: Tone.ofVerdict(d.verdict)),
+                  Text(d.headlineTh, style: tabular(t.headlineMedium!).copyWith(color: c.paperInk)),
+                  const SizedBox(height: Space.x2),
+                  RiskChip(risk: riskOfVerdict(d.verdict), label: boardStatus(d.verdict, riskOfVerdict(d.verdict))),
+                  const SizedBox(height: Space.x3),
+                  Text(message.text, style: t.bodyMedium!.copyWith(color: c.paperInk)),
                 ],
               ),
-              const SizedBox(height: 4),
-            ],
-            Text(message.text,
-                style: txt(context, height: 1.5, color: mine ? Colors.white : p.ink)),
-            if (d != null)
-              SourceLabel('${d.generatedBy == 'fallback' ? 'กฎสำรอง' : 'Gemini'} · ${d.sources.join(' · ')}'),
-          ],
+            ),
+            PassSection(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  ConfidenceMeter(value: d.confidence),
+                  const SizedBox(height: Space.x3),
+                  SourceLabel(d.sources.join(' · ')),
+                  const SizedBox(height: Space.x2),
+                  GeneratedBy(d.generatedBy),
+                ],
+              ),
+            ),
+          ]),
         ),
+      );
+    }
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Space.x3),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(padding: EdgeInsets.only(top: 3), child: GeminiMark(size: 18)),
+          const SizedBox(width: Space.x2),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(message.text,
+                    style: t.bodyLarge!.copyWith(color: message.failed ? scheme.error : scheme.onSurface)),
+                if (onRetry != null) TextButton(onPressed: onRetry, child: const Text('ถามใหม่')),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

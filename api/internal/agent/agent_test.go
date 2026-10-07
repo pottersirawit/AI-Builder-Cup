@@ -112,7 +112,7 @@ func TestDecideRequests(t *testing.T) {
 	}{
 		{"question: wait until 20:00", Request{QuestionTH: "ถ้ารอถึงสองทุ่มค่อยกลับล่ะ"}, decision.LeaveNow, "ออก 20:00 ได้ แต่เลยนัด 18:30", domain.ModeCar, "parse_question_fallback", false},
 		{"question: switch to BTS", Request{QuestionTH: "ไป BTS แทนดีไหม"}, decision.LeaveNow, "", domain.ModeTransit, "parse_question_fallback", false},
-		{"slider: motorbike at 17:15", Request{DepartAt: "2026-09-29T17:15:00+07:00", Mode: "moto"}, decision.SwitchMode, "เปลี่ยนไป BTS / MRT ดีกว่า", domain.ModeMoto, "get_trip", false},
+		{"slider: motorbike at 17:15", Request{DepartAt: "2026-09-29T17:15:00+07:00", Mode: "moto"}, decision.SwitchMode, "เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า", domain.ModeMoto, "get_trip", false},
 		{"bad mode", Request{Mode: "boat"}, "", "", "", "", true},
 		{"bad time", Request{DepartAt: "soon"}, "", "", "", "", true},
 	}

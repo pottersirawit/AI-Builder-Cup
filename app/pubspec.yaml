@@ -33,10 +33,10 @@ dependencies:
 
   # The following adds the Cupertino Icons font to your application.
   # Use with the CupertinoIcons class for iOS style icons.
-  cupertino_icons: ^1.0.8
-  google_fonts: ^8.1.0
   http: ^1.6.0
   image_picker: ^1.2.2
+  material_symbols_icons: ^4.2960.0
+  geolocator: ^14.0.2
 
 dev_dependencies:
   flutter_test:
@@ -62,7 +62,31 @@ flutter:
 
   assets:
     - assets/fixtures/
-    - assets/google_fonts/
+
+  fonts:
+    - family: ChakraPetch
+      fonts:
+        - asset: assets/fonts/ChakraPetch-Light.ttf
+          weight: 300
+        - asset: assets/fonts/ChakraPetch-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/ChakraPetch-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/ChakraPetch-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/ChakraPetch-Bold.ttf
+          weight: 700
+    # Chakra Petch with equal-width digits (tool/tabular_font.py); Chakra Petch has no tnum feature.
+    - family: PetchTabular
+      fonts:
+        - asset: assets/fonts/PetchTabular-Regular.ttf
+          weight: 400
+        - asset: assets/fonts/PetchTabular-Medium.ttf
+          weight: 500
+        - asset: assets/fonts/PetchTabular-SemiBold.ttf
+          weight: 600
+        - asset: assets/fonts/PetchTabular-Bold.ttf
+          weight: 700
 
   # To add assets to your application, add an assets section, like this:
   # assets:

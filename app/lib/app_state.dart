@@ -37,6 +37,17 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
+  HomeLevel _homeLevel = HomeLevel.normal;
+
+  /// Latest flood level at home; danger switches the whole app to flood mode.
+  HomeLevel get homeLevel => _homeLevel;
+  bool get flood => _homeLevel == HomeLevel.danger;
+  set homeLevel(HomeLevel l) {
+    if (l == _homeLevel) return;
+    _homeLevel = l;
+    notifyListeners();
+  }
+
   bool pushDismissed = false;
   void dismissPush() {
     pushDismissed = true;

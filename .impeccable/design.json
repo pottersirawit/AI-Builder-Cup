@@ -1,0 +1,328 @@
+{
+  "$schema": "impeccable/design-tokens/1",
+  "name": "ฝนตกไหม",
+  "source": "app/lib/design/tokens.dart, app/lib/design/theme.dart",
+  "sky": {
+    "clear": {
+      "top": "#0B57D0",
+      "bottom": "#5C9DFF",
+      "onField": "#FFFFFF",
+      "onFieldMuted": "#D7E6FF"
+    },
+    "storm": {
+      "top": "#232B3E",
+      "bottom": "#55617A",
+      "onField": "#FFFFFF",
+      "onFieldMuted": "#C9D1E0"
+    },
+    "flood": {
+      "top": "#02060F",
+      "bottom": "#0B1730",
+      "onField": "#F2F5FA",
+      "onFieldMuted": "#A7B4CB"
+    },
+    "fieldHeightFraction": 0.45
+  },
+  "color": {
+    "light": {
+      "scheme": {
+        "primary": "#0B57D0",
+        "onPrimary": "#FFFFFF",
+        "primaryContainer": "#D3E3FD",
+        "secondaryContainer": "#DCE6F7",
+        "onSecondaryContainer": "#0E2340",
+        "tertiary": "#9A5200",
+        "error": "#B3261E",
+        "surface": "#F3F7FC",
+        "surfaceContainerLowest": "#FFFFFF",
+        "surfaceContainerLow": "#EDF3FA",
+        "surfaceContainer": "#E7EEF8",
+        "surfaceContainerHigh": "#E0E9F5",
+        "surfaceContainerHighest": "#D8E3F2",
+        "onSurface": "#0B1F3A",
+        "onSurfaceVariant": "#4A5B74",
+        "outline": "#7C8CA4",
+        "outlineVariant": "#D0DBEA"
+      },
+      "paper": "#FFFEFB",
+      "paperInk": "#0B1F3A",
+      "paperMuted": "#55657D",
+      "perforation": "#C6D3E4",
+      "rain": [
+        "#DCE7F5",
+        "#9CC4FF",
+        "#4A8FF5",
+        "#1A4FB8"
+      ],
+      "risk": {
+        "low": [
+          "#137333",
+          "#E3F3E7"
+        ],
+        "medium": [
+          "#9A5200",
+          "#FFF0D9"
+        ],
+        "high": [
+          "#B3261E",
+          "#FCE4E2"
+        ]
+      },
+      "warning": "#E8A100",
+      "marker": "#0B1F3A",
+      "sourceInk": "#55657D"
+    },
+    "flood": {
+      "scheme": {
+        "primary": "#FFB020",
+        "onPrimary": "#2A1A00",
+        "secondaryContainer": "#1C2C48",
+        "onSecondaryContainer": "#DCE6F7",
+        "tertiary": "#FFB020",
+        "error": "#FFB4AB",
+        "surface": "#050B17",
+        "surfaceContainerLowest": "#03070F",
+        "surfaceContainerLow": "#0A1322",
+        "surfaceContainer": "#0F1A2E",
+        "surfaceContainerHigh": "#15223A",
+        "surfaceContainerHighest": "#1C2C48",
+        "onSurface": "#F2F5FA",
+        "onSurfaceVariant": "#A7B4CB",
+        "outline": "#6A7A96",
+        "outlineVariant": "#22314D"
+      },
+      "paper": "#0F1A2E",
+      "paperInk": "#F2F5FA",
+      "paperMuted": "#A7B4CB",
+      "perforation": "#2A3A57",
+      "rain": [
+        "#17233A",
+        "#34558A",
+        "#5F8FD6",
+        "#A9CBFF"
+      ],
+      "risk": {
+        "low": [
+          "#8FD4A4",
+          "#12301F"
+        ],
+        "medium": [
+          "#FFC34D",
+          "#3A2A06"
+        ],
+        "high": [
+          "#FFB020",
+          "#402A00"
+        ]
+      },
+      "warning": "#FFB020",
+      "marker": "#FFB020",
+      "sourceInk": "#A7B4CB"
+    },
+    "geminiGradient": {
+      "colors": [
+        "#4285F4",
+        "#9B72CB",
+        "#D96570"
+      ],
+      "stops": [
+        0,
+        0.6,
+        1
+      ],
+      "use": "Gemini spark icon and scan line only"
+    }
+  },
+  "rainThresholdsMmPerHr": {
+    "light": 0.5,
+    "moderate": 2.5,
+    "heavy": 7.6
+  },
+  "type": {
+    "family": "ChakraPetch",
+    "numeralFamily": "PetchTabular",
+    "leadingDistribution": "even",
+    "maxTextScale": 2.0,
+    "displayMaxTextScale": 1.4,
+    "roles": {
+      "displayLarge": [
+        52,
+        1.15,
+        700,
+        -1
+      ],
+      "displayMedium": [
+        42,
+        1.2,
+        700,
+        -0.8
+      ],
+      "displaySmall": [
+        34,
+        1.22,
+        700,
+        -0.5
+      ],
+      "headlineLarge": [
+        30,
+        1.3,
+        700,
+        -0.3
+      ],
+      "headlineMedium": [
+        26,
+        1.3,
+        700,
+        0
+      ],
+      "headlineSmall": [
+        22,
+        1.35,
+        700,
+        0
+      ],
+      "titleLarge": [
+        20,
+        1.4,
+        700,
+        0
+      ],
+      "titleMedium": [
+        16,
+        1.45,
+        600,
+        0
+      ],
+      "titleSmall": [
+        14,
+        1.45,
+        600,
+        0
+      ],
+      "bodyLarge": [
+        16,
+        1.6,
+        400,
+        0
+      ],
+      "bodyMedium": [
+        14,
+        1.6,
+        400,
+        0
+      ],
+      "bodySmall": [
+        12,
+        1.55,
+        400,
+        0
+      ],
+      "labelLarge": [
+        14,
+        1.4,
+        600,
+        0
+      ],
+      "labelMedium": [
+        12,
+        1.4,
+        600,
+        0.2
+      ],
+      "labelSmall": [
+        11,
+        1.4,
+        600,
+        0.3
+      ]
+    },
+    "rolesFormat": [
+      "sizeSp",
+      "lineHeight",
+      "weight",
+      "letterSpacingPx"
+    ]
+  },
+  "space": {
+    "x1": 4,
+    "x2": 8,
+    "x3": 12,
+    "x4": 16,
+    "x5": 20,
+    "x6": 24,
+    "x8": 32,
+    "x10": 40,
+    "x12": 48,
+    "gutter": 16,
+    "target": 48,
+    "targetLarge": 64
+  },
+  "radius": {
+    "xs": 6,
+    "sm": 10,
+    "md": 14,
+    "lg": 20,
+    "pass": 20,
+    "notch": 9,
+    "pill": 999
+  },
+  "elevation": {
+    "pass": {
+      "light": [
+        {
+          "y": 1,
+          "blur": 2,
+          "color": "#0B1F3A1F"
+        },
+        {
+          "y": 12,
+          "blur": 28,
+          "spread": -6,
+          "color": "#0B1F3A33"
+        }
+      ],
+      "flood": [
+        {
+          "ring": 1,
+          "color": "#FFFFFF14"
+        }
+      ]
+    },
+    "askBar": [
+      {
+        "y": 4,
+        "blur": 16,
+        "color": "#0B1F3A14"
+      }
+    ]
+  },
+  "motion": {
+    "reduceMotion": "MediaQuery.disableAnimations -> all durations 0",
+    "curves": {
+      "standard": [
+        0.2,
+        0,
+        0,
+        1
+      ],
+      "emphasizedDecelerate": [
+        0.05,
+        0.7,
+        0.1,
+        1
+      ]
+    },
+    "durationsMs": {
+      "tap": 120,
+      "flap": 180,
+      "rerank": 260,
+      "enter": 320,
+      "sky": 520
+    }
+  },
+  "icons": {
+    "set": "Material Symbols Rounded",
+    "package": "material_symbols_icons",
+    "selectedFill": 1
+  }
+}

@@ -44,7 +44,7 @@ func narrate(in Input, res Result) (headline, summary string) {
 		}
 	case SwitchMode:
 		tr := res.Evals[domain.ModeTransit]
-		headline = "เปลี่ยนไป BTS / MRT ดีกว่า"
+		headline = "เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า"
 		parts = append(parts, fmt.Sprintf("%s%sด้วย%s จะเจอ%s", when, sep(when), in.Mode.NameTH(), hazardTH(e)))
 		parts = append(parts, fmt.Sprintf("รถไฟฟ้าไม่โดนน้ำ ใช้เวลา %d นาที ถึง%sราว %s%s", tr.Minutes, in.DestinationTH, hhmm(tr.Arrive), deadlineTH(in, tr)))
 	case Wait:

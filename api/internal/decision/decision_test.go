@@ -77,7 +77,7 @@ func TestDecideHeroBeats(t *testing.T) {
 		},
 		{
 			name: "slider to 17:15 on a motorbike: switch to BTS", now: at(16, 10), depart: at(17, 15), mode: domain.ModeMoto,
-			wantVerdict: SwitchMode, wantHeadline: "เปลี่ยนไป BTS / MRT ดีกว่า", wantLeaveBy: "16:55",
+			wantVerdict: SwitchMode, wantHeadline: "เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า", wantLeaveBy: "16:55",
 		},
 		{
 			name: "slider to 17:50 by car: water on Ratchada, switch to BTS", now: at(16, 10), depart: at(17, 50), mode: domain.ModeCar,

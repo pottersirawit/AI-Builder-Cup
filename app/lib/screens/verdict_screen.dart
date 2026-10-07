@@ -1,308 +1,272 @@
 import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
+import '../design/design.dart';
 import '../models.dart';
-import '../theme.dart';
-import '../time_th.dart';
-import '../widgets/common.dart';
+import '../trip_controller.dart';
 import 'ask_screen.dart';
+import 'parts.dart';
 
-/// Departure slider runs 16:00 to 20:00 in 15-minute steps, as in the prototype.
-const _sliderStartHour = 16;
-const _sliderSteps = 16;
-
+/// One trip in full: drag the departure, compare modes, see why.
 class VerdictScreen extends StatefulWidget {
-  const VerdictScreen({super.key, required this.request, this.trip});
+  const VerdictScreen({super.key, required this.request, this.trip, this.departAt, this.mode});
 
-  /// Either a trip id or a Thai question; departure and mode are filled in here.
+  /// Either a trip id or a Thai question.
   final DecideRequest request;
   final Trip? trip;
+  final DateTime? departAt;
+  final TravelMode? mode;
 
   @override
   State<VerdictScreen> createState() => _VerdictScreenState();
 }
 
 class _VerdictScreenState extends State<VerdictScreen> {
-  late TravelMode _mode;
-  late int _step;
-  Decision? _decision;
-  bool _loading = false;
-  int _requestSeq = 0;
+  late final TripController _c = TripController(
+    api: AppScope.apiOf(context),
+    state: AppScope.readState(context),
+    request: widget.request,
+    departAt: widget.departAt,
+    mode: widget.mode,
+  )..addListener(_changed);
 
   @override
   void initState() {
     super.initState();
-    final state = AppScope.readState(context);
-    _mode = widget.request.mode ?? state.mode;
-    final now = toBangkok(state.now());
-    final minutes = (now.hour - _sliderStartHour) * 60 + now.minute;
-    _step = (minutes / 15).ceil().clamp(0, _sliderSteps);
-    _load();
+    _c.load();
   }
 
-  DateTime get _departAt {
-    final day = toBangkok(AppScope.readState(context).now());
-    // Bangkok wall-clock on the scenario day, expressed in UTC.
-    return DateTime.utc(day.year, day.month, day.day, _sliderStartHour, _step * 15)
-        .subtract(const Duration(hours: 7));
-  }
+  void _changed() => setState(() {});
 
-  Future<void> _load() async {
-    final seq = ++_requestSeq;
-    setState(() => _loading = true);
-    final api = AppScope.apiOf(context);
-    final state = AppScope.readState(context);
-    final req = widget.request.copyWith(departAt: isoBangkok(_departAt), mode: _mode);
-    final d = state.track(await api.decide(req));
-    if (!mounted || seq != _requestSeq) return;
-    setState(() {
-      _decision = d;
-      _loading = false;
-    });
-  }
-
-  void _setMode(TravelMode m) {
-    if (m == _mode) return;
-    _mode = m;
-    _load();
-  }
-
-  String get _tripLine {
-    final t = widget.trip;
-    if (t != null) {
-      return '${t.origin.nameTh} → ${t.destination.nameTh} · '
-          'นัด ${hhmm(t.arriveBy)} ${t.titleTh} (${t.source == 'gmail' ? 'Gmail' : 'Calendar'})';
-    }
-    return 'คำถาม: “${widget.request.questionTh ?? ''}”';
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final p = Palette.of(context);
-    final d = _decision;
-    final depart = hhmm(_departAt);
+    final state = AppScope.stateOf(context);
+    final d = _c.decision;
     final trip = widget.trip;
+    final sky = state.flood ? SkyState.flood : _c.sky(home: state.homeLevel);
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final c = FonColors.of(context);
 
-    return SubScreen(
-      title: 'ฝนตกไหม',
-      loading: _loading,
-      onRefresh: _load,
-      children: [
-        const SizedBox(height: 6),
-        Eyebrow(_tripLine),
-        const SizedBox(height: 4),
-        Row(
-          children: [
-            Text('ถ้าออก ', style: txt(context, size: 20, weight: FontWeight.w700)),
-            GeminiText(depart, style: txt(context, size: 20)),
-            Text(' ล่ะ?', style: txt(context, size: 20, weight: FontWeight.w700)),
-          ],
-        ),
-        Slider(
-          value: _step.toDouble(),
-          min: 0,
-          max: _sliderSteps.toDouble(),
-          divisions: _sliderSteps,
-          label: depart,
-          onChanged: (v) => setState(() => _step = v.round()),
-          onChangeEnd: (_) => _load(),
-        ),
-        Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              for (var h = _sliderStartHour; h <= _sliderStartHour + _sliderSteps ~/ 4; h++)
-                Text('$h:00', style: txt(context, size: 11, color: p.muted)),
-            ],
-          ),
-        ),
-        const SizedBox(height: 10),
-        ModeToggle(selected: _mode, onChanged: _setMode),
-        if (d == null)
-          const Padding(
-            padding: EdgeInsets.all(40),
-            child: Center(child: CircularProgressIndicator()),
-          )
-        else ...[
-          VerdictCard(
-            tone: Tone.ofVerdict(d.verdict),
-            eyebrow: 'ออก $depart · ${_mode.emoji} ${_mode.labelTh}'
-                '${d.leaveBy == null ? '' : ' · ควรออกก่อน ${hhmm(d.leaveBy!)}'}',
-            headline: d.headlineTh,
-            summary: d.summaryTh,
-            confidence: d.confidence,
-            actions: [
-              if (trip != null)
-                OnColorButton(
-                  label: 'ถามต่อ',
-                  solidColor: Tone.ofVerdict(d.verdict).fg,
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => AskScreen(trip: trip, opening: d.headlineTh),
-                  )),
-                ),
-            ],
-          ),
-          if (d.modeOptions.isNotEmpty) _ModeOptionsCard(options: d.modeOptions, selected: _mode, onPick: _setMode),
-          _FloodSpotsCard(
-            title: trip == null
-                ? 'จุดน้ำท่วมบนเส้นทาง'
-                : 'เส้นทาง ${trip.origin.nameTh} → ${trip.destination.nameTh}',
-            spots: d.floodSpots,
-            eta: d.modeOptions.where((o) => o.mode == _mode).firstOrNull,
-          ),
-          _ReasoningCard(decision: d),
-        ],
-      ],
-    );
-  }
-}
+    final Widget pass = _c.error != null && d == null
+        ? Pass(sections: [
+            PassSection(
+              child: ErrorState(
+                title: 'ยังตัดสินไม่ได้',
+                message: 'ติดต่อ Gemini และข้อมูลตัวอย่างไม่ได้ ลองอีกครั้งในอีกสักครู่',
+                onRetry: _c.load,
+              ),
+            ),
+          ])
+        : TripPass(
+            controller: _c,
+            now: state.now(),
+            trip: trip,
+            question: widget.request.questionTh,
+          );
 
-class _ModeOptionsCard extends StatelessWidget {
-  const _ModeOptionsCard({required this.options, required this.selected, required this.onPick});
-  final List<ModeOption> options;
-  final TravelMode selected;
-  final ValueChanged<TravelMode> onPick;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = Palette.of(context);
-    return AppCard(
-      padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text('เทียบทุกวิธีเดินทาง', style: txt(context, size: 15, weight: FontWeight.w700)),
-          for (final o in options)
-            InkWell(
-              onTap: () => onPick(o.mode),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 8),
-                decoration: BoxDecoration(
-                  border: Border(bottom: BorderSide(color: p.line)),
-                ),
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+    final board = _c.board;
+    return Scaffold(
+      body: CustomScrollView(
+        slivers: [
+          SliverToBoxAdapter(
+            child: SkyField(
+              state: sky,
+              child: SafeArea(
+                bottom: false,
+                child: Column(
                   children: [
-                    Padding(padding: const EdgeInsets.only(top: 4), child: Dot(Tone.ofRisk(o.risk))),
-                    const SizedBox(width: 10),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text('${o.mode.emoji} ${o.mode.labelTh} · ${o.etaMin} นาที',
-                              style: txt(context,
-                                  size: 13,
-                                  weight: o.mode == selected ? FontWeight.w700 : FontWeight.w600)),
-                          Text(o.noteTh, style: txt(context, size: 13, color: p.muted)),
-                        ],
-                      ),
+                    FieldHeader(
+                      state: sky,
+                      back: true,
+                      title: trip == null ? 'คำถาม' : 'ไป${trip.destination.nameTh}',
+                      subtitle: trip == null ? 'Gemini แกะคำถามเป็นทริป' : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
+                      actions: [
+                        if (state.usingSample) const Padding(
+                          padding: EdgeInsets.only(right: Space.x3),
+                          child: SampleBadge(onField: true),
+                        ),
+                      ],
+                    ),
+                    if (_c.loading)
+                      LinearProgressIndicator(
+                        minHeight: 2,
+                        color: c.sky(sky).onField,
+                        backgroundColor: Colors.transparent,
+                      )
+                    else
+                      const SizedBox(height: 2),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, 0),
+                      child: pass,
                     ),
                   ],
                 ),
               ),
             ),
-          const SourceLabel('ระยะพ้นน้ำตามประเภทรถ · Google Routes API'),
-        ],
-      ),
-    );
-  }
-}
-
-class _FloodSpotsCard extends StatelessWidget {
-  const _FloodSpotsCard({required this.title, required this.spots, this.eta});
-  final String title;
-  final List<FloodSpot> spots;
-  final ModeOption? eta;
-
-  @override
-  Widget build(BuildContext context) {
-    final p = Palette.of(context);
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(child: Text(title, style: txt(context, size: 15, weight: FontWeight.w700))),
-              if (eta != null) Pill('${eta!.etaMin} นาที', tone: Tone.ofRisk(eta!.risk)),
-            ],
           ),
-          const SizedBox(height: 6),
-          if (spots.isEmpty)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              child: Row(
-                children: [
-                  const Dot(Tone.ok),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text('ไม่มีจุดน้ำขังบนเส้นทางนี้', style: txt(context, size: 13))),
-                ],
+          if (d != null) ...[
+            SliverToBoxAdapter(
+              child: Section(
+                title: 'เทียบวิธีเดินทาง',
+                source: 'ระยะพ้นน้ำตามประเภทรถ · Google Routes API',
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ModeSegmented(
+                      selected: _c.mode,
+                      onChanged: _c.setMode,
+                      status: {
+                        for (final o in board)
+                          o.mode: ModeStatus(risk: o.risk, text: '${o.etaMin} น. · ${boardStatus(o.verdict, o.risk)}'),
+                      },
+                    ),
+                    if (_c.selected != null) ...[
+                      const SizedBox(height: Space.x3),
+                      Text(_c.selected!.noteTh, style: t.bodyMedium),
+                    ],
+                  ],
+                ),
               ),
             ),
-          for (final s in spots)
-            Container(
-              padding: const EdgeInsets.symmetric(vertical: 8),
-              decoration: BoxDecoration(border: Border(bottom: BorderSide(color: p.line))),
-              child: Row(
-                children: [
-                  Dot(Tone.ofRisk(s.risk)),
-                  const SizedBox(width: 10),
-                  Expanded(child: Text(s.nameTh, style: txt(context, size: 13))),
-                  Text(
-                    s.expectedDepthCm > 0 ? 'คาดน้ำ ${s.expectedDepthCm.round()} ซม.' : 'ยังแห้ง',
-                    style: txt(context, size: 12, color: p.muted),
-                  ),
-                ],
+            SliverToBoxAdapter(
+              child: Section(
+                title: 'จุดน้ำท่วมบนเส้นทาง',
+                source: 'จุดเสี่ยงน้ำท่วม กทม. · ThaiWater · รายงานผู้ใช้',
+                child: d.floodSpots.isEmpty
+                    ? EmptyState(
+                        icon: Symbols.check_circle_rounded,
+                        title: 'ไม่มีจุดน้ำขังบนเส้นทางนี้',
+                        message: 'เส้นทางนี้ไม่ผ่านจุดเสี่ยงน้ำท่วมของ กทม.',
+                      )
+                    : Column(
+                        children: [
+                          for (final s in d.floodSpots) ...[
+                            ListTile(
+                              contentPadding: EdgeInsets.zero,
+                              leading: Icon(Symbols.flood_rounded, color: c.riskInk(s.risk)),
+                              title: Text(s.nameTh),
+                              subtitle: Text(
+                                s.expectedDepthCm > 0 ? 'คาดน้ำสูง ${s.expectedDepthCm.round()} ซม.' : 'ยังแห้ง',
+                                style: tabular(t.bodySmall!).copyWith(color: scheme.onSurfaceVariant),
+                              ),
+                              trailing: RiskChip(risk: s.risk, dense: true),
+                            ),
+                            if (s != d.floodSpots.last) const Divider(),
+                          ],
+                        ],
+                      ),
               ),
             ),
-          const SourceLabel('Google Routes API (traffic aware) · จุดน้ำท่วม กทม. · รายงานผู้ใช้'),
+            SliverToBoxAdapter(
+              child: Section(
+                title: 'Gemini คิดแบบนี้',
+                trailing: const GeminiMark(size: 22),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    for (var i = 0; i < d.reasoning.length; i++)
+                      _TraceStep(step: d.reasoning[i], index: i + 1, last: i == d.reasoning.length - 1),
+                    const SizedBox(height: Space.x4),
+                    ConfidenceMeter(value: d.confidence, color: scheme.onSurface),
+                    const SizedBox(height: Space.x4),
+                    Text('แหล่งข้อมูล', style: t.titleSmall),
+                    const SizedBox(height: Space.x2),
+                    Wrap(
+                      spacing: Space.x2,
+                      runSpacing: Space.x2,
+                      children: [
+                        for (final s in d.sources)
+                          Chip(
+                            avatar: const Icon(Symbols.database_rounded, size: 16),
+                            label: Text(s),
+                            visualDensity: VisualDensity.compact,
+                          ),
+                      ],
+                    ),
+                    const SizedBox(height: Space.x4),
+                    GeneratedBy(d.generatedBy),
+                  ],
+                ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x8, Space.gutter, Space.x10),
+                child: FilledButton.icon(
+                  onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
+                    builder: (_) => AskScreen(trip: trip, opening: _c.headline),
+                  )),
+                  icon: const Icon(Symbols.chat_rounded),
+                  label: const Text('ถามต่อ'),
+                ),
+              ),
+            ),
+          ],
         ],
       ),
     );
   }
 }
 
-class _ReasoningCard extends StatelessWidget {
-  const _ReasoningCard({required this.decision});
-  final Decision decision;
+/// One tool call in the agent's trace: a numbered rail, tool id, summary.
+class _TraceStep extends StatelessWidget {
+  const _TraceStep({required this.step, required this.index, required this.last});
+  final ReasoningStep step;
+  final int index;
+  final bool last;
 
   @override
   Widget build(BuildContext context) {
-    final p = Palette.of(context);
-    final fallback = decision.generatedBy == 'fallback';
-    return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    return IntrinsicHeight(
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          GeminiText('Gemini คิดแบบนี้', style: txt(context, size: 15)),
-          const SizedBox(height: 4),
-          for (final r in decision.reasoning)
-            Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+          SizedBox(
+            width: 28,
+            child: Column(
+              children: [
+                Container(
+                  width: 24,
+                  height: 24,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(color: scheme.secondaryContainer, shape: BoxShape.circle),
+                  child: Text('$index',
+                      style: tabular(t.labelMedium!).copyWith(color: scheme.onSecondaryContainer)),
+                ),
+                if (!last) Expanded(child: VerticalDivider(width: 2, thickness: 2, color: scheme.outlineVariant)),
+              ],
+            ),
+          ),
+          const SizedBox(width: Space.x3),
+          Expanded(
+            child: Padding(
+              padding: EdgeInsets.only(bottom: last ? 0 : Space.x4),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-                    decoration: BoxDecoration(color: p.bg2, borderRadius: BorderRadius.circular(6)),
-                    child: Text(r.tool,
-                        style: txt(context, size: 11, color: p.accent).copyWith(fontFamily: 'monospace')),
-                  ),
-                  const SizedBox(height: 3),
-                  Text(r.summaryTh, style: txt(context, size: 13, height: 1.45)),
+                  // Tool names are code identifiers, so they stay monospace.
+                  Text(step.tool,
+                      style: t.labelMedium!.copyWith(
+                        fontFamily: 'Menlo',
+                        fontFamilyFallback: const ['monospace', 'Courier'],
+                        color: scheme.primary,
+                      )),
+                  const SizedBox(height: 2),
+                  Text(step.summaryTh, style: t.bodyMedium),
                 ],
               ),
             ),
-          const SizedBox(height: 6),
-          Wrap(
-            spacing: 6,
-            runSpacing: 6,
-            children: [for (final s in decision.sources) Pill(s)],
           ),
-          SourceLabel(fallback
-              ? 'กฎสำรองเมื่อ Gemini ไม่ตอบ · ความมั่นใจ ${percent(decision.confidence)}'
-              : 'Gemini on Vertex AI · เหตุผลจากข้อมูลจริง · ความมั่นใจ ${percent(decision.confidence)}'),
         ],
       ),
     );
