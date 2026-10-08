@@ -1,4 +1,4 @@
-// Package scenario replays the พลอย demo script (fontokmai.html) so every demo
+// Package scenario replays the มิว demo script (fontokmai.html) so every demo
 // beat is reproducible on camera regardless of real weather. Weather, traffic and
 // canal profiles are keyed by time of day, so any date replays the same evening;
 // seeded community reports live on the scenario date, 2026-09-29.
@@ -23,12 +23,12 @@ var (
 	// Siam is BTS Siam / Siam Paragon; Thonglor is BTS Thong Lo on Sukhumvit.
 	Siam     = domain.Place{NameTH: "สยาม", Lat: 13.7456, Lng: 100.5341}
 	Thonglor = domain.Place{NameTH: "ทองหล่อ", Lat: 13.7243, Lng: 100.5853}
-	// HeroReportPoint is ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32, where พลอย takes the 18:52 photo.
+	// HeroReportPoint is ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32, where มิว takes the 18:52 photo.
 	HeroReportPoint = domain.LatLng{Lat: 13.8130, Lng: 100.5760}
 )
 
-// HomeFloodLevelM is the canal stage at which water reaches พลอย's doorstep:
-// her house sits below the road, 13 cm of overtopping is enough.
+// HomeFloodLevelM is the canal stage at which water reaches มิว's doorstep:
+// their house sits below the road, 13 cm of overtopping is enough.
 const HomeFloodLevelM = 1.93
 
 func at(day time.Time, hh, mm int) time.Time {
@@ -196,7 +196,7 @@ func sortByDistance(rs []domain.CanalReading, p domain.LatLng) {
 	}
 }
 
-// Places are พลอย's saved places, in the order the app lists them.
+// Places are มิว's saved places, in the order the app lists them.
 var Places = []domain.SavedPlace{
 	{ID: "home", LabelTH: "บ้าน", Place: Home, Keywords: []string{"บ้าน", "ลาดพร้าว", "home"}},
 	{ID: "work", LabelTH: "ที่ทำงาน", Place: Silom, Keywords: []string{"ที่ทำงาน", "ออฟฟิศ", "office", "สีลม", "silom", "work"}},
@@ -205,7 +205,7 @@ var Places = []domain.SavedPlace{
 	{ID: "impact", LabelTH: "อิมแพ็ค", Place: Impact, Keywords: []string{"อิมแพ็ค", "อิมแพค", "เมืองทองธานี", "เมืองทอง", "impact"}},
 }
 
-// Whereabouts is the saved place พลอย is at: the Silom office during weekday
+// Whereabouts is the saved place มิว is at: the Silom office during weekday
 // working hours (08:00-19:00), home otherwise.
 func Whereabouts(now time.Time) string {
 	now = now.In(domain.Bangkok)
@@ -221,7 +221,7 @@ func Whereabouts(now time.Time) string {
 // dinner is tomorrow's.
 const tripGrace = 3 * time.Hour
 
-// Trips are พลอย's upcoming trips as of now: the Calendar dinner and the
+// Trips are มิว's upcoming trips as of now: the Calendar dinner and the
 // concert ticket found in Gmail. They are relative to now, so live mode shows
 // today's dinner rather than the scenario date's.
 func Trips(now time.Time) []domain.Trip {
@@ -242,7 +242,7 @@ func Trips(now time.Time) []domain.Trip {
 	}
 }
 
-// HeroAssessment is what Gemini vision said about พลอย's 18:52 photo; it is the
+// HeroAssessment is what Gemini vision said about มิว's 18:52 photo; it is the
 // fallback when vision is unavailable.
 func HeroAssessment() domain.Report {
 	return domain.Report{
@@ -253,7 +253,7 @@ func HeroAssessment() domain.Report {
 }
 
 // SeedReports are the community reports that already exist on the scenario date:
-// two on Ratchada just before พลอย's, and eleven in her soi during flood mode.
+// two on Ratchada just before มิว's, and eleven in their soi during flood mode.
 func SeedReports() []domain.Report {
 	day := time.Date(2026, 9, 29, 0, 0, 0, 0, domain.Bangkok)
 	out := []domain.Report{
@@ -309,7 +309,7 @@ func MockUsers() []domain.MockUser {
 
 func round2(v float64) float64 { return math.Round(v*100) / 100 }
 
-// HomeProfile is พลอย's home for flood mode.
+// HomeProfile is มิว's home for flood mode.
 var HomeProfile = struct {
 	Place          domain.Place
 	FloodLevelM    float64

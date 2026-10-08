@@ -16,7 +16,7 @@ Flutter (app/) + Go API on Cloud Run (api/) + Gemini (Vertex AI / AI Studio). Ch
 
 ## Users
 
-Bangkok commuters, hero persona พลอย: office worker in Silom, lives in Lat Phrao near Khlong Lat Phrao, drives home along Rama 4 → Ratchada. The job: at the end of the workday, decide *when* and *how* to travel so rain and street flooding do not wreck the trip. Secondary: people whose home is flood-prone and need to act in the minutes before water arrives. Tertiary *(inferred)*: neighbours without smartphones reached via LINE/SMS/voice.
+Bangkok commuters, hero persona มิว: office worker in Silom, lives in Lat Phrao near Khlong Lat Phrao, drives home along Rama 4 → Ratchada. The job: at the end of the workday, decide *when* and *how* to travel so rain and street flooding do not wreck the trip. Secondary: people whose home is flood-prone and need to act in the minutes before water arrives. Tertiary *(inferred)*: neighbours without smartphones reached via LINE/SMS/voice.
 
 ## Product Purpose
 
@@ -51,7 +51,7 @@ Glanced at on a phone at a desk at 16:10, on a sidewalk, or at home at night dur
 - `fontokmai.html` — approved clickable prototype (copy, screens, scenario numbers).
 - `architecture.html` — honest architecture page with data-access risks.
 - `data/bkk_flood_risk_points.json` — BMA flood-prone spots with rain thresholds and vehicle risk (teammate).
-- All scenario numbers (พลอย, 27 users notified, 84% confidence, etc.) are synthetic demo data and must be labelled as such; there are no real users, testimonials or accuracy benchmarks yet.
+- All scenario numbers (มิว, 27 users notified, 84% confidence, etc.) are synthetic demo data and must be labelled as such; there are no real users, testimonials or accuracy benchmarks yet.
 
 ## Product Principles
 

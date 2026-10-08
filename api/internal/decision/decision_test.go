@@ -15,7 +15,7 @@ import (
 
 func at(hh, mm int) time.Time { return time.Date(2026, 9, 29, hh, mm, 0, 0, domain.Bangkok) }
 
-// heroInput builds the พลอย trip (Silom to Lat Phrao, dinner at 18:30) from the
+// heroInput builds the มิว trip (Silom to Lat Phrao, dinner at 18:30) from the
 // scenario providers and the real BMA flood spot dataset.
 func heroInput(t *testing.T, now, depart time.Time, mode domain.Mode, reports ...domain.Report) Input {
 	t.Helper()

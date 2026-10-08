@@ -77,13 +77,13 @@ void main() {
   testWidgets('Home prints the top trip as a pass from fixtures when offline', (tester) async {
     await pumpApp(tester, '2026-09-29T16:10:00+07:00');
 
-    expect(find.text('สวัสดีพลอย'), findsOneWidget);
+    expect(find.text('สวัสดีมิว'), findsOneWidget);
     expect(find.text('ออกก่อน 16:45'), findsOneWidget);
     expect(find.text('78%'), findsOneWidget);
     expect(find.text('ข้อมูลตัวอย่าง'), findsWidgets);
     expect(find.text('ออกก่อน 16:45 · กินข้าวเย็นกับที่บ้าน'), findsOneWidget, reason: '16:10 push banner');
     expect(find.byType(RainBand), findsOneWidget);
-    expect(Theme.of(tester.element(find.text('สวัสดีพลอย'))).brightness, Brightness.light);
+    expect(Theme.of(tester.element(find.text('สวัสดีมิว'))).brightness, Brightness.light);
   });
 
   testWidgets('dragging the rain-band marker re-letters the verdict and reranks the board',
@@ -127,7 +127,7 @@ void main() {
     await pumpApp(tester, '2026-09-29T21:40:00+07:00');
 
     expect(find.textContaining('น้ำจะถึงหน้าบ้านใน'), findsOneWidget);
-    expect(Theme.of(tester.element(find.text('สวัสดีพลอย'))).brightness, Brightness.dark);
+    expect(Theme.of(tester.element(find.text('สวัสดีมิว'))).brightness, Brightness.dark);
 
     await tapAndSettle(tester, find.text('ดูสิ่งที่ต้องทำตอนนี้'));
     expect(find.text('โหมดน้ำท่วม'), findsOneWidget);

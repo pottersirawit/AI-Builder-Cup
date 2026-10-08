@@ -79,12 +79,12 @@ PROJECT=$PROJECT REPORT_STORE=firestore api/deploy/cloudrun.sh  # เก็บ�
 | package | หน้าที่ |
 |---|---|
 | `internal/domain` | ศัพท์กลาง (Trip, Route, RainSample, Report, Mode) และ seam: `WeatherProvider`, `RouteProvider`, `CanalProvider`, `ReportStore`, `Clock` |
-| `internal/scenario` | สคริปต์เดโมของพลอย: ฝนถึงพระราม 4 ~17:30, หนักสุด 18:00–18:45, ซา 19:15, น้ำรอระบายถึง ~20:00, ฝนรอบสอง 21:00; คลองลาดพร้าว 1.4 → 1.8 ม. (19:40–21:40); รายงานผู้ใช้ตั้งต้น; ผู้ใช้จำลอง 60 คน (27 คนผ่านรัชดา–ลาดพร้าว 32) |
+| `internal/scenario` | สคริปต์เดโมของมิว: ฝนถึงพระราม 4 ~17:30, หนักสุด 18:00–18:45, ซา 19:15, น้ำรอระบายถึง ~20:00, ฝนรอบสอง 21:00; คลองลาดพร้าว 1.4 → 1.8 ม. (19:40–21:40); รายงานผู้ใช้ตั้งต้น; ผู้ใช้จำลอง 60 คน (27 คนผ่านรัชดา–ลาดพร้าว 32) |
 | `internal/live` | Google Weather, Routes API, ThaiWater และ wrapper ที่ถอยไปใช้ scenario เมื่อ error |
 | `internal/decision` | **แกนตัดสินใจแบบ deterministic** ฝนบนเส้นทาง × เกณฑ์ฝนของจุดน้ำท่วม (โมเดลความลึกพอร์ตจาก `flood_matcher.py` + ระบายน้ำ 2 ชม.) × ความสูงใต้ท้องรถ (เก๋ง 15 ซม., มอไซค์ 10 ซม./ฝน ≥10 มม./ชม., รถไฟฟ้าไม่กระทบ) → verdict ต่อโหมด, `leave_by`, confidence, ข้อความไทย fallback |
 | `internal/planner` | รวบรวมข้อมูลจาก provider ต่อหนึ่งคำขอ, วางทริปจากสถานที่ที่บันทึกไว้ (`TripTo`) และเป็นกล่องเครื่องมือของ agent: `get_trip`, `get_route`, `get_rain_along_route`, `get_flood_spots_on_route`, `get_canal_levels`, `get_community_reports`, `evaluate_departure` |
 | `internal/agent` | Gemini function-calling agent (ตัดสิน + เขียนเหตุผลภาษาไทย), ตัวแยกคำถามภาษาไทย (Gemini structured output / regex fallback เช่น "สองทุ่ม" = 20:00, "BTS" → transit, "มอไซค์" → moto) |
-| `internal/vision` | Gemini vision ประเมินรูปน้ำท่วม (JSON schema) + ตรวจค่าผิดปกติ, fallback = ค่ารูปของพลอย 20–25 ซม. 84% |
+| `internal/vision` | Gemini vision ประเมินรูปน้ำท่วม (JSON schema) + ตรวจค่าผิดปกติ, fallback = ค่ารูปของมิว 20–25 ซม. 84% |
 | `internal/homestatus` | โหมดน้ำท่วมที่บ้าน: ระดับคลองเทียบตลิ่ง, อัตราขึ้น, เวลาที่น้ำถึงหน้าบ้าน, รายการสิ่งที่ต้องทำเรียงลำดับ |
 | `internal/reports` | ReportStore ในหน่วยความจำ (ค่าเริ่มต้น) หรือ Firestore (`REPORT_STORE=firestore`) รายงานโผล่ตามนาฬิกาเดโม + นับคนที่เส้นทางผ่านในรัศมี 300 ม. |
 | `internal/httpapi` | handlers, CORS เปิด, เลือก scenario/live ต่อคำขอตาม `X-Demo-Clock` |
@@ -110,7 +110,7 @@ PROJECT=$PROJECT REPORT_STORE=firestore api/deploy/cloudrun.sh  # เก็บ�
 
 - ค่าเริ่มต้นเก็บรายงานในหน่วยความจำ (หายเมื่อรีสตาร์ท) ต้องตั้ง `REPORT_STORE=firestore` ถึงจะถาวร; ผู้ใช้จำลองยังอยู่ในหน่วยความจำ
 - Firestore store ทดสอบ offline แค่การแปลงเอกสาร ส่วน integration test รันเมื่อมี `FIRESTORE_EMULATOR_HOST` เท่านั้น
-- สถานที่ที่บันทึกไว้และ "อยู่ที่ไหนตอนนี้" เป็นข้อมูลจำลองของพลอย ยังไม่ได้ใช้ตำแหน่งจริงของเครื่อง
+- สถานที่ที่บันทึกไว้และ "อยู่ที่ไหนตอนนี้" เป็นข้อมูลจำลองของมิว ยังไม่ได้ใช้ตำแหน่งจริงของเครื่อง
 - ทริปเป็นข้อมูลจำลอง ยังไม่ได้ต่อ Google Calendar / Gmail จริง
 - โหมด live สุ่มฝนจุดเดียวกลางเส้นทาง และ Google Weather ไม่มีฝนย้อนหลัง จึงประเมินน้ำรอระบายจากฝนที่ผ่านมาได้ไม่ครบ
 - ThaiWater ไม่มีอัตราขึ้น 2 ชม. ในฟีดนี้ (`rise_cm_2h` = 0 ในโหมด live)

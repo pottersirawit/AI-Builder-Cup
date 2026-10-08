@@ -39,7 +39,7 @@ var schema = &genai.Schema{
 
 // Assess returns depth, confidence, Thai description and per-mode passability.
 // Without Gemini, or when Gemini's answer is not usable, it returns the scenario
-// assessment of พลอย's 18:52 photo and generatedBy "fallback".
+// assessment of มิว's 18:52 photo and generatedBy "fallback".
 func Assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string) (domain.Report, string) {
 	fallback := scenario.HeroAssessment()
 	if !g.Available() {

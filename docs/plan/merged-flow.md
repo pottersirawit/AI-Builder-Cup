@@ -7,7 +7,7 @@ Status: draft built on Claude's recommended answers. Open questions are listed a
 | | Potter (`fontokmai.html`, `architecture.html`) | Saran (Phase 1 commit `5d12102`) |
 |---|---|---|
 | Core idea | One question: "should I leave now?" for a specific trip. Calendar/Gmail make it proactive. Flood is the severe mode of the same answer. | Proactive flood/weather alerts pushed over LINE, personalised by vehicle clearance. |
-| Strongest assets | Hero scenario (พลอย, 16:10), plain-Thai verdict, departure-time slider, Gemini-vision flood photo reports shared to people on the same route, confidence on every answer, source label on every card | 70+ BMA flood spot dataset with rain thresholds and vehicle risk, vehicle clearance profiles, ThaiWater canal telemetry client, Google Weather API client, Calendar OAuth + Bangkok landmark geocoding, Go gateway + tests |
+| Strongest assets | Hero scenario (มิว, 16:10), plain-Thai verdict, departure-time slider, Gemini-vision flood photo reports shared to people on the same route, confidence on every answer, source label on every card | 70+ BMA flood spot dataset with rain thresholds and vehicle risk, vehicle clearance profiles, ThaiWater canal telemetry client, Google Weather API client, Calendar OAuth + Bangkok landmark geocoding, Go gateway + tests |
 | Channel | Mobile app mock (HTML) | LINE bot + LIFF |
 
 ## Merged product in one sentence

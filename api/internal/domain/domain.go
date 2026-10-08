@@ -122,7 +122,7 @@ type MockUser struct {
 	Route []LatLng
 }
 
-// Clock tells the current time. The demo clock replays the พลอย scenario.
+// Clock tells the current time. The demo clock replays the มิว scenario.
 type Clock interface {
 	Now() time.Time
 }

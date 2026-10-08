@@ -100,7 +100,7 @@ class SettingsScreen extends StatelessWidget {
             ),
             const Padding(
               padding: EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, Space.x10),
-              child: SourceLabel('ชื่อ “พลอย” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม'),
+              child: SourceLabel('ชื่อ “มิว” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม'),
             ),
           ]),
         ],

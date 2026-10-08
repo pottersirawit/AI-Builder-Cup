@@ -209,7 +209,7 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           FieldHeader(
                             state: sky,
-                            title: 'สวัสดีพลอย',
+                            title: 'สวัสดีมิว',
                             subtitle: '${dayTimeTh(now).split(' ').take(3).join(' ')} · ${trip?.origin.nameTh ?? 'สีลม'}',
                             actions: [
                               if (state.usingSample) const SampleBadge(onField: true),

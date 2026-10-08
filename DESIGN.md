@@ -5,7 +5,7 @@ The app is a **personal departure board**, not a weather dashboard. The top trip
 ## Principles
 
 1. The verdict comes before the data. The pass's first line is what to do and by when, set in `displayMedium`.
-2. Every block names its source with `SourceLabel`. Gemini vs fallback is shown with `GeneratedBy`. Synthetic demo numbers (notified users, neighbours, the พลอย persona) are labelled "ตัวเลขจำลอง".
+2. Every block names its source with `SourceLabel`. Gemini vs fallback is shown with `GeneratedBy`. Synthetic demo numbers (notified users, neighbours, the มิว persona) are labelled "ตัวเลขจำลอง".
 3. Never use colour alone. Risk is always an icon, a word and a colour together (`RiskChip`).
 4. One escalation. Clear sky, storm and flood are the same screens with a different ground. Flood switches the whole app to the dark scheme with a single amber accent.
 

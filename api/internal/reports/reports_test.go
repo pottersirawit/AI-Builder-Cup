@@ -22,7 +22,7 @@ func TestMemoryStoreNear(t *testing.T) {
 }
 
 // testNear is the ReportStore contract every store must meet, given the
-// scenario seed plus พลอย's 18:52 report.
+// scenario seed plus มิว's 18:52 report.
 func testNear(t *testing.T, s domain.ReportStore) {
 	t.Helper()
 	ctx := context.Background()
@@ -32,7 +32,7 @@ func testNear(t *testing.T, s domain.ReportStore) {
 		radius       float64
 		want         int
 	}{
-		{"corroborating window at 18:52 includes พลอย", at(18, 22), at(18, 52), 300, 3},
+		{"corroborating window at 18:52 includes มิว", at(18, 22), at(18, 52), 300, 3},
 		{"before the storm nothing is visible", at(0, 0), at(16, 10), 5000, 0},
 		{"replay hides reports from the future", at(18, 0), at(18, 45), 300, 1},
 		{"tight radius", at(18, 0), at(19, 0), 10, 1},
