@@ -1,0 +1,13 @@
+{
+  "level": "normal",
+  "headline_th": "ฝนวันนี้เบา ยังไม่ต้องเตรียมอะไร",
+  "summary_th": "บ้านอยู่นอกพื้นที่ที่แอปรองรับ จึงมีเฉพาะข้อมูลฝน",
+  "canal": null,
+  "in_service_area": false,
+  "minutes_to_doorstep": null,
+  "rain_today_mm": 3,
+  "reports_nearby": 0,
+  "flood_spots": [],
+  "actions": [],
+  "sources": ["Google Weather API"]
+}

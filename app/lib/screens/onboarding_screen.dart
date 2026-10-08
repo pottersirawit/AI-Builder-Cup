@@ -1,0 +1,163 @@
+import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+
+import '../app_state.dart';
+import '../design/design.dart';
+import '../models.dart';
+import 'place_picker.dart';
+
+/// First launch: one optional screen whose only job is getting home (and
+/// work) saved so the app can warn about the trip home. Everything works
+/// without it.
+class OnboardingScreen extends StatelessWidget {
+  const OnboardingScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.placesOf(context);
+    final sky = FonColors.of(context).sky(SkyState.clear);
+    final t = Theme.of(context).textTheme;
+    final c = FonColors.of(context);
+
+    return Scaffold(
+      body: SkyField(
+        state: SkyState.clear,
+        height: double.infinity,
+        child: SafeArea(
+          child: Column(
+            children: [
+              Expanded(
+                child: ListView(
+                  padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x8, Space.gutter, Space.x4),
+                  children: [
+                    Row(
+                      children: [
+                        Icon(Symbols.rainy_rounded, fill: 1, color: sky.onField, size: 22),
+                        const SizedBox(width: Space.x2),
+                        Text('ฝนตกไหม', style: t.titleMedium!.copyWith(color: sky.onField)),
+                      ],
+                    ),
+                    const SizedBox(height: Space.x6),
+                    Text('ให้แอปเตือนก่อนกลับบ้าน',
+                        style: t.displaySmall!.copyWith(color: sky.onField)),
+                    const SizedBox(height: Space.x3),
+                    Text(
+                      'บอกว่าบ้านกับที่ทำงานอยู่ไหน แอปจะเช็กฝนและน้ำท่วมบนทางกลับให้ทุกเย็น และดูความเสี่ยงน้ำท่วมหน้าบ้าน',
+                      style: t.bodyLarge!.copyWith(color: sky.onFieldMuted),
+                    ),
+                    const SizedBox(height: Space.x6),
+                    Pass(sections: [
+                      _PlaceSlot(kind: PlaceKind.home, place: store.home),
+                      _PlaceSlot(kind: PlaceKind.work, place: store.work),
+                      PassSection(
+                        child: SourceLabel(
+                          'เก็บไว้ในเครื่องนี้เท่านั้น ส่งพิกัดไปกับคำถามตอนถาม · ข้ามไปก่อนก็ได้ ถามเองได้เสมอ',
+                          icon: Symbols.lock_rounded,
+                          color: c.paperMuted,
+                        ),
+                      ),
+                    ]),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, Space.x2),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    FilledButton(
+                      style: FilledButton.styleFrom(
+                        backgroundColor: c.paper,
+                        foregroundColor: c.paperInk,
+                        minimumSize: const Size.fromHeight(52),
+                      ),
+                      onPressed: store.completeOnboarding,
+                      child: const Text('เริ่มใช้'),
+                    ),
+                    const SizedBox(height: Space.x1),
+                    Wrap(
+                      alignment: WrapAlignment.spaceBetween,
+                      children: [
+                        TextButton(
+                          style: TextButton.styleFrom(foregroundColor: sky.onField),
+                          onPressed: store.completeOnboarding,
+                          child: const Text('ข้ามไปก่อน'),
+                        ),
+                        TextButton(
+                          style: TextButton.styleFrom(foregroundColor: sky.onFieldMuted),
+                          onPressed: store.useDemoProfile,
+                          child: const Text('ใช้โปรไฟล์เดโม (มิว)'),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// One row of the onboarding pass: บ้าน or ที่ทำงาน, with both ways to set it.
+class _PlaceSlot extends StatelessWidget {
+  const _PlaceSlot({required this.kind, required this.place});
+  final PlaceKind kind;
+  final SavedPlace? place;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FonColors.of(context);
+    final t = Theme.of(context).textTheme;
+    final p = place;
+    final home = kind == PlaceKind.home;
+    return PassSection(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(home ? Symbols.home_rounded : Symbols.work_rounded, size: 22, color: c.paperInk, fill: p == null ? 0 : 1),
+              const SizedBox(width: Space.x2),
+              Expanded(child: Text(home ? 'บ้าน' : 'ที่ทำงาน', style: t.titleMedium!.copyWith(color: c.paperInk))),
+              if (p != null) RiskChip(risk: Risk.low, label: 'ตั้งแล้ว', dense: true),
+            ],
+          ),
+          const SizedBox(height: Space.x1),
+          Text(
+            p == null
+                ? (home ? 'ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน' : 'ไม่บังคับ · ทำให้เตือนตอนเลิกงานได้แม่นขึ้น')
+                : '${p.nameTh}${p.kind == PlaceKind.work ? ' · ${workDaysLabel(p.days)} ออก ${p.leaveTime}' : ''}',
+            style: (p == null ? t.bodySmall : t.bodyMedium)!.copyWith(color: p == null ? c.paperMuted : c.paperInk),
+          ),
+          const SizedBox(height: Space.x3),
+          if (p == null)
+            Wrap(
+              spacing: Space.x2,
+              runSpacing: Space.x2,
+              children: [
+                OutlinedButton.icon(
+                  onPressed: () => pickPlace(context, kind: kind, locateNow: true),
+                  icon: const Icon(Symbols.my_location_rounded),
+                  label: const Text('ใช้ตำแหน่งตอนนี้'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => pickPlace(context, kind: kind),
+                  icon: const Icon(Symbols.search_rounded),
+                  label: const Text('ค้นหา'),
+                ),
+              ],
+            )
+          else
+            TextButton.icon(
+              onPressed: () => editPlace(context, p),
+              icon: const Icon(Symbols.edit_rounded),
+              label: const Text('แก้ไข'),
+            ),
+        ],
+      ),
+    );
+  }
+}

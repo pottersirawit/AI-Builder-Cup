@@ -34,7 +34,7 @@
 	<key>NSCameraUsageDescription</key>
 	<string>ถ่ายรูปน้ำท่วมเพื่อให้ Gemini ประเมินระดับน้ำและเตือนคนที่กำลังจะผ่านจุดนี้</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>ใช้ตำแหน่งปัจจุบันเพื่อปักหมุดจุดน้ำท่วมที่คุณรายงาน และเตือนคนที่เส้นทางผ่านจุดนี้</string>
+	<string>ใช้ตำแหน่งตอนที่คุณกด "ใช้ตำแหน่งตอนนี้" เพื่อบันทึกบ้านหรือที่ทำงาน หาทางกลับบ้าน และปักหมุดจุดน้ำท่วมที่คุณรายงาน แอปไม่เก็บประวัติการเดินทาง</string>
 	<key>NSPhotoLibraryUsageDescription</key>
 	<string>เลือกรูปน้ำท่วมจากคลังภาพเพื่อรายงาน</string>
 	<key>UIApplicationSupportsIndirectInputEvents</key>

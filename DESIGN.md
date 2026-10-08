@@ -84,9 +84,14 @@ Use `Motion.of(context)`. When the system *Reduce Motion* / *Remove animations* 
 | `ConfidenceMeter` | Ten ticks plus a tabular percentage. |
 | `SourceLabel`, `GeminiMark`, `GeneratedBy` | Provenance line; the Gemini spark (a rule icon for fallback); "ตัดสินโดย Gemini" or "กฎสำรอง · Gemini ไม่ตอบในรอบนี้". |
 | `AskBar` | Pill question field with the Gemini spark and a 48 dp send button, pinned above the nav bar on Home. |
-| `SkyField`, `FieldHeader` | The ground and the title row on it (back, title, subtitle, actions). |
+| `SkyField`, `FieldHeader` | The ground and the title row on it (back, title, subtitle, actions, and an optional `badge` pill right after the title). |
 | `NotificationBanner` | In-app stand-in for the 16:10 push. Opaque, swipe up or close to dismiss. |
 | `Skeleton`, `PassSkeleton`, `ErrorState`, `EmptyState` | Loading pulse (static under reduce motion), the pass's shape while loading, failure with recovery, and nothing-yet with a next step. |
+| `SkeletonList` | Search results while they load: an icon dot and two lines per row. |
+| `Notice` | A one-line hint on the surface: what is missing, why, and the one action that fixes it. `info` uses secondaryContainer; `warning` uses riskMediumContainer with the risk-medium icon. Dismissible when given `onDismiss`. Flat, no border. |
+| `PinPreview` | Where a place is, without a map SDK: a pin on a plain grid that shifts with the coordinates, plus the GPS accuracy ring and the coordinates in tabular type. |
+| `ConnectRow` | A connected account (Google Calendar) in four states: not connected (with "เชื่อมต่อ", or a disabled "เร็ว ๆ นี้" while OAuth is stubbed), connecting (spinner), connected (account, "ยกเลิก"), error ("ลองอีกครั้ง"). |
+| `DemoBadge` | "เดโม": the synthetic มิว profile is loaded. On the field it is white at 18% so it never competes with the amber sample badge. |
 
 ## States, screen by screen
 
@@ -94,7 +99,13 @@ Use `Motion.of(context)`. When the system *Reduce Motion* / *Remove animations* 
 - **Verdict**: progress line under the header while the agent answers; preview copy while dragging; "ไม่มีจุดน้ำขังบนเส้นทางนี้" when there are no flood spots.
 - **Ask**: thinking skeleton; a failed answer offers "ถามใหม่".
 - **Report**: GPS states ("กำลังหาตำแหน่ง…", GPS coordinates, or a named fallback to ถ.รัชดาภิเษก with a "ลองหา GPS" retry); scan line while Gemini looks; "ส่งรายงานไม่สำเร็จ" keeps the photo and offers "ส่งอีกครั้ง".
-- **Home (บ้าน tab)**: an error tells the user what to do anyway; flood actions are 64 dp check-off rows.
+- **Home (บ้าน tab)**: an error tells the user what to do anyway; flood actions are 64 dp check-off rows. With no home saved, the pass is an empty state with "ใช้ตำแหน่งตอนนี้" / "ค้นหา", and "รายงานน้ำท่วมใกล้ฉัน" still works from GPS. With no canal station within 3 km, the pass trades the canal segments for ฝนวันนี้ / จุดเสี่ยง 2 กม. / รายงาน 500 ม. and says "ไม่มีสถานีวัดระดับคลองใกล้บ้าน". Outside Bangkok it carries "นอกพื้นที่ที่รองรับ" and explains that only rain is covered.
+- **Onboarding** (first launch only): the sky field with "ให้แอปเตือนก่อนกลับบ้าน", one pass with a บ้าน and a ที่ทำงาน section (each "ใช้ตำแหน่งตอนนี้" / "ค้นหา", or the saved name with "แก้ไข"), a paper-white "เริ่มใช้", "ข้ามไปก่อน", and "ใช้โปรไฟล์เดโม (มิว)". Nothing is required.
+- **Home, empty**: no home and no trips puts the ask bar on the field as the hero ("ไปไหน กี่โมง?") above an empty pass with "ตั้งบ้าน"; the quick-ask row shows outlined "+ บ้าน" / "+ ที่ทำงาน" ghost chips. Missing work, missing home, working from home, Calendar not connected (dismissible) and "ไม่มีนัดที่มีสถานที่ใน 24 ชม." are `Notice` rows under the pass. Home without work shows a "กลับบ้าน · จากตำแหน่งตอนนี้" pass that asks for the position only on tap. An event whose place is unknown is a board row with the status "ไม่รู้ว่าที่ไหน".
+- **Ask / Verdict, place unknown**: the answer pass asks back: "ยังไม่รู้ว่าบ้านอยู่ไหน" with "ใช้ตำแหน่งตอนนี้" / "ค้นหา", or "หมายถึงที่ไหน" with the server's candidates and "ไม่ใช่ทั้งหมด · ค้นหาเอง". After the user answers, the same question runs again. A decided trip to an unsaved place offers a "บันทึกที่นี่ไว้" chip.
+- **Place picker**: pill search field on the field (debounced 300 ms, two characters minimum), `SkeletonList` while searching, "ไม่พบ “…”" with tips and "ใช้ตำแหน่งตอนนี้", and a warning `Notice` with retry when it falls back to the bundled list. "ใช้ตำแหน่งตอนนี้" moves through: a one-line rationale before the first OS prompt ("อนุญาตตำแหน่ง"), locating, "ไม่ได้รับสิทธิ์ตำแหน่ง" ("เปิดการตั้งค่า"), "ตำแหน่งปิดอยู่" ("เปิดการตั้งค่าตำแหน่ง"), and timeout ("ลองอีกครั้ง"). Every blocked state offers "ค้นหาแทน", re-checks on return from Settings, and never re-prompts.
+- **Confirm sheet**: `PinPreview`, name, address and source, then `Notice`s for out of area, low GPS accuracy ("ตำแหน่งอาจคลาดเคลื่อน ~N ม." with "ค้นหาแทน"), work from home, and duplicates ("ใกล้กับ ‘ยิม’ ที่บันทึกไว้", which turns the button into "อัปเดตที่เดิม" / "บันทึกแยก"). It has an editable label, an icon picker, and for work the work days and usual leave time. In edit mode it adds "ย้ายตำแหน่ง" and "ลบ…". Deleting shows a snackbar with "เลิกทำ", never a dialog.
+- **Settings**: real places (out-of-area ones carry the chip), "เพิ่มสถานที่" disabled at 8 with the reason, the Calendar `ConnectRow`, the notifications-off warning `Notice`, and "ออกจากโปรไฟล์เดโม" / "ใช้โปรไฟล์เดโม (มิว)".
 
 ## Do and don't
 
@@ -108,4 +119,4 @@ Use `Motion.of(context)`. When the system *Reduce Motion* / *Remove animations* 
 
 ## Demo and screenshots
 
-`--dart-define=DEMO_CLOCK=16:10|18:52|21:40|live` sets the scenario time. `--dart-define=DEMO_SCREEN=verdict@18:00/moto | report_result | home_tab | ask | settings | gallery` opens a state on launch. Review captures are in `.impeccable/review/phone-*.png` (iPhone 17 Pro simulator, live API with Gemini off, so verdicts show the fallback label).
+`--dart-define=DEMO_CLOCK=16:10|18:52|21:40|live` sets the scenario time. `--dart-define=DEMO_SCREEN=verdict@18:00/moto | report_result | home_tab | ask | settings | gallery` opens a state on launch, and `onboarding | empty_home | place_search | place_confirm | flood_nohome | settings_places | location_denied` open the places and empty states (phone-onboarding, phone-empty-home, phone-place-search, phone-place-confirm, phone-flood-nohome, phone-settings-places, phone-location-denied; live API v1 with bundled place data, no Maps key). Review captures are in `.impeccable/review/phone-*.png` (iPhone 17 Pro simulator, live API with Gemini off, so verdicts show the fallback label).

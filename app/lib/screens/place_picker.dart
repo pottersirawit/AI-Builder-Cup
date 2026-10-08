@@ -1,0 +1,807 @@
+import 'dart:async';
+
+import 'package:flutter/material.dart';
+import 'package:material_symbols_icons/symbols.dart';
+
+import '../app_state.dart';
+import '../design/design.dart';
+import '../location.dart';
+import '../models.dart';
+import '../places.dart';
+
+/// Opens the picker for [kind] and returns the saved place, or null.
+Future<SavedPlace?> pickPlace(
+  BuildContext context, {
+  required PlaceKind kind,
+  String? initialQuery,
+  bool locateNow = false,
+  SavedPlace? editing,
+}) =>
+    Navigator.of(context).push<SavedPlace>(MaterialPageRoute(
+      builder: (_) => PlacePickerScreen(
+        kind: kind,
+        initialQuery: initialQuery,
+        locateNow: locateNow,
+        editing: editing,
+      ),
+    ));
+
+/// Picks a point without saving it (e.g. reports near a searched place).
+Future<PlaceCandidate?> pickPoint(BuildContext context) => Navigator.of(context).push<PlaceCandidate>(
+    MaterialPageRoute(builder: (_) => const PlacePickerScreen(kind: PlaceKind.other, save: false)));
+
+/// Edits a saved place from Settings: details in the sheet, "ย้ายตำแหน่ง"
+/// through the picker, delete with a snackbar undo.
+Future<void> editPlace(BuildContext context, SavedPlace place) async {
+  final store = AppScope.readPlaces(context);
+  final messenger = ScaffoldMessenger.of(context);
+  final r = await showPlaceConfirmSheet(context, kind: place.kind, candidate: candidateOf(place), editing: place);
+  if (r == null || !context.mounted) return;
+  if (r.move) {
+    await pickPlace(context, kind: place.kind, editing: place);
+  } else if (r.delete) {
+    final removed = store.remove(place.id);
+    if (removed == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(SnackBar(
+        content: Text('ลบ “${place.labelTh}” แล้ว'),
+        action: SnackBarAction(label: 'เลิกทำ', onPressed: () => store.restore(removed.place, removed.index)),
+      ));
+  }
+}
+
+PlaceCandidate candidateOf(SavedPlace p) =>
+    PlaceCandidate(nameTh: p.nameTh, addressTh: p.addressTh, lat: p.lat, lng: p.lng, source: 'saved');
+
+String _pickerTitle(PlaceKind kind, SavedPlace? editing, bool save) {
+  if (!save) return 'เลือกจุด';
+  if (editing != null) return 'ย้าย${editing.labelTh}';
+  return switch (kind) {
+    PlaceKind.home => 'ตั้งบ้าน',
+    PlaceKind.work => 'ตั้งที่ทำงาน',
+    PlaceKind.other => 'เพิ่มสถานที่',
+  };
+}
+
+/// Search or use the phone's position, then confirm before saving.
+class PlacePickerScreen extends StatefulWidget {
+  const PlacePickerScreen({
+    super.key,
+    required this.kind,
+    this.initialQuery,
+    this.locateNow = false,
+    this.editing,
+    this.save = true,
+  });
+  final PlaceKind kind;
+  final String? initialQuery;
+
+  /// Starts with "ใช้ตำแหน่งตอนนี้" instead of the keyboard.
+  final bool locateNow;
+  final SavedPlace? editing;
+
+  /// False: return the chosen point without the confirm sheet.
+  final bool save;
+
+  @override
+  State<PlacePickerScreen> createState() => _PlacePickerScreenState();
+}
+
+class _PlacePickerScreenState extends State<PlacePickerScreen> {
+  static const debounce = Duration(milliseconds: 300);
+  static const minChars = 2;
+
+  late final _query = TextEditingController(text: widget.initialQuery ?? '');
+  final _focus = FocusNode();
+  Timer? _timer;
+  int _seq = 0;
+
+  String _searched = '';
+  List<PlaceCandidate>? _results;
+  bool _searching = false;
+  bool _offline = false;
+  bool _failed = false;
+  bool _naming = false;
+
+  @override
+  void initState() {
+    super.initState();
+    if (_query.text.trim().length >= minChars) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _search(_query.text));
+    } else if (!widget.locateNow) {
+      WidgetsBinding.instance.addPostFrameCallback((_) => _focus.requestFocus());
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _query.dispose();
+    _focus.dispose();
+    super.dispose();
+  }
+
+  void _onChanged(String q) {
+    _timer?.cancel();
+    if (q.trim().length < minChars) {
+      _seq++;
+      setState(() {
+        _results = null;
+        _searching = false;
+        _failed = false;
+      });
+      return;
+    }
+    setState(() => _searching = true);
+    _timer = Timer(debounce, () => _search(q));
+  }
+
+  Future<void> _search(String q) async {
+    final seq = ++_seq;
+    final api = AppScope.apiOf(context);
+    setState(() {
+      _searching = true;
+      _failed = false;
+    });
+    try {
+      final r = await api.searchPlaces(q.trim());
+      if (!mounted || seq != _seq) return;
+      setState(() {
+        _searched = q.trim();
+        _results = r.data;
+        _offline = r.isSample;
+        _searching = false;
+      });
+    } catch (_) {
+      if (!mounted || seq != _seq) return;
+      setState(() {
+        _searched = q.trim();
+        _results = null;
+        _failed = true;
+        _searching = false;
+      });
+    }
+  }
+
+  Future<void> _onFix(LocateResult fix) async {
+    final api = AppScope.apiOf(context);
+    setState(() => _naming = true);
+    PlaceCandidate c;
+    try {
+      c = (await api.reversePlace(fix.lat, fix.lng)).data;
+    } catch (_) {
+      c = PlaceCandidate(
+        nameTh: 'ตำแหน่งที่ปักหมุด',
+        addressTh: '${fix.lat.toStringAsFixed(4)}, ${fix.lng.toStringAsFixed(4)}',
+        lat: fix.lat,
+        lng: fix.lng,
+      );
+    }
+    if (!mounted) return;
+    setState(() => _naming = false);
+    await _choose(c.withAccuracy(fix.accuracyM ?? 0));
+  }
+
+  Future<void> _choose(PlaceCandidate c) async {
+    if (!widget.save) {
+      Navigator.pop(context, c);
+      return;
+    }
+    final r = await showPlaceConfirmSheet(context, kind: widget.kind, candidate: c, editing: widget.editing);
+    if (!mounted || r == null) return;
+    if (r.saved != null) {
+      Navigator.pop(context, r.saved);
+    } else if (r.searchInstead) {
+      _focus.requestFocus();
+    }
+  }
+
+  void _searchInstead() => _focus.requestFocus();
+
+  @override
+  Widget build(BuildContext context) {
+    final state = AppScope.stateOf(context);
+    final sky = state.flood ? SkyState.flood : SkyState.clear;
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final q = _query.text.trim();
+
+    Widget results;
+    if (q.length < minChars) {
+      results = Padding(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, 0),
+        child: SourceLabel('พิมพ์อย่างน้อย $minChars ตัวอักษร ชื่อสถานี BTS ห้าง ซอย หรือเขต', icon: Symbols.info_rounded),
+      );
+    } else if (_searching) {
+      results = const SkeletonList();
+    } else if (_failed) {
+      results = ErrorState(
+        title: 'ค้นหาไม่ได้',
+        message: 'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ และไม่มีรายชื่อสถานที่ในเครื่อง',
+        onRetry: () => _search(q),
+      );
+    } else if (_results != null && _results!.isEmpty) {
+      results = EmptyState(
+        icon: Symbols.search_off_rounded,
+        title: 'ไม่พบ “$_searched”',
+        message: 'ลองพิมพ์ชื่อสถานี BTS หรือห้าง${_offline ? ' ตอนนี้ค้นได้เฉพาะรายชื่อในเครื่อง' : ''}',
+        action: Wrap(spacing: Space.x2, runSpacing: Space.x2, children: [
+          if (widget.save)
+            OutlinedButton.icon(
+              onPressed: () => _locateKey.currentState?.start(),
+              icon: const Icon(Symbols.my_location_rounded),
+              label: const Text('ใช้ตำแหน่งตอนนี้'),
+            ),
+          if (_offline) TextButton(onPressed: () => _search(q), child: const Text('ค้นออนไลน์อีกครั้ง')),
+        ]),
+      );
+    } else if (_results != null) {
+      results = Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (_offline)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, Space.x2),
+              child: Notice(
+                icon: Symbols.cloud_off_rounded,
+                tone: NoticeTone.warning,
+                text: 'ค้นออนไลน์ไม่ได้ แสดงข้อมูลในเครื่อง',
+                action: TextButton(onPressed: () => _search(q), child: const Text('ลองอีกครั้ง')),
+              ),
+            ),
+          for (final c in _results!)
+            ListTile(
+              leading: const Icon(Symbols.location_on_rounded),
+              title: Text(c.nameTh),
+              subtitle: Text(c.nameEn == null ? c.addressTh : '${c.addressTh} · ${c.nameEn}',
+                  maxLines: 1, overflow: TextOverflow.ellipsis),
+              trailing: inServiceArea(c.lat, c.lng)
+                  ? null
+                  : const RiskChip(risk: Risk.medium, label: 'นอกพื้นที่', dense: true),
+              onTap: () => _choose(c),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, 0),
+            child: SourceLabel(_results!.any((c) => c.source == 'google')
+                ? 'Google Maps'
+                : 'รายชื่อสถานที่ในกรุงเทพฯ ที่แอปมีให้ · สถานี BTS/MRT ห้าง และเขต${_offline ? ' (ในเครื่อง)' : ''}'),
+          ),
+        ],
+      );
+    } else {
+      results = const SizedBox.shrink();
+    }
+
+    return Scaffold(
+      body: CustomScrollView(
+        keyboardDismissBehavior: ScrollViewKeyboardDismissBehavior.onDrag,
+        slivers: [
+          SliverToBoxAdapter(
+            child: SkyField(
+              state: sky,
+              height: double.infinity,
+              child: SafeArea(
+                bottom: false,
+                child: Column(
+                  children: [
+                    FieldHeader(
+                      state: sky,
+                      back: true,
+                      title: _pickerTitle(widget.kind, widget.editing, widget.save),
+                      subtitle: 'ค้นหา หรือใช้ตำแหน่งตอนนี้',
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.x4),
+                      child: TextField(
+                        controller: _query,
+                        focusNode: _focus,
+                        onChanged: _onChanged,
+                        onSubmitted: (v) {
+                          if (v.trim().length >= minChars) _search(v);
+                        },
+                        textInputAction: TextInputAction.search,
+                        style: t.bodyLarge,
+                        decoration: InputDecoration(
+                          filled: true,
+                          fillColor: scheme.surfaceContainerLowest,
+                          hintText: 'ชื่อสถานที่ เช่น BTS อารีย์ หรือ Central',
+                          prefixIcon: const Icon(Symbols.search_rounded),
+                          suffixIcon: q.isEmpty
+                              ? null
+                              : IconButton(
+                                  tooltip: 'ล้าง',
+                                  onPressed: () {
+                                    _query.clear();
+                                    _onChanged('');
+                                  },
+                                  icon: const Icon(Symbols.close_rounded),
+                                ),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(Radii.pill),
+                            borderSide: BorderSide.none,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.only(top: Space.x2),
+              child: LocatePanel(
+                key: _locateKey,
+                autoStart: widget.locateNow,
+                busyLabel: _naming ? 'กำลังหาชื่อสถานที่…' : null,
+                onFix: _onFix,
+                onSearchInstead: _searchInstead,
+              ),
+            ),
+          ),
+          const SliverToBoxAdapter(child: Divider(indent: Space.gutter, endIndent: Space.gutter)),
+          SliverToBoxAdapter(child: results),
+          SliverToBoxAdapter(child: SizedBox(height: Space.x10 + MediaQuery.viewInsetsOf(context).bottom)),
+        ],
+      ),
+    );
+  }
+
+  final _locateKey = GlobalKey<LocatePanelState>();
+}
+
+/// "ใช้ตำแหน่งตอนนี้" and every state it can land in: the rationale before
+/// the first OS prompt, denied, denied forever, location off, timeout. It
+/// re-checks when the user comes back from Settings, and never re-prompts.
+class LocatePanel extends StatefulWidget {
+  const LocatePanel({
+    super.key,
+    required this.onFix,
+    required this.onSearchInstead,
+    this.autoStart = false,
+    this.busyLabel,
+  });
+  final ValueChanged<LocateResult> onFix;
+  final VoidCallback onSearchInstead;
+  final bool autoStart;
+
+  /// Shown while the caller works on the fix (e.g. naming it).
+  final String? busyLabel;
+
+  @override
+  State<LocatePanel> createState() => LocatePanelState();
+}
+
+class LocatePanelState extends State<LocatePanel> with WidgetsBindingObserver {
+  LocateStatus? _status;
+  bool _busy = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    if (widget.autoStart) WidgetsBinding.instance.addPostFrameCallback((_) => start());
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    const blocked = {LocateStatus.denied, LocateStatus.deniedForever, LocateStatus.servicesOff};
+    if (state == AppLifecycleState.resumed && blocked.contains(_status)) _run(prompt: false, quiet: true);
+  }
+
+  /// Starts locating; a first-time permission shows the rationale instead.
+  void start() => _run(prompt: false);
+
+  Future<void> _run({required bool prompt, bool quiet = false}) async {
+    final store = AppScope.readPlaces(context);
+    final locator = AppScope.locatorOf(context);
+    if (!quiet) setState(() => _busy = true);
+    final r = await locator.locate(prompt: prompt, askedBefore: store.locationAsked);
+    if (prompt) store.markLocationAsked();
+    if (!mounted) return;
+    if (quiet && !r.ok) {
+      setState(() => _status = r.status);
+      return;
+    }
+    setState(() {
+      _busy = false;
+      _status = r.ok ? null : r.status;
+    });
+    if (r.ok) widget.onFix(r);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final locator = AppScope.locatorOf(context);
+    final busy = _busy || widget.busyLabel != null;
+    if (busy) {
+      return ListTile(
+        leading: const SizedBox.square(
+          dimension: 24,
+          child: Padding(padding: EdgeInsets.all(2), child: CircularProgressIndicator(strokeWidth: 2.5)),
+        ),
+        title: Text(widget.busyLabel ?? 'กำลังหาตำแหน่ง…'),
+        subtitle: const Text('ใช้ GPS ของเครื่อง ไม่เกิน 10 วินาที'),
+      );
+    }
+    final search = TextButton.icon(
+      onPressed: widget.onSearchInstead,
+      icon: const Icon(Symbols.search_rounded),
+      label: const Text('ค้นหาแทน'),
+    );
+    Widget block(IconData icon, String title, String message, List<Widget> actions) => EmptyState(
+          icon: icon,
+          title: title,
+          message: message,
+          action: Wrap(spacing: Space.x2, runSpacing: Space.x2, children: actions),
+        );
+    return switch (_status) {
+      null => ListTile(
+          leading: const Icon(Symbols.my_location_rounded),
+          title: const Text('ใช้ตำแหน่งตอนนี้'),
+          subtitle: const Text('หาจาก GPS แล้วให้ยืนยันก่อนบันทึก'),
+          onTap: start,
+        ),
+      LocateStatus.notAsked => block(
+          Symbols.location_on_rounded,
+          'ขอใช้ตำแหน่งครั้งนี้',
+          'แอปใช้ตำแหน่งเพื่อหาว่าตรงนี้คือที่ไหนเท่านั้น ไม่เก็บประวัติการเดินทาง',
+          [
+            FilledButton.icon(
+              onPressed: () => _run(prompt: true),
+              icon: const Icon(Symbols.my_location_rounded),
+              label: const Text('อนุญาตตำแหน่ง'),
+            ),
+            search,
+          ],
+        ),
+      LocateStatus.denied || LocateStatus.deniedForever => block(
+          Symbols.location_disabled_rounded,
+          'ไม่ได้รับสิทธิ์ตำแหน่ง',
+          _status == LocateStatus.deniedForever
+              ? 'เปิดสิทธิ์ตำแหน่งให้ฝนตกไหมในการตั้งค่าของเครื่อง หรือค้นหาชื่อสถานที่แทน'
+              : 'อนุญาตได้ในการตั้งค่าของแอป หรือค้นหาชื่อสถานที่แทน',
+          [
+            FilledButton.tonalIcon(
+              onPressed: locator.openAppSettings,
+              icon: const Icon(Symbols.settings_rounded),
+              label: const Text('เปิดการตั้งค่า'),
+            ),
+            search,
+          ],
+        ),
+      LocateStatus.servicesOff => block(
+          Symbols.location_off_rounded,
+          'ตำแหน่งปิดอยู่',
+          'เปิดบริการตำแหน่งของเครื่องก่อน หรือค้นหาชื่อสถานที่แทน',
+          [
+            FilledButton.tonalIcon(
+              onPressed: locator.openLocationSettings,
+              icon: const Icon(Symbols.settings_rounded),
+              label: const Text('เปิดการตั้งค่าตำแหน่ง'),
+            ),
+            search,
+          ],
+        ),
+      LocateStatus.timeout || LocateStatus.error || LocateStatus.ok => block(
+          Symbols.location_searching_rounded,
+          _status == LocateStatus.timeout ? 'หาตำแหน่งไม่ทันเวลา' : 'หาตำแหน่งไม่ได้',
+          'สัญญาณ GPS อ่อน ลองอีกครั้งใกล้หน้าต่าง หรือค้นหาชื่อสถานที่แทน',
+          [
+            FilledButton.tonalIcon(
+              onPressed: start,
+              icon: const Icon(Symbols.refresh_rounded),
+              label: const Text('ลองอีกครั้ง'),
+            ),
+            search,
+          ],
+        ),
+    };
+  }
+}
+
+/// The phone's position for a one-off look (nearby reports, the trip home
+/// from here), with the same permission states in a sheet. "ค้นหาแทน"
+/// switches to picking a point by name.
+Future<PlaceCandidate?> locateOrSearch(BuildContext context) async {
+  var searchInstead = false;
+  final fix = await showModalBottomSheet<LocateResult>(
+    context: context,
+    isScrollControlled: true,
+    builder: (ctx) => SafeArea(
+      child: Padding(
+        padding: const EdgeInsets.only(bottom: Space.x4),
+        child: LocatePanel(
+          autoStart: true,
+          onFix: (r) => Navigator.pop(ctx, r),
+          onSearchInstead: () {
+            searchInstead = true;
+            Navigator.pop(ctx);
+          },
+        ),
+      ),
+    ),
+  );
+  if (!context.mounted) return null;
+  if (fix != null) {
+    return PlaceCandidate(nameTh: 'ตำแหน่งตอนนี้', lat: fix.lat, lng: fix.lng, source: 'gps', accuracyM: fix.accuracyM);
+  }
+  return searchInstead ? pickPoint(context) : null;
+}
+
+/// How the confirm sheet closed.
+class PlaceSheetResult {
+  const PlaceSheetResult({this.saved, this.delete = false, this.move = false, this.searchInstead = false});
+  final SavedPlace? saved;
+  final bool delete;
+  final bool move;
+  final bool searchInstead;
+}
+
+/// Confirm before saving: pin preview, name, editable label and icon, work
+/// days and leave time for work, and the duplicate, out-of-area, low-accuracy
+/// and work-from-home notes. With [editing], also move and delete.
+Future<PlaceSheetResult?> showPlaceConfirmSheet(
+  BuildContext context, {
+  required PlaceKind kind,
+  required PlaceCandidate candidate,
+  SavedPlace? editing,
+}) =>
+    showModalBottomSheet<PlaceSheetResult>(
+      context: context,
+      isScrollControlled: true,
+      useSafeArea: true,
+      builder: (_) => PlaceConfirmSheet(kind: kind, candidate: candidate, editing: editing),
+    );
+
+class PlaceConfirmSheet extends StatefulWidget {
+  const PlaceConfirmSheet({super.key, required this.kind, required this.candidate, this.editing});
+  final PlaceKind kind;
+  final PlaceCandidate candidate;
+  final SavedPlace? editing;
+
+  @override
+  State<PlaceConfirmSheet> createState() => _PlaceConfirmSheetState();
+}
+
+class _PlaceConfirmSheetState extends State<PlaceConfirmSheet> {
+  late final SavedPlace? _e = widget.editing;
+  late final _label = TextEditingController(
+    text: _e?.labelTh ??
+        switch (widget.kind) {
+          PlaceKind.home => 'บ้าน',
+          PlaceKind.work => 'ที่ทำงาน',
+          PlaceKind.other => widget.candidate.nameTh.replaceFirst(RegExp('^ใกล้'), ''),
+        },
+  );
+  late String _icon = _e?.icon ??
+      switch (widget.kind) {
+        PlaceKind.home => 'home',
+        PlaceKind.work => 'work',
+        PlaceKind.other => 'pin',
+      };
+  late List<int> _days = [...(_e?.days ?? SavedPlace.defaultWorkDays)];
+  late String _leave = _e?.leaveTime ?? SavedPlace.defaultLeaveTime;
+
+  @override
+  void dispose() {
+    _label.dispose();
+    super.dispose();
+  }
+
+  SavedPlace _build(String id, PlaceKind kind) => SavedPlace(
+        id: id,
+        kind: kind,
+        labelTh: _label.text.trim().isEmpty ? kindLabelTh(kind) : _label.text.trim(),
+        nameTh: widget.candidate.nameTh,
+        addressTh: widget.candidate.addressTh,
+        lat: widget.candidate.lat,
+        lng: widget.candidate.lng,
+        icon: _icon,
+        days: _days,
+        leaveTime: _leave,
+      );
+
+  void _save(SavedPlace p) {
+    final store = AppScope.readPlaces(context);
+    if (store.save(p) == SaveRefusal.tooManyOthers) {
+      ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('บันทึกได้ไม่เกิน 8 แห่ง ลบที่เดิมก่อนจึงเพิ่มได้')));
+      return;
+    }
+    Navigator.pop(context, PlaceSheetResult(saved: p));
+  }
+
+  Future<void> _pickTime() async {
+    final hm = _leave.split(':');
+    final t = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: int.parse(hm[0]), minute: int.parse(hm[1])),
+      helpText: 'เวลาออกจากที่ทำงานปกติ',
+    );
+    if (t != null) {
+      setState(() => _leave = '${t.hour.toString().padLeft(2, '0')}:${t.minute.toString().padLeft(2, '0')}');
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final store = AppScope.placesOf(context);
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final c = widget.candidate;
+    final kind = widget.kind;
+    final ofKind = switch (kind) {
+      PlaceKind.home => store.home,
+      PlaceKind.work => store.work,
+      PlaceKind.other => null,
+    };
+    final dup = store.duplicateOf(c.lat, c.lng, exceptId: _e?.id ?? ofKind?.id, forKind: kind);
+    final partner = switch (kind) {
+      PlaceKind.home => store.work,
+      PlaceKind.work => store.home,
+      PlaceKind.other => null,
+    };
+    final wfh = partner != null && partner.distanceTo(c.lat, c.lng) <= PlacesStore.duplicateRadiusM;
+    final inArea = c.inServiceArea ?? inServiceArea(c.lat, c.lng);
+    final acc = c.accuracyM;
+    final fromGps = acc != null;
+    final source = switch (c.source) {
+      'google' => 'Google Maps',
+      'saved' => 'บันทึกไว้ในเครื่อง',
+      _ => 'ข้อมูลในเครื่อง',
+    };
+
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.viewInsetsOf(context).bottom),
+      child: SingleChildScrollView(
+        padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.x6),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Text(_e != null ? 'แก้${_e.labelTh}' : 'ยืนยัน${kindLabelTh(kind)}', style: t.titleLarge),
+            const SizedBox(height: Space.x3),
+            PinPreview(lat: c.lat, lng: c.lng, accuracyM: acc),
+            const SizedBox(height: Space.x3),
+            Text(c.nameTh, style: t.titleMedium),
+            if (c.addressTh.isNotEmpty)
+              Text(c.addressTh, style: t.bodySmall!.copyWith(color: scheme.onSurfaceVariant)),
+            const SizedBox(height: Space.x2),
+            SourceLabel(fromGps ? 'ตำแหน่งจาก GPS · ชื่อจาก $source' : source),
+            if (!inArea) ...[
+              const SizedBox(height: Space.x3),
+              const Notice(
+                icon: Symbols.travel_explore_rounded,
+                tone: NoticeTone.warning,
+                text: 'นอกพื้นที่ที่แอปรองรับ ยังเตือนฝนได้ แต่ไม่มีข้อมูลจุดน้ำท่วมและระดับคลอง',
+              ),
+            ],
+            if (fromGps && acc > 200) ...[
+              const SizedBox(height: Space.x3),
+              Notice(
+                icon: Symbols.location_searching_rounded,
+                tone: NoticeTone.warning,
+                text: 'ตำแหน่งอาจคลาดเคลื่อน ~${(acc / 10).round() * 10} ม.',
+                action: TextButton(
+                  onPressed: () => Navigator.pop(context, const PlaceSheetResult(searchInstead: true)),
+                  child: const Text('ค้นหาแทน'),
+                ),
+              ),
+            ],
+            if (wfh) ...[
+              const SizedBox(height: Space.x3),
+              const Notice(
+                icon: Symbols.home_work_rounded,
+                text: 'ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น',
+              ),
+            ],
+            if (dup != null) ...[
+              const SizedBox(height: Space.x3),
+              Notice(
+                icon: Symbols.join_rounded,
+                tone: NoticeTone.warning,
+                text: 'ใกล้กับ ‘${dup.labelTh}’ ที่บันทึกไว้',
+              ),
+            ],
+            const SizedBox(height: Space.x5),
+            TextField(
+              controller: _label,
+              decoration: const InputDecoration(labelText: 'ชื่อที่เรียก', border: OutlineInputBorder()),
+              textInputAction: TextInputAction.done,
+            ),
+            const SizedBox(height: Space.x4),
+            Text('ไอคอน', style: t.labelLarge!.copyWith(color: scheme.onSurfaceVariant)),
+            const SizedBox(height: Space.x1),
+            Wrap(
+              children: [
+                for (final k in placeIconKeys)
+                  IconButton(
+                    tooltip: k,
+                    isSelected: k == _icon,
+                    onPressed: () => setState(() => _icon = k),
+                    style: IconButton.styleFrom(
+                      backgroundColor: k == _icon ? scheme.secondaryContainer : null,
+                    ),
+                    icon: Icon(placeIcon(k), fill: k == _icon ? 1 : 0),
+                  ),
+              ],
+            ),
+            if (kind == PlaceKind.work) ...[
+              const SizedBox(height: Space.x4),
+              Text('วันทำงาน', style: t.labelLarge!.copyWith(color: scheme.onSurfaceVariant)),
+              const SizedBox(height: Space.x2),
+              Wrap(
+                spacing: Space.x1,
+                runSpacing: Space.x1,
+                children: [
+                  for (var d = 1; d <= 7; d++)
+                    FilterChip(
+                      label: Text(weekdayInitialsTh[d - 1]),
+                      showCheckmark: false,
+                      selected: _days.contains(d),
+                      onSelected: (on) => setState(() => _days = on ? ([..._days, d]..sort()) : (_days.where((x) => x != d).toList())),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Space.x2),
+              ListTile(
+                contentPadding: EdgeInsets.zero,
+                leading: const Icon(Symbols.schedule_rounded),
+                title: const Text('เวลาออกจากที่ทำงานปกติ'),
+                subtitle: const Text('แอปเช็กทางกลับบ้านให้ก่อนเวลานี้'),
+                trailing: Text(_leave, style: tabular(t.titleMedium!)),
+                onTap: _pickTime,
+              ),
+            ],
+            const SizedBox(height: Space.x5),
+            if (dup != null) ...[
+              FilledButton(
+                onPressed: () => _save(_build(dup.id, kind == PlaceKind.other ? dup.kind : kind)),
+                child: const Text('อัปเดตที่เดิม'),
+              ),
+              const SizedBox(height: Space.x2),
+              OutlinedButton(
+                onPressed: () => _save(_build(_e?.id ?? ofKind?.id ?? store.newId(), kind)),
+                child: const Text('บันทึกแยก'),
+              ),
+            ] else
+              FilledButton(
+                onPressed: () => _save(_build(_e?.id ?? ofKind?.id ?? store.newId(), kind)),
+                child: const Text('บันทึก'),
+              ),
+            if (_e != null) ...[
+              const SizedBox(height: Space.x2),
+              Row(
+                children: [
+                  Expanded(
+                    child: TextButton.icon(
+                      onPressed: () => Navigator.pop(context, const PlaceSheetResult(move: true)),
+                      icon: const Icon(Symbols.edit_location_alt_rounded),
+                      label: const Text('ย้ายตำแหน่ง'),
+                    ),
+                  ),
+                  Expanded(
+                    child: TextButton.icon(
+                      style: TextButton.styleFrom(foregroundColor: scheme.error),
+                      onPressed: () => Navigator.pop(context, const PlaceSheetResult(delete: true)),
+                      icon: const Icon(Symbols.delete_rounded),
+                      label: Text('ลบ${_e.labelTh}'),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}

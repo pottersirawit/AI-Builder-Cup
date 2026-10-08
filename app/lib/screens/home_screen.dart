@@ -4,22 +4,19 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../app_state.dart';
 import '../design/design.dart';
 import '../models.dart';
+import '../places.dart';
 import '../time_th.dart';
 import '../trip_controller.dart';
 import 'ask_screen.dart';
 import 'parts.dart';
+import 'place_picker.dart';
 import 'settings_screen.dart';
 import 'shell.dart';
 import 'verdict_screen.dart';
 
-/// Saved places offered as one-tap questions.
-const savedPlaces = [
-  (icon: Symbols.storefront_rounded, name: 'สยาม'),
-  (icon: Symbols.nightlife_rounded, name: 'ทองหล่อ'),
-  (icon: Symbols.stadium_rounded, name: 'อิมแพ็ค'),
-];
-
 /// Personal departure board: the sky, the top trip's pass, then the board.
+/// Trips come from Calendar/Gmail when connected and from the daily trip
+/// home the app builds out of saved home and work.
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
 
@@ -30,18 +27,20 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Trip> _trips = const [];
   HomeStatus? _home;
+  CommutePlan? _commute;
+  Trip? _top;
   TripController? _ctrl;
   Object? _error;
   bool _loading = true;
   String? _loadedFor;
 
-  Trip? get _topTrip =>
-      _trips.where((t) => t.source == 'calendar').firstOrNull ?? _trips.firstOrNull;
-
   @override
   void didChangeDependencies() {
     super.didChangeDependencies();
-    final key = AppScope.stateOf(context).demoClock ?? 'live';
+    final state = AppScope.stateOf(context);
+    final store = AppScope.placesOf(context);
+    String sig(SavedPlace? p) => p == null ? '-' : '${p.id},${p.lat},${p.lng},${p.days},${p.leaveTime}';
+    final key = '${state.demoClock ?? 'live'}|${sig(store.home)}|${sig(store.work)}|${store.calendar}|${store.demoProfile}';
     if (key != _loadedFor) {
       _loadedFor = key;
       _load();
@@ -57,31 +56,45 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _load() async {
     final api = AppScope.apiOf(context);
     final state = AppScope.readState(context);
+    final store = AppScope.readPlaces(context);
+    final home = store.home;
     setState(() {
       _loading = true;
       _error = null;
     });
     try {
-      final homeF = api.homeStatus();
-      final tripsR = await api.trips();
+      final homeF = home == null ? null : api.homeStatus(home: store.demoProfile ? null : home);
+      final tripsR = store.calendar == LinkState.connected ? await api.trips() : null;
       final homeR = await homeF;
       if (!mounted) return;
       state
-        ..markSample(tripsR.isSample || homeR.isSample)
-        ..homeLevel = homeR.data.level;
-      final trips = tripsR.data;
-      final top = trips.where((t) => t.source == 'calendar').firstOrNull ?? trips.firstOrNull;
+        ..markSample((tripsR?.isSample ?? false) || (homeR?.isSample ?? false))
+        ..homeLevel = homeR?.data.level ?? HomeLevel.normal;
+      final trips = tripsR?.data ?? const <Trip>[];
+      final now = state.now();
+      final resolved = trips.where((t) => !t.unresolved).toList();
+      final headsHomeToday = home != null &&
+          resolved.any((t) =>
+              home.distanceTo(t.destination.lat, t.destination.lng) <= PlacesStore.duplicateRadiusM &&
+              t.arriveBy != null &&
+              toBangkok(t.arriveBy!).day == toBangkok(now).day);
+      final commute = headsHomeToday ? null : commuteFor(home: home, work: store.work, now: now);
+      final routine = commute != null && !commute.fromCurrentLocation ? commute.trip : null;
+      final top = resolved.where((t) => t.source == 'calendar').firstOrNull ?? routine ?? resolved.firstOrNull;
       _ctrl?.dispose();
       _ctrl = top == null
           ? null
           : (TripController(
               api: api,
               state: state,
-              request: DecideRequest(tripId: top.id),
+              request: _requestFor(top),
+              departAt: top == routine ? commute!.departAt : null,
             )..addListener(_onTrip));
       setState(() {
         _trips = trips;
-        _home = homeR.data;
+        _home = homeR?.data;
+        _commute = commute;
+        _top = top;
         _loading = false;
       });
       await _ctrl?.load();
@@ -96,34 +109,83 @@ class _HomeScreenState extends State<HomeScreen> {
 
   void _onTrip() => setState(() {});
 
+  /// Server trips go by id; the app's own trips send their endpoints.
+  DecideRequest _requestFor(Trip t) => t.source == 'routine' || t.source == 'app'
+      ? DecideRequest(origin: t.origin, destination: t.destination)
+      : DecideRequest(tripId: t.id);
+
   void _push(Widget screen) =>
       Navigator.of(context).push(MaterialPageRoute<void>(builder: (_) => screen));
 
-  void _openTrip(Trip trip, {TravelMode? mode}) {
+  void _openTrip(Trip trip, {TravelMode? mode, DateTime? departAt}) {
     final c = _ctrl;
-    final same = c != null && trip.id == _topTrip?.id;
+    final same = c != null && trip.id == _top?.id;
     _push(VerdictScreen(
-      request: DecideRequest(tripId: trip.id),
+      request: _requestFor(trip),
       trip: trip,
-      departAt: same ? c.departAt : null,
+      departAt: departAt ?? (same ? c.departAt : null),
       mode: mode ?? (same ? c.mode : null),
     ));
   }
 
-  void _ask(String q) => _push(VerdictScreen(request: DecideRequest(questionTh: q)));
+  void _ask(String q) => _push(VerdictScreen(
+        request: DecideRequest(questionTh: q, places: AppScope.readPlaces(context).places),
+      ));
+
+  Future<void> _setPlace(PlaceKind kind) => pickPlace(context, kind: kind);
+
+  /// Home saved but no work: the trip home starts wherever the phone is.
+  Future<void> _checkFromHere() async {
+    final home = AppScope.readPlaces(context).home;
+    final commute = _commute;
+    if (home == null) return;
+    final here = await locateOrSearch(context);
+    if (here == null || !mounted) return;
+    _openTrip(
+      Trip(
+        id: 'app-home',
+        titleTh: 'กลับบ้าน',
+        source: 'app',
+        origin: Place(nameTh: here.source == 'gps' ? 'ตำแหน่งตอนนี้' : here.nameTh, lat: here.lat, lng: here.lng),
+        destination: home.asPlace,
+        arriveBy: null,
+        mode: TravelMode.car,
+      ),
+      departAt: commute?.departAt,
+    );
+  }
+
+  /// A Calendar event whose location the server could not place.
+  Future<void> _resolveTrip(Trip t) async {
+    final saved = await pickPlace(context, kind: PlaceKind.other, initialQuery: t.locationTextTh);
+    if (saved == null || !mounted) return;
+    _openTrip(Trip(
+      id: 'app-${t.id}',
+      titleTh: t.titleTh,
+      source: 'app',
+      origin: t.origin,
+      destination: saved.asPlace,
+      arriveBy: t.arriveBy,
+      mode: t.mode,
+    ));
+  }
 
   @override
   Widget build(BuildContext context) {
     final state = AppScope.stateOf(context);
+    final store = AppScope.placesOf(context);
     final scheme = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     final ctrl = _ctrl;
-    final trip = _topTrip;
+    final trip = _top;
     final home = _home;
+    final savedHome = store.home;
+    final work = store.work;
     final now = state.now();
     final sky = state.flood ? SkyState.flood : (ctrl?.sky(home: state.homeLevel) ?? SkyState.clear);
     final d = ctrl?.decision;
     final showPush = d != null && trip != null && !state.pushDismissed && !state.flood;
+    final heroAsk = !_loading && _error == null && trip == null && savedHome == null && _commute == null;
 
     Widget top;
     if (_error != null) {
@@ -138,61 +200,110 @@ class _HomeScreenState extends State<HomeScreen> {
       ]);
     } else if (_loading) {
       top = const PassSkeleton();
-    } else if (state.flood && home != null) {
-      top = HomeStatusPass(status: home, now: now, actions: [
+    } else if (state.flood && home != null && savedHome != null) {
+      top = HomeStatusPass(status: home, now: now, placeName: _homeName(savedHome), actions: [
         FilledButton.icon(
           onPressed: () => Shell.goTo(context, ShellTab.home),
           icon: const Icon(Symbols.checklist_rounded),
           label: const Text('ดูสิ่งที่ต้องทำตอนนี้'),
         ),
       ]);
-    } else if (trip == null || ctrl == null) {
+    } else if (trip != null && ctrl != null) {
+      top = ctrl.error != null && d == null
+          ? Pass(sections: [
+              PassSection(
+                child: ErrorState(title: 'ยังตัดสินไม่ได้', message: 'Gemini ไม่ตอบในรอบนี้', onRetry: ctrl.load),
+              ),
+            ])
+          : TripPass(
+              controller: ctrl,
+              now: now,
+              trip: trip,
+              compact: true,
+              onTap: () => _openTrip(trip),
+              actions: [
+                FilledButton(onPressed: () => _openTrip(trip), child: const Text('ดูเหตุผลและทางเลือก')),
+                OutlinedButton(
+                  onPressed: () => _push(AskScreen(trip: trip, opening: ctrl.headline)),
+                  child: const Text('ถามต่อ'),
+                ),
+              ],
+            );
+    } else if (_commute?.fromCurrentLocation ?? false) {
+      top = _FromHerePass(departAt: _commute!.departAt, onCheck: _checkFromHere);
+    } else if (savedHome == null) {
       top = Pass(sections: [
         PassSection(
           child: EmptyState(
-            icon: Symbols.event_available_rounded,
-            title: 'วันนี้ยังไม่มีทริป',
-            message: 'พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม” หรือเชื่อม Google Calendar ให้แอปหาทริปเอง',
-            action: OutlinedButton(
-              onPressed: () => _push(const SettingsScreen()),
-              child: const Text('เชื่อม Calendar'),
+            icon: Symbols.home_pin_rounded,
+            title: 'ยังไม่มีทริป',
+            message: 'ตั้งบ้านไว้ แอปจะเตือนก่อนเวลาเลิกงานทุกวัน หรือพิมพ์ถามด้านบนได้เลย',
+            action: FilledButton.icon(
+              onPressed: () => _setPlace(PlaceKind.home),
+              icon: const Icon(Symbols.home_rounded),
+              label: const Text('ตั้งบ้าน'),
             ),
           ),
         ),
       ]);
-    } else if (ctrl.error != null && d == null) {
+    } else {
+      final weekday = toBangkok(now).weekday;
+      final workDay = (work?.days ?? SavedPlace.defaultWorkDays).contains(weekday);
       top = Pass(sections: [
         PassSection(
-          child: ErrorState(title: 'ยังตัดสินไม่ได้', message: 'Gemini ไม่ตอบในรอบนี้', onRetry: ctrl.load),
+          child: EmptyState(
+            icon: Symbols.event_available_rounded,
+            title: 'วันนี้ไม่มีทริปกลับบ้าน',
+            message: store.workFromHome
+                ? 'ทำงานที่บ้าน แอปจะเตือนเฉพาะทริปอื่น พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม”'
+                : !workDay
+                    ? 'วันนี้ไม่ใช่วันทำงาน ถ้าจะออกไปไหน พิมพ์ถามด้านล่างได้เลย'
+                    : 'เลยเวลากลับบ้านปกติมาแล้ว พรุ่งนี้แอปจะเช็กให้ก่อนเลิกงาน',
+          ),
         ),
       ]);
-    } else {
-      top = TripPass(
-        controller: ctrl,
-        now: now,
-        trip: trip,
-        compact: true,
-        onTap: () => _openTrip(trip),
-        actions: [
-          FilledButton(onPressed: () => _openTrip(trip), child: const Text('ดูเหตุผลและทางเลือก')),
-          OutlinedButton(
-            onPressed: () => _push(AskScreen(trip: trip, opening: ctrl.headline)),
-            child: const Text('ถามต่อ'),
-          ),
-        ],
-      );
     }
+
+    final hints = <Widget>[
+      if (!_loading && savedHome == null && work != null)
+        Notice(
+          icon: Symbols.home_rounded,
+          text: 'ตั้งบ้านเพื่อให้เตือนตอนกลับ',
+          action: TextButton(onPressed: () => _setPlace(PlaceKind.home), child: const Text('ตั้งบ้าน')),
+        ),
+      if (!_loading && savedHome != null && work == null)
+        Notice(
+          icon: Symbols.work_rounded,
+          text: 'ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น',
+          action: TextButton(onPressed: () => _setPlace(PlaceKind.work), child: const Text('ตั้งที่ทำงาน')),
+        ),
+      if (!_loading && store.workFromHome)
+        const Notice(icon: Symbols.home_work_rounded, text: 'ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น'),
+      if (!_loading && store.calendar != LinkState.connected && !store.calendarHintDismissed)
+        Notice(
+          icon: Symbols.calendar_month_rounded,
+          text: 'เชื่อม Calendar เพื่อให้แอปเห็นนัด',
+          action: TextButton(onPressed: () => _push(const SettingsScreen()), child: const Text('เชื่อมต่อ')),
+          onDismiss: store.dismissCalendarHint,
+        ),
+      if (!_loading && store.calendar == LinkState.connected && !_hasCalendarSoon(now))
+        const Notice(icon: Symbols.event_busy_rounded, text: 'ไม่มีนัดที่มีสถานที่ใน 24 ชม.'),
+    ];
 
     final others = _trips.where((x) => x.id != trip?.id).toList();
 
+    final askBar = AskBar(onSubmit: _ask, hint: heroAsk ? 'ไปไหน กี่โมง?' : 'ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม');
+
     return Scaffold(
-      bottomNavigationBar: ColoredBox(
-        color: scheme.surface,
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, Space.x2),
-          child: AskBar(onSubmit: _ask),
-        ),
-      ),
+      bottomNavigationBar: heroAsk
+          ? null
+          : ColoredBox(
+              color: scheme.surface,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, Space.x2),
+                child: askBar,
+              ),
+            ),
       body: Stack(
         children: [
           RefreshIndicator(
@@ -209,8 +320,12 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           FieldHeader(
                             state: sky,
-                            title: 'สวัสดีมิว',
-                            subtitle: '${dayTimeTh(now).split(' ').take(3).join(' ')} · ${trip?.origin.nameTh ?? 'สีลม'}',
+                            title: store.demoProfile ? 'สวัสดีมิว' : 'สวัสดี',
+                            subtitle: [
+                              dayTimeTh(now).split(' ').take(3).join(' '),
+                              if (trip != null && trip.origin.nameTh.isNotEmpty) trip.origin.nameTh,
+                            ].join(' · '),
+                            badge: store.demoProfile ? const DemoBadge(onField: true) : null,
                             actions: [
                               if (state.usingSample) const SampleBadge(onField: true),
                               DemoClockChip(state: state, sky: sky),
@@ -221,6 +336,11 @@ class _HomeScreenState extends State<HomeScreen> {
                               ),
                             ],
                           ),
+                          if (heroAsk)
+                            Padding(
+                              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, Space.x4),
+                              child: askBar,
+                            ),
                           Padding(
                             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, 0),
                             child: top,
@@ -230,6 +350,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                if (hints.isNotEmpty)
+                  SliverToBoxAdapter(
+                    child: Padding(
+                      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x6, Space.gutter, 0),
+                      child: Column(
+                        children: [
+                          for (final (i, h) in hints.indexed) ...[
+                            if (i > 0) const SizedBox(height: Space.x2),
+                            h,
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
                 if (ctrl != null && d != null && trip != null)
                   SliverToBoxAdapter(
                     child: Section(
@@ -266,23 +400,35 @@ class _HomeScreenState extends State<HomeScreen> {
                           for (final x in others)
                             SizedBox(
                               height: BoardRow.heightFor(MediaQuery.textScalerOf(context)),
-                              child: BoardRow(
-                                key: ValueKey('trip-${x.id}'),
-                                time: '${dayOfMonth(x.arriveBy)} ${monthShortTh(x.arriveBy)}',
-                                timeCaption: hhmm(x.arriveBy),
-                                icon: sourceIcon(x.source),
-                                title: x.titleTh,
-                                subtitle: '${x.destination.nameTh} · จะเตือนวันเดินทางว่าออกกี่โมงดี',
-                                risk: Risk.low,
-                                status: 'รอวัน',
-                                onTap: () => _openTrip(x),
-                              ),
+                              child: x.unresolved
+                                  ? BoardRow(
+                                      key: ValueKey('trip-${x.id}'),
+                                      time: x.arriveBy == null ? '–' : hhmm(x.arriveBy!),
+                                      timeCaption: x.arriveBy == null ? null : '${dayOfMonth(x.arriveBy!)} ${monthShortTh(x.arriveBy!)}',
+                                      icon: sourceIcon(x.source),
+                                      title: x.titleTh,
+                                      subtitle: '“${x.locationTextTh}” · แตะเพื่อเลือกสถานที่',
+                                      risk: Risk.medium,
+                                      status: 'ไม่รู้ว่าที่ไหน',
+                                      onTap: () => _resolveTrip(x),
+                                    )
+                                  : BoardRow(
+                                      key: ValueKey('trip-${x.id}'),
+                                      time: x.arriveBy == null ? '–' : '${dayOfMonth(x.arriveBy!)} ${monthShortTh(x.arriveBy!)}',
+                                      timeCaption: x.arriveBy == null ? null : hhmm(x.arriveBy!),
+                                      icon: sourceIcon(x.source),
+                                      title: x.titleTh,
+                                      subtitle: '${x.destination.nameTh} · จะเตือนวันเดินทางว่าออกกี่โมงดี',
+                                      risk: Risk.low,
+                                      status: 'รอวัน',
+                                      onTap: () => _openTrip(x),
+                                    ),
                             ),
                         ],
                       ),
                     ),
                   ),
-                if (home != null && !state.flood)
+                if (home != null && savedHome != null && !state.flood)
                   SliverToBoxAdapter(
                     child: Section(
                       title: 'ที่บ้านคืนนี้',
@@ -292,10 +438,11 @@ class _HomeScreenState extends State<HomeScreen> {
                         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
                         leading: const Icon(Symbols.home_rounded),
                         title: Text(home.headlineTh),
-                        subtitle: home.canal == null
-                            ? null
-                            : Text('${home.canal!.nameTh} ${home.canal!.levelM.toStringAsFixed(1)} จาก ${home.canal!.bankM.toStringAsFixed(1)} ม.',
-                                style: tabular(t.bodySmall!).copyWith(color: scheme.onSurfaceVariant)),
+                        subtitle: Text(
+                            home.canal == null
+                                ? (home.inServiceArea ? 'ไม่มีสถานีวัดระดับคลองใกล้บ้าน' : 'นอกพื้นที่ที่รองรับ · มีเฉพาะข้อมูลฝน')
+                                : '${home.canal!.nameTh} ${home.canal!.levelM.toStringAsFixed(1)} จาก ${home.canal!.bankM.toStringAsFixed(1)} ม.',
+                            style: tabular(t.bodySmall!).copyWith(color: scheme.onSurfaceVariant)),
                         trailing: RiskChip(risk: riskOfHomeLevel(home.level), label: homeLevelLabel(home.level), dense: true),
                         onTap: () => Shell.goTo(context, ShellTab.home),
                       ),
@@ -304,17 +451,25 @@ class _HomeScreenState extends State<HomeScreen> {
                 SliverToBoxAdapter(
                   child: Section(
                     title: 'ถามเร็ว',
-                    source: 'Gemini แกะคำถามภาษาคนเป็นทริป · สถานที่จาก Google Maps ที่บันทึกไว้',
+                    source: 'Gemini แกะคำถามภาษาคนเป็นทริป · สถานที่ที่บันทึกไว้ในเครื่องนี้',
                     child: Wrap(
                       spacing: Space.x2,
                       runSpacing: Space.x2,
                       children: [
-                        for (final p in savedPlaces)
+                        if (savedHome != null)
                           ActionChip(
-                            avatar: Icon(p.icon, size: 18),
-                            label: Text('ไป${p.name}ตอนนี้'),
-                            onPressed: () => _ask('ไป${p.name}ตอนนี้'),
+                            avatar: const Icon(Symbols.home_rounded, size: 18),
+                            label: const Text('กลับบ้านตอนนี้'),
+                            onPressed: () => _ask('กลับบ้านตอนนี้'),
                           ),
+                        for (final p in store.others)
+                          ActionChip(
+                            avatar: Icon(placeIcon(p.icon), size: 18),
+                            label: Text('ไป${p.labelTh}ตอนนี้'),
+                            onPressed: () => _ask('ไป${p.labelTh}ตอนนี้'),
+                          ),
+                        if (savedHome == null) _GhostChip(label: 'บ้าน', onPressed: () => _setPlace(PlaceKind.home)),
+                        if (work == null) _GhostChip(label: 'ที่ทำงาน', onPressed: () => _setPlace(PlaceKind.work)),
                       ],
                     ),
                   ),
@@ -342,5 +497,75 @@ class _HomeScreenState extends State<HomeScreen> {
         ],
       ),
     );
+  }
+
+  bool _hasCalendarSoon(DateTime now) => _trips.any((x) =>
+      x.source == 'calendar' &&
+      !x.unresolved &&
+      x.arriveBy != null &&
+      x.arriveBy!.isAfter(now) &&
+      x.arriveBy!.difference(now) <= const Duration(hours: 24));
+}
+
+String _homeName(SavedPlace home) =>
+    home.addressTh.isEmpty ? home.nameTh : '${home.nameTh} · ${home.addressTh.split(' · ').first}';
+
+/// A missing place, offered where it would appear: "+ บ้าน".
+class _GhostChip extends StatelessWidget {
+  const _GhostChip({required this.label, required this.onPressed});
+  final String label;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    return ActionChip(
+      avatar: Icon(Symbols.add_rounded, size: 18, color: scheme.primary),
+      label: Text(label, style: TextStyle(color: scheme.primary)),
+      backgroundColor: Colors.transparent,
+      side: BorderSide(color: scheme.primary.withValues(alpha: .5)),
+      tooltip: 'ตั้ง$label',
+      onPressed: onPressed,
+    );
+  }
+}
+
+/// Home saved, work not: the trip home starts from wherever the phone is,
+/// so the app asks for the position only when the user taps.
+class _FromHerePass extends StatelessWidget {
+  const _FromHerePass({required this.departAt, required this.onCheck});
+  final DateTime departAt;
+  final VoidCallback onCheck;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FonColors.of(context);
+    final t = Theme.of(context).textTheme;
+    return Pass(semanticLabel: 'กลับบ้าน จากตำแหน่งตอนนี้', sections: [
+      PassSection(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Row(children: [
+              Icon(Symbols.repeat_rounded, size: 18, color: c.paperMuted),
+              const SizedBox(width: Space.x2),
+              Expanded(child: Text('กลับบ้าน · จากตำแหน่งตอนนี้', style: t.titleSmall!.copyWith(color: c.paperInk))),
+              Text('ออกราว ${hhmm(departAt)}', style: tabular(t.labelLarge!).copyWith(color: c.paperMuted)),
+            ]),
+            const SizedBox(height: Space.x3),
+            Text('เช็กฝนบนทางกลับบ้าน', style: t.headlineMedium!.copyWith(color: c.paperInk)),
+            const SizedBox(height: Space.x2),
+            Text('แอปใช้ตำแหน่งตอนกดเท่านั้น เพื่อเป็นจุดเริ่มต้นของทาง',
+                style: t.bodyMedium!.copyWith(color: c.paperMuted)),
+            const SizedBox(height: Space.x4),
+            FilledButton.icon(
+              onPressed: onCheck,
+              icon: const Icon(Symbols.near_me_rounded),
+              label: const Text('เช็กทางกลับบ้าน'),
+            ),
+          ],
+        ),
+      ),
+    ]);
   }
 }

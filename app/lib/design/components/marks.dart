@@ -106,6 +106,41 @@ class SampleBadge extends StatelessWidget {
   }
 }
 
+/// "เดโม": the synthetic มิว profile is loaded, not the user's own places.
+class DemoBadge extends StatelessWidget {
+  const DemoBadge({super.key, this.onField = false});
+  final bool onField;
+
+  @override
+  Widget build(BuildContext context) {
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    final ink = onField ? Colors.white : scheme.onSecondaryContainer;
+    return Semantics(
+      label: 'โปรไฟล์เดโม ข้อมูลจำลอง',
+      excludeSemantics: true,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(6, 3, 10, 3),
+        decoration: BoxDecoration(
+          color: onField ? Colors.white.withValues(alpha: .18) : scheme.secondaryContainer,
+          borderRadius: BorderRadius.circular(Radii.pill),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Symbols.person_play_rounded, size: 14, color: ink),
+            const SizedBox(width: 4),
+            Flexible(
+              child: Text('เดโม',
+                  maxLines: 1, overflow: TextOverflow.clip, style: t.labelSmall!.copyWith(color: ink)),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
 /// Confidence as ten ticks plus the number; honest about uncertainty.
 class ConfidenceMeter extends StatelessWidget {
   const ConfidenceMeter({super.key, required this.value, this.color});

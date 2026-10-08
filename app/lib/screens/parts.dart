@@ -5,8 +5,10 @@ import '../app_state.dart';
 import '../config.dart';
 import '../design/design.dart';
 import '../models.dart';
+import '../places.dart';
 import '../time_th.dart';
 import '../trip_controller.dart';
+import 'place_picker.dart';
 
 /// The top trip printed as a pass: verdict, segments, rain band.
 class TripPass extends StatelessWidget {
@@ -56,8 +58,8 @@ class TripPass extends StatelessWidget {
             style: t.titleSmall!.copyWith(color: c.paperInk),
           ),
         ),
-        if (trip != null)
-          Text('ถึงก่อน ${hhmm(trip.arriveBy)}', style: tabular(t.labelLarge!).copyWith(color: c.paperMuted)),
+        if (trip?.arriveBy != null)
+          Text('ถึงก่อน ${hhmm(trip!.arriveBy!)}', style: tabular(t.labelLarge!).copyWith(color: c.paperMuted)),
       ],
     );
 
@@ -208,9 +210,18 @@ class TripPass extends StatelessWidget {
 
 /// Flood at home, printed as a pass.
 class HomeStatusPass extends StatelessWidget {
-  const HomeStatusPass({super.key, required this.status, required this.now, this.actions = const []});
+  const HomeStatusPass({
+    super.key,
+    required this.status,
+    required this.now,
+    required this.placeName,
+    this.actions = const [],
+  });
   final HomeStatus status;
   final DateTime now;
+
+  /// The saved home, e.g. "บ้านลาดพร้าว · ซอยลาดพร้าว 32".
+  final String placeName;
   final List<Widget> actions;
 
   @override
@@ -232,7 +243,7 @@ class HomeStatusPass extends StatelessWidget {
                   Icon(Symbols.home_rounded, size: 18, color: c.paperMuted),
                   const SizedBox(width: Space.x2),
                   Expanded(
-                    child: Text('บ้านลาดพร้าว · ซอยลาดพร้าว 32',
+                    child: Text(placeName,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: t.titleSmall!.copyWith(color: c.paperInk)),
@@ -250,10 +261,23 @@ class HomeStatusPass extends StatelessWidget {
                 ),
               ),
               const SizedBox(height: Space.x2),
-              RiskChip(risk: risk, label: homeLevelLabel(status.level)),
+              Wrap(spacing: Space.x2, runSpacing: Space.x2, children: [
+                RiskChip(risk: risk, label: homeLevelLabel(status.level)),
+                if (!status.inServiceArea) const RiskChip(risk: Risk.medium, label: 'นอกพื้นที่ที่รองรับ'),
+              ]),
             ],
           ),
         ),
+        if (canal == null && status.rainTodayMm != null)
+          PassSection(
+            child: PassSegments([
+              PassSegment('ฝนวันนี้', '${status.rainTodayMm!.round()} มม.'),
+              if (status.inServiceArea) ...[
+                PassSegment('จุดเสี่ยง 2 กม.', '${status.floodSpots.length}'),
+                PassSegment('รายงาน 500 ม.', '${status.reportsNearby ?? 0}'),
+              ],
+            ]),
+          ),
         if (canal != null)
           PassSection(
             child: PassSegments([
@@ -269,6 +293,16 @@ class HomeStatusPass extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               SourceLabel(status.sources.join(' · ')),
+              if (canal == null && status.inServiceArea) ...[
+                const SizedBox(height: Space.x1),
+                SourceLabel('ไม่มีสถานีวัดระดับคลองใกล้บ้าน (ThaiWater ในรัศมี 3 กม.)',
+                    icon: Symbols.water_damage_rounded),
+              ],
+              if (!status.inServiceArea) ...[
+                const SizedBox(height: Space.x1),
+                const SourceLabel('บ้านอยู่นอกกรุงเทพฯ ข้อมูลระดับคลองและจุดน้ำท่วมยังไม่ครอบคลุม แอปเตือนได้เฉพาะฝน',
+                    icon: Symbols.travel_explore_rounded),
+              ],
               if (actions.isNotEmpty) ...[
                 const SizedBox(height: Space.x4),
                 Wrap(spacing: Space.x2, runSpacing: Space.x2, children: actions),
@@ -413,4 +447,106 @@ Future<void> showDemoClockPicker(BuildContext context) {
       );
     },
   );
+}
+
+/// The answer card when the question's place is unknown: save home or work
+/// inline, or choose among the server's candidates; then the caller re-runs
+/// the same question.
+class NeedsPlacePass extends StatelessWidget {
+  const NeedsPlacePass({super.key, required this.needs, required this.onResolved});
+  final NeedsPlace needs;
+
+  /// The place to ask about, and the user's places after any save.
+  final void Function(Place destination, List<SavedPlace> places) onResolved;
+
+  Future<void> _pick(BuildContext context, PlaceKind kind, {bool locate = false, String? query}) async {
+    final store = AppScope.readPlaces(context);
+    final saved = await pickPlace(context, kind: kind, locateNow: locate, initialQuery: query);
+    if (saved != null) onResolved(saved.asPlace, store.places);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FonColors.of(context);
+    final t = Theme.of(context).textTheme;
+    final kind = needs.kind;
+    final store = AppScope.readPlaces(context);
+
+    if (kind != null && kind != PlaceKind.other) {
+      final label = kindLabelTh(kind);
+      return Pass(semanticLabel: 'ยังไม่รู้ว่า$labelอยู่ไหน', sections: [
+        PassSection(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(children: [
+                Icon(kind == PlaceKind.home ? Symbols.home_rounded : Symbols.work_rounded, size: 18, color: c.paperMuted),
+                const SizedBox(width: Space.x2),
+                Text('ต้องรู้ก่อนตอบ', style: t.titleSmall!.copyWith(color: c.paperMuted)),
+              ]),
+              const SizedBox(height: Space.x3),
+              Text('ยังไม่รู้ว่า$labelอยู่ไหน', style: t.headlineMedium!.copyWith(color: c.paperInk)),
+              const SizedBox(height: Space.x2),
+              Text('บันทึกไว้ครั้งเดียว แล้วแอปจะตอบคำถามนี้ต่อทันที',
+                  style: t.bodyMedium!.copyWith(color: c.paperInk)),
+              const SizedBox(height: Space.x4),
+              Wrap(spacing: Space.x2, runSpacing: Space.x2, children: [
+                FilledButton.icon(
+                  onPressed: () => _pick(context, kind, locate: true),
+                  icon: const Icon(Symbols.my_location_rounded),
+                  label: const Text('ใช้ตำแหน่งตอนนี้'),
+                ),
+                OutlinedButton.icon(
+                  onPressed: () => _pick(context, kind),
+                  icon: const Icon(Symbols.search_rounded),
+                  label: const Text('ค้นหา'),
+                ),
+              ]),
+            ],
+          ),
+        ),
+      ]);
+    }
+
+    return Pass(semanticLabel: 'หมายถึงที่ไหน', sections: [
+      PassSection(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('หมายถึงที่ไหน', style: t.headlineMedium!.copyWith(color: c.paperInk)),
+            const SizedBox(height: Space.x1),
+            Text(
+              needs.candidates.isEmpty
+                  ? 'หา “${needs.queryTh}” ไม่เจอ ลองค้นด้วยชื่ออื่น'
+                  : 'เจอหลายที่ที่ชื่อคล้าย “${needs.queryTh}”',
+              style: t.bodyMedium!.copyWith(color: c.paperMuted),
+            ),
+          ],
+        ),
+      ),
+      if (needs.candidates.isNotEmpty)
+        PassSection(
+          padding: const EdgeInsets.symmetric(vertical: Space.x2),
+          child: Column(
+            children: [
+              for (final p in needs.candidates)
+                ListTile(
+                  leading: Icon(Symbols.location_on_rounded, color: c.paperMuted),
+                  title: Text(p.nameTh, style: t.titleSmall!.copyWith(color: c.paperInk)),
+                  subtitle: Text(p.addressTh, maxLines: 1, overflow: TextOverflow.ellipsis,
+                      style: t.bodySmall!.copyWith(color: c.paperMuted)),
+                  onTap: () => onResolved(Place(nameTh: p.nameTh, lat: p.lat, lng: p.lng), store.places),
+                ),
+            ],
+          ),
+        ),
+      PassSection(
+        child: OutlinedButton.icon(
+          onPressed: () => _pick(context, PlaceKind.other, query: needs.queryTh),
+          icon: const Icon(Symbols.search_rounded),
+          label: Text(needs.candidates.isEmpty ? 'ค้นหา “${needs.queryTh}”' : 'ไม่ใช่ทั้งหมด · ค้นหาเอง'),
+        ),
+      ),
+    ]);
+  }
 }

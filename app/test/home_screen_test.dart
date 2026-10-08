@@ -1,77 +1,8 @@
-import 'dart:io';
-
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fontokmai/api.dart';
-import 'package:fontokmai/app_state.dart';
 import 'package:fontokmai/design/design.dart';
-import 'package:fontokmai/main.dart';
-import 'package:http/http.dart' as http;
-import 'package:http/testing.dart';
 
-Future<AppState> pumpApp(WidgetTester tester, String clock,
-    {List<String>? decideLog, double height = 874}) async {
-  tester.view.physicalSize = Size(402 * 3, height * 3);
-  tester.view.devicePixelRatio = 3;
-  addTearDown(tester.view.reset);
-
-  final state = AppState(demoClock: clock);
-  final api = FonTokMaiApi(
-    baseUrl: 'http://offline.test',
-    demoClock: () => state.demoClock,
-    client: MockClient((req) {
-      if (req.url.path == '/v1/decide') decideLog?.add(req.body);
-      throw http.ClientException('offline');
-    }),
-    bundle: _DiskBundle(),
-  );
-  await tester.pumpWidget(FonTokMaiApp(state: state, api: api));
-  await settle(tester);
-  return state;
-}
-
-/// Serves assets straight from disk so fixture loads finish inside fake async.
-class _DiskBundle extends CachingAssetBundle {
-  @override
-  Future<ByteData> load(String key) async => ByteData.sublistView(File(key).readAsBytesSync());
-
-  @override
-  Future<String> loadString(String key, {bool cache = true}) async => File(key).readAsStringSync();
-}
-
-Future<void> settle(WidgetTester tester) async {
-  for (var i = 0; i < 6; i++) {
-    await tester.pump(const Duration(milliseconds: 400));
-  }
-}
-
-/// Scrolls the visible vertical list until [f] is built; lists build lazily.
-Future<void> reveal(WidgetTester tester, Finder f) async {
-  final list = find
-      .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
-      .hitTestable()
-      .first;
-  for (final dy in [-250.0, 250.0]) {
-    for (var i = 0; i < 15 && f.hitTestable().evaluate().isEmpty; i++) {
-      await tester.drag(list, Offset(0, dy));
-      await tester.pump();
-    }
-  }
-  await tester.ensureVisible(f.first);
-  await tester.pump();
-}
-
-Future<void> tapAndSettle(WidgetTester tester, Finder f) async {
-  await reveal(tester, f);
-  await tester.tap(f.hitTestable().first);
-  await tester.pump();
-  await settle(tester);
-}
-
-String bubbleText(WidgetTester tester) => tester
-    .widget<Text>(find.descendant(of: find.byKey(const ValueKey('rain-band-bubble')), matching: find.byType(Text)).first)
-    .data!;
+import 'helpers.dart';
 
 void main() {
   testWidgets('Home prints the top trip as a pass from fixtures when offline', (tester) async {
@@ -172,6 +103,8 @@ void main() {
 
     await tapAndSettle(tester, find.text('เดินทาง'));
     await tapAndSettle(tester, find.byTooltip('ตั้งค่า'));
+    expect(find.text('บ้านลาดพร้าว'), findsOneWidget, reason: 'real saved places');
+    await reveal(tester, find.text('Google Calendar'));
     expect(find.text('Google Calendar'), findsOneWidget);
     await tapAndSettle(tester, find.text('ระบบดีไซน์'));
     expect(find.text('พื้นท้องฟ้า'), findsOneWidget);

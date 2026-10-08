@@ -83,11 +83,40 @@ String percent(double confidence) => '${(confidence * 100).round()}%';
 String sourceTitle(String source) => switch (source) {
       'calendar' => 'Google Calendar',
       'gmail' => 'Gmail',
+      'routine' => 'สถานที่ของฉัน',
       _ => 'พิมพ์ถามเอง',
     };
 
 IconData sourceIcon(String source) => switch (source) {
       'calendar' => Symbols.calendar_month_rounded,
       'gmail' => Symbols.mail_rounded,
+      'routine' => Symbols.repeat_rounded,
       _ => Symbols.keyboard_rounded,
     };
+
+/// Icon keys a saved place can carry, in picker order.
+const placeIconKeys = ['home', 'work', 'shop', 'food', 'gym', 'school', 'family', 'stadium', 'train', 'pin'];
+
+IconData placeIcon(String key) => switch (key) {
+      'home' => Symbols.home_rounded,
+      'work' => Symbols.work_rounded,
+      'shop' => Symbols.storefront_rounded,
+      'food' => Symbols.restaurant_rounded,
+      'gym' => Symbols.fitness_center_rounded,
+      'school' => Symbols.school_rounded,
+      'family' => Symbols.favorite_rounded,
+      'stadium' => Symbols.stadium_rounded,
+      'train' => Symbols.train_rounded,
+      _ => Symbols.location_on_rounded,
+    };
+
+/// Thai weekday initials, Monday first (ISO weekday - 1).
+const weekdayInitialsTh = ['จ', 'อ', 'พ', 'พฤ', 'ศ', 'ส', 'อา'];
+
+/// "จ–ศ", "ทุกวัน", or the initials joined.
+String workDaysLabel(List<int> days) {
+  final d = [...days]..sort();
+  if (d.length == 7) return 'ทุกวัน';
+  if (d.join() == '12345') return 'จ–ศ';
+  return d.map((x) => weekdayInitialsTh[x - 1]).join(' ');
+}

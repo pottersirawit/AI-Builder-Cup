@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:geolocator/geolocator.dart';
 
 /// Ratchadaphisek Rd at Soi Lat Phrao 32: the demo scenario's flood spot,
@@ -47,4 +49,87 @@ Future<Fix> currentFix() async {
   } catch (_) {
     return _fallback('หาตำแหน่งไม่ได้');
   }
+}
+
+/// Outcome of asking for the phone's position, one per UI state.
+enum LocateStatus { ok, notAsked, denied, deniedForever, servicesOff, timeout, error }
+
+class LocateResult {
+  const LocateResult(this.status, {this.lat = 0, this.lng = 0, this.accuracyM});
+  final LocateStatus status;
+  final double lat;
+  final double lng;
+  final double? accuracyM;
+
+  bool get ok => status == LocateStatus.ok;
+
+  /// Worse than 200 m: show the fix, but say it may be off.
+  bool get lowAccuracy => (accuracyM ?? 0) > 200;
+}
+
+/// Seam over geolocator, so tests and screenshots can stage each
+/// permission state. Never throws.
+class Locator {
+  const Locator();
+
+  static const _quick = Duration(seconds: 3);
+
+  Future<bool> servicesEnabled() => Geolocator.isLocationServiceEnabled().timeout(_quick);
+  Future<LocationPermission> permission() => Geolocator.checkPermission().timeout(_quick);
+  Future<LocationPermission> request() => Geolocator.requestPermission();
+  Future<Position> position() => Geolocator.getCurrentPosition(
+        locationSettings: const LocationSettings(
+          accuracy: LocationAccuracy.high,
+          timeLimit: Duration(seconds: 10),
+        ),
+      );
+  Future<bool> openAppSettings() => Geolocator.openAppSettings();
+  Future<bool> openLocationSettings() => Geolocator.openLocationSettings();
+
+  /// The phone's position. Without [prompt], a permission that was never
+  /// asked comes back as [LocateStatus.notAsked] so the caller can explain
+  /// why first; [askedBefore] turns that into [LocateStatus.denied] so the
+  /// OS prompt never loops.
+  Future<LocateResult> locate({required bool prompt, bool askedBefore = false}) async {
+    try {
+      if (!await servicesEnabled()) return const LocateResult(LocateStatus.servicesOff);
+      var p = await permission();
+      if (p == LocationPermission.deniedForever) return const LocateResult(LocateStatus.deniedForever);
+      if (p == LocationPermission.denied) {
+        if (!prompt) {
+          return LocateResult(askedBefore ? LocateStatus.denied : LocateStatus.notAsked);
+        }
+        p = await request();
+        if (p == LocationPermission.deniedForever) return const LocateResult(LocateStatus.deniedForever);
+        if (p == LocationPermission.denied) return const LocateResult(LocateStatus.denied);
+      }
+      final pos = await position();
+      return LocateResult(LocateStatus.ok, lat: pos.latitude, lng: pos.longitude, accuracyM: pos.accuracy);
+    } on TimeoutException {
+      return const LocateResult(LocateStatus.timeout);
+    } catch (_) {
+      return const LocateResult(LocateStatus.error);
+    }
+  }
+}
+
+/// Always lands in [status]: screenshots and tests of each permission state.
+class StagedLocator extends Locator {
+  const StagedLocator(this.status, {this.lat = 13.7456, this.lng = 100.5341, this.accuracyM = 25});
+  final LocateStatus status;
+  final double lat;
+  final double lng;
+  final double accuracyM;
+
+  @override
+  Future<LocateResult> locate({required bool prompt, bool askedBefore = false}) async =>
+      status == LocateStatus.ok
+          ? LocateResult(status, lat: lat, lng: lng, accuracyM: accuracyM)
+          : LocateResult(status == LocateStatus.notAsked && (prompt || askedBefore) ? LocateStatus.denied : status);
+
+  @override
+  Future<bool> openAppSettings() async => true;
+
+  @override
+  Future<bool> openLocationSettings() async => true;
 }

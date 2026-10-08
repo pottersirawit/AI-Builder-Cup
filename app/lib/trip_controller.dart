@@ -4,6 +4,7 @@ import 'api.dart';
 import 'app_state.dart';
 import 'departure.dart';
 import 'models.dart';
+import 'places.dart';
 import 'time_th.dart';
 
 /// One trip's live answer: departure time, mode, the agent's decision, and
@@ -12,19 +13,27 @@ class TripController extends ChangeNotifier {
   TripController({
     required FonTokMaiApi api,
     required AppState state,
-    required this.request,
+    required DecideRequest request,
     DateTime? departAt,
     TravelMode? mode,
   })  : _api = api,
         _state = state,
+        _request = request,
         _departAt = departAt ?? state.now(),
         _mode = mode ?? request.mode ?? state.mode;
 
   final FonTokMaiApi _api;
   final AppState _state;
 
-  /// Trip id or Thai question; departure and mode are filled in here.
-  final DecideRequest request;
+  /// Trip id, origin/destination or Thai question; departure and mode are
+  /// filled in here.
+  DecideRequest get request => _request;
+  DecideRequest _request;
+
+  NeedsPlace? _needsPlace;
+
+  /// The question names a place the app cannot find; ask the user instead.
+  NeedsPlace? get needsPlace => _needsPlace;
 
   DateTime _departAt;
   DateTime get departAt => _departAt;
@@ -79,14 +88,29 @@ class TripController extends ChangeNotifier {
 
   Future<void> load() async {
     final seq = ++_seq;
+    final missing = _missingPlace();
+    if (missing != null) {
+      _needsPlace = NeedsPlace(queryTh: kindLabelTh(missing), kind: missing);
+      _decision = null;
+      _loading = false;
+      _notify();
+      return;
+    }
     _loading = true;
     _error = null;
     _notify();
     try {
-      final r = await _api.decide(request.copyWith(departAt: isoBangkok(_departAt), mode: _mode));
+      final r = await _api.decide(_request.copyWith(departAt: isoBangkok(_departAt), mode: _mode));
       if (seq != _seq || _disposed) return;
       _state.markSample(r.isSample);
-      _decision = r.data;
+      if (r.data.needsPlace != null) {
+        _needsPlace = r.data.needsPlace;
+        _decision = null;
+      } else {
+        _needsPlace = null;
+        _decision = r.data;
+        _followUp(r.data.trip);
+      }
       _previewing = false;
     } catch (e) {
       if (seq != _seq || _disposed) return;
@@ -114,6 +138,39 @@ class TripController extends ChangeNotifier {
   Future<void> setMode(TravelMode m) {
     if (m == _mode) return Future.value();
     _mode = m;
+    return load();
+  }
+
+  /// "กลับบ้าน" before home is saved: known without asking the server.
+  PlaceKind? _missingPlace() {
+    final q = _request.questionTh;
+    if (q == null || _request.tripId != null || _request.destination != null) return null;
+    SavedPlace? of(PlaceKind k) => _request.places.where((p) => p.kind == k).firstOrNull;
+    return missingPlaceFor(q, home: of(PlaceKind.home), work: of(PlaceKind.work));
+  }
+
+  /// Once the server names the trip it decided, moving the slider or mode
+  /// re-asks about that trip rather than re-parsing the question. App-built
+  /// trips (`app-…`) must carry their endpoints again.
+  void _followUp(Trip? t) {
+    if (t == null || t.id.isEmpty || _request.tripId != null) return;
+    final app = t.id.startsWith('app-');
+    _request = DecideRequest(
+      tripId: t.id,
+      origin: app ? t.origin : null,
+      destination: app ? t.destination : null,
+      places: _request.places,
+    );
+  }
+
+  /// The user answered "where?": run the same question again, resolving
+  /// against their updated places plus the answer.
+  Future<void> resolvePlace(Place destination, List<SavedPlace> places) {
+    final needs = _needsPlace;
+    _request = _request.copyWith(
+        places: needs == null ? places : placesWithAnswer(needs, destination, places));
+    _needsPlace = null;
+    _decision = null;
     return load();
   }
 

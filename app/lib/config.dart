@@ -40,7 +40,8 @@ String? initialDemoClock() {
 
 /// Screen to open on launch for demo recording and screenshots, from
 /// `--dart-define=DEMO_SCREEN=…` or the DEMO_SCREEN environment variable: `verdict@18:00/moto`, `report`,
-/// `report_result`, `home_tab`, `ask`, `settings`, `gallery`.
+/// `report_result`, `home_tab`, `ask`, `settings`, `gallery`, and the first-run states
+/// [firstRunScreens].
 class DemoLaunch {
   const DemoLaunch({required this.screen, this.departHhmm, this.mode});
   final String screen;
@@ -55,3 +56,15 @@ class DemoLaunch {
     return DemoLaunch(screen: m[1]!, departHhmm: m[2], mode: m[3]);
   }
 }
+
+/// DEMO_SCREEN presets that start from a fresh install instead of มิว's
+/// demo profile: `onboarding` shows the first-run screen; the rest have
+/// skipped it with nothing saved.
+const firstRunScreens = {
+  'onboarding',
+  'empty_home',
+  'place_search',
+  'place_confirm',
+  'flood_nohome',
+  'location_denied',
+};

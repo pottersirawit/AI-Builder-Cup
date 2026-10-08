@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../app_state.dart';
 import '../design/design.dart';
 import '../models.dart';
+import '../places.dart';
+import 'parts.dart';
 
 const suggestedQuestions = ['ถ้ารอถึงสองทุ่มค่อยกลับล่ะ', 'ไป BTS แทนดีไหม'];
 
@@ -10,17 +12,27 @@ class _Message {
   const _Message.me(this.text)
       : mine = true,
         decision = null,
+        needs = null,
         failed = false;
   const _Message.ai(this.text, [this.decision])
       : mine = false,
+        needs = null,
         failed = false;
   const _Message.failed(this.text)
       : mine = false,
         decision = null,
+        needs = null,
         failed = true;
+
+  /// The answer is a question back: where is [text]'s place?
+  const _Message.needs(this.text, NeedsPlace this.needs)
+      : mine = false,
+        decision = null,
+        failed = false;
   final bool mine;
   final String text;
   final Decision? decision;
+  final NeedsPlace? needs;
   final bool failed;
 }
 
@@ -53,27 +65,45 @@ class _AskScreenState extends State<AskScreen> {
     super.dispose();
   }
 
-  Future<void> _ask(String q) async {
+  /// Asks [q]; [places] re-runs it once the user said where.
+  Future<void> _ask(String q, {List<SavedPlace>? places}) async {
     q = q.trim();
     if (q.isEmpty || _thinking) return;
     final api = AppScope.apiOf(context);
     final state = AppScope.readState(context);
+    final store = AppScope.readPlaces(context);
     setState(() {
-      _messages.add(_Message.me(q));
+      if (places == null) _messages.add(_Message.me(q));
       _asked.add(q);
       _thinking = true;
       _lastQuestion = q;
     });
     _scrollToEnd();
     try {
-      final d = state.track(await api.decide(DecideRequest(questionTh: q, tripId: widget.trip?.id)));
+      final missing = widget.trip == null && places == null
+          ? missingPlaceFor(q, home: store.home, work: store.work)
+          : null;
+      if (missing != null) {
+        setState(() => _messages.add(_Message.needs(q, NeedsPlace(queryTh: kindLabelTh(missing), kind: missing))));
+        return;
+      }
+      final d = state.track(await api.decide(DecideRequest(
+        questionTh: q,
+        tripId: widget.trip?.id,
+        origin: widget.trip?.source == 'app' ? widget.trip!.origin : null,
+        destination: widget.trip?.source == 'app' ? widget.trip!.destination : null,
+        places: places ?? store.places,
+      )));
       if (!mounted) return;
-      setState(() => _messages.add(_Message.ai(d.summaryTh, d)));
+      setState(() => _messages.add(
+          d.needsPlace != null ? _Message.needs(q, d.needsPlace!) : _Message.ai(d.summaryTh, d)));
     } catch (_) {
       if (!mounted) return;
       setState(() => _messages.add(const _Message.failed('ตอบไม่ได้ในรอบนี้ เชื่อมต่อไม่ได้')));
     }
-    setState(() => _thinking = false);
+    finally {
+      if (mounted) setState(() => _thinking = false);
+    }
     _scrollToEnd();
   }
 
@@ -118,7 +148,17 @@ class _AskScreenState extends State<AskScreen> {
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, Space.x4),
               children: [
                 for (final m in _messages)
-                  _Bubble(message: m, onRetry: m.failed && _lastQuestion != null ? () => _ask(_lastQuestion!) : null),
+                  if (m.needs != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Space.x3),
+                      child: NeedsPlacePass(
+                        needs: m.needs!,
+                        onResolved: (dest, places) =>
+                            _ask(m.text, places: placesWithAnswer(m.needs!, dest, places)),
+                      ),
+                    )
+                  else
+                    _Bubble(message: m, onRetry: m.failed && _lastQuestion != null ? () => _ask(_lastQuestion!) : null),
                 if (_thinking)
                   const Padding(
                     padding: EdgeInsets.only(bottom: Space.x3),

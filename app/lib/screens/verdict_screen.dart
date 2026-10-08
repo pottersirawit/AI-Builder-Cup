@@ -7,12 +7,13 @@ import '../models.dart';
 import '../trip_controller.dart';
 import 'ask_screen.dart';
 import 'parts.dart';
+import 'place_picker.dart';
 
 /// One trip in full: drag the departure, compare modes, see why.
 class VerdictScreen extends StatefulWidget {
   const VerdictScreen({super.key, required this.request, this.trip, this.departAt, this.mode});
 
-  /// Either a trip id or a Thai question.
+  /// A trip id, an origin/destination pair, or a Thai question.
   final DecideRequest request;
   final Trip? trip;
   final DateTime? departAt;
@@ -39,6 +40,18 @@ class _VerdictScreenState extends State<VerdictScreen> {
 
   void _changed() => setState(() {});
 
+  Future<void> _savePlace(Place dest) async {
+    final messenger = ScaffoldMessenger.of(context);
+    final r = await showPlaceConfirmSheet(
+      context,
+      kind: PlaceKind.other,
+      candidate: PlaceCandidate(nameTh: dest.nameTh, lat: dest.lat, lng: dest.lng),
+    );
+    if (r?.saved != null) {
+      messenger.showSnackBar(SnackBar(content: Text('บันทึก “${r!.saved!.labelTh}” แล้ว')));
+    }
+  }
+
   @override
   void dispose() {
     _c.dispose();
@@ -49,13 +62,22 @@ class _VerdictScreenState extends State<VerdictScreen> {
   Widget build(BuildContext context) {
     final state = AppScope.stateOf(context);
     final d = _c.decision;
-    final trip = widget.trip;
+    final trip = widget.trip ?? d?.trip;
+    final store = AppScope.placesOf(context);
+    final dest = trip?.destination;
+    final unsaved = dest != null &&
+        !trip!.unresolved &&
+        (dest.lat != 0 || dest.lng != 0) &&
+        store.duplicateOf(dest.lat, dest.lng) == null;
     final sky = state.flood ? SkyState.flood : _c.sky(home: state.homeLevel);
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final c = FonColors.of(context);
 
-    final Widget pass = _c.error != null && d == null
+    final needs = _c.needsPlace;
+    final Widget pass = needs != null
+        ? NeedsPlacePass(needs: needs, onResolved: _c.resolvePlace)
+        : _c.error != null && d == null
         ? Pass(sections: [
             PassSection(
               child: ErrorState(
@@ -70,6 +92,14 @@ class _VerdictScreenState extends State<VerdictScreen> {
             now: state.now(),
             trip: trip,
             question: widget.request.questionTh,
+            actions: [
+              if (unsaved && store.canAddOther)
+                ActionChip(
+                  avatar: const Icon(Symbols.bookmark_add_rounded, size: 18),
+                  label: const Text('บันทึกที่นี่ไว้'),
+                  onPressed: () => _savePlace(dest),
+                ),
+            ],
           );
 
     final board = _c.board;
@@ -86,7 +116,11 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     FieldHeader(
                       state: sky,
                       back: true,
-                      title: trip == null ? 'คำถาม' : 'ไป${trip.destination.nameTh}',
+                      title: trip == null
+                          ? 'คำถาม'
+                          : trip.source == 'routine' || trip.titleTh == 'กลับบ้าน'
+                              ? trip.titleTh
+                              : 'ไป${trip.destination.nameTh}',
                       subtitle: trip == null ? 'Gemini แกะคำถามเป็นทริป' : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
                       actions: [
                         if (state.usingSample) const Padding(

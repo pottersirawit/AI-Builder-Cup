@@ -17,7 +17,7 @@ void main() {
     expect(dinner.source, 'calendar');
     expect(dinner.destination.nameTh, 'บ้านลาดพร้าว');
     expect(dinner.origin.lat, closeTo(13.7263, 1e-6));
-    expect(hhmm(dinner.arriveBy), '18:30');
+    expect(hhmm(dinner.arriveBy!), '18:30');
     expect(dinner.mode, TravelMode.car);
     expect(trips[1].source, 'gmail');
   });

@@ -1,7 +1,9 @@
 import 'package:flutter/widgets.dart';
 
 import 'api.dart';
+import 'location.dart';
 import 'models.dart';
+import 'places.dart';
 
 /// App-wide state: demo clock, offline flag and local-only settings.
 class AppState extends ChangeNotifier {
@@ -63,7 +65,6 @@ class AppState extends ChangeNotifier {
 
   /// Local-only toggles from the settings screen, keyed by setting id.
   final Map<String, bool> toggles = {
-    'calendar': true,
     'gmail': true,
     'routine': false,
     'share_reports': true,
@@ -74,18 +75,28 @@ class AppState extends ChangeNotifier {
     toggles[key] = v;
     notifyListeners();
   }
+
+  /// Notification permission. Stubbed: the app has no notifications plugin
+  /// yet, so this is only false when a demo preset stages the denied state.
+  bool notificationsDenied = false;
 }
 
-/// Exposes [AppState] and [FonTokMaiApi] to the widget tree.
-class AppScope extends InheritedNotifier<AppState> {
-  const AppScope({
+/// Exposes [AppState], [PlacesStore], [Locator] and [FonTokMaiApi] to the
+/// widget tree; dependents rebuild when state or places change.
+class AppScope extends InheritedNotifier<Listenable> {
+  AppScope({
     super.key,
-    required AppState state,
+    required this.state,
+    required this.places,
     required this.api,
+    this.locator = const Locator(),
     required super.child,
-  }) : super(notifier: state);
+  }) : super(notifier: Listenable.merge([state, places]));
 
+  final AppState state;
+  final PlacesStore places;
   final FonTokMaiApi api;
+  final Locator locator;
 
   static AppScope _of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppScope>()!;
@@ -94,9 +105,14 @@ class AppScope extends InheritedNotifier<AppState> {
       context.getInheritedWidgetOfExactType<AppScope>()!;
 
   /// Watches state: rebuilds [context] when it changes.
-  static AppState stateOf(BuildContext context) => _of(context).notifier!;
+  static AppState stateOf(BuildContext context) => _of(context).state;
 
   /// Reads state without subscribing; safe in initState and callbacks.
-  static AppState readState(BuildContext context) => _read(context).notifier!;
+  static AppState readState(BuildContext context) => _read(context).state;
+
+  /// Watches saved places and the profile.
+  static PlacesStore placesOf(BuildContext context) => _of(context).places;
+  static PlacesStore readPlaces(BuildContext context) => _read(context).places;
   static FonTokMaiApi apiOf(BuildContext context) => _read(context).api;
+  static Locator locatorOf(BuildContext context) => _read(context).locator;
 }

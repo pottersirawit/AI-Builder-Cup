@@ -64,12 +64,16 @@ class FieldHeader extends StatelessWidget {
     this.subtitle,
     this.back = false,
     this.actions = const [],
+    this.badge,
   });
   final SkyState state;
   final String title;
   final String? subtitle;
   final bool back;
   final List<Widget> actions;
+
+  /// A small status pill right after the title, e.g. "เดโม".
+  final Widget? badge;
 
   @override
   Widget build(BuildContext context) {
@@ -94,10 +98,17 @@ class FieldHeader extends StatelessWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: t.labelMedium!.copyWith(color: sky.onFieldMuted)),
-                Text(title,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: t.headlineSmall!.copyWith(color: sky.onField)),
+                Row(
+                  children: [
+                    Flexible(
+                      child: Text(title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.headlineSmall!.copyWith(color: sky.onField)),
+                    ),
+                    if (badge != null) ...[const SizedBox(width: Space.x2), Flexible(child: badge!)],
+                  ],
+                ),
               ],
             ),
           ),

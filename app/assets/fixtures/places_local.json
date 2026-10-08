@@ -1,0 +1,324 @@
+{
+ "places": [
+  {
+   "name_th": "สยาม",
+   "name_en": "Siam",
+   "address_th": "ถ.พระรามที่ 1 เขตปทุมวัน",
+   "lat": 13.7456,
+   "lng": 100.5341,
+   "source": "local"
+  },
+  {
+   "name_th": "สยามพารากอน",
+   "name_en": "Siam Paragon",
+   "address_th": "ถ.พระรามที่ 1 เขตปทุมวัน",
+   "lat": 13.7462,
+   "lng": 100.5347,
+   "source": "local"
+  },
+  {
+   "name_th": "เซ็นทรัลเวิลด์",
+   "name_en": "CentralWorld",
+   "address_th": "ถ.ราชดำริ เขตปทุมวัน",
+   "lat": 13.7466,
+   "lng": 100.5393,
+   "source": "local"
+  },
+  {
+   "name_th": "ไอคอนสยาม",
+   "name_en": "ICONSIAM",
+   "address_th": "ถ.เจริญนคร เขตคลองสาน",
+   "lat": 13.7267,
+   "lng": 100.5104,
+   "source": "local"
+  },
+  {
+   "name_th": "เซ็นทรัล ลาดพร้าว",
+   "name_en": "Central Ladprao",
+   "address_th": "ถ.พหลโยธิน เขตจตุจักร",
+   "lat": 13.8167,
+   "lng": 100.5612,
+   "source": "local"
+  },
+  {
+   "name_th": "เทอร์มินอล 21 อโศก",
+   "name_en": "Terminal 21 Asok",
+   "address_th": "ถ.สุขุมวิท เขตวัฒนา",
+   "lat": 13.7376,
+   "lng": 100.5604,
+   "source": "local"
+  },
+  {
+   "name_th": "เอ็มควอเทียร์",
+   "name_en": "EmQuartier",
+   "address_th": "ถ.สุขุมวิท เขตวัฒนา",
+   "lat": 13.7317,
+   "lng": 100.5697,
+   "source": "local"
+  },
+  {
+   "name_th": "ทองหล่อ",
+   "name_en": "Thong Lo",
+   "address_th": "สุขุมวิท 55 เขตวัฒนา",
+   "lat": 13.7243,
+   "lng": 100.5853,
+   "source": "local"
+  },
+  {
+   "name_th": "สีลม ซอย 3",
+   "name_en": "Silom Soi 3",
+   "address_th": "ถ.สีลม เขตบางรัก",
+   "lat": 13.7263,
+   "lng": 100.534,
+   "source": "local"
+  },
+  {
+   "name_th": "บ้านลาดพร้าว",
+   "name_en": "Lat Phrao home (demo)",
+   "address_th": "ซอยลาดพร้าว 32 เขตจตุจักร",
+   "lat": 13.816,
+   "lng": 100.59,
+   "source": "local"
+  },
+  {
+   "name_th": "อิมแพ็ค เมืองทองธานี",
+   "name_en": "IMPACT Muang Thong Thani",
+   "address_th": "ถ.แจ้งวัฒนะ ปากเกร็ด นนทบุรี",
+   "lat": 13.9119,
+   "lng": 100.548,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS สยาม",
+   "name_en": "BTS Siam",
+   "address_th": "ถ.พระรามที่ 1 เขตปทุมวัน",
+   "lat": 13.7457,
+   "lng": 100.534,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS อโศก",
+   "name_en": "BTS Asok",
+   "address_th": "ถ.สุขุมวิท เขตวัฒนา",
+   "lat": 13.737,
+   "lng": 100.5603,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS หมอชิต",
+   "name_en": "BTS Mo Chit",
+   "address_th": "ถ.พหลโยธิน เขตจตุจักร",
+   "lat": 13.8026,
+   "lng": 100.5538,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS อารีย์",
+   "name_en": "BTS Ari",
+   "address_th": "ถ.พหลโยธิน เขตพญาไท",
+   "lat": 13.7797,
+   "lng": 100.5446,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS อนุสาวรีย์ชัยฯ",
+   "name_en": "BTS Victory Monument",
+   "address_th": "ถ.พญาไท เขตราชเทวี",
+   "lat": 13.7627,
+   "lng": 100.5372,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS ศาลาแดง",
+   "name_en": "BTS Sala Daeng",
+   "address_th": "ถ.สีลม เขตบางรัก",
+   "lat": 13.7285,
+   "lng": 100.5343,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS ช่องนนทรี",
+   "name_en": "BTS Chong Nonsi",
+   "address_th": "ถ.นราธิวาสราชนครินทร์ เขตบางรัก",
+   "lat": 13.7238,
+   "lng": 100.5294,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS อ่อนนุช",
+   "name_en": "BTS On Nut",
+   "address_th": "ถ.สุขุมวิท เขตวัฒนา",
+   "lat": 13.7056,
+   "lng": 100.6011,
+   "source": "local"
+  },
+  {
+   "name_th": "BTS บางนา",
+   "name_en": "BTS Bang Na",
+   "address_th": "ถ.สุขุมวิท เขตบางนา",
+   "lat": 13.6681,
+   "lng": 100.6047,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT สุขุมวิท",
+   "name_en": "MRT Sukhumvit",
+   "address_th": "ถ.อโศกมนตรี เขตวัฒนา",
+   "lat": 13.7383,
+   "lng": 100.5612,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT สีลม",
+   "name_en": "MRT Si Lom",
+   "address_th": "ถ.พระรามที่ 4 เขตบางรัก",
+   "lat": 13.7293,
+   "lng": 100.5367,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT ลาดพร้าว",
+   "name_en": "MRT Lat Phrao",
+   "address_th": "ถ.รัชดาภิเษก เขตจตุจักร",
+   "lat": 13.8065,
+   "lng": 100.5732,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT ห้วยขวาง",
+   "name_en": "MRT Huai Khwang",
+   "address_th": "ถ.รัชดาภิเษก เขตห้วยขวาง",
+   "lat": 13.7787,
+   "lng": 100.5741,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT พระราม 9",
+   "name_en": "MRT Phra Ram 9",
+   "address_th": "ถ.รัชดาภิเษก เขตห้วยขวาง",
+   "lat": 13.7576,
+   "lng": 100.5651,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT จตุจักร",
+   "name_en": "MRT Chatuchak Park",
+   "address_th": "ถ.พหลโยธิน เขตจตุจักร",
+   "lat": 13.8029,
+   "lng": 100.5536,
+   "source": "local"
+  },
+  {
+   "name_th": "MRT หัวลำโพง",
+   "name_en": "MRT Hua Lamphong",
+   "address_th": "ถ.พระรามที่ 4 เขตปทุมวัน",
+   "lat": 13.7377,
+   "lng": 100.517,
+   "source": "local"
+  },
+  {
+   "name_th": "สถานีกลางกรุงเทพอภิวัฒน์",
+   "name_en": "Krung Thep Aphiwat Central Terminal",
+   "address_th": "เขตจตุจักร",
+   "lat": 13.8045,
+   "lng": 100.5397,
+   "source": "local"
+  },
+  {
+   "name_th": "สนามบินสุวรรณภูมิ",
+   "name_en": "Suvarnabhumi Airport",
+   "address_th": "บางพลี สมุทรปราการ",
+   "lat": 13.69,
+   "lng": 100.7501,
+   "source": "local"
+  },
+  {
+   "name_th": "สนามบินดอนเมือง",
+   "name_en": "Don Mueang Airport",
+   "address_th": "เขตดอนเมือง",
+   "lat": 13.9126,
+   "lng": 100.6068,
+   "source": "local"
+  },
+  {
+   "name_th": "ตลาดนัดจตุจักร",
+   "name_en": "Chatuchak Weekend Market",
+   "address_th": "ถ.กำแพงเพชร 2 เขตจตุจักร",
+   "lat": 13.7999,
+   "lng": 100.5503,
+   "source": "local"
+  },
+  {
+   "name_th": "จุฬาลงกรณ์มหาวิทยาลัย",
+   "name_en": "Chulalongkorn University",
+   "address_th": "ถ.พญาไท เขตปทุมวัน",
+   "lat": 13.7384,
+   "lng": 100.532,
+   "source": "local"
+  },
+  {
+   "name_th": "สวนลุมพินี",
+   "name_en": "Lumphini Park",
+   "address_th": "ถ.พระรามที่ 4 เขตปทุมวัน",
+   "lat": 13.7314,
+   "lng": 100.5414,
+   "source": "local"
+  },
+  {
+   "name_th": "อนุสาวรีย์ชัยสมรภูมิ",
+   "name_en": "Victory Monument",
+   "address_th": "ถ.พญาไท เขตราชเทวี",
+   "lat": 13.765,
+   "lng": 100.5383,
+   "source": "local"
+  },
+  {
+   "name_th": "รัชดาภิเษก หน้าซอยลาดพร้าว 32",
+   "name_en": "Ratchada at Lat Phrao 32",
+   "address_th": "ถ.รัชดาภิเษก เขตจตุจักร",
+   "lat": 13.8063,
+   "lng": 100.5737,
+   "source": "local"
+  },
+  {
+   "name_th": "บางนา",
+   "name_en": "Bang Na",
+   "address_th": "เขตบางนา",
+   "lat": 13.668,
+   "lng": 100.634,
+   "source": "local"
+  },
+  {
+   "name_th": "บางกะปิ",
+   "name_en": "Bang Kapi",
+   "address_th": "เขตบางกะปิ",
+   "lat": 13.7656,
+   "lng": 100.647,
+   "source": "local"
+  },
+  {
+   "name_th": "มีนบุรี",
+   "name_en": "Min Buri",
+   "address_th": "เขตมีนบุรี",
+   "lat": 13.814,
+   "lng": 100.748,
+   "source": "local"
+  },
+  {
+   "name_th": "รังสิต ฟิวเจอร์พาร์ค",
+   "name_en": "Future Park Rangsit",
+   "address_th": "ธัญบุรี ปทุมธานี",
+   "lat": 13.989,
+   "lng": 100.617,
+   "source": "local"
+  },
+  {
+   "name_th": "เซ็นทรัล เวสต์เกต",
+   "name_en": "Central WestGate",
+   "address_th": "บางใหญ่ นนทบุรี",
+   "lat": 13.877,
+   "lng": 100.411,
+   "source": "local"
+  }
+ ]
+}

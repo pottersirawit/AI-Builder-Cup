@@ -1,0 +1,10 @@
+{
+  "needs_place": {
+    "query_th": "เซ็นทรัล",
+    "candidates": [
+      {"name_th": "เซ็นทรัลเวิลด์", "address_th": "ถ.ราชดำริ เขตปทุมวัน", "lat": 13.7466, "lng": 100.5393, "source": "local"},
+      {"name_th": "เซ็นทรัล ลาดพร้าว", "address_th": "ถ.พหลโยธิน เขตจตุจักร", "lat": 13.8167, "lng": 100.5612, "source": "local"},
+      {"name_th": "เซ็นทรัล เวสต์เกต", "address_th": "บางใหญ่ นนทบุรี", "lat": 13.877, "lng": 100.411, "source": "local"}
+    ]
+  }
+}

@@ -105,6 +105,52 @@ class _GalleryScreenState extends State<GalleryScreen> {
                   ],
                 )),
                 _Block('ModeSegmented', child: _ModeDemo()),
+                _Block('สถานที่ · Notice · ConnectRow', child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const PinPreview(lat: 13.7456, lng: 100.5341, accuracyM: 240),
+                    const SizedBox(height: Space.x3),
+                    const Notice(icon: Symbols.work_rounded, text: 'ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น'),
+                    const SizedBox(height: Space.x2),
+                    Notice(
+                      icon: Symbols.notifications_off_rounded,
+                      tone: NoticeTone.warning,
+                      text: 'ปิดการแจ้งเตือนอยู่ แอปเตือนก่อนออกไม่ได้',
+                      action: TextButton(onPressed: () {}, child: const Text('เปิดการตั้งค่า')),
+                    ),
+                    const SizedBox(height: Space.x2),
+                    Notice(
+                      icon: Symbols.calendar_month_rounded,
+                      text: 'เชื่อม Calendar เพื่อให้แอปเห็นนัด',
+                      onDismiss: () {},
+                    ),
+                    for (final st in LinkState.values)
+                      ConnectRow(
+                        icon: Symbols.calendar_month_rounded,
+                        title: 'Google Calendar',
+                        state: st,
+                        detail: 'เฉพาะนัดที่มีสถานที่',
+                        account: 'miw.demo@gmail.com · บัญชีจำลอง',
+                        onConnect: () {},
+                        onDisconnect: () {},
+                      ),
+                    const ConnectRow(
+                      icon: Symbols.calendar_month_rounded,
+                      title: 'Google Calendar',
+                      state: LinkState.notConnected,
+                      comingSoon: true,
+                    ),
+                    const SkeletonList(rows: 2),
+                    const Wrap(spacing: Space.x2, runSpacing: Space.x2, children: [
+                      DemoBadge(),
+                      RiskChip(risk: Risk.medium, label: 'นอกพื้นที่ที่รองรับ', dense: true),
+                    ]),
+                    const SizedBox(height: Space.x2),
+                    Wrap(spacing: Space.x2, runSpacing: Space.x2, children: [
+                      for (final k in placeIconKeys) Icon(placeIcon(k)),
+                    ]),
+                  ],
+                )),
                 _Block('RiskChip · ConfidenceMeter · SourceLabel', child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
