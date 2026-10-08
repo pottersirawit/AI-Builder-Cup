@@ -62,13 +62,14 @@ Fields marked *(additive)* were added after v0 was agreed; v0 clients can ignore
 
 `GET /v1/places` *(additive)* → the user's saved places a question can name, and where they are now (origin of a typed trip: the Silom office on weekdays 08:00–19:00, home otherwise)
 ```json
-{"places":[{"id":"home","label_th":"บ้าน","name_th":"บ้านลาดพร้าว","lat":13.816,"lng":100.59},
-  {"id":"work","label_th":"ที่ทำงาน","name_th":"สีลม ซอย 3","lat":13.7263,"lng":100.534},
-  {"id":"siam","label_th":"สยาม","name_th":"สยาม","lat":13.7456,"lng":100.5341},
-  {"id":"thonglor","label_th":"ทองหล่อ","name_th":"ทองหล่อ","lat":13.7243,"lng":100.5853},
-  {"id":"impact","label_th":"อิมแพ็ค","name_th":"อิมแพ็ค เมืองทองธานี","lat":13.9119,"lng":100.548}],
+{"places":[{"id":"home","kind":"home","label_th":"บ้าน","name_th":"บ้านลาดพร้าว","lat":13.816,"lng":100.59},
+  {"id":"work","kind":"work","label_th":"ที่ทำงาน","name_th":"สีลม ซอย 3","lat":13.7263,"lng":100.534},
+  {"id":"siam","kind":"other","label_th":"สยาม","name_th":"สยาม","lat":13.7456,"lng":100.5341},
+  {"id":"thonglor","kind":"other","label_th":"ทองหล่อ","name_th":"ทองหล่อ","lat":13.7243,"lng":100.5853},
+  {"id":"impact","kind":"other","label_th":"อิมแพ็ค","name_th":"อิมแพ็ค เมืองทองธานี","lat":13.9119,"lng":100.548}],
  "current_place_id":"work"}
 ```
+*(v1)* `kind` is `home`, `work` or `other`. These are the demo user's places; a real user's places live on the device and are sent with each request (see contract v1 below).
 
 `POST /v1/decide` body (all fields optional) `{"trip_id":"cal-dinner","depart_at":"… or HH:MM","mode":"car|transit|moto","question_th":"ถ้ารอถึงสองทุ่มค่อยกลับล่ะ"}`
 - No `trip_id`: the first trip, unless `question_th` names a saved place ("ไปสยามตอนหกโมงดีไหม"). Then the server uses an upcoming Calendar/Gmail trip to that place within 12 hours ("กลับบ้าน" at 16:10 = `cal-dinner`), or plans a typed trip `adhoc-<place id>` from the current place, by car, with no deadline. Gemini parses the destination when available; Thai keywords otherwise.
@@ -108,5 +109,57 @@ Fields marked *(additive)* were added after v0 was agreed; v0 clients can ignore
  "actions":[{"order":1,"text_th":"…"}],"sources":["ThaiWater (HII) (scenario)","…"]}
 ```
 *(additive)* `summary_th`, `minutes_to_doorstep` (`null` when the canal is not rising toward the house), `rain_today_mm`, `reports_nearby`.
+
+## API contract v1 (additive, 2026-10-08)
+
+Everything in v0 still works unchanged. Places live on the device (`docs/plan/places-and-empty-states.md`); the server stores none and the app sends coordinates with every request. Place objects are `{"name_th","lat","lng"}` like trip ends.
+
+**`POST /v1/decide`** accepts three more optional fields:
+```json
+{"question_th":"ไปยิมตอนหกโมง",
+ "origin":{"name_th":"ตำแหน่งปัจจุบัน","lat":13.7441,"lng":100.5431},
+ "destination":{"name_th":"สยามพารากอน","lat":13.746,"lng":100.5347},
+ "places":[{"id":"h1","kind":"home","label_th":"บ้าน","name_th":"คอนโดบางนา","lat":13.6681,"lng":100.6046},
+           {"id":"g1","kind":"other","label_th":"ยิม","name_th":"ฟิตเนส อารีย์","lat":13.7797,"lng":100.5448}]}
+```
+- `origin` + `destination` → an app trip: `{"id":"app-b7c3c044fe","title_th":"ไปสยามพารากอน","source":"app","origin":{…},"destination":{…},"mode":"car"}`, no `arrive_by`. The ID is a hash of the coordinates; for slider/mode follow-ups send `trip_id` **and** the same `origin`/`destination` again (an `app-…` ID alone → 400). `name_th` may be omitted (`ตำแหน่งปัจจุบัน` / `ปลายทาง`).
+- `origin` alone = where the phone is; it is the start of a trip that `question_th` names.
+- `places` = the user's saved places. When present (even `[]`), questions resolve against them instead of the demo list: by `label_th`, `name_th` (without a trailing "(…)"), and for `kind:"home"` บ้าน/home, for `kind:"work"` ที่ทำงาน/ทำงาน/ออฟฟิศ/office/work. `kind` defaults to `other`; each place needs `id`, `lat`, `lng`. A question naming one of them becomes an app trip from `origin`, or without `origin` from work (going home) / home (anywhere else); title `กลับบ้าน` for home, `ไป<label_th>` otherwise. If the place is where an upcoming Calendar/Gmail trip goes within 12 h, that trip is used instead (the demo profile's "กลับบ้าน" at 16:10 is still `cal-dinner`). No origin and no home/work to start from → 400.
+- Precedence: `destination` > `trip_id` > a place named in `question_th` > the first trip.
+- A question that names somewhere not resolvable (no `trip_id`, no `destination`) → **200** with only:
+```json
+{"needs_place":{"query_th":"เซ็นทรัลเวิลด์","candidates":[
+  {"name_th":"เซ็นทรัลเวิลด์","name_en":"CentralWorld","address_th":"เขตปทุมวัน กรุงเทพมหานคร","lat":13.7466,"lng":100.5393,"source":"local"}]}}
+```
+  `candidates` are `/v1/places/search` results for `query_th` (may be `[]`). Asking for home or work when `places` has none of that kind ("กลับบ้าน", "ไปทำงาน") → `{"needs_place":{"query_th":"บ้าน","kind":"home","candidates":[]}}` (`kind` is `home` or `work`, present only for this case). After the user picks, re-ask with `destination` set (or with the new place in `places`).
+- New 400s: `destination` without `origin`, an `app-…` trip ID without coordinates, a place without `id`/`lat`/`lng`, an unknown `kind`.
+
+**`GET /v1/home-status?lat=&lng=&name_th=`** computes for that point; without `lat`/`lng` it is the demo home as before (`name_th` defaults to `บ้าน`; only one of `lat`/`lng` → 400). Within 300 m of the demo home the scenario profile (doorstep height, parking, sandbag point) still applies, so the demo profile gets the scripted flood mode. Added fields:
+```json
+{"place":{"name_th":"คอนโดบางนา","lat":13.6681,"lng":100.6046},"in_service_area":true,
+ "level":"danger","headline_th":"น้ำท่วมถนนแถวบ้านได้ถึง 26 ซม.",
+ "summary_th":"ไม่มีสถานีวัดระดับคลองใกล้บ้าน ประเมินจากฝนและจุดน้ำท่วม กทม. 1 จุดในรัศมี 2 กม. ฝนสะสมวันนี้ 13 มม. ฝนหนักสุด 52 มม./ชม. ใน 2 ชั่วโมงนี้ สุขุมวิท อาจมีน้ำขัง 26 ซม.",
+ "canal":null,"minutes_to_doorstep":null,"rain_today_mm":13,"reports_nearby":0,
+ "flood_spots":[{"id":"BKK-FL-003","name_th":"ถนนสุขุมวิท ซอยอุดมสุข (สุขุมวิท 103) ถึงแยกบางนา","lat":13.6798,"lng":100.6083,
+   "distance_m":1361,"expected_depth_cm":26,"historical_max_depth_cm":30}],
+ "actions":[{"order":1,"text_th":"…"}],"sources":["Google Weather API","BMA flood spots","รายงานผู้ใช้"]}
+```
+- `canal` = nearest station within 3 km (scenario: คลองลาดพร้าว and three others; live: ThaiWater), else `null`. With a canal the levels and wording are v0's; `minutes_to_doorstep` is only known for the demo home.
+- Without a canal the level comes from rain (peak from now to +2 h, total since midnight), the BMA flood spots within 2 km and neighbour reports, and `summary_th` says it has no canal station. `flood_spots` (nearest first, at most 5; `expected_depth_cm` at the peak rain) is always a list, possibly empty. `reports_nearby` = reports within 500 m in the last hour.
+- `in_service_area` = inside 13.49–14.10 N, 100.30–100.95 E. Outside it the summary says only rain is available.
+- `sources` lists the canal source only when a canal was used, and `BMA flood spots` only when a spot is within 2 km.
+
+**`GET /v1/places/search?q=`** (q trimmed, at least 2 characters, else 400) →
+```json
+{"places":[{"name_th":"สยามพารากอน","name_en":"Siam Paragon","address_th":"เขตปทุมวัน กรุงเทพมหานคร","lat":13.746,"lng":100.5347,"source":"local"}]}
+```
+Up to 8 results, `[]` when nothing matches. With `GOOGLE_MAPS_API_KEY`: Places API Text Search (New), Thai, region TH, biased to 50 km around Bangkok, `source:"google"`, no `name_en`. Without a key, or when Google fails or finds nothing: the bundled landmark list `data/bkk_landmarks.json` (BTS/MRT/ARL stations, malls, landmarks, the 50 districts, the demo places), `source:"local"`, ranked exact name/keyword > prefix > contains > a known name inside the query > all words match, case/space-insensitive Thai and English.
+
+**`GET /v1/places/reverse?lat=&lng=`** (both required, else 400) →
+```json
+{"name_th":"ใกล้เซ็นทรัลลาดพร้าว","address_th":"ถ.พหลโยธิน เขตจตุจักร กรุงเทพมหานคร","lat":13.818,"lng":100.564,
+ "in_service_area":true,"source":"local","distance_m":312}
+```
+`lat`/`lng` echo the query (save these, not the landmark's). Google Geocoding (Thai) when a key is set: `name_th` is the most specific named component (place, building, road, แขวง), `address_th` the formatted address, no `distance_m`. Local fallback: the nearest landmark; `name_th` is its name within 150 m, else `ใกล้<name>`; `distance_m` is the distance to it.
 
 ## Open questions — see the grilling round in the chat / session summary

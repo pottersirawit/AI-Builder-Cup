@@ -198,3 +198,103 @@ func TestResetCalls(t *testing.T) {
 		t.Fatalf("calls after reset = %+v", c)
 	}
 }
+
+func TestAppTripIDIsStableForTheSameCoordinates(t *testing.T) {
+	a := AppTrip(scenario.Silom, scenario.Siam, "ไปสยาม")
+	b := AppTrip(domain.Place{NameTH: "อื่น", Lat: 13.72630001, Lng: 100.534}, domain.Place{NameTH: "สยาม", Lat: 13.7456, Lng: 100.5341}, "x")
+	c := AppTrip(scenario.Silom, scenario.Thonglor, "ไปทองหล่อ")
+	if !strings.HasPrefix(a.ID, AppPrefix) || a.ID != b.ID || a.ID == c.ID {
+		t.Fatalf("ids %s %s %s", a.ID, b.ID, c.ID)
+	}
+	if a.Source != "app" || a.Mode != domain.ModeCar || !a.ArriveBy.IsZero() || a.Origin != scenario.Silom || a.Destination != scenario.Siam || a.TitleTH != "ไปสยาม" {
+		t.Fatalf("trip = %+v", a)
+	}
+}
+
+// mew are a user's own places sent by the app: a home, a work place and a gym.
+var mew = []domain.SavedPlace{
+	{ID: "h1", Kind: "home", LabelTH: "บ้าน", Place: domain.Place{NameTH: "คอนโดบางนา", Lat: 13.6681, Lng: 100.6046}},
+	{ID: "w1", Kind: "work", LabelTH: "ที่ทำงาน", Place: domain.Place{NameTH: "สามย่านมิตรทาวน์", Lat: 13.7336, Lng: 100.5284}},
+	{ID: "g1", Kind: "other", LabelTH: "ยิม", Place: domain.Place{NameTH: "ฟิตเนส อารีย์", Lat: 13.7797, Lng: 100.5448}},
+}
+
+func TestOpen(t *testing.T) {
+	gps := domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	appID := AppTrip(gps, scenario.Siam, "").ID
+	tests := []struct {
+		name    string
+		req     TripRequest
+		wantID  string
+		wantErr error
+	}{
+		{"coordinates make an app trip", TripRequest{Origin: &gps, Destination: &scenario.Siam}, appID, nil},
+		{"the app trip id is rebuilt from the coordinates", TripRequest{TripID: appID, Origin: &gps, Destination: &scenario.Siam}, appID, nil},
+		{"an app trip id alone cannot be looked up", TripRequest{TripID: appID}, "", ErrBadTrip},
+		{"a destination needs an origin", TripRequest{Destination: &scenario.Siam}, "", ErrBadTrip},
+		{"user places alone keep the first trip", TripRequest{Places: mew}, "cal-dinner", nil},
+		{"trip ids still work", TripRequest{TripID: "gmail-concert", Places: mew}, "gmail-concert", nil},
+	}
+	p := newPlanner(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, err := p.Open(context.Background(), scenarioProviders(), at(16, 10), tt.req)
+			if tt.wantErr != nil {
+				if !errors.Is(err, tt.wantErr) {
+					t.Fatalf("want %v, got %v", tt.wantErr, err)
+				}
+				return
+			}
+			if err != nil || s.Trip.ID != tt.wantID {
+				t.Fatalf("got %+v %v", s, err)
+			}
+		})
+	}
+}
+
+func TestPlanToUserPlaces(t *testing.T) {
+	gps := domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	tests := []struct {
+		name       string
+		origin     *domain.Place
+		place      string
+		wantTitle  string
+		wantOrigin domain.Place
+	}{
+		{"home from where the phone is", &gps, "h1", "กลับบ้าน", gps},
+		{"home without a fix starts from work", nil, "h1", "กลับบ้าน", mew[1].Place},
+		{"work without a fix starts from home", nil, "w1", "ไปที่ทำงาน", mew[0].Place},
+		{"the gym without a fix starts from home", nil, "g1", "ไปยิม", mew[0].Place},
+	}
+	p := newPlanner(t)
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			s, err := p.Open(context.Background(), scenarioProviders(), at(16, 10), TripRequest{Places: mew, Origin: tt.origin})
+			if err != nil {
+				t.Fatal(err)
+			}
+			if err := s.PlanTo(tt.place); err != nil {
+				t.Fatal(err)
+			}
+			if !strings.HasPrefix(s.Trip.ID, AppPrefix) || s.Trip.Source != "app" || s.Trip.TitleTH != tt.wantTitle || s.Trip.Origin != tt.wantOrigin {
+				t.Fatalf("trip = %+v", s.Trip)
+			}
+		})
+	}
+
+	s, _ := p.Open(context.Background(), scenarioProviders(), at(16, 10), TripRequest{Places: mew[2:]})
+	if err := s.PlanTo("g1"); !errors.Is(err, ErrBadTrip) {
+		t.Fatalf("no origin and no home or work: want ErrBadTrip, got %v", err)
+	}
+	if err := s.PlanTo("siam"); !errors.Is(err, ErrUnknownTrip) {
+		t.Fatalf("demo places are not the user's: want ErrUnknownTrip, got %v", err)
+	}
+}
+
+func TestPlanToUserHomeStillFindsTonightsDinner(t *testing.T) {
+	demoProfile := []domain.SavedPlace{{ID: "h", Kind: "home", LabelTH: "บ้าน", Place: scenario.Home}}
+	gps := domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	s, _ := newPlanner(t).Open(context.Background(), scenarioProviders(), at(16, 10), TripRequest{Places: demoProfile, Origin: &gps})
+	if err := s.PlanTo("h"); err != nil || s.Trip.ID != "cal-dinner" {
+		t.Fatalf("got %+v %v", s.Trip, err)
+	}
+}

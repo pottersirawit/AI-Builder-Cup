@@ -21,6 +21,87 @@ type Request struct {
 	DepartAt   string `json:"depart_at"`
 	Mode       string `json:"mode"`
 	QuestionTH string `json:"question_th"`
+	// Origin and Destination, both set, are a trip the app chose; Origin
+	// alone is where the phone is, the start of a trip a question names.
+	Origin      *domain.Place `json:"origin"`
+	Destination *domain.Place `json:"destination"`
+	// Places are the user's saved places; questions resolve against them
+	// instead of the demo user's. An empty list means none saved.
+	Places []domain.SavedPlace `json:"places"`
+}
+
+// NeedsPlace is the answer to a question that names somewhere the server
+// cannot place: a place the user has not saved, or home/work before they
+// are set. The app asks the user to pick one and asks again.
+type NeedsPlace struct {
+	QueryTH string
+	Kind    string // home or work when that is what is missing
+}
+
+func (n *NeedsPlace) Error() string { return "needs place: " + n.QueryTH }
+
+// kindLabels are the default labels and the keywords of home and work.
+var (
+	kindLabels   = map[string]string{domain.KindHome: "บ้าน", domain.KindWork: "ที่ทำงาน"}
+	kindKeywords = map[string][]string{
+		domain.KindHome: {"บ้าน", "home"},
+		domain.KindWork: {"ที่ทำงาน", "ทำงาน", "ออฟฟิศ", "office", "work"},
+	}
+)
+
+func validPoint(p domain.Place) bool {
+	return (p.Lat != 0 || p.Lng != 0) && p.Lat >= -90 && p.Lat <= 90 && p.Lng >= -180 && p.Lng <= 180
+}
+
+// TripRequest validates the request's places and gives each saved place the
+// words a question can name it by: its label, its name (without the
+// "(district)" suffix) and, for home and work, the usual words for them.
+func (r Request) TripRequest() (planner.TripRequest, error) {
+	tr := planner.TripRequest{TripID: r.TripID}
+	for _, end := range []struct {
+		p    *domain.Place
+		dst  **domain.Place
+		name string
+		def  string
+	}{{r.Origin, &tr.Origin, "origin", "ตำแหน่งปัจจุบัน"}, {r.Destination, &tr.Destination, "destination", "ปลายทาง"}} {
+		if end.p == nil {
+			continue
+		}
+		if !validPoint(*end.p) {
+			return tr, fmt.Errorf("%w: %s needs lat and lng", ErrBadRequest, end.name)
+		}
+		p := *end.p
+		if strings.TrimSpace(p.NameTH) == "" {
+			p.NameTH = end.def
+		}
+		*end.dst = &p
+	}
+	if r.Places == nil {
+		return tr, nil
+	}
+	tr.Places = []domain.SavedPlace{}
+	for _, p := range r.Places {
+		switch p.Kind {
+		case "":
+			p.Kind = domain.KindOther
+		case domain.KindHome, domain.KindWork, domain.KindOther:
+		default:
+			return tr, fmt.Errorf("%w: place kind must be home, work or other", ErrBadRequest)
+		}
+		if p.ID == "" || !validPoint(p.Place) {
+			return tr, fmt.Errorf("%w: each place needs id, lat and lng", ErrBadRequest)
+		}
+		if p.LabelTH == "" {
+			p.LabelTH = kindLabels[p.Kind]
+		}
+		if p.LabelTH == "" {
+			p.LabelTH = p.NameTH
+		}
+		short, _, _ := strings.Cut(p.NameTH, "(")
+		p.Keywords = append([]string{p.LabelTH, p.NameTH, strings.TrimSpace(short)}, kindKeywords[p.Kind]...)
+		tr.Places = append(tr.Places, p)
+	}
+	return tr, nil
 }
 
 // Response is the /v1/decide contract (docs/plan/merged-flow.md), plus the
@@ -73,14 +154,21 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 	var preface []planner.Call
 	if q := strings.TrimSpace(req.QuestionTH); q != "" {
 		intent, by := ParseQuestion(ctx, g, q, s.Now, s.Trip, s.Places())
-		// A question without trip_id may name where to go; with trip_id the
-		// app has already picked the trip.
-		if req.TripID == "" && intent.Place != nil {
-			if err := s.PlanTo(intent.Place.ID); err != nil {
-				return Response{}, err
-			}
-			if req.Mode == "" {
-				mode = s.Trip.Mode
+		// A question without trip_id may name where to go; with trip_id or
+		// coordinates the app has already picked the trip.
+		if req.TripID == "" && req.Destination == nil {
+			switch {
+			case intent.Place != nil:
+				if err := s.PlanTo(intent.Place.ID); err != nil {
+					return Response{}, err
+				}
+				if req.Mode == "" {
+					mode = s.Trip.Mode
+				}
+			case intent.PlaceKind != "":
+				return Response{}, &NeedsPlace{QueryTH: kindLabels[intent.PlaceKind], Kind: intent.PlaceKind}
+			case intent.PlaceQuery != "":
+				return Response{}, &NeedsPlace{QueryTH: intent.PlaceQuery}
 			}
 		}
 		if intent.DepartAt != nil {

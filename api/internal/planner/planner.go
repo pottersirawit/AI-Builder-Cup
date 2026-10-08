@@ -5,6 +5,8 @@ package planner
 
 import (
 	"context"
+	"crypto/sha1"
+	"encoding/hex"
 	"errors"
 	"fmt"
 	"math"
@@ -36,11 +38,29 @@ type Planner struct {
 	Whereabouts func(now time.Time) string
 }
 
-var ErrUnknownTrip = errors.New("unknown trip")
+var (
+	ErrUnknownTrip = errors.New("unknown trip")
+	// ErrBadTrip is a trip request the server cannot act on, such as a
+	// destination without an origin.
+	ErrBadTrip = errors.New("bad trip request")
+)
 
 // AdHocPrefix marks trips typed as a question rather than found in Calendar or
 // Gmail; the rest of the ID is the saved place ID, e.g. "adhoc-siam".
 const AdHocPrefix = "adhoc-"
+
+// AppPrefix marks trips the app sent as coordinates. The server stores
+// nothing: the rest of the ID is a hash of the coordinates, so the app sends
+// them again with every follow-up and gets the same ID back.
+const AppPrefix = "app-"
+
+// AppTrip is a trip between two points the app chose, by car, with no deadline.
+func AppTrip(origin, dest domain.Place, titleTH string) domain.Trip {
+	key := fmt.Sprintf("%.5f,%.5f>%.5f,%.5f", origin.Lat, origin.Lng, dest.Lat, dest.Lng)
+	sum := sha1.Sum([]byte(key))
+	return domain.Trip{ID: AppPrefix + hex.EncodeToString(sum[:])[:10], TitleTH: titleTH, Source: "app",
+		Origin: origin, Destination: dest, Mode: domain.ModeCar}
+}
 
 // tripWindow is how close an upcoming trip must be for a typed destination to
 // mean that trip ("กลับบ้าน" at 16:10 is tonight's dinner).
@@ -66,12 +86,20 @@ func (p *Planner) TripTo(now time.Time, placeID string) (domain.Trip, error) {
 	if !ok {
 		return domain.Trip{}, fmt.Errorf("%w: no saved place %q", ErrUnknownTrip, placeID)
 	}
-	for _, t := range p.Trips(now) {
-		if geo.HaversineM(t.Destination.Point(), dest.Point()) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
-			return t, nil
-		}
+	if t, ok := p.upcomingTo(now, dest.Point()); ok {
+		return t, nil
 	}
 	return p.adHocTrip(now, dest), nil
+}
+
+// upcomingTo is a Calendar or Gmail trip to near there within tripWindow.
+func (p *Planner) upcomingTo(now time.Time, dest domain.LatLng) (domain.Trip, bool) {
+	for _, t := range p.Trips(now) {
+		if geo.HaversineM(t.Destination.Point(), dest) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
+			return t, true
+		}
+	}
+	return domain.Trip{}, false
 }
 
 func (p *Planner) adHocTrip(now time.Time, dest domain.SavedPlace) domain.Trip {
@@ -113,18 +141,49 @@ type Session struct {
 	Now  time.Time
 	Trip domain.Trip
 
+	// places are the user's saved places (nil: the demo user's) and origin is
+	// where the app says the user is (nil: unknown).
+	places []domain.SavedPlace
+	origin *domain.Place
+
 	routes  map[string]domain.Route
 	rain    []domain.RainSample
 	rainSet bool
 	calls   []Call
 }
 
+// TripRequest is what a decision request says about the trip.
+type TripRequest struct {
+	TripID string
+	// Origin and Destination, both set, are a trip the app chose (AppTrip).
+	// Origin alone is where the user is now, for a question that names a place.
+	Origin, Destination *domain.Place
+	// Places are the user's saved places; nil means the demo user's.
+	Places []domain.SavedPlace
+}
+
 func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time, tripID string) (*Session, error) {
+	return p.Open(ctx, prov, now, TripRequest{TripID: tripID})
+}
+
+// Open starts a decision for the requested trip: the app's coordinates, a
+// known trip ID, or the first upcoming trip.
+func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
+	s := &Session{ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}, places: req.Places, origin: req.Origin}
+	switch {
+	case req.Destination != nil && req.Origin == nil:
+		return nil, fmt.Errorf("%w: destination needs an origin", ErrBadTrip)
+	case req.Destination != nil:
+		s.Trip = AppTrip(*req.Origin, *req.Destination, "ไป"+req.Destination.NameTH)
+		return s, nil
+	case strings.HasPrefix(req.TripID, AppPrefix):
+		return nil, fmt.Errorf("%w: %q is not stored; send origin and destination with it", ErrBadTrip, req.TripID)
+	}
+	tripID := req.TripID
 	trips := p.Trips(now)
 	if len(trips) == 0 {
 		return nil, ErrUnknownTrip
 	}
-	s := &Session{ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}}
 	if tripID == "" {
 		s.Trip = trips[0]
 		return s, nil
@@ -144,18 +203,69 @@ func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time,
 	return nil, fmt.Errorf("%w %q", ErrUnknownTrip, tripID)
 }
 
-// PlanTo switches the session to the trip to a saved place (see TripTo),
-// dropping everything cached for the previous trip.
+// PlanTo switches the session to the trip to a saved place, dropping
+// everything cached for the previous trip. For the demo user with no origin
+// it is TripTo. Otherwise it is an upcoming Calendar or Gmail trip going
+// there, or an app trip from the origin, or from the other end of the
+// commute (home <-> work) when the app sent no origin.
 func (s *Session) PlanTo(placeID string) error {
-	t, err := s.p.TripTo(s.Now, placeID)
-	if err != nil {
-		return err
+	var dest domain.SavedPlace
+	found := false
+	for _, pl := range s.Places() {
+		if pl.ID == placeID {
+			dest, found = pl, true
+		}
+	}
+	if !found {
+		return fmt.Errorf("%w: no saved place %q", ErrUnknownTrip, placeID)
+	}
+	var t domain.Trip
+	if s.places == nil && s.origin == nil {
+		t, _ = s.p.TripTo(s.Now, placeID)
+	} else if up, ok := s.p.upcomingTo(s.Now, dest.Point()); ok {
+		t = up
+	} else {
+		origin, ok := s.commuteOrigin(dest)
+		if !ok {
+			return fmt.Errorf("%w: send origin (where the user is now) to plan a trip to %s", ErrBadTrip, dest.LabelTH)
+		}
+		title := "ไป" + dest.LabelTH
+		if dest.Kind == domain.KindHome {
+			title = "กลับบ้าน"
+		}
+		t = AppTrip(origin, dest.Place, title)
 	}
 	s.Trip, s.routes, s.rain, s.rainSet = t, map[string]domain.Route{}, nil, false
 	return nil
 }
 
-func (s *Session) Places() []domain.SavedPlace { return s.p.Places }
+// commuteOrigin is where a trip to dest starts: the app's origin, else work
+// for home and home for anywhere else.
+func (s *Session) commuteOrigin(dest domain.SavedPlace) (domain.Place, bool) {
+	if s.origin != nil {
+		return *s.origin, true
+	}
+	want := []string{domain.KindHome, domain.KindWork}
+	if dest.Kind == domain.KindHome {
+		want = []string{domain.KindWork}
+	}
+	for _, kind := range want {
+		for _, pl := range s.Places() {
+			if pl.Kind == kind && pl.ID != dest.ID {
+				return pl.Place, true
+			}
+		}
+	}
+	return domain.Place{}, false
+}
+
+// Places are the places a question can name: the user's, or the demo user's.
+func (s *Session) Places() []domain.SavedPlace {
+	if s.places != nil {
+		return s.places
+	}
+	return s.p.Places
+}
 
 func (s *Session) Calls() []Call { return append([]Call(nil), s.calls...) }
 
@@ -468,6 +578,8 @@ func sourceTH(src string) string {
 		return "จาก Google Calendar"
 	case "gmail":
 		return "จากอีเมลยืนยันใน Gmail"
+	case "app":
+		return "เลือกในแอป"
 	}
 	return "พิมพ์ถามเอง"
 }

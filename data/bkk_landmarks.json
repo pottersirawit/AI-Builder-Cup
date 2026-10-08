@@ -1,0 +1,2912 @@
+[
+  {
+    "id": "siam-paragon",
+    "name_th": "สยามพารากอน",
+    "name_en": "Siam Paragon",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.746,
+    "longitude": 100.5347,
+    "keywords": [
+      "siam paragon",
+      "paragon",
+      "พารากอน",
+      "สยาม สแควร์วัน"
+    ]
+  },
+  {
+    "id": "centralworld",
+    "name_th": "เซ็นทรัลเวิลด์",
+    "name_en": "CentralWorld",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7466,
+    "longitude": 100.5393,
+    "keywords": [
+      "centralworld",
+      "central world",
+      "เซ็นทรัลเวิลด์ราชประสงค์",
+      "แยกราชประสงค์"
+    ]
+  },
+  {
+    "id": "iconsiam",
+    "name_th": "ไอคอนสยาม",
+    "name_en": "ICONSIAM",
+    "address_th": "ถ.เจริญนคร เขตคลองสาน กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7267,
+    "longitude": 100.5107,
+    "keywords": [
+      "iconsiam",
+      "icon siam",
+      "ไอคอน สยาม",
+      "เจริญนคร"
+    ]
+  },
+  {
+    "id": "central-ladprao",
+    "name_th": "เซ็นทรัลลาดพร้าว",
+    "name_en": "Central Ladprao",
+    "address_th": "ถ.พหลโยธิน เขตจตุจักร กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.8166,
+    "longitude": 100.5615,
+    "keywords": [
+      "central ladprao",
+      "central plaza ladprao",
+      "เซ็นทรัล ลาดพร้าว"
+    ]
+  },
+  {
+    "id": "central-rama-9",
+    "name_th": "เซ็นทรัลพระราม 9",
+    "name_en": "Central Rama 9",
+    "address_th": "ถ.รัชดาภิเษก เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.758,
+    "longitude": 100.5661,
+    "keywords": [
+      "เซ็นทรัล พระราม 9",
+      "central rama 9",
+      "central grand rama 9",
+      "เซ็นทรัลพระรามเก้า"
+    ]
+  },
+  {
+    "id": "emquartier",
+    "name_th": "เอ็มควอเทียร์",
+    "name_en": "EmQuartier",
+    "address_th": "เขตวัฒนา/คลองเตย กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7315,
+    "longitude": 100.5695,
+    "keywords": [
+      "emquartier",
+      "em quartier",
+      "em-quartier"
+    ]
+  },
+  {
+    "id": "emporium",
+    "name_th": "เอ็มโพเรียม",
+    "name_en": "Emporium",
+    "address_th": "เขตคลองเตย กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7303,
+    "longitude": 100.5688,
+    "keywords": [
+      "emporium",
+      "the emporium"
+    ]
+  },
+  {
+    "id": "emsphere",
+    "name_th": "เอ็มสเฟียร์",
+    "name_en": "Emsphere",
+    "address_th": "เขตคลองเตย กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7328,
+    "longitude": 100.5662,
+    "keywords": [
+      "emsphere",
+      "em sphere",
+      "em district"
+    ]
+  },
+  {
+    "id": "terminal-21-asok",
+    "name_th": "เทอร์มินอล 21 อโศก",
+    "name_en": "Terminal 21 Asok",
+    "address_th": "เขตวัฒนา กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7378,
+    "longitude": 100.5604,
+    "keywords": [
+      "เทอร์มินอล 21",
+      "terminal 21",
+      "terminal 21 asok",
+      "terminal21"
+    ]
+  },
+  {
+    "id": "serm-mit-tower-asoke",
+    "name_th": "อาคารเสริมมิตร",
+    "name_en": "Serm-Mit Tower Asoke",
+    "address_th": "ถ.อโศกมนตรี เขตวัฒนา กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7372,
+    "longitude": 100.5638,
+    "keywords": [
+      "serm-mit tower",
+      "sermmit tower",
+      "sermmit",
+      "เสริมมิตรทาวเวอร์",
+      "เสริมมิตร",
+      "serm-mit tower asoke"
+    ]
+  },
+  {
+    "id": "silom-complex",
+    "name_th": "สีลมคอมเพล็กซ์",
+    "name_en": "Silom Complex",
+    "address_th": "ถ.สีลม เขตบางรัก กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7282,
+    "longitude": 100.5345,
+    "keywords": [
+      "silom complex",
+      "สีลม คอมเพล็กซ์"
+    ]
+  },
+  {
+    "id": "sathorn-square-empire-tower",
+    "name_th": "สาทรสแควร์",
+    "name_en": "Sathorn Square / Empire Tower",
+    "address_th": "เขตสาทร กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7214,
+    "longitude": 100.5303,
+    "keywords": [
+      "sathorn square",
+      "empire tower",
+      "เอ็มไพร์ทาวเวอร์",
+      "อาคารสาทรสแควร์",
+      "sathorn square / empire tower"
+    ]
+  },
+  {
+    "id": "samyan-mitrtown",
+    "name_th": "สามย่านมิตรทาวน์",
+    "name_en": "Samyan Mitrtown",
+    "address_th": "ถ.พระราม 4 เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7336,
+    "longitude": 100.5284,
+    "keywords": [
+      "samyan mitrtown",
+      "สามย่าน มิตรทาวน์",
+      "สามย่าน"
+    ]
+  },
+  {
+    "id": "seacon-square-srinakarin",
+    "name_th": "ซีคอนสแควร์ ศรีนครินทร์",
+    "name_en": "Seacon Square Srinakarin",
+    "address_th": "ถ.ศรีนครินทร์ เขตประเวศ กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.6934,
+    "longitude": 100.6477,
+    "keywords": [
+      "ซีคอนสแควร์",
+      "seacon square",
+      "ซีคอน",
+      "ซีคอน ศรีนครินทร์",
+      "seacon square srinakarin"
+    ]
+  },
+  {
+    "id": "mega-bangna",
+    "name_th": "เมกาบางนา",
+    "name_en": "Mega Bangna",
+    "address_th": "ถ.บางนา-ตราด เขตบางนา กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.6467,
+    "longitude": 100.6802,
+    "keywords": [
+      "mega bangna",
+      "megabangna",
+      "เมกา บางนา",
+      "ikea bangna"
+    ]
+  },
+  {
+    "id": "queen-sirikit-national-convention-center-qsncc",
+    "name_th": "ศูนย์การประชุมแห่งชาติสิริกิติ์",
+    "name_en": "Queen Sirikit National Convention Center (QSNCC)",
+    "address_th": "เขตคลองเตย กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7235,
+    "longitude": 100.559,
+    "keywords": [
+      "qsncc",
+      "ศูนย์สิริกิติ์",
+      "queen sirikit convention center",
+      "queen sirikit national convention center (qsncc)"
+    ]
+  },
+  {
+    "id": "true-digital-park",
+    "name_th": "ทรู ดิจิทัล พาร์ค",
+    "name_en": "True Digital Park",
+    "address_th": "สุขุมวิท 101 เขตพระโขนง กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.6865,
+    "longitude": 100.611,
+    "keywords": [
+      "true digital park",
+      "101 true digital park",
+      "true digital"
+    ]
+  },
+  {
+    "id": "krungthep-kreetha-golf-course",
+    "name_th": "สนามกอล์ฟกรุงเทพกรีฑา",
+    "name_en": "Krungthep Kreetha Golf Course",
+    "address_th": "เขตสะพานสูง กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7475,
+    "longitude": 100.6698,
+    "keywords": [
+      "กรุงเทพกรีฑา",
+      "krungthep kreetha golf",
+      "กอล์ฟกรุงเทพกรีฑา",
+      "krungthep kreetha golf course"
+    ]
+  },
+  {
+    "id": "the-mall-lifestore-bangkapi",
+    "name_th": "เดอะมอลล์บางกะปิ",
+    "name_en": "The Mall Lifestore Bangkapi",
+    "address_th": "ถ.ลาดพร้าว เขตบางกะปิ กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7644,
+    "longitude": 100.6433,
+    "keywords": [
+      "เดอะมอลล์ บางกะปิ",
+      "the mall bangkapi",
+      "the mall lifestore bangkapi"
+    ]
+  },
+  {
+    "id": "central-pinklao",
+    "name_th": "เซ็นทรัลปิ่นเกล้า",
+    "name_en": "Central Pinklao",
+    "address_th": "ถ.บรมราชชนนี เขตบางกอกน้อย กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7777,
+    "longitude": 100.4764,
+    "keywords": [
+      "central pinklao",
+      "เซ็นทรัล ปิ่นเกล้า",
+      "ปิ่นเกล้า"
+    ]
+  },
+  {
+    "id": "bts-asok-mrt-sukhumvit-interchange",
+    "name_th": "สถานี BTS อโศก",
+    "name_en": "BTS Asok / MRT Sukhumvit Interchange",
+    "address_th": "เขตวัฒนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7372,
+    "longitude": 100.5638,
+    "keywords": [
+      "bts asok",
+      "bts อโศก",
+      "mrt สุขุมวิท",
+      "mrt sukhumvit",
+      "แยกอโศก",
+      "asok station",
+      "asoke station",
+      "asoke",
+      "asok",
+      "bts asok / mrt sukhumvit interchange"
+    ]
+  },
+  {
+    "id": "bts-siam-interchange",
+    "name_th": "สถานี BTS สยาม",
+    "name_en": "BTS Siam Interchange",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.746,
+    "longitude": 100.5347,
+    "keywords": [
+      "bts siam",
+      "bts สยาม",
+      "siam station",
+      "สยามสแควร์",
+      "siam square",
+      "สยาม",
+      "siam",
+      "bts siam interchange"
+    ]
+  },
+  {
+    "id": "bts-mo-chit-mrt-chatuchak-park",
+    "name_th": "สถานี BTS หมอชิต",
+    "name_en": "BTS Mo Chit / MRT Chatuchak Park",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8025,
+    "longitude": 100.5537,
+    "keywords": [
+      "bts mo chit",
+      "bts หมอชิต",
+      "mrt สวนจตุจักร",
+      "mrt chatuchak",
+      "หมอชิต",
+      "mo chit",
+      "จตุจักร",
+      "chatuchak",
+      "bts mo chit / mrt chatuchak park"
+    ]
+  },
+  {
+    "id": "bts-sala-daeng-mrt-silom-interchange",
+    "name_th": "สถานี BTS ศาลาแดง",
+    "name_en": "BTS Sala Daeng / MRT Silom Interchange",
+    "address_th": "เขตบางรัก กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7285,
+    "longitude": 100.5343,
+    "keywords": [
+      "bts sala daeng",
+      "bts ศาลาแดง",
+      "mrt silom",
+      "mrt สีลม",
+      "แยกศาลาแดง",
+      "sala daeng",
+      "bts sala daeng / mrt silom interchange"
+    ]
+  },
+  {
+    "id": "mrt-phra-ram-9",
+    "name_th": "สถานี MRT พระราม 9",
+    "name_en": "MRT Phra Ram 9",
+    "address_th": "เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7578,
+    "longitude": 100.5654,
+    "keywords": [
+      "mrt พระราม 9",
+      "mrt rama 9",
+      "mrt phra ram 9",
+      "แยกพระราม 9",
+      "rama 9 intersection",
+      "พระราม 9",
+      "rama 9"
+    ]
+  },
+  {
+    "id": "bts-arl-phaya-thai",
+    "name_th": "สถานี BTS พญาไท",
+    "name_en": "BTS / ARL Phaya Thai",
+    "address_th": "เขตราชเทวี กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7569,
+    "longitude": 100.5349,
+    "keywords": [
+      "bts phaya thai",
+      "bts พญาไท",
+      "arl phaya thai",
+      "แอร์พอร์ตลิงก์พญาไท",
+      "พญาไท",
+      "phaya thai",
+      "bts / arl phaya thai"
+    ]
+  },
+  {
+    "id": "bts-ha-yaek-lat-phrao-mrt-phahon-yothin",
+    "name_th": "สถานี BTS ห้าแยกลาดพร้าว",
+    "name_en": "BTS Ha Yaek Lat Phrao / MRT Phahon Yothin",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8136,
+    "longitude": 100.5615,
+    "keywords": [
+      "bts ห้าแยกลาดพร้าว",
+      "ha yaek lat phrao",
+      "mrt พหลโยธิน",
+      "ห้าแยกลาดพร้าว",
+      "พหลโยธิน",
+      "bts ha yaek lat phrao / mrt phahon yothin"
+    ]
+  },
+  {
+    "id": "krung-thep-aphiwat-central-terminal-bang-sue",
+    "name_th": "สถานีกลางกรุงเทพอภิวัฒน์",
+    "name_en": "Krung Thep Aphiwat Central Terminal (Bang Sue)",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8039,
+    "longitude": 100.5398,
+    "keywords": [
+      "krung thep aphiwat",
+      "บางซื่อ",
+      "bang sue grand station",
+      "mrt บางซื่อ",
+      "bang sue",
+      "krung thep aphiwat central terminal (bang sue)"
+    ]
+  },
+  {
+    "id": "bts-chong-nonsi",
+    "name_th": "สถานี BTS ช่องนนทรี",
+    "name_en": "BTS Chong Nonsi",
+    "address_th": "เขตบางรัก/สาทร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7236,
+    "longitude": 100.5293,
+    "keywords": [
+      "bts ช่องนนทรี",
+      "bts chong nonsi",
+      "ช่องนนทรี",
+      "chong nonsi"
+    ]
+  },
+  {
+    "id": "bts-ekkamai",
+    "name_th": "สถานี BTS เอกมัย",
+    "name_en": "BTS Ekkamai",
+    "address_th": "เขตคลองเตย กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.719,
+    "longitude": 100.5847,
+    "keywords": [
+      "bts เอกมัย",
+      "bts ekkamai",
+      "เอกมัย",
+      "ekkamai",
+      "สุขุมวิท 63"
+    ]
+  },
+  {
+    "id": "bts-ari",
+    "name_th": "สถานี BTS อารีย์",
+    "name_en": "BTS Ari",
+    "address_th": "ถ.พหลโยธิน เขตพญาไท กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7797,
+    "longitude": 100.5448,
+    "keywords": [
+      "bts อารีย์",
+      "bts ari",
+      "อารีย์",
+      "ari"
+    ]
+  },
+  {
+    "id": "mrt-tao-poon-interchange",
+    "name_th": "สถานี MRT เตาปูน",
+    "name_en": "MRT Tao Poon Interchange",
+    "address_th": "เขตบางซื่อ กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8062,
+    "longitude": 100.5303,
+    "keywords": [
+      "mrt เตาปูน",
+      "เตาปูน",
+      "tao poon",
+      "tao poon station",
+      "mrt tao poon interchange"
+    ]
+  },
+  {
+    "id": "chulalongkorn-university",
+    "name_th": "จุฬาลงกรณ์มหาวิทยาลัย",
+    "name_en": "Chulalongkorn University",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7384,
+    "longitude": 100.5322,
+    "keywords": [
+      "chulalongkorn university",
+      "จุฬาฯ",
+      "จุฬา",
+      "chula",
+      "cu"
+    ]
+  },
+  {
+    "id": "kasetsart-university-bangkhen",
+    "name_th": "มหาวิทยาลัยเกษตรศาสตร์",
+    "name_en": "Kasetsart University (Bangkhen)",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.8479,
+    "longitude": 100.5724,
+    "keywords": [
+      "kasetsart university",
+      "ม.เกษตร",
+      "เกษตรศาสตร์ บางเขน",
+      "ku",
+      "kasetsart",
+      "บางเขน",
+      "kasetsart university (bangkhen)"
+    ]
+  },
+  {
+    "id": "thammasat-university-tha-phra-chan",
+    "name_th": "มหาวิทยาลัยธรรมศาสตร์ ท่าพระจันทร์",
+    "name_en": "Thammasat University (Tha Phra Chan)",
+    "address_th": "เขตพระนคร กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7557,
+    "longitude": 100.493,
+    "keywords": [
+      "มหาวิทยาลัยธรรมศาสตร์",
+      "thammasat university",
+      "มธ. ท่าพระจันทร์",
+      "มธ.",
+      "tu tha phra chan",
+      "thammasat",
+      "thammasat university (tha phra chan)"
+    ]
+  },
+  {
+    "id": "srinakharinwirot-university-swu-prasarnmit",
+    "name_th": "มหาวิทยาลัยศรีนครินทรวิโรฒ ประสานมิตร",
+    "name_en": "Srinakharinwirot University (SWU Prasarnmit)",
+    "address_th": "เขตวัฒนา กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7455,
+    "longitude": 100.5652,
+    "keywords": [
+      "มหาวิทยาลัยศรีนครินทรวิโรฒ",
+      "มศว",
+      "มศว ประสานมิตร",
+      "swu",
+      "srinakharinwirot",
+      "ประสานมิตร",
+      "srinakharinwirot university (swu prasarnmit)"
+    ]
+  },
+  {
+    "id": "ramkhamhaeng-university",
+    "name_th": "มหาวิทยาลัยรามคำแหง",
+    "name_en": "Ramkhamhaeng University",
+    "address_th": "เขตบางกะปิ กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7553,
+    "longitude": 100.6225,
+    "keywords": [
+      "ramkhamhaeng university",
+      "ม.รามคำแหง",
+      "ม.ราม",
+      "หัวหมาก"
+    ]
+  },
+  {
+    "id": "mahidol-university-siriraj",
+    "name_th": "มหาวิทยาลัยมหิดล ศิริราช",
+    "name_en": "Mahidol University (Siriraj)",
+    "address_th": "เขตบางกอกน้อย กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7588,
+    "longitude": 100.4857,
+    "keywords": [
+      "มหาวิทยาลัยมหิดล",
+      "mahidol university",
+      "ม.มหิดล ศิริราช",
+      "มหิดล",
+      "mahidol university (siriraj)"
+    ]
+  },
+  {
+    "id": "kmitl-ladkrabang",
+    "name_th": "สถาบันเทคโนโลยีพระจอมเกล้าเจ้าคุณทหารลาดกระบัง",
+    "name_en": "KMITL Ladkrabang",
+    "address_th": "เขตลาดกระบัง กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7279,
+    "longitude": 100.7783,
+    "keywords": [
+      "พระจอมเกล้าลาดกระบัง",
+      "kmitl",
+      "สจล.",
+      "สจล",
+      "ลาดกระบัง",
+      "kmitl ladkrabang"
+    ]
+  },
+  {
+    "id": "university-of-the-thai-chamber-of-commerce-utcc",
+    "name_th": "มหาวิทยาลัยหอการค้าไทย",
+    "name_en": "University of the Thai Chamber of Commerce (UTCC)",
+    "address_th": "ถ.วิภาวดีรังสิต เขตดินแดง กรุงเทพมหานคร",
+    "category": "university",
+    "latitude": 13.7788,
+    "longitude": 100.5601,
+    "keywords": [
+      "หอการค้า",
+      "utcc",
+      "ม.หอการค้า",
+      "university of the thai chamber of commerce (utcc)"
+    ]
+  },
+  {
+    "id": "siriraj-hospital",
+    "name_th": "โรงพยาบาลศิริราช",
+    "name_en": "Siriraj Hospital",
+    "address_th": "เขตบางกอกน้อย กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7588,
+    "longitude": 100.4857,
+    "keywords": [
+      "siriraj hospital",
+      "รพ.ศิริราช",
+      "ศิริราช"
+    ]
+  },
+  {
+    "id": "king-chulalongkorn-memorial-hospital",
+    "name_th": "โรงพยาบาลจุฬาลงกรณ์",
+    "name_en": "King Chulalongkorn Memorial Hospital",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7317,
+    "longitude": 100.534,
+    "keywords": [
+      "chulalongkorn hospital",
+      "รพ.จุฬาลงกรณ์",
+      "รพ.จุฬาฯ",
+      "รพ.จุฬา",
+      "king chulalongkorn memorial hospital"
+    ]
+  },
+  {
+    "id": "ramathibodi-hospital",
+    "name_th": "โรงพยาบาลรามาธิบดี",
+    "name_en": "Ramathibodi Hospital",
+    "address_th": "ถ.พระราม 6 เขตราชเทวี กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.767,
+    "longitude": 100.527,
+    "keywords": [
+      "ramathibodi hospital",
+      "รพ.รามาธิบดี",
+      "รพ.รามา",
+      "รามาธิบดี"
+    ]
+  },
+  {
+    "id": "bangkok-hospital",
+    "name_th": "โรงพยาบาลกรุงเทพ",
+    "name_en": "Bangkok Hospital",
+    "address_th": "ซอยศูนย์วิจัย เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7483,
+    "longitude": 100.5835,
+    "keywords": [
+      "bangkok hospital",
+      "รพ.กรุงเทพ",
+      "ศูนย์วิจัย"
+    ]
+  },
+  {
+    "id": "bumrungrad-international-hospital",
+    "name_th": "โรงพยาบาลบำรุงราษฎร์",
+    "name_en": "Bumrungrad International Hospital",
+    "address_th": "สุขุมวิท 3 เขตวัฒนา กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7463,
+    "longitude": 100.5528,
+    "keywords": [
+      "bumrungrad hospital",
+      "bumrungrad",
+      "รพ.บำรุงราษฎร์",
+      "bumrungrad international hospital"
+    ]
+  },
+  {
+    "id": "phramongkutklao-hospital",
+    "name_th": "โรงพยาบาลพระมงกุฎเกล้า",
+    "name_en": "Phramongkutklao Hospital",
+    "address_th": "ถ.ราชวิถี เขตราชเทวี กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7686,
+    "longitude": 100.5332,
+    "keywords": [
+      "phramongkutklao hospital",
+      "รพ.พระมงกุฎ",
+      "รพ.พระมงกุฎเกล้า"
+    ]
+  },
+  {
+    "id": "samitivej-sukhumvit-hospital",
+    "name_th": "โรงพยาบาลสมิติเวช สุขุมวิท",
+    "name_en": "Samitivej Sukhumvit Hospital",
+    "address_th": "สุขุมวิท 49 เขตวัฒนา กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7353,
+    "longitude": 100.5768,
+    "keywords": [
+      "โรงพยาบาลสมิติเวช",
+      "samitivej hospital",
+      "รพ.สมิติเวช",
+      "สมิติเวช สุขุมวิท",
+      "samitivej sukhumvit hospital"
+    ]
+  },
+  {
+    "id": "rajavithi-hospital",
+    "name_th": "โรงพยาบาลราชวิถี",
+    "name_en": "Rajavithi Hospital",
+    "address_th": "เขตราชเทวี กรุงเทพมหานคร",
+    "category": "hospital",
+    "latitude": 13.7654,
+    "longitude": 100.5372,
+    "keywords": [
+      "rajavithi hospital",
+      "รพ.ราชวิถี",
+      "ราชวิถี"
+    ]
+  },
+  {
+    "id": "government-complex-chaeng-watthana",
+    "name_th": "ศูนย์ราชการแจ้งวัฒนะ",
+    "name_en": "Government Complex Chaeng Watthana",
+    "address_th": "เขตหลักสี่ กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.8863,
+    "longitude": 100.5658,
+    "keywords": [
+      "government complex",
+      "ศูนย์ราชการ",
+      "chaeng watthana government complex",
+      "cwt",
+      "ศูนย์ราชการเฉลิมพระเกียรติ",
+      "government complex chaeng watthana"
+    ]
+  },
+  {
+    "id": "criminal-court-ratchada",
+    "name_th": "ศาลอาญา รัชดา",
+    "name_en": "Criminal Court Ratchada",
+    "address_th": "ถ.รัชดาภิเษก เขตจตุจักร กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.8219,
+    "longitude": 100.5752,
+    "keywords": [
+      "ศาลอาญา",
+      "ศาลอาญารัชดา",
+      "criminal court ratchada"
+    ]
+  },
+  {
+    "id": "don-mueang-international-airport-dmk",
+    "name_th": "ท่าอากาศยานดอนเมือง",
+    "name_en": "Don Mueang International Airport (DMK)",
+    "address_th": "เขตดอนเมือง กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.9126,
+    "longitude": 100.6067,
+    "keywords": [
+      "ดอนเมือง",
+      "สนามบินดอนเมือง",
+      "don mueang",
+      "dmk",
+      "dmk airport",
+      "don mueang international airport (dmk)"
+    ]
+  },
+  {
+    "id": "suvarnabhumi-international-airport-bkk",
+    "name_th": "ท่าอากาศยานสุวรรณภูมิ",
+    "name_en": "Suvarnabhumi International Airport (BKK)",
+    "address_th": "สมุทรปราการ / ลาดกระบัง",
+    "category": "landmark",
+    "latitude": 13.69,
+    "longitude": 100.7501,
+    "keywords": [
+      "สุวรรณภูมิ",
+      "สนามบินสุวรรณภูมิ",
+      "suvarnabhumi",
+      "bkk airport",
+      "bkk",
+      "suvarnabhumi international airport (bkk)"
+    ]
+  },
+  {
+    "id": "thai-meteorological-department-bangna",
+    "name_th": "กรมอุตุนิยมวิทยา บางนา",
+    "name_en": "Thai Meteorological Department (Bangna)",
+    "address_th": "ถ.สุขุมวิท เขตบางนา กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.6678,
+    "longitude": 100.6053,
+    "keywords": [
+      "กรมอุตุนิยมวิทยา",
+      "tmd",
+      "กรมอุตุ",
+      "thai meteorological department (bangna)"
+    ]
+  },
+  {
+    "id": "bangkok-city-hall-2-din-daeng",
+    "name_th": "ศาลาว่าการกรุงเทพมหานคร ดินแดง",
+    "name_en": "Bangkok City Hall 2 (Din Daeng)",
+    "address_th": "เขตดินแดง กรุงเทพมหานคร",
+    "category": "landmark",
+    "latitude": 13.7694,
+    "longitude": 100.5516,
+    "keywords": [
+      "ศาลาว่าการกรุงเทพมหานคร",
+      "กทม. 2",
+      "กทม ดินแดง",
+      "ศาลาว่าการ กทม",
+      "bma city hall",
+      "bangkok city hall 2 (din daeng)"
+    ]
+  },
+  {
+    "id": "asoke-sukhumvit-21",
+    "name_th": "อโศก",
+    "name_en": "Asoke / Sukhumvit 21",
+    "address_th": "ถนนสุขุมวิท เขตวัฒนา กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7372,
+    "longitude": 100.5638,
+    "keywords": [
+      "asok",
+      "asoke",
+      "อโศกมนตรี",
+      "สุขุมวิท 21",
+      "ถ.อโศกมนตรี",
+      "asoke / sukhumvit 21"
+    ]
+  },
+  {
+    "id": "sukhumvit-21-road",
+    "name_th": "สุขุมวิท 21",
+    "name_en": "Sukhumvit 21 Road",
+    "address_th": "ถนนสุขุมวิท เขตวัฒนา กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7372,
+    "longitude": 100.5638,
+    "keywords": [
+      "sukhumvit 21",
+      "sukhumvit 21 road"
+    ]
+  },
+  {
+    "id": "sukhumvit-road",
+    "name_th": "สุขุมวิท",
+    "name_en": "Sukhumvit Road",
+    "address_th": "ถนนสุขุมวิท เขตวัฒนา/คลองเตย กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7335,
+    "longitude": 100.5828,
+    "keywords": [
+      "sukhumvit",
+      "ถนนสุขุมวิท",
+      "sukhumvit road"
+    ]
+  },
+  {
+    "id": "thong-lo-sukhumvit-55",
+    "name_th": "ทองหล่อ",
+    "name_en": "Thong Lo (Sukhumvit 55)",
+    "address_th": "ซอยทองหล่อ เขตวัฒนา กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7335,
+    "longitude": 100.5828,
+    "keywords": [
+      "thonglor",
+      "thong lo",
+      "สุขุมวิท 55",
+      "ซอยทองหล่อ",
+      "thong lo (sukhumvit 55)"
+    ]
+  },
+  {
+    "id": "udom-suk-sukhumvit-103",
+    "name_th": "อุดมสุข",
+    "name_en": "Udom Suk (Sukhumvit 103)",
+    "address_th": "ซอยอุดมสุข เขตบางนา กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.6798,
+    "longitude": 100.6083,
+    "keywords": [
+      "udom suk",
+      "udomsuk",
+      "สุขุมวิท 103",
+      "ซอยอุดมสุข",
+      "bts อุดมสุข",
+      "udom suk (sukhumvit 103)"
+    ]
+  },
+  {
+    "id": "bang-na-intersection",
+    "name_th": "บางนา",
+    "name_en": "Bang Na Intersection",
+    "address_th": "ถ.สุขุมวิท-บางนาตราด เขตบางนา กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.6682,
+    "longitude": 100.6042,
+    "keywords": [
+      "bang na",
+      "bangna",
+      "สี่แยกบางนา",
+      "แยกบางนา",
+      "bang na intersection"
+    ]
+  },
+  {
+    "id": "silom-road",
+    "name_th": "สีลม",
+    "name_en": "Silom Road",
+    "address_th": "ถนนสีลม เขตบางรัก กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7285,
+    "longitude": 100.5343,
+    "keywords": [
+      "silom",
+      "ถนนสีลม",
+      "silom road"
+    ]
+  },
+  {
+    "id": "sathorn-road",
+    "name_th": "สาทร",
+    "name_en": "Sathorn Road",
+    "address_th": "ถนนสาทรเหนือ/ใต้ เขตสาทร/บางรัก กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7214,
+    "longitude": 100.5303,
+    "keywords": [
+      "sathorn",
+      "sathon",
+      "ถนนสาทร",
+      "sathorn road"
+    ]
+  },
+  {
+    "id": "lat-phrao",
+    "name_th": "ลาดพร้าว",
+    "name_en": "Lat Phrao",
+    "address_th": "ถนนลาดพร้าว เขตจตุจักร กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.8136,
+    "longitude": 100.5615,
+    "keywords": [
+      "ladprao",
+      "lat phrao",
+      "ถนนลาดพร้าว"
+    ]
+  },
+  {
+    "id": "ratchadaphisek-road",
+    "name_th": "รัชดาภิเษก",
+    "name_en": "Ratchadaphisek Road",
+    "address_th": "ถนนรัชดาภิเษก เขตจตุจักร/ห้วยขวาง กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.8219,
+    "longitude": 100.5752,
+    "keywords": [
+      "รัชดา",
+      "ratchada",
+      "ratchadaphisek",
+      "ถนนรัชดา",
+      "ratchadaphisek road"
+    ]
+  },
+  {
+    "id": "ramkhamhaeng-lam-sali",
+    "name_th": "รามคำแหง",
+    "name_en": "Ramkhamhaeng / Lam Sali",
+    "address_th": "ถนนรามคำแหง เขตบางกะปิ กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7601,
+    "longitude": 100.6453,
+    "keywords": [
+      "ramkhamhaeng",
+      "ลำสาลี",
+      "lam sali",
+      "บางกะปิ",
+      "bang kapi",
+      "ramkhamhaeng / lam sali"
+    ]
+  },
+  {
+    "id": "chaeng-watthana-road",
+    "name_th": "แจ้งวัฒนะ",
+    "name_en": "Chaeng Watthana Road",
+    "address_th": "ถนนแจ้งวัฒนะ เขตหลักสี่ กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.8863,
+    "longitude": 100.5658,
+    "keywords": [
+      "chaeng watthana",
+      "หลักสี่",
+      "lak si",
+      "ถนนแจ้งวัฒนะ",
+      "chaeng watthana road"
+    ]
+  },
+  {
+    "id": "victory-monument",
+    "name_th": "อนุสาวรีย์ชัยสมรภูมิ",
+    "name_en": "Victory Monument",
+    "address_th": "เขตราชเทวี กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.7651,
+    "longitude": 100.5383,
+    "keywords": [
+      "victory monument",
+      "อนุสาวรีย์ชัยฯ",
+      "อนุสาวรีย์",
+      "bts อนุสาวรีย์ชัยสมรภูมิ"
+    ]
+  },
+  {
+    "id": "pathum-wan-intersection",
+    "name_th": "ปทุมวัน",
+    "name_en": "Pathum Wan Intersection",
+    "address_th": "ถ.พระราม 1 เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "area",
+    "latitude": 13.746,
+    "longitude": 100.5347,
+    "keywords": [
+      "pathum wan",
+      "pathumwan",
+      "สี่แยกปทุมวัน",
+      "pathum wan intersection"
+    ]
+  },
+  {
+    "id": "bts-saphan-khwai",
+    "name_th": "สถานี BTS สะพานควาย",
+    "name_en": "BTS Saphan Khwai",
+    "address_th": "เขตพญาไท กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7937,
+    "longitude": 100.5498,
+    "keywords": [
+      "สะพานควาย",
+      "bts สะพานควาย",
+      "bts saphan khwai",
+      "BTS สะพานควาย",
+      "saphan kwai"
+    ]
+  },
+  {
+    "id": "bts-sanam-pao",
+    "name_th": "สถานี BTS สนามเป้า",
+    "name_en": "BTS Sanam Pao",
+    "address_th": "เขตพญาไท กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7726,
+    "longitude": 100.542,
+    "keywords": [
+      "สนามเป้า",
+      "bts สนามเป้า",
+      "bts sanam pao",
+      "BTS สนามเป้า"
+    ]
+  },
+  {
+    "id": "bts-victory-monument",
+    "name_th": "สถานี BTS อนุสาวรีย์ชัยสมรภูมิ",
+    "name_en": "BTS Victory Monument",
+    "address_th": "เขตราชเทวี กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7628,
+    "longitude": 100.5372,
+    "keywords": [
+      "อนุสาวรีย์ชัยสมรภูมิ",
+      "bts อนุสาวรีย์ชัยสมรภูมิ",
+      "bts victory monument",
+      "BTS อนุสาวรีย์ชัยสมรภูมิ",
+      "อนุสาวรีย์",
+      "victory monument"
+    ]
+  },
+  {
+    "id": "bts-ratchathewi",
+    "name_th": "สถานี BTS ราชเทวี",
+    "name_en": "BTS Ratchathewi",
+    "address_th": "เขตราชเทวี กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7519,
+    "longitude": 100.5317,
+    "keywords": [
+      "ราชเทวี",
+      "bts ราชเทวี",
+      "bts ratchathewi",
+      "BTS ราชเทวี"
+    ]
+  },
+  {
+    "id": "bts-chit-lom",
+    "name_th": "สถานี BTS ชิดลม",
+    "name_en": "BTS Chit Lom",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7441,
+    "longitude": 100.5431,
+    "keywords": [
+      "ชิดลม",
+      "bts ชิดลม",
+      "bts chit lom",
+      "BTS ชิดลม",
+      "chidlom"
+    ]
+  },
+  {
+    "id": "bts-phloen-chit",
+    "name_th": "สถานี BTS เพลินจิต",
+    "name_en": "BTS Phloen Chit",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.743,
+    "longitude": 100.549,
+    "keywords": [
+      "เพลินจิต",
+      "bts เพลินจิต",
+      "bts phloen chit",
+      "BTS เพลินจิต",
+      "ploenchit"
+    ]
+  },
+  {
+    "id": "bts-nana",
+    "name_th": "สถานี BTS นานา",
+    "name_en": "BTS Nana",
+    "address_th": "เขตวัฒนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7405,
+    "longitude": 100.5553,
+    "keywords": [
+      "นานา",
+      "bts นานา",
+      "bts nana",
+      "BTS นานา"
+    ]
+  },
+  {
+    "id": "bts-phrom-phong",
+    "name_th": "สถานี BTS พร้อมพงษ์",
+    "name_en": "BTS Phrom Phong",
+    "address_th": "เขตวัฒนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7305,
+    "longitude": 100.5697,
+    "keywords": [
+      "พร้อมพงษ์",
+      "bts พร้อมพงษ์",
+      "bts phrom phong",
+      "BTS พร้อมพงษ์",
+      "prompong"
+    ]
+  },
+  {
+    "id": "bts-thong-lo",
+    "name_th": "สถานี BTS ทองหล่อ",
+    "name_en": "BTS Thong Lo",
+    "address_th": "เขตวัฒนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7243,
+    "longitude": 100.5784,
+    "keywords": [
+      "ทองหล่อ",
+      "bts ทองหล่อ",
+      "bts thong lo",
+      "BTS ทองหล่อ",
+      "thonglor",
+      "thong lor"
+    ]
+  },
+  {
+    "id": "bts-phra-khanong",
+    "name_th": "สถานี BTS พระโขนง",
+    "name_en": "BTS Phra Khanong",
+    "address_th": "เขตคลองเตย กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7152,
+    "longitude": 100.5915,
+    "keywords": [
+      "พระโขนง",
+      "bts พระโขนง",
+      "bts phra khanong",
+      "BTS พระโขนง"
+    ]
+  },
+  {
+    "id": "bts-on-nut",
+    "name_th": "สถานี BTS อ่อนนุช",
+    "name_en": "BTS On Nut",
+    "address_th": "เขตพระโขนง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7056,
+    "longitude": 100.6011,
+    "keywords": [
+      "อ่อนนุช",
+      "bts อ่อนนุช",
+      "bts on nut",
+      "BTS อ่อนนุช",
+      "onnut"
+    ]
+  },
+  {
+    "id": "bts-bang-chak",
+    "name_th": "สถานี BTS บางจาก",
+    "name_en": "BTS Bang Chak",
+    "address_th": "เขตพระโขนง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.6967,
+    "longitude": 100.6053,
+    "keywords": [
+      "บางจาก",
+      "bts บางจาก",
+      "bts bang chak",
+      "BTS บางจาก"
+    ]
+  },
+  {
+    "id": "bts-punnawithi",
+    "name_th": "สถานี BTS ปุณณวิถี",
+    "name_en": "BTS Punnawithi",
+    "address_th": "เขตพระโขนง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.6893,
+    "longitude": 100.6089,
+    "keywords": [
+      "ปุณณวิถี",
+      "bts ปุณณวิถี",
+      "bts punnawithi",
+      "BTS ปุณณวิถี"
+    ]
+  },
+  {
+    "id": "bts-udom-suk",
+    "name_th": "สถานี BTS อุดมสุข",
+    "name_en": "BTS Udom Suk",
+    "address_th": "เขตบางนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.6799,
+    "longitude": 100.6094,
+    "keywords": [
+      "อุดมสุข",
+      "bts อุดมสุข",
+      "bts udom suk",
+      "BTS อุดมสุข"
+    ]
+  },
+  {
+    "id": "bts-bang-na",
+    "name_th": "สถานี BTS บางนา",
+    "name_en": "BTS Bang Na",
+    "address_th": "เขตบางนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.6681,
+    "longitude": 100.6046,
+    "keywords": [
+      "บางนา",
+      "bts บางนา",
+      "bts bang na",
+      "BTS บางนา"
+    ]
+  },
+  {
+    "id": "bts-bearing",
+    "name_th": "สถานี BTS แบริ่ง",
+    "name_en": "BTS Bearing",
+    "address_th": "เขตบางนา กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.6611,
+    "longitude": 100.6016,
+    "keywords": [
+      "แบริ่ง",
+      "bts แบริ่ง",
+      "bts bearing",
+      "BTS แบริ่ง"
+    ]
+  },
+  {
+    "id": "bts-phahon-yothin-24",
+    "name_th": "สถานี BTS พหลโยธิน 24",
+    "name_en": "BTS Phahon Yothin 24",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8241,
+    "longitude": 100.5644,
+    "keywords": [
+      "พหลโยธิน 24",
+      "bts พหลโยธิน 24",
+      "bts phahon yothin 24",
+      "BTS พหลโยธิน 24"
+    ]
+  },
+  {
+    "id": "bts-ratchayothin",
+    "name_th": "สถานี BTS รัชโยธิน",
+    "name_en": "BTS Ratchayothin",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.83,
+    "longitude": 100.5694,
+    "keywords": [
+      "รัชโยธิน",
+      "bts รัชโยธิน",
+      "bts ratchayothin",
+      "BTS รัชโยธิน"
+    ]
+  },
+  {
+    "id": "bts-sena-nikhom",
+    "name_th": "สถานี BTS เสนานิคม",
+    "name_en": "BTS Sena Nikhom",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8364,
+    "longitude": 100.5729,
+    "keywords": [
+      "เสนานิคม",
+      "bts เสนานิคม",
+      "bts sena nikhom",
+      "BTS เสนานิคม"
+    ]
+  },
+  {
+    "id": "bts-kasetsart-university",
+    "name_th": "สถานี BTS มหาวิทยาลัยเกษตรศาสตร์",
+    "name_en": "BTS Kasetsart University",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8422,
+    "longitude": 100.5765,
+    "keywords": [
+      "มหาวิทยาลัยเกษตรศาสตร์",
+      "bts มหาวิทยาลัยเกษตรศาสตร์",
+      "bts kasetsart university",
+      "BTS มหาวิทยาลัยเกษตรศาสตร์",
+      "ม.เกษตร",
+      "เกษตร"
+    ]
+  },
+  {
+    "id": "bts-bang-bua",
+    "name_th": "สถานี BTS บางบัว",
+    "name_en": "BTS Bang Bua",
+    "address_th": "เขตบางเขน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8483,
+    "longitude": 100.5837,
+    "keywords": [
+      "บางบัว",
+      "bts บางบัว",
+      "bts bang bua",
+      "BTS บางบัว"
+    ]
+  },
+  {
+    "id": "bts-wat-phra-sri-mahathat",
+    "name_th": "สถานี BTS วัดพระศรีมหาธาตุ",
+    "name_en": "BTS Wat Phra Sri Mahathat",
+    "address_th": "เขตบางเขน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8758,
+    "longitude": 100.597,
+    "keywords": [
+      "วัดพระศรีมหาธาตุ",
+      "bts วัดพระศรีมหาธาตุ",
+      "bts wat phra sri mahathat",
+      "BTS วัดพระศรีมหาธาตุ",
+      "วงเวียนบางเขน"
+    ]
+  },
+  {
+    "id": "bts-saphan-mai",
+    "name_th": "สถานี BTS สะพานใหม่",
+    "name_en": "BTS Saphan Mai",
+    "address_th": "เขตบางเขน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8935,
+    "longitude": 100.6013,
+    "keywords": [
+      "สะพานใหม่",
+      "bts สะพานใหม่",
+      "bts saphan mai",
+      "BTS สะพานใหม่"
+    ]
+  },
+  {
+    "id": "bts-khu-khot",
+    "name_th": "สถานี BTS คูคต",
+    "name_en": "BTS Khu Khot",
+    "address_th": "ลำลูกกา ปทุมธานี",
+    "category": "transit",
+    "latitude": 13.9318,
+    "longitude": 100.6476,
+    "keywords": [
+      "คูคต",
+      "bts คูคต",
+      "bts khu khot",
+      "BTS คูคต"
+    ]
+  },
+  {
+    "id": "bts-national-stadium",
+    "name_th": "สถานี BTS สนามกีฬาแห่งชาติ",
+    "name_en": "BTS National Stadium",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7466,
+    "longitude": 100.5291,
+    "keywords": [
+      "สนามกีฬาแห่งชาติ",
+      "bts สนามกีฬาแห่งชาติ",
+      "bts national stadium",
+      "BTS สนามกีฬาแห่งชาติ",
+      "สนามศุภ",
+      "mbk"
+    ]
+  },
+  {
+    "id": "bts-ratchadamri",
+    "name_th": "สถานี BTS ราชดำริ",
+    "name_en": "BTS Ratchadamri",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7393,
+    "longitude": 100.5395,
+    "keywords": [
+      "ราชดำริ",
+      "bts ราชดำริ",
+      "bts ratchadamri",
+      "BTS ราชดำริ"
+    ]
+  },
+  {
+    "id": "bts-surasak",
+    "name_th": "สถานี BTS สุรศักดิ์",
+    "name_en": "BTS Surasak",
+    "address_th": "เขตสาทร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7194,
+    "longitude": 100.5216,
+    "keywords": [
+      "สุรศักดิ์",
+      "bts สุรศักดิ์",
+      "bts surasak",
+      "BTS สุรศักดิ์"
+    ]
+  },
+  {
+    "id": "bts-saphan-taksin",
+    "name_th": "สถานี BTS สะพานตากสิน",
+    "name_en": "BTS Saphan Taksin",
+    "address_th": "เขตสาทร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7187,
+    "longitude": 100.5143,
+    "keywords": [
+      "สะพานตากสิน",
+      "bts สะพานตากสิน",
+      "bts saphan taksin",
+      "BTS สะพานตากสิน",
+      "ท่าเรือสาทร",
+      "sathorn pier"
+    ]
+  },
+  {
+    "id": "bts-krung-thon-buri",
+    "name_th": "สถานี BTS กรุงธนบุรี",
+    "name_en": "BTS Krung Thon Buri",
+    "address_th": "เขตธนบุรี กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.721,
+    "longitude": 100.5027,
+    "keywords": [
+      "กรุงธนบุรี",
+      "bts กรุงธนบุรี",
+      "bts krung thon buri",
+      "BTS กรุงธนบุรี"
+    ]
+  },
+  {
+    "id": "bts-wongwian-yai",
+    "name_th": "สถานี BTS วงเวียนใหญ่",
+    "name_en": "BTS Wongwian Yai",
+    "address_th": "เขตธนบุรี กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7211,
+    "longitude": 100.4952,
+    "keywords": [
+      "วงเวียนใหญ่",
+      "bts วงเวียนใหญ่",
+      "bts wongwian yai",
+      "BTS วงเวียนใหญ่"
+    ]
+  },
+  {
+    "id": "bts-bang-wa",
+    "name_th": "สถานี BTS บางหว้า",
+    "name_en": "BTS Bang Wa",
+    "address_th": "เขตภาษีเจริญ กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7206,
+    "longitude": 100.4577,
+    "keywords": [
+      "บางหว้า",
+      "bts บางหว้า",
+      "bts bang wa",
+      "BTS บางหว้า"
+    ]
+  },
+  {
+    "id": "mrt-hua-lamphong",
+    "name_th": "สถานี MRT หัวลำโพง",
+    "name_en": "MRT Hua Lamphong",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7377,
+    "longitude": 100.5172,
+    "keywords": [
+      "หัวลำโพง",
+      "mrt หัวลำโพง",
+      "mrt hua lamphong",
+      "MRT หัวลำโพง",
+      "สถานีรถไฟหัวลำโพง"
+    ]
+  },
+  {
+    "id": "mrt-sam-yan",
+    "name_th": "สถานี MRT สามย่าน",
+    "name_en": "MRT Sam Yan",
+    "address_th": "เขตบางรัก กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7325,
+    "longitude": 100.5297,
+    "keywords": [
+      "สามย่าน",
+      "mrt สามย่าน",
+      "mrt sam yan",
+      "MRT สามย่าน"
+    ]
+  },
+  {
+    "id": "mrt-lumphini",
+    "name_th": "สถานี MRT ลุมพินี",
+    "name_en": "MRT Lumphini",
+    "address_th": "เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7255,
+    "longitude": 100.5452,
+    "keywords": [
+      "ลุมพินี",
+      "mrt ลุมพินี",
+      "mrt lumphini",
+      "MRT ลุมพินี",
+      "สวนลุม",
+      "lumpini"
+    ]
+  },
+  {
+    "id": "mrt-khlong-toei",
+    "name_th": "สถานี MRT คลองเตย",
+    "name_en": "MRT Khlong Toei",
+    "address_th": "เขตคลองเตย กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7223,
+    "longitude": 100.5537,
+    "keywords": [
+      "คลองเตย",
+      "mrt คลองเตย",
+      "mrt khlong toei",
+      "MRT คลองเตย"
+    ]
+  },
+  {
+    "id": "mrt-phetchaburi",
+    "name_th": "สถานี MRT เพชรบุรี",
+    "name_en": "MRT Phetchaburi",
+    "address_th": "เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7487,
+    "longitude": 100.5634,
+    "keywords": [
+      "เพชรบุรี",
+      "mrt เพชรบุรี",
+      "mrt phetchaburi",
+      "MRT เพชรบุรี",
+      "มักกะสัน",
+      "makkasan"
+    ]
+  },
+  {
+    "id": "mrt-thailand-cultural-centre",
+    "name_th": "สถานี MRT ศูนย์วัฒนธรรมแห่งประเทศไทย",
+    "name_en": "MRT Thailand Cultural Centre",
+    "address_th": "เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.766,
+    "longitude": 100.57,
+    "keywords": [
+      "ศูนย์วัฒนธรรมแห่งประเทศไทย",
+      "mrt ศูนย์วัฒนธรรมแห่งประเทศไทย",
+      "mrt thailand cultural centre",
+      "MRT ศูนย์วัฒนธรรมแห่งประเทศไทย",
+      "ศูนย์วัฒนธรรม"
+    ]
+  },
+  {
+    "id": "mrt-huai-khwang",
+    "name_th": "สถานี MRT ห้วยขวาง",
+    "name_en": "MRT Huai Khwang",
+    "address_th": "เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7787,
+    "longitude": 100.5735,
+    "keywords": [
+      "ห้วยขวาง",
+      "mrt ห้วยขวาง",
+      "mrt huai khwang",
+      "MRT ห้วยขวาง"
+    ]
+  },
+  {
+    "id": "mrt-sutthisan",
+    "name_th": "สถานี MRT สุทธิสาร",
+    "name_en": "MRT Sutthisan",
+    "address_th": "เขตห้วยขวาง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7896,
+    "longitude": 100.5741,
+    "keywords": [
+      "สุทธิสาร",
+      "mrt สุทธิสาร",
+      "mrt sutthisan",
+      "MRT สุทธิสาร"
+    ]
+  },
+  {
+    "id": "mrt-ratchadaphisek",
+    "name_th": "สถานี MRT รัชดาภิเษก",
+    "name_en": "MRT Ratchadaphisek",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7998,
+    "longitude": 100.5738,
+    "keywords": [
+      "รัชดาภิเษก",
+      "mrt รัชดาภิเษก",
+      "mrt ratchadaphisek",
+      "MRT รัชดาภิเษก"
+    ]
+  },
+  {
+    "id": "mrt-lat-phrao",
+    "name_th": "สถานี MRT ลาดพร้าว",
+    "name_en": "MRT Lat Phrao",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.8062,
+    "longitude": 100.5737,
+    "keywords": [
+      "ลาดพร้าว",
+      "mrt ลาดพร้าว",
+      "mrt lat phrao",
+      "MRT ลาดพร้าว",
+      "ladprao"
+    ]
+  },
+  {
+    "id": "mrt-kamphaeng-phet",
+    "name_th": "สถานี MRT กำแพงเพชร",
+    "name_en": "MRT Kamphaeng Phet",
+    "address_th": "เขตจตุจักร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7977,
+    "longitude": 100.548,
+    "keywords": [
+      "กำแพงเพชร",
+      "mrt กำแพงเพชร",
+      "mrt kamphaeng phet",
+      "MRT กำแพงเพชร",
+      "ตลาดนัดจตุจักร"
+    ]
+  },
+  {
+    "id": "mrt-wat-mangkon",
+    "name_th": "สถานี MRT วัดมังกร",
+    "name_en": "MRT Wat Mangkon",
+    "address_th": "เขตสัมพันธวงศ์ กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7425,
+    "longitude": 100.51,
+    "keywords": [
+      "วัดมังกร",
+      "mrt วัดมังกร",
+      "mrt wat mangkon",
+      "MRT วัดมังกร",
+      "เยาวราช",
+      "yaowarat",
+      "chinatown"
+    ]
+  },
+  {
+    "id": "mrt-sam-yot",
+    "name_th": "สถานี MRT สามยอด",
+    "name_en": "MRT Sam Yot",
+    "address_th": "เขตพระนคร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7468,
+    "longitude": 100.5017,
+    "keywords": [
+      "สามยอด",
+      "mrt สามยอด",
+      "mrt sam yot",
+      "MRT สามยอด"
+    ]
+  },
+  {
+    "id": "mrt-sanam-chai",
+    "name_th": "สถานี MRT สนามไชย",
+    "name_en": "MRT Sanam Chai",
+    "address_th": "เขตพระนคร กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.744,
+    "longitude": 100.4943,
+    "keywords": [
+      "สนามไชย",
+      "mrt สนามไชย",
+      "mrt sanam chai",
+      "MRT สนามไชย",
+      "ท่าเตียน",
+      "วัดโพธิ์"
+    ]
+  },
+  {
+    "id": "mrt-itsaraphap",
+    "name_th": "สถานี MRT อิสรภาพ",
+    "name_en": "MRT Itsaraphap",
+    "address_th": "เขตบางกอกใหญ่ กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.738,
+    "longitude": 100.4853,
+    "keywords": [
+      "อิสรภาพ",
+      "mrt อิสรภาพ",
+      "mrt itsaraphap",
+      "MRT อิสรภาพ"
+    ]
+  },
+  {
+    "id": "mrt-tha-phra",
+    "name_th": "สถานี MRT ท่าพระ",
+    "name_en": "MRT Tha Phra",
+    "address_th": "เขตบางกอกใหญ่ กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.728,
+    "longitude": 100.474,
+    "keywords": [
+      "ท่าพระ",
+      "mrt ท่าพระ",
+      "mrt tha phra",
+      "MRT ท่าพระ"
+    ]
+  },
+  {
+    "id": "arl-ratchaprarop",
+    "name_th": "สถานี ARL ราชปรารภ",
+    "name_en": "ARL Ratchaprarop",
+    "address_th": "เขตราชเทวี กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.755,
+    "longitude": 100.542,
+    "keywords": [
+      "ราชปรารภ",
+      "arl ราชปรารภ",
+      "arl ratchaprarop",
+      "ARL ราชปรารภ",
+      "ประตูน้ำ",
+      "pratunam"
+    ]
+  },
+  {
+    "id": "arl-ramkhamhaeng-airport-rail-link",
+    "name_th": "สถานี ARL รามคำแหง",
+    "name_en": "ARL Ramkhamhaeng (Airport Rail Link)",
+    "address_th": "เขตสวนหลวง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.743,
+    "longitude": 100.6,
+    "keywords": [
+      "รามคำแหง",
+      "arl รามคำแหง",
+      "arl ramkhamhaeng (airport rail link)",
+      "ARL รามคำแหง"
+    ]
+  },
+  {
+    "id": "arl-hua-mak",
+    "name_th": "สถานี ARL หัวหมาก",
+    "name_en": "ARL Hua Mak",
+    "address_th": "เขตสวนหลวง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7381,
+    "longitude": 100.6452,
+    "keywords": [
+      "หัวหมาก",
+      "arl หัวหมาก",
+      "arl hua mak",
+      "ARL หัวหมาก"
+    ]
+  },
+  {
+    "id": "arl-ban-thap-chang",
+    "name_th": "สถานี ARL บ้านทับช้าง",
+    "name_en": "ARL Ban Thap Chang",
+    "address_th": "เขตประเวศ กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.733,
+    "longitude": 100.6914,
+    "keywords": [
+      "บ้านทับช้าง",
+      "arl บ้านทับช้าง",
+      "arl ban thap chang",
+      "ARL บ้านทับช้าง"
+    ]
+  },
+  {
+    "id": "arl-lat-krabang",
+    "name_th": "สถานี ARL ลาดกระบัง",
+    "name_en": "ARL Lat Krabang",
+    "address_th": "เขตลาดกระบัง กรุงเทพมหานคร",
+    "category": "transit",
+    "latitude": 13.7271,
+    "longitude": 100.7484,
+    "keywords": [
+      "ลาดกระบัง",
+      "arl ลาดกระบัง",
+      "arl lat krabang",
+      "ARL ลาดกระบัง"
+    ]
+  },
+  {
+    "id": "mbk-center",
+    "name_th": "เอ็มบีเค เซ็นเตอร์",
+    "name_en": "MBK Center",
+    "address_th": "ถ.พญาไท เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7446,
+    "longitude": 100.53,
+    "keywords": [
+      "มาบุญครอง",
+      "mbk",
+      "mbk center"
+    ]
+  },
+  {
+    "id": "siam-square",
+    "name_th": "สยามสแควร์",
+    "name_en": "Siam Square",
+    "address_th": "ถ.พระราม 1 เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7449,
+    "longitude": 100.534,
+    "keywords": [
+      "siam square"
+    ]
+  },
+  {
+    "id": "siam-center",
+    "name_th": "สยามเซ็นเตอร์",
+    "name_en": "Siam Center",
+    "address_th": "ถ.พระราม 1 เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7462,
+    "longitude": 100.5329,
+    "keywords": [
+      "siam center"
+    ]
+  },
+  {
+    "id": "central-chidlom",
+    "name_th": "เซ็นทรัลชิดลม",
+    "name_en": "Central Chidlom",
+    "address_th": "ถ.เพลินจิต เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.744,
+    "longitude": 100.544,
+    "keywords": [
+      "central chidlom"
+    ]
+  },
+  {
+    "id": "central-embassy",
+    "name_th": "เซ็นทรัลเอ็มบาสซี",
+    "name_en": "Central Embassy",
+    "address_th": "ถ.เพลินจิต เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.744,
+    "longitude": 100.5465,
+    "keywords": [
+      "central embassy"
+    ]
+  },
+  {
+    "id": "gaysorn-village",
+    "name_th": "เกษรวิลเลจ",
+    "name_en": "Gaysorn Village",
+    "address_th": "ถ.เพลินจิต เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7438,
+    "longitude": 100.541,
+    "keywords": [
+      "gaysorn",
+      "gaysorn village"
+    ]
+  },
+  {
+    "id": "platinum-fashion-mall",
+    "name_th": "แพลทินัม แฟชั่นมอลล์",
+    "name_en": "Platinum Fashion Mall",
+    "address_th": "ถ.เพชรบุรี เขตราชเทวี กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7502,
+    "longitude": 100.5404,
+    "keywords": [
+      "ประตูน้ำ",
+      "platinum",
+      "platinum fashion mall"
+    ]
+  },
+  {
+    "id": "chatuchak-weekend-market",
+    "name_th": "ตลาดนัดจตุจักร",
+    "name_en": "Chatuchak Weekend Market",
+    "address_th": "ถ.กำแพงเพชร 2 เขตจตุจักร กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7999,
+    "longitude": 100.5508,
+    "keywords": [
+      "จตุจักร",
+      "jj market",
+      "chatuchak",
+      "chatuchak weekend market"
+    ]
+  },
+  {
+    "id": "union-mall",
+    "name_th": "ยูเนี่ยนมอลล์",
+    "name_en": "Union Mall",
+    "address_th": "ถ.ลาดพร้าว เขตจตุจักร กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.813,
+    "longitude": 100.5617,
+    "keywords": [
+      "union mall"
+    ]
+  },
+  {
+    "id": "esplanade-ratchada",
+    "name_th": "เอสพลานาด รัชดา",
+    "name_en": "Esplanade Ratchada",
+    "address_th": "ถ.รัชดาภิเษก เขตดินแดง กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.766,
+    "longitude": 100.5694,
+    "keywords": [
+      "esplanade",
+      "esplanade ratchada"
+    ]
+  },
+  {
+    "id": "fashion-island",
+    "name_th": "แฟชั่นไอส์แลนด์",
+    "name_en": "Fashion Island",
+    "address_th": "ถ.รามอินทรา เขตคันนายาว กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.8255,
+    "longitude": 100.679,
+    "keywords": [
+      "fashion island"
+    ]
+  },
+  {
+    "id": "central-eastville",
+    "name_th": "เซ็นทรัลอีสต์วิลล์",
+    "name_en": "Central EastVille",
+    "address_th": "ถ.ประเสริฐมนูกิจ เขตลาดพร้าว กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.803,
+    "longitude": 100.614,
+    "keywords": [
+      "eastville",
+      "central eastville"
+    ]
+  },
+  {
+    "id": "the-mall-ngamwongwan",
+    "name_th": "เดอะมอลล์ งามวงศ์วาน",
+    "name_en": "The Mall Ngamwongwan",
+    "address_th": "ถ.งามวงศ์วาน เมืองนนทบุรี นนทบุรี",
+    "category": "mall",
+    "latitude": 13.8573,
+    "longitude": 100.5427,
+    "keywords": [
+      "the mall ngamwongwan"
+    ]
+  },
+  {
+    "id": "central-rama-3",
+    "name_th": "เซ็นทรัลพระราม 3",
+    "name_en": "Central Rama 3",
+    "address_th": "ถ.สาธุประดิษฐ์ เขตยานนาวา กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.6976,
+    "longitude": 100.5379,
+    "keywords": [
+      "central rama 3"
+    ]
+  },
+  {
+    "id": "central-rama-2",
+    "name_th": "เซ็นทรัลพระราม 2",
+    "name_en": "Central Rama 2",
+    "address_th": "ถ.พระราม 2 เขตบางขุนเทียน กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.6629,
+    "longitude": 100.4373,
+    "keywords": [
+      "central rama 2"
+    ]
+  },
+  {
+    "id": "central-bangna",
+    "name_th": "เซ็นทรัลบางนา",
+    "name_en": "Central Bangna",
+    "address_th": "ถ.บางนา-ตราด เขตบางนา กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.6693,
+    "longitude": 100.6346,
+    "keywords": [
+      "central bangna"
+    ]
+  },
+  {
+    "id": "paradise-park",
+    "name_th": "พาราไดซ์ พาร์ค",
+    "name_en": "Paradise Park",
+    "address_th": "ถ.ศรีนครินทร์ เขตประเวศ กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.6894,
+    "longitude": 100.647,
+    "keywords": [
+      "paradise park"
+    ]
+  },
+  {
+    "id": "the-mall-bang-khae",
+    "name_th": "เดอะมอลล์ บางแค",
+    "name_en": "The Mall Bang Khae",
+    "address_th": "ถ.เพชรเกษม เขตบางแค กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.712,
+    "longitude": 100.408,
+    "keywords": [
+      "the mall bang khae"
+    ]
+  },
+  {
+    "id": "asiatique-the-riverfront",
+    "name_th": "เอเชียทีค เดอะ ริเวอร์ฟรอนท์",
+    "name_en": "Asiatique The Riverfront",
+    "address_th": "ถ.เจริญกรุง เขตบางคอแหลม กรุงเทพมหานคร",
+    "category": "mall",
+    "latitude": 13.7046,
+    "longitude": 100.503,
+    "keywords": [
+      "asiatique",
+      "asiatique the riverfront"
+    ]
+  },
+  {
+    "id": "future-park-rangsit",
+    "name_th": "ฟิวเจอร์พาร์ค รังสิต",
+    "name_en": "Future Park Rangsit",
+    "address_th": "ถ.พหลโยธิน ธัญบุรี ปทุมธานี",
+    "category": "mall",
+    "latitude": 13.989,
+    "longitude": 100.617,
+    "keywords": [
+      "future park",
+      "future park rangsit"
+    ]
+  },
+  {
+    "id": "central-westgate",
+    "name_th": "เซ็นทรัลเวสต์เกต",
+    "name_en": "Central WestGate",
+    "address_th": "ถ.กาญจนาภิเษก บางใหญ่ นนทบุรี",
+    "category": "mall",
+    "latitude": 13.877,
+    "longitude": 100.4111,
+    "keywords": [
+      "westgate",
+      "central westgate"
+    ]
+  },
+  {
+    "id": "khet-phra-nakhon",
+    "name_th": "เขตพระนคร",
+    "name_en": "Phra Nakhon District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.764,
+    "longitude": 100.499,
+    "keywords": [
+      "พระนคร",
+      "phra nakhon",
+      "phra nakhon district"
+    ]
+  },
+  {
+    "id": "khet-dusit",
+    "name_th": "เขตดุสิต",
+    "name_en": "Dusit District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.777,
+    "longitude": 100.52,
+    "keywords": [
+      "ดุสิต",
+      "dusit",
+      "dusit district"
+    ]
+  },
+  {
+    "id": "khet-nong-chok",
+    "name_th": "เขตหนองจอก",
+    "name_en": "Nong Chok District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.855,
+    "longitude": 100.862,
+    "keywords": [
+      "หนองจอก",
+      "nong chok",
+      "nong chok district"
+    ]
+  },
+  {
+    "id": "khet-bang-rak",
+    "name_th": "เขตบางรัก",
+    "name_en": "Bang Rak District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.73,
+    "longitude": 100.524,
+    "keywords": [
+      "บางรัก",
+      "bang rak",
+      "bang rak district"
+    ]
+  },
+  {
+    "id": "khet-bang-khen",
+    "name_th": "เขตบางเขน",
+    "name_en": "Bang Khen District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.873,
+    "longitude": 100.596,
+    "keywords": [
+      "บางเขน",
+      "bang khen",
+      "bang khen district"
+    ]
+  },
+  {
+    "id": "khet-bang-kapi",
+    "name_th": "เขตบางกะปิ",
+    "name_en": "Bang Kapi District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.766,
+    "longitude": 100.647,
+    "keywords": [
+      "บางกะปิ",
+      "bang kapi",
+      "bang kapi district"
+    ]
+  },
+  {
+    "id": "khet-pathum-wan",
+    "name_th": "เขตปทุมวัน",
+    "name_en": "Pathum Wan District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.7447,
+    "longitude": 100.5225,
+    "keywords": [
+      "ปทุมวัน",
+      "pathum wan",
+      "pathum wan district"
+    ]
+  },
+  {
+    "id": "khet-pom-prap-sattru-phai",
+    "name_th": "เขตป้อมปราบศัตรูพ่าย",
+    "name_en": "Pom Prap Sattru Phai District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.758,
+    "longitude": 100.513,
+    "keywords": [
+      "ป้อมปราบศัตรูพ่าย",
+      "pom prap sattru phai",
+      "pom prap sattru phai district"
+    ]
+  },
+  {
+    "id": "khet-phra-khanong",
+    "name_th": "เขตพระโขนง",
+    "name_en": "Phra Khanong District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.702,
+    "longitude": 100.602,
+    "keywords": [
+      "พระโขนง",
+      "phra khanong",
+      "phra khanong district"
+    ]
+  },
+  {
+    "id": "khet-min-buri",
+    "name_th": "เขตมีนบุรี",
+    "name_en": "Min Buri District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.813,
+    "longitude": 100.731,
+    "keywords": [
+      "มีนบุรี",
+      "min buri",
+      "min buri district"
+    ]
+  },
+  {
+    "id": "khet-lat-krabang",
+    "name_th": "เขตลาดกระบัง",
+    "name_en": "Lat Krabang District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.722,
+    "longitude": 100.76,
+    "keywords": [
+      "ลาดกระบัง",
+      "lat krabang",
+      "lat krabang district"
+    ]
+  },
+  {
+    "id": "khet-yan-nawa",
+    "name_th": "เขตยานนาวา",
+    "name_en": "Yan Nawa District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.696,
+    "longitude": 100.543,
+    "keywords": [
+      "ยานนาวา",
+      "yan nawa",
+      "yan nawa district"
+    ]
+  },
+  {
+    "id": "khet-samphanthawong",
+    "name_th": "เขตสัมพันธวงศ์",
+    "name_en": "Samphanthawong District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.731,
+    "longitude": 100.513,
+    "keywords": [
+      "สัมพันธวงศ์",
+      "samphanthawong",
+      "samphanthawong district"
+    ]
+  },
+  {
+    "id": "khet-phaya-thai",
+    "name_th": "เขตพญาไท",
+    "name_en": "Phaya Thai District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.78,
+    "longitude": 100.543,
+    "keywords": [
+      "พญาไท",
+      "phaya thai",
+      "phaya thai district"
+    ]
+  },
+  {
+    "id": "khet-thon-buri",
+    "name_th": "เขตธนบุรี",
+    "name_en": "Thon Buri District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.724,
+    "longitude": 100.486,
+    "keywords": [
+      "ธนบุรี",
+      "thon buri",
+      "thon buri district"
+    ]
+  },
+  {
+    "id": "khet-bangkok-yai",
+    "name_th": "เขตบางกอกใหญ่",
+    "name_en": "Bangkok Yai District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.723,
+    "longitude": 100.476,
+    "keywords": [
+      "บางกอกใหญ่",
+      "bangkok yai",
+      "bangkok yai district"
+    ]
+  },
+  {
+    "id": "khet-huai-khwang",
+    "name_th": "เขตห้วยขวาง",
+    "name_en": "Huai Khwang District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.777,
+    "longitude": 100.579,
+    "keywords": [
+      "ห้วยขวาง",
+      "huai khwang",
+      "huai khwang district"
+    ]
+  },
+  {
+    "id": "khet-khlong-san",
+    "name_th": "เขตคลองสาน",
+    "name_en": "Khlong San District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.73,
+    "longitude": 100.509,
+    "keywords": [
+      "คลองสาน",
+      "khlong san",
+      "khlong san district"
+    ]
+  },
+  {
+    "id": "khet-taling-chan",
+    "name_th": "เขตตลิ่งชัน",
+    "name_en": "Taling Chan District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.777,
+    "longitude": 100.457,
+    "keywords": [
+      "ตลิ่งชัน",
+      "taling chan",
+      "taling chan district"
+    ]
+  },
+  {
+    "id": "khet-bangkok-noi",
+    "name_th": "เขตบางกอกน้อย",
+    "name_en": "Bangkok Noi District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.771,
+    "longitude": 100.468,
+    "keywords": [
+      "บางกอกน้อย",
+      "bangkok noi",
+      "bangkok noi district"
+    ]
+  },
+  {
+    "id": "khet-bang-khun-thian",
+    "name_th": "เขตบางขุนเทียน",
+    "name_en": "Bang Khun Thian District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.66,
+    "longitude": 100.435,
+    "keywords": [
+      "บางขุนเทียน",
+      "bang khun thian",
+      "bang khun thian district"
+    ]
+  },
+  {
+    "id": "khet-phasi-charoen",
+    "name_th": "เขตภาษีเจริญ",
+    "name_en": "Phasi Charoen District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.714,
+    "longitude": 100.437,
+    "keywords": [
+      "ภาษีเจริญ",
+      "phasi charoen",
+      "phasi charoen district"
+    ]
+  },
+  {
+    "id": "khet-nong-khaem",
+    "name_th": "เขตหนองแขม",
+    "name_en": "Nong Khaem District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.704,
+    "longitude": 100.349,
+    "keywords": [
+      "หนองแขม",
+      "nong khaem",
+      "nong khaem district"
+    ]
+  },
+  {
+    "id": "khet-rat-burana",
+    "name_th": "เขตราษฎร์บูรณะ",
+    "name_en": "Rat Burana District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.682,
+    "longitude": 100.506,
+    "keywords": [
+      "ราษฎร์บูรณะ",
+      "rat burana",
+      "rat burana district"
+    ]
+  },
+  {
+    "id": "khet-bang-phlat",
+    "name_th": "เขตบางพลัด",
+    "name_en": "Bang Phlat District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.794,
+    "longitude": 100.505,
+    "keywords": [
+      "บางพลัด",
+      "bang phlat",
+      "bang phlat district"
+    ]
+  },
+  {
+    "id": "khet-din-daeng",
+    "name_th": "เขตดินแดง",
+    "name_en": "Din Daeng District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.77,
+    "longitude": 100.553,
+    "keywords": [
+      "ดินแดง",
+      "din daeng",
+      "din daeng district"
+    ]
+  },
+  {
+    "id": "khet-bueng-kum",
+    "name_th": "เขตบึงกุ่ม",
+    "name_en": "Bueng Kum District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.785,
+    "longitude": 100.669,
+    "keywords": [
+      "บึงกุ่ม",
+      "bueng kum",
+      "bueng kum district"
+    ]
+  },
+  {
+    "id": "khet-sathon",
+    "name_th": "เขตสาทร",
+    "name_en": "Sathon District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.708,
+    "longitude": 100.526,
+    "keywords": [
+      "สาทร",
+      "sathon",
+      "sathon district"
+    ]
+  },
+  {
+    "id": "khet-bang-sue",
+    "name_th": "เขตบางซื่อ",
+    "name_en": "Bang Sue District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.809,
+    "longitude": 100.537,
+    "keywords": [
+      "บางซื่อ",
+      "bang sue",
+      "bang sue district"
+    ]
+  },
+  {
+    "id": "khet-chatuchak",
+    "name_th": "เขตจตุจักร",
+    "name_en": "Chatuchak District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.828,
+    "longitude": 100.56,
+    "keywords": [
+      "จตุจักร",
+      "chatuchak",
+      "chatuchak district"
+    ]
+  },
+  {
+    "id": "khet-bang-kho-laem",
+    "name_th": "เขตบางคอแหลม",
+    "name_en": "Bang Kho Laem District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.693,
+    "longitude": 100.503,
+    "keywords": [
+      "บางคอแหลม",
+      "bang kho laem",
+      "bang kho laem district"
+    ]
+  },
+  {
+    "id": "khet-prawet",
+    "name_th": "เขตประเวศ",
+    "name_en": "Prawet District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.717,
+    "longitude": 100.695,
+    "keywords": [
+      "ประเวศ",
+      "prawet",
+      "prawet district"
+    ]
+  },
+  {
+    "id": "khet-khlong-toei",
+    "name_th": "เขตคลองเตย",
+    "name_en": "Khlong Toei District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.708,
+    "longitude": 100.584,
+    "keywords": [
+      "คลองเตย",
+      "khlong toei",
+      "khlong toei district"
+    ]
+  },
+  {
+    "id": "khet-suan-luang",
+    "name_th": "เขตสวนหลวง",
+    "name_en": "Suan Luang District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.73,
+    "longitude": 100.651,
+    "keywords": [
+      "สวนหลวง",
+      "suan luang",
+      "suan luang district"
+    ]
+  },
+  {
+    "id": "khet-chom-thong",
+    "name_th": "เขตจอมทอง",
+    "name_en": "Chom Thong District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.678,
+    "longitude": 100.484,
+    "keywords": [
+      "จอมทอง",
+      "chom thong",
+      "chom thong district"
+    ]
+  },
+  {
+    "id": "khet-don-mueang",
+    "name_th": "เขตดอนเมือง",
+    "name_en": "Don Mueang District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.91,
+    "longitude": 100.594,
+    "keywords": [
+      "ดอนเมือง",
+      "don mueang",
+      "don mueang district"
+    ]
+  },
+  {
+    "id": "khet-ratchathewi",
+    "name_th": "เขตราชเทวี",
+    "name_en": "Ratchathewi District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.759,
+    "longitude": 100.534,
+    "keywords": [
+      "ราชเทวี",
+      "ratchathewi",
+      "ratchathewi district"
+    ]
+  },
+  {
+    "id": "khet-lat-phrao",
+    "name_th": "เขตลาดพร้าว",
+    "name_en": "Lat Phrao District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.803,
+    "longitude": 100.608,
+    "keywords": [
+      "ลาดพร้าว",
+      "lat phrao",
+      "lat phrao district"
+    ]
+  },
+  {
+    "id": "khet-watthana",
+    "name_th": "เขตวัฒนา",
+    "name_en": "Watthana District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.742,
+    "longitude": 100.586,
+    "keywords": [
+      "วัฒนา",
+      "watthana",
+      "watthana district"
+    ]
+  },
+  {
+    "id": "khet-bang-khae",
+    "name_th": "เขตบางแค",
+    "name_en": "Bang Khae District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.696,
+    "longitude": 100.409,
+    "keywords": [
+      "บางแค",
+      "bang khae",
+      "bang khae district"
+    ]
+  },
+  {
+    "id": "khet-lak-si",
+    "name_th": "เขตหลักสี่",
+    "name_en": "Lak Si District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.887,
+    "longitude": 100.579,
+    "keywords": [
+      "หลักสี่",
+      "lak si",
+      "lak si district"
+    ]
+  },
+  {
+    "id": "khet-sai-mai",
+    "name_th": "เขตสายไหม",
+    "name_en": "Sai Mai District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.895,
+    "longitude": 100.66,
+    "keywords": [
+      "สายไหม",
+      "sai mai",
+      "sai mai district"
+    ]
+  },
+  {
+    "id": "khet-khan-na-yao",
+    "name_th": "เขตคันนายาว",
+    "name_en": "Khan Na Yao District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.827,
+    "longitude": 100.678,
+    "keywords": [
+      "คันนายาว",
+      "khan na yao",
+      "khan na yao district"
+    ]
+  },
+  {
+    "id": "khet-saphan-sung",
+    "name_th": "เขตสะพานสูง",
+    "name_en": "Saphan Sung District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.769,
+    "longitude": 100.686,
+    "keywords": [
+      "สะพานสูง",
+      "saphan sung",
+      "saphan sung district"
+    ]
+  },
+  {
+    "id": "khet-wang-thonglang",
+    "name_th": "เขตวังทองหลาง",
+    "name_en": "Wang Thonglang District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.765,
+    "longitude": 100.605,
+    "keywords": [
+      "วังทองหลาง",
+      "wang thonglang",
+      "wang thonglang district"
+    ]
+  },
+  {
+    "id": "khet-khlong-sam-wa",
+    "name_th": "เขตคลองสามวา",
+    "name_en": "Khlong Sam Wa District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.86,
+    "longitude": 100.704,
+    "keywords": [
+      "คลองสามวา",
+      "khlong sam wa",
+      "khlong sam wa district"
+    ]
+  },
+  {
+    "id": "khet-bang-na",
+    "name_th": "เขตบางนา",
+    "name_en": "Bang Na District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.68,
+    "longitude": 100.592,
+    "keywords": [
+      "บางนา",
+      "bang na",
+      "bang na district"
+    ]
+  },
+  {
+    "id": "khet-thawi-watthana",
+    "name_th": "เขตทวีวัฒนา",
+    "name_en": "Thawi Watthana District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.773,
+    "longitude": 100.352,
+    "keywords": [
+      "ทวีวัฒนา",
+      "thawi watthana",
+      "thawi watthana district"
+    ]
+  },
+  {
+    "id": "khet-thung-khru",
+    "name_th": "เขตทุ่งครุ",
+    "name_en": "Thung Khru District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.611,
+    "longitude": 100.509,
+    "keywords": [
+      "ทุ่งครุ",
+      "thung khru",
+      "thung khru district"
+    ]
+  },
+  {
+    "id": "khet-bang-bon",
+    "name_th": "เขตบางบอน",
+    "name_en": "Bang Bon District",
+    "address_th": "กรุงเทพมหานคร",
+    "category": "district",
+    "latitude": 13.659,
+    "longitude": 100.399,
+    "keywords": [
+      "บางบอน",
+      "bang bon",
+      "bang bon district"
+    ]
+  },
+  {
+    "id": "demo-silom-soi-3",
+    "name_th": "สีลม ซอย 3",
+    "name_en": "Silom Soi 3",
+    "address_th": "ถ.สีลม เขตบางรัก กรุงเทพมหานคร",
+    "category": "demo",
+    "latitude": 13.7263,
+    "longitude": 100.534,
+    "keywords": [
+      "สีลม 3",
+      "silom soi 3"
+    ]
+  },
+  {
+    "id": "demo-lat-phrao-home",
+    "name_th": "บ้านลาดพร้าว",
+    "name_en": "Lat Phrao (demo home)",
+    "address_th": "ซอยลาดพร้าว เขตจตุจักร กรุงเทพมหานคร",
+    "category": "demo",
+    "latitude": 13.816,
+    "longitude": 100.59,
+    "keywords": [
+      "lat phrao (demo home)"
+    ]
+  },
+  {
+    "id": "demo-siam",
+    "name_th": "สยาม",
+    "name_en": "Siam",
+    "address_th": "ถ.พระราม 1 เขตปทุมวัน กรุงเทพมหานคร",
+    "category": "demo",
+    "latitude": 13.7456,
+    "longitude": 100.5341,
+    "keywords": [
+      "siam"
+    ]
+  },
+  {
+    "id": "demo-thonglor",
+    "name_th": "ทองหล่อ",
+    "name_en": "Thong Lo",
+    "address_th": "สุขุมวิท 55 เขตวัฒนา กรุงเทพมหานคร",
+    "category": "demo",
+    "latitude": 13.7243,
+    "longitude": 100.5853,
+    "keywords": [
+      "thonglor",
+      "สุขุมวิท 55",
+      "thong lo"
+    ]
+  },
+  {
+    "id": "demo-impact",
+    "name_th": "อิมแพ็ค เมืองทองธานี",
+    "name_en": "IMPACT Muang Thong Thani",
+    "address_th": "ถ.แจ้งวัฒนะ ปากเกร็ด นนทบุรี",
+    "category": "demo",
+    "latitude": 13.9119,
+    "longitude": 100.548,
+    "keywords": [
+      "อิมแพ็ค",
+      "อิมแพค",
+      "เมืองทองธานี",
+      "เมืองทอง",
+      "impact",
+      "impact muang thong thani"
+    ]
+  }
+]

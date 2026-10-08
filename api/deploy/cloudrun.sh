@@ -29,6 +29,7 @@ gc() { gcloud --project "$PROJECT" "$@"; }
 
 apis=(run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com)
 [[ "$REPORT_STORE" == firestore ]] && apis+=(firestore.googleapis.com)
+[[ -n "${GOOGLE_MAPS_SECRET:-}" ]] && apis+=(weather.googleapis.com routes.googleapis.com places.googleapis.com geocoding-backend.googleapis.com)
 gc services enable "${apis[@]}"
 
 gc secrets describe "$GEMINI_SECRET" >/dev/null 2>&1 || {
@@ -64,7 +65,7 @@ source)
   trap 'rm -rf "$ctx"' EXIT
   mkdir -p "$ctx/data"
   rsync -a --exclude '.*' "$ROOT/api" "$ctx/"
-  cp "$ROOT/data/bkk_flood_risk_points.json" "$ctx/data/"
+  cp "$ROOT/data/bkk_flood_risk_points.json" "$ROOT/data/bkk_landmarks.json" "$ctx/data/"
   cp "$ROOT/api/Dockerfile" "$ctx/Dockerfile"
   gc run deploy "$SERVICE" --source "$ctx" "${common[@]}"
   ;;

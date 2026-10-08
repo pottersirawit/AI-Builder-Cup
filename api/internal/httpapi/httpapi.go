@@ -1,18 +1,24 @@
-// Package httpapi serves API contract v0 (docs/plan/merged-flow.md).
+// Package httpapi serves the API contract (v0 plus the additive v1) in docs/plan/merged-flow.md.
 package httpapi
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"io"
 	"log/slog"
 	"net/http"
+	"net/url"
 	"strconv"
+	"strings"
 	"time"
+	"unicode/utf8"
 
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/clock"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
+	"github.com/pottersirawit/fontokmai/api/internal/geo"
+	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
@@ -28,7 +34,12 @@ type Server struct {
 	Live     planner.Providers
 	Gemini   *agent.Gemini
 	Users    []domain.MockUser
-	Home     homestatus.Home
+	// Home is the demo user's home: /v1/home-status without a point, and the
+	// profile (doorstep height, parking) used for points near it.
+	Home homestatus.Home
+	// Geocoder answers place search and reverse geocoding, and the candidates
+	// of a needs_place answer.
+	Geocoder geocode.Geocoder
 }
 
 func (s *Server) Handler() http.Handler {
@@ -42,6 +53,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
 	mux.HandleFunc("GET /v1/reports", s.withClock(s.listReports))
 	mux.HandleFunc("GET /v1/home-status", s.withClock(s.homeStatus))
+	mux.HandleFunc("GET /v1/places/search", s.searchPlaces)
+	mux.HandleFunc("GET /v1/places/reverse", s.reversePlace)
 	return cors(logRequests(mux))
 }
 
@@ -90,15 +103,27 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
-	sess, err := s.Planner.NewSession(r.Context(), rc.prov, rc.now, req.TripID)
+	tripReq, err := req.TripRequest()
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	sess, err := s.Planner.Open(r.Context(), rc.prov, rc.now, tripReq)
+	if errors.Is(err, planner.ErrBadTrip) {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
 	if err != nil {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
 	sources := []string{rc.prov.Weather.Name(), rc.prov.Routes.Name(), rc.prov.Canals.Name(), "BMA flood spots"}
 	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, sources)
+	var needs *agent.NeedsPlace
 	switch {
-	case errors.Is(err, agent.ErrBadRequest):
+	case errors.As(err, &needs):
+		writeJSON(w, http.StatusOK, map[string]any{"needs_place": s.needsPlace(r.Context(), needs)})
+	case errors.Is(err, agent.ErrBadRequest), errors.Is(err, planner.ErrBadTrip):
 		writeError(w, http.StatusBadRequest, err.Error())
 	case err != nil:
 		slog.Error("decide failed", "err", err)
@@ -192,27 +217,112 @@ func (s *Server) listReports(w http.ResponseWriter, r *http.Request, rc reqCtx) 
 	writeJSON(w, http.StatusOK, map[string]any{"reports": reps})
 }
 
+type needsPlaceResponse struct {
+	QueryTH    string          `json:"query_th"`
+	Kind       string          `json:"kind,omitempty"`
+	Candidates []geocode.Place `json:"candidates"`
+}
+
+// needsPlace offers search results for a named place; a missing home or work
+// has no useful search ("บ้าน"), so the app offers GPS and search instead.
+func (s *Server) needsPlace(ctx context.Context, n *agent.NeedsPlace) needsPlaceResponse {
+	out := needsPlaceResponse{QueryTH: n.QueryTH, Kind: n.Kind, Candidates: []geocode.Place{}}
+	if n.Kind == "" && s.Geocoder != nil {
+		if found, err := s.Geocoder.Search(ctx, n.QueryTH); err == nil && found != nil {
+			out.Candidates = found
+		}
+	}
+	return out
+}
+
+// point reads lat and lng from the query. ok is false when neither is given.
+func point(q url.Values) (p domain.LatLng, ok bool, err error) {
+	if q.Get("lat") == "" && q.Get("lng") == "" {
+		return p, false, nil
+	}
+	lat, err1 := strconv.ParseFloat(q.Get("lat"), 64)
+	lng, err2 := strconv.ParseFloat(q.Get("lng"), 64)
+	if err1 != nil || err2 != nil || lat < -90 || lat > 90 || lng < -180 || lng > 180 {
+		return p, true, errors.New("lat and lng must both be numbers")
+	}
+	return domain.LatLng{Lat: lat, Lng: lng}, true, nil
+}
+
+// demoHomeM is how close a point must be to the demo home to replay its
+// scenario profile (doorstep height, parking, sandbag point).
+const demoHomeM = 300
+
 func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	ctx, home := r.Context(), s.Home.Place.Point()
-	canals, err := rc.prov.Canals.Canals(ctx, home, rc.now)
-	if err != nil || len(canals) == 0 {
-		writeError(w, http.StatusBadGateway, "no canal data")
+	home := s.Home
+	at, given, err := point(r.URL.Query())
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if given {
+		place := domain.Place{NameTH: r.URL.Query().Get("name_th"), Lat: at.Lat, Lng: at.Lng}
+		if place.NameTH == "" {
+			place.NameTH = "บ้าน"
+		}
+		if geo.HaversineM(at, s.Home.Place.Point()) > demoHomeM {
+			home = homestatus.Home{}
+		}
+		home.Place = place
+	}
+	ctx, p := r.Context(), home.Place.Point()
+	canals, err := rc.prov.Canals.Canals(ctx, p, rc.now)
+	if err != nil {
+		slog.Warn("no canal data for home status", "err", err)
+		canals = nil
+	}
 	midnight := time.Date(rc.now.Year(), rc.now.Month(), rc.now.Day(), 0, 0, 0, 0, domain.Bangkok)
-	rain, err := rc.prov.Weather.Rain(ctx, home, midnight, rc.now)
+	rain, err := rc.prov.Weather.Rain(ctx, p, midnight, rc.now.Add(2*time.Hour))
 	if err != nil {
 		rain = nil
 	}
-	nearby, err := rc.prov.Reports.Near(ctx, home, 500, rc.now.Add(-time.Hour), rc.now)
+	nearby, err := rc.prov.Reports.Near(ctx, p, 500, rc.now.Add(-time.Hour), rc.now)
 	if err != nil {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
 	writeJSON(w, http.StatusOK, homestatus.Evaluate(homestatus.Input{
-		Now: rc.now, Home: s.Home, Canal: canals[0], Rain: rain, NearbyReports: len(nearby),
-		Sources: []string{rc.prov.Canals.Name(), rc.prov.Weather.Name(), "รายงานผู้ใช้"},
+		Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: s.Planner.Spots, NearbyReports: len(nearby),
+		CanalSource: rc.prov.Canals.Name(), WeatherSource: rc.prov.Weather.Name(),
 	}))
+}
+
+func (s *Server) searchPlaces(w http.ResponseWriter, r *http.Request) {
+	q := strings.TrimSpace(r.URL.Query().Get("q"))
+	if utf8.RuneCountInString(q) < 2 {
+		writeError(w, http.StatusBadRequest, "q needs at least 2 characters")
+		return
+	}
+	found, err := s.Geocoder.Search(r.Context(), q)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	if found == nil {
+		found = []geocode.Place{}
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"places": found})
+}
+
+func (s *Server) reversePlace(w http.ResponseWriter, r *http.Request) {
+	at, given, err := point(r.URL.Query())
+	if err == nil && !given {
+		err = errors.New("lat and lng are required")
+	}
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	addr, err := s.Geocoder.Reverse(r.Context(), at)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, addr)
 }
 
 func writeJSON(w http.ResponseWriter, status int, v any) {

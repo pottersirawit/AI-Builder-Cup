@@ -6,6 +6,7 @@ import (
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -13,6 +14,7 @@ import (
 	"time"
 
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
+	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
@@ -28,10 +30,14 @@ func newServerMode(t *testing.T, demo bool) http.Handler {
 	if err != nil {
 		t.Fatal(err)
 	}
+	landmarks, err := geocode.LoadLandmarks(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_landmarks.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
 	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
 	s := &Server{DemoMode: demo, Planner: &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts},
 		Scenario: prov, Live: prov,
-		Users: scenario.MockUsers(), Home: homestatus.Home(scenario.HomeProfile)}
+		Users: scenario.MockUsers(), Home: homestatus.Home(scenario.HomeProfile), Geocoder: geocode.Local{Landmarks: landmarks}}
 	return s.Handler()
 }
 
@@ -252,5 +258,142 @@ func TestLiveModeTripsFollowTheRealClock(t *testing.T) {
 	_, dec := do(t, h, "POST", "/v1/decide", "", bytes.NewBufferString(`{}`), "application/json")
 	if dec["trip"].(map[string]any)["arrive_by"] != out["trips"].([]any)[0].(map[string]any)["arrive_by"] {
 		t.Fatalf("decide trip %v differs from /v1/trips", dec["trip"])
+	}
+}
+
+const gpsChitLom = `{"name_th":"ตำแหน่งปัจจุบัน","lat":13.7441,"lng":100.5431}`
+
+func TestDecideFromTheApp(t *testing.T) {
+	h := newServer(t)
+	tests := []struct {
+		name, body string
+		wantStatus int
+		check      func(t *testing.T, out map[string]any)
+	}{
+		{"coordinates make an app trip", `{"origin":` + gpsChitLom + `,"destination":{"name_th":"สยามพารากอน","lat":13.746,"lng":100.5347}}`, 200, func(t *testing.T, out map[string]any) {
+			trip := out["trip"].(map[string]any)
+			if !strings.HasPrefix(trip["id"].(string), "app-") || trip["source"] != "app" || trip["title_th"] != "ไปสยามพารากอน" || out["verdict"] == nil {
+				t.Fatal(out)
+			}
+		}},
+		{"a saved place in the question", `{"question_th":"ไปยิมตอนหกโมง","origin":` + gpsChitLom + `,"places":[{"id":"g1","kind":"other","label_th":"ยิม","name_th":"ฟิตเนส อารีย์","lat":13.7797,"lng":100.5448}]}`, 200, func(t *testing.T, out map[string]any) {
+			trip := out["trip"].(map[string]any)
+			if trip["title_th"] != "ไปยิม" || trip["destination"].(map[string]any)["name_th"] != "ฟิตเนส อารีย์" || out["depart_at"] != "2026-09-29T18:00:00+07:00" {
+				t.Fatal(out)
+			}
+		}},
+		{"an unsaved place asks which one", `{"question_th":"ไปเซ็นทรัลเวิลด์ตอนหกโมงดีไหม","origin":` + gpsChitLom + `,"places":[]}`, 200, func(t *testing.T, out map[string]any) {
+			np := out["needs_place"].(map[string]any)
+			cands := np["candidates"].([]any)
+			if np["query_th"] != "เซ็นทรัลเวิลด์" || len(cands) == 0 || cands[0].(map[string]any)["name_th"] != "เซ็นทรัลเวิลด์" || cands[0].(map[string]any)["source"] != "local" {
+				t.Fatal(out)
+			}
+			if _, ok := np["kind"]; ok {
+				t.Errorf("no kind hint for a named place: %v", np)
+			}
+			if _, ok := out["verdict"]; ok || len(out) != 1 {
+				t.Errorf("needs_place carries no verdict fields: %v", out)
+			}
+		}},
+		{"home before it is set", `{"question_th":"กลับบ้านตอนหกโมง","places":[]}`, 200, func(t *testing.T, out map[string]any) {
+			np := out["needs_place"].(map[string]any)
+			if np["kind"] != "home" || np["query_th"] != "บ้าน" || len(np["candidates"].([]any)) != 0 {
+				t.Fatal(out)
+			}
+		}},
+		{"destination without origin", `{"destination":{"name_th":"สยาม","lat":13.7456,"lng":100.5341}}`, 400, nil},
+		{"app trip id without coordinates", `{"trip_id":"app-0123456789"}`, 400, nil},
+		{"place without coordinates", `{"places":[{"id":"h","kind":"home"}]}`, 400, nil},
+		{"no origin and no home or work to start from", `{"question_th":"ไปยิม","places":[{"id":"g1","label_th":"ยิม","name_th":"ฟิตเนส","lat":13.7797,"lng":100.5448}]}`, 400, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status, out := do(t, h, "POST", "/v1/decide", "16:10", bytes.NewBufferString(tt.body), "application/json")
+			if status != tt.wantStatus {
+				t.Fatalf("status = %d, want %d (%v)", status, tt.wantStatus, out)
+			}
+			if tt.check != nil {
+				tt.check(t, out)
+			}
+		})
+	}
+}
+
+func TestHomeStatusForAPoint(t *testing.T) {
+	h := newServer(t)
+	tests := []struct {
+		name, query, clock string
+		wantStatus         int
+		check              func(t *testing.T, out map[string]any)
+	}{
+		{"the demo home by coordinates replays the scenario", "?lat=13.8161&lng=100.5901&name_th=บ้านของฉัน", "21:40", 200, func(t *testing.T, out map[string]any) {
+			if out["level"] != "danger" || out["headline_th"] != "น้ำจะถึงหน้าบ้านใน 40 นาที" || out["place"].(map[string]any)["name_th"] != "บ้านของฉัน" || out["in_service_area"] != true {
+				t.Fatal(out)
+			}
+		}},
+		{"no params is the demo home", "", "21:40", 200, func(t *testing.T, out map[string]any) {
+			if out["place"].(map[string]any)["name_th"] != "บ้านลาดพร้าว" || out["canal"].(map[string]any)["name_th"] != "คลองลาดพร้าว" {
+				t.Fatal(out)
+			}
+		}},
+		{"far from any canal station", "?lat=13.6681&lng=100.6046&name_th=คอนโดบางนา", "18:15", 200, func(t *testing.T, out map[string]any) {
+			if out["canal"] != nil || out["minutes_to_doorstep"] != nil || out["in_service_area"] != true || !strings.Contains(out["summary_th"].(string), "ไม่มีสถานีวัดระดับคลองใกล้บ้าน") {
+				t.Fatal(out)
+			}
+			if _, ok := out["flood_spots"].([]any); !ok {
+				t.Fatalf("flood_spots should be a list: %v", out["flood_spots"])
+			}
+		}},
+		{"outside Bangkok", "?lat=18.79&lng=98.98", "18:15", 200, func(t *testing.T, out map[string]any) {
+			if out["in_service_area"] != false || out["canal"] != nil || !strings.Contains(out["summary_th"].(string), "นอกพื้นที่") {
+				t.Fatal(out)
+			}
+		}},
+		{"lat without lng", "?lat=13.7", "", 400, nil},
+		{"bad lat", "?lat=north&lng=100.5", "", 400, nil},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			status, out := do(t, h, "GET", "/v1/home-status"+tt.query, tt.clock, nil, "")
+			if status != tt.wantStatus {
+				t.Fatalf("status = %d, want %d (%v)", status, tt.wantStatus, out)
+			}
+			if tt.check != nil {
+				tt.check(t, out)
+			}
+		})
+	}
+}
+
+func TestPlacesSearchAndReverse(t *testing.T) {
+	h := newServer(t)
+	status, out := do(t, h, "GET", "/v1/places/search?q="+url.QueryEscape("พารากอน"), "", nil, "")
+	if status != 200 {
+		t.Fatalf("search status %d %v", status, out)
+	}
+	first := out["places"].([]any)[0].(map[string]any)
+	if first["name_th"] != "สยามพารากอน" || first["source"] != "local" || first["address_th"] == "" || first["lat"] != 13.746 {
+		t.Fatalf("search = %v", out)
+	}
+	if status, out := do(t, h, "GET", "/v1/places/search?q="+url.QueryEscape("zzqqxx"), "", nil, ""); status != 200 || len(out["places"].([]any)) != 0 {
+		t.Fatalf("no results should be an empty list, got %d %v", status, out)
+	}
+	for _, q := range []string{"", "?q=", "?q=" + url.QueryEscape("ส"), "?q=%20%20a"} {
+		if status, _ := do(t, h, "GET", "/v1/places/search"+q, "", nil, ""); status != 400 {
+			t.Errorf("search %q: status %d, want 400", q, status)
+		}
+	}
+
+	status, out = do(t, h, "GET", "/v1/places/reverse?lat=13.7441&lng=100.5431", "", nil, "")
+	if status != 200 || out["name_th"] != "สถานี BTS ชิดลม" || out["in_service_area"] != true || out["source"] != "local" || out["lat"] != 13.7441 {
+		t.Fatalf("reverse = %d %v", status, out)
+	}
+	if _, ok := out["distance_m"]; !ok {
+		t.Errorf("local reverse should say how far the landmark is: %v", out)
+	}
+	for _, q := range []string{"", "?lat=13.7", "?lat=x&lng=100", "?lat=91&lng=100"} {
+		if status, _ := do(t, h, "GET", "/v1/places/reverse"+q, "", nil, ""); status != 400 {
+			t.Errorf("reverse %q: status %d, want 400", q, status)
+		}
 	}
 }

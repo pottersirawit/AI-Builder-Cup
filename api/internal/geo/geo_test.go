@@ -64,3 +64,23 @@ func TestDecodePolyline(t *testing.T) {
 		}
 	}
 }
+
+func TestInServiceArea(t *testing.T) {
+	tests := []struct {
+		name string
+		p    domain.LatLng
+		want bool
+	}{
+		{"Silom", domain.LatLng{Lat: 13.7263, Lng: 100.5340}, true},
+		{"Suvarnabhumi on the eastern edge", domain.LatLng{Lat: 13.69, Lng: 100.75}, true},
+		{"south-west corner", domain.LatLng{Lat: 13.49, Lng: 100.30}, true},
+		{"Chiang Mai", domain.LatLng{Lat: 18.79, Lng: 98.98}, false},
+		{"Chachoengsao, just east", domain.LatLng{Lat: 13.69, Lng: 101.07}, false},
+		{"zero point", domain.LatLng{}, false},
+	}
+	for _, tt := range tests {
+		if got := InServiceArea(tt.p); got != tt.want {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+}

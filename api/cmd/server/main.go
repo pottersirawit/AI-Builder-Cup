@@ -17,6 +17,7 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
+	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/httpapi"
 	"github.com/pottersirawit/fontokmai/api/internal/live"
@@ -28,17 +29,27 @@ import (
 func main() {
 	slog.SetDefault(slog.New(slog.NewJSONHandler(os.Stdout, nil)))
 	floodPoints := flag.String("flood-points", env("FLOOD_POINTS_PATH", ""), "path to bkk_flood_risk_points.json")
+	landmarksPath := flag.String("landmarks", env("LANDMARKS_PATH", ""), "path to bkk_landmarks.json")
 	flag.Parse()
 
 	path := *floodPoints
 	if path == "" {
-		path = findFloodPoints()
+		path = findData("bkk_flood_risk_points.json")
 	}
 	spots, err := floodspot.Load(path)
 	if err != nil {
 		slog.Error("cannot load flood spots; set FLOOD_POINTS_PATH", "err", err)
 		os.Exit(1)
 	}
+	if *landmarksPath == "" {
+		*landmarksPath = findData("bkk_landmarks.json")
+	}
+	landmarks, err := geocode.LoadLandmarks(*landmarksPath)
+	if err != nil {
+		slog.Error("cannot load landmarks; set LANDMARKS_PATH", "err", err)
+		os.Exit(1)
+	}
+	var geocoder geocode.Geocoder = geocode.Local{Landmarks: landmarks}
 
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
@@ -54,6 +65,7 @@ func main() {
 	if key := os.Getenv("GOOGLE_MAPS_API_KEY"); key != "" {
 		liveProv.Weather = live.WeatherFallback{Primary: live.GoogleWeather{APIKey: key}, Fallback: scenario.Weather{}}
 		liveProv.Routes = live.RouteFallback{Primary: live.GoogleRoutes{APIKey: key}, Fallback: scenario.Routes{}}
+		geocoder = geocode.Fallback{Primary: geocode.Google{APIKey: key}, Fallback: geocoder}
 	}
 	liveProv.Canals = live.CanalFallback{Primary: live.ThaiWater{URL: os.Getenv("THAIWATER_URL")}, Fallback: scenario.Canals{}}
 
@@ -67,6 +79,7 @@ func main() {
 		Gemini:   gemini,
 		Users:    scenario.MockUsers(),
 		Home:     homestatus.Home(scenario.HomeProfile),
+		Geocoder: geocoder,
 	}
 
 	addr := ":" + env("PORT", "8080")
@@ -78,7 +91,7 @@ func main() {
 		_ = httpServer.Shutdown(shutdown)
 	}()
 	slog.Info("ฝนตกไหม API listening", "addr", addr, "demo_mode", demo, "gemini", gemini.Available(),
-		"google_maps_key", os.Getenv("GOOGLE_MAPS_API_KEY") != "", "report_store", env("REPORT_STORE", "memory"), "flood_spots", len(spots), "flood_points", path,
+		"google_maps_key", os.Getenv("GOOGLE_MAPS_API_KEY") != "", "report_store", env("REPORT_STORE", "memory"), "flood_spots", len(spots), "flood_points", path, "landmarks", len(landmarks),
 		"now_bangkok", time.Now().In(domain.Bangkok).Format(time.RFC3339))
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("server stopped", "err", err)
@@ -113,15 +126,20 @@ func newReportStore(ctx context.Context) (domain.ReportStore, func(), error) {
 	}
 }
 
-// findFloodPoints looks next to the binary's working directory first (Docker
-// image), then in the repo layout (go run from api/ or from the repo root).
-func findFloodPoints() string {
-	for _, p := range []string{"data/bkk_flood_risk_points.json", "../data/bkk_flood_risk_points.json", "/app/data/bkk_flood_risk_points.json"} {
-		if _, err := os.Stat(p); err == nil {
+// findData looks for a data file next to the binary's working directory first
+// (Docker image), then in the repo layout (go run from api/ or from the repo root).
+func findData(name string) string {
+	for _, dir := range []string{"data", "../data", "/app/data"} {
+		if p := dir + "/" + name; fileExists(p) {
 			return p
 		}
 	}
-	return "data/bkk_flood_risk_points.json"
+	return "data/" + name
+}
+
+func fileExists(p string) bool {
+	_, err := os.Stat(p)
+	return err == nil
 }
 
 func env(key, def string) string {

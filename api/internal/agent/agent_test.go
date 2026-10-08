@@ -321,3 +321,131 @@ func TestGeminiFailureMidLoopDoesNotDuplicateReasoning(t *testing.T) {
 		t.Fatalf("got %s reasoning %v", resp.GeneratedBy, tools)
 	}
 }
+
+func TestDestinationPhrase(t *testing.T) {
+	tests := map[string]string{
+		"ไปเซ็นทรัลเวิลด์ตอนหกโมงดีไหม":     "เซ็นทรัลเวิลด์",
+		"หกโมงไปกินข้าวแถวสุขุมวิท 55":      "สุขุมวิท 55",
+		"ไปที่ไอคอนสยามด้วยรถไฟฟ้า":         "ไอคอนสยาม",
+		"ไป Central World ตอน 18:30 ได้ไหม": "Central World",
+		"กลับบ้านตอนหนึ่งทุ่ม":              "บ้าน",
+		"ไปทำงานพรุ่งนี้เช้า":               "ทำงาน",
+		"ไป BTS แทนดีไหม":                   "",
+		"ถ้ารอถึงสองทุ่มค่อยกลับล่ะ":        "",
+		"ออกตอนนี้เลยดีไหม":                 "",
+		"ไปถึงหลังสวนกี่โมง":                "หลังสวน",
+	}
+	for q, want := range tests {
+		if got := DestinationPhrase(q); got != want {
+			t.Errorf("DestinationPhrase(%q) = %q, want %q", q, got, want)
+		}
+	}
+}
+
+func TestRequestTripRequest(t *testing.T) {
+	good := Request{
+		Origin:      &domain.Place{Lat: 13.7466, Lng: 100.5393},
+		Destination: &domain.Place{NameTH: "สยาม", Lat: 13.7456, Lng: 100.5341},
+		Places: []domain.SavedPlace{
+			{ID: "h1", Kind: "home", LabelTH: "บ้าน", Place: domain.Place{NameTH: "คอนโดบางนา", Lat: 13.6681, Lng: 100.6046}},
+			{ID: "g1", LabelTH: "ยิม", Place: domain.Place{NameTH: "ฟิตเนส อารีย์ (พญาไท)", Lat: 13.7797, Lng: 100.5448}},
+		},
+	}
+	tr, err := good.TripRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	if tr.Origin.NameTH != "ตำแหน่งปัจจุบัน" || tr.Destination.NameTH != "สยาม" {
+		t.Fatalf("origin/destination = %+v %+v", tr.Origin, tr.Destination)
+	}
+	if tr.Places[1].Kind != domain.KindOther {
+		t.Fatalf("missing kind should be other, got %q", tr.Places[1].Kind)
+	}
+	for q, want := range map[string]string{"กลับบ้านกี่โมงดี": "h1", "ไปยิมตอนหกโมง": "g1", "ไปฟิตเนส อารีย์": "g1", "ไป home": "h1"} {
+		if p, ok := MatchPlace(q, tr.Places); !ok || p.ID != want {
+			t.Errorf("MatchPlace(%q) = %v %v, want %s", q, p.ID, ok, want)
+		}
+	}
+
+	bad := []Request{
+		{Origin: &domain.Place{}},
+		{Destination: &domain.Place{Lat: 95, Lng: 100}},
+		{Places: []domain.SavedPlace{{ID: "x", Kind: "boat", Place: domain.Place{Lat: 13.7, Lng: 100.5}}}},
+		{Places: []domain.SavedPlace{{Kind: "home", Place: domain.Place{Lat: 13.7, Lng: 100.5}}}},
+		{Places: []domain.SavedPlace{{ID: "x", Kind: "home"}}},
+	}
+	for _, r := range bad {
+		if _, err := r.TripRequest(); !errors.Is(err, ErrBadRequest) {
+			t.Errorf("%+v: want ErrBadRequest, got %v", r, err)
+		}
+	}
+}
+
+func userSession(t *testing.T, req Request) *planner.Session {
+	t.Helper()
+	tr, err := req.TripRequest()
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, file, _, _ := runtime.Caller(0)
+	spots, _ := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
+	p := &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts}
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore()}
+	s, err := p.Open(context.Background(), prov, at(16, 10), tr)
+	if err != nil {
+		t.Fatal(err)
+	}
+	return s
+}
+
+func TestDecideNeedsPlace(t *testing.T) {
+	gps := &domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	gymOnly := []domain.SavedPlace{{ID: "g1", Kind: "other", LabelTH: "ยิม", Place: domain.Place{NameTH: "ฟิตเนส อารีย์", Lat: 13.7797, Lng: 100.5448}}}
+	tests := []struct {
+		name      string
+		req       Request
+		wantQuery string
+		wantKind  string
+	}{
+		{"home asked but not saved", Request{QuestionTH: "กลับบ้านตอนหกโมง", Origin: gps, Places: gymOnly}, "บ้าน", "home"},
+		{"work asked but not saved", Request{QuestionTH: "ไปทำงานกี่โมงดี", Origin: gps, Places: gymOnly}, "ที่ทำงาน", "work"},
+		{"a place the user never saved", Request{QuestionTH: "ไปเซ็นทรัลเวิลด์ตอนหกโมงดีไหม", Origin: gps, Places: gymOnly}, "เซ็นทรัลเวิลด์", ""},
+		{"a place the demo user never saved", Request{QuestionTH: "ไปไอคอนสยามตอนหกโมง"}, "ไอคอนสยาม", ""},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			_, err := Decide(context.Background(), nil, userSession(t, tt.req), tt.req, nil)
+			var np *NeedsPlace
+			if !errors.As(err, &np) {
+				t.Fatalf("want NeedsPlace, got %v", err)
+			}
+			if np.QueryTH != tt.wantQuery || np.Kind != tt.wantKind {
+				t.Fatalf("got %+v", np)
+			}
+		})
+	}
+}
+
+func TestDecideUserPlaces(t *testing.T) {
+	gps := &domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	places := []domain.SavedPlace{
+		{ID: "h1", Kind: "home", LabelTH: "บ้าน", Place: domain.Place{NameTH: "คอนโดบางนา", Lat: 13.6681, Lng: 100.6046}},
+		{ID: "g1", Kind: "other", LabelTH: "ยิม", Place: domain.Place{NameTH: "ฟิตเนส อารีย์", Lat: 13.7797, Lng: 100.5448}},
+	}
+	req := Request{QuestionTH: "ไปยิมตอนหกโมงด้วยรถไฟฟ้า", Origin: gps, Places: places}
+	resp, err := Decide(context.Background(), nil, userSession(t, req), req, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.HasPrefix(resp.Trip.ID, planner.AppPrefix) || resp.Trip.TitleTH != "ไปยิม" || resp.Trip.Origin != *gps ||
+		resp.Trip.Destination.NameTH != "ฟิตเนส อารีย์" || resp.Mode != domain.ModeTransit || resp.DepartAt.Format("15:04") != "18:00" {
+		t.Fatalf("got %+v mode %s depart %s", resp.Trip, resp.Mode, resp.DepartAt.Format("15:04"))
+	}
+
+	// The slider follow-up sends the coordinates back and gets the same trip.
+	follow := Request{TripID: resp.Trip.ID, Origin: &resp.Trip.Origin, Destination: &resp.Trip.Destination, Mode: "moto"}
+	again, err := Decide(context.Background(), nil, userSession(t, follow), follow, nil)
+	if err != nil || again.Trip.ID != resp.Trip.ID || again.Mode != domain.ModeMoto {
+		t.Fatalf("follow-up got %+v %v", again.Trip, err)
+	}
+}

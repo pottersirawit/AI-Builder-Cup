@@ -48,10 +48,18 @@ type Place struct {
 
 func (p Place) Point() LatLng { return LatLng{p.Lat, p.Lng} }
 
+// Kinds of saved place. A user has at most one home and one work place.
+const (
+	KindHome  = "home"
+	KindWork  = "work"
+	KindOther = "other"
+)
+
 // SavedPlace is a place the user has named in the app (บ้าน, ที่ทำงาน, ...).
 // Keywords are the words that point at it in a typed Thai question.
 type SavedPlace struct {
 	ID      string `json:"id"`
+	Kind    string `json:"kind"`
 	LabelTH string `json:"label_th"`
 	Place
 	Keywords []string `json:"-"`

@@ -17,6 +17,12 @@ func HaversineM(a, b domain.LatLng) float64 {
 	return earthRadiusM * 2 * math.Atan2(math.Sqrt(h), math.Sqrt(1-h))
 }
 
+// InServiceArea reports whether p is inside the Bangkok bounding box the app
+// has flood spot and canal data for (13.49-14.10 N, 100.30-100.95 E).
+func InServiceArea(p domain.LatLng) bool {
+	return p.Lat >= 13.49 && p.Lat <= 14.10 && p.Lng >= 100.30 && p.Lng <= 100.95
+}
+
 // DistanceToPolylineM is the shortest distance from p to any segment of line.
 // Segments are projected onto a local plane, which is accurate at city scale.
 func DistanceToPolylineM(p domain.LatLng, line []domain.LatLng) float64 {

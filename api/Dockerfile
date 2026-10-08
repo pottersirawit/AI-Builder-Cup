@@ -1,4 +1,4 @@
-# Build from the repository root so the BMA flood spot dataset can be copied in:
+# Build from the repository root so the BMA flood spots and landmark list can be copied in:
 #   docker build -f api/Dockerfile -t fontokmai-api .
 FROM golang:1.24-alpine AS build
 WORKDIR /src
@@ -10,9 +10,10 @@ RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /out/server ./cmd/serve
 FROM gcr.io/distroless/static-debian12:nonroot
 WORKDIR /app
 COPY --from=build /out/server /app/server
-COPY data/bkk_flood_risk_points.json /app/data/bkk_flood_risk_points.json
+COPY data/bkk_flood_risk_points.json data/bkk_landmarks.json /app/data/
 ENV PORT=8080 \
-    FLOOD_POINTS_PATH=/app/data/bkk_flood_risk_points.json
+    FLOOD_POINTS_PATH=/app/data/bkk_flood_risk_points.json \
+    LANDMARKS_PATH=/app/data/bkk_landmarks.json
 EXPOSE 8080
 USER nonroot:nonroot
 ENTRYPOINT ["/app/server"]

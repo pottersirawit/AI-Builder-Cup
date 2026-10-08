@@ -198,11 +198,11 @@ func sortByDistance(rs []domain.CanalReading, p domain.LatLng) {
 
 // Places are มิว's saved places, in the order the app lists them.
 var Places = []domain.SavedPlace{
-	{ID: "home", LabelTH: "บ้าน", Place: Home, Keywords: []string{"บ้าน", "ลาดพร้าว", "home"}},
-	{ID: "work", LabelTH: "ที่ทำงาน", Place: Silom, Keywords: []string{"ที่ทำงาน", "ออฟฟิศ", "office", "สีลม", "silom", "work"}},
-	{ID: "siam", LabelTH: "สยาม", Place: Siam, Keywords: []string{"สยามพารากอน", "สยาม", "พารากอน", "siam", "paragon"}},
-	{ID: "thonglor", LabelTH: "ทองหล่อ", Place: Thonglor, Keywords: []string{"ทองหล่อ", "thonglor", "thong lo"}},
-	{ID: "impact", LabelTH: "อิมแพ็ค", Place: Impact, Keywords: []string{"อิมแพ็ค", "อิมแพค", "เมืองทองธานี", "เมืองทอง", "impact"}},
+	{ID: "home", Kind: domain.KindHome, LabelTH: "บ้าน", Place: Home, Keywords: []string{"บ้าน", "ลาดพร้าว", "home"}},
+	{ID: "work", Kind: domain.KindWork, LabelTH: "ที่ทำงาน", Place: Silom, Keywords: []string{"ที่ทำงาน", "ออฟฟิศ", "office", "สีลม", "silom", "work"}},
+	{ID: "siam", Kind: domain.KindOther, LabelTH: "สยาม", Place: Siam, Keywords: []string{"สยามพารากอน", "สยาม", "พารากอน", "siam", "paragon"}},
+	{ID: "thonglor", Kind: domain.KindOther, LabelTH: "ทองหล่อ", Place: Thonglor, Keywords: []string{"ทองหล่อ", "thonglor", "thong lo"}},
+	{ID: "impact", Kind: domain.KindOther, LabelTH: "อิมแพ็ค", Place: Impact, Keywords: []string{"อิมแพ็ค", "อิมแพค", "เมืองทองธานี", "เมืองทอง", "impact"}},
 }
 
 // Whereabouts is the saved place มิว is at: the Silom office during weekday
