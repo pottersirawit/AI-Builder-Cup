@@ -104,5 +104,23 @@ func TestWeatherNext_RealBigQueryLive(t *testing.T) {
 	}
 
 	t.Log("Executing real BigQuery live query against ai-cup-511208:weathernext_3 with partitioned bounding box...")
-	// Can be triggered when LIVE_WEATHERNEXT=1 is passed
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	fetcher, err := NewBigQueryWeatherNextFetcher(ctx, "ai-cup-511208")
+	if err != nil {
+		t.Fatalf("failed to create BigQuery fetcher: %v", err)
+	}
+
+	grid, err := fetcher.FetchBangkokGrid(ctx)
+	if err != nil {
+		t.Fatalf("FetchBangkokGrid failed: %v", err)
+	}
+
+	if len(grid) == 0 {
+		t.Fatalf("expected non-empty grid results from BigQuery")
+	}
+
+	t.Logf("Successfully fetched %d grid points from WeatherNext 3! First point: Lat=%.4f Lng=%.4f Temp=%.1f°C",
+		len(grid), grid[0].Lat, grid[0].Lng, grid[0].TempC)
 }

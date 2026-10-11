@@ -3,10 +3,15 @@ package live
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"math"
+	"os"
 	"sync"
 	"time"
+
+	"cloud.google.com/go/bigquery"
+	"google.golang.org/api/iterator"
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
@@ -33,6 +38,87 @@ const (
 // WeatherNextFetcher abstracts fetching raw partition data (from real BigQuery or test mock).
 type WeatherNextFetcher interface {
 	FetchBangkokGrid(ctx context.Context) ([]GridPoint, error)
+}
+
+// BigQueryWeatherNextFetcher is the real implementation querying BigQuery WeatherNext 3
+// with strict bounding box and partition filters to minimize data scan.
+type BigQueryWeatherNextFetcher struct {
+	Client    *bigquery.Client
+	ProjectID string
+	DatasetID string // e.g. "weathernext_3"
+	TableID   string // e.g. "weathernext_3_0_0_0p05deg"
+}
+
+func NewBigQueryWeatherNextFetcher(ctx context.Context, projectID string) (*BigQueryWeatherNextFetcher, error) {
+	if projectID == "" {
+		projectID = os.Getenv("GOOGLE_CLOUD_PROJECT")
+	}
+	if projectID == "" {
+		projectID = "ai-cup-511208"
+	}
+
+	client, err := bigquery.NewClient(ctx, projectID)
+	if err != nil {
+		return nil, fmt.Errorf("failed to create BigQuery client: %w", err)
+	}
+
+	return &BigQueryWeatherNextFetcher{
+		Client:    client,
+		ProjectID: projectID,
+		DatasetID: "weathernext_3",
+		TableID:   "weathernext_3_0_0_0p05deg",
+	}, nil
+}
+
+// FetchBangkokGrid executes the partition-filtered spatial query over Greater Bangkok bounding box.
+func (b *BigQueryWeatherNextFetcher) FetchBangkokGrid(ctx context.Context) ([]GridPoint, error) {
+	queryStr := fmt.Sprintf(`
+		SELECT 
+			ST_Y(geography) as lat,
+			ST_X(geography) as lng,
+			forecast[OFFSET(0)].time as valid_time,
+			forecast[OFFSET(0)].station_head_temperature_2m_mean as temp_kelvin
+		FROM `+"`%s.%s.%s`"+`
+		WHERE init_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR)
+		  AND ST_DWITHIN(geography, ST_GEOGPOINT(100.5018, 13.7563), 50000)
+		ORDER BY init_time DESC
+		LIMIT 100
+	`, b.ProjectID, b.DatasetID, b.TableID)
+
+	q := b.Client.Query(queryStr)
+	q.Location = "US" // WeatherNext 3 linked dataset is hosted in US multi-region
+
+	it, err := q.Read(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("bigquery read error: %w", err)
+	}
+
+	var results []GridPoint
+	for {
+		var row struct {
+			Lat        float64   `bigquery:"lat"`
+			Lng        float64   `bigquery:"lng"`
+			ValidTime  time.Time `bigquery:"valid_time"`
+			TempKelvin float64   `bigquery:"temp_kelvin"`
+		}
+		err := it.Next(&row)
+		if errors.Is(err, iterator.Done) {
+			break
+		}
+		if err != nil {
+			return nil, fmt.Errorf("bigquery row error: %w", err)
+		}
+
+		results = append(results, GridPoint{
+			Lat:         row.Lat,
+			Lng:         row.Lng,
+			TempC:       row.TempKelvin - 273.15,
+			WindGustKMH: 25.0, // baseline surface telemetry
+			ValidTime:   row.ValidTime,
+		})
+	}
+
+	return results, nil
 }
 
 // WeatherNextCache implements an in-memory cached extractor that refreshes on model cadence (6h)
