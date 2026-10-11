@@ -14,6 +14,7 @@ import (
 	"time"
 	"unicode/utf8"
 
+	"github.com/pottersirawit/fontokmai/api/internal/advise"
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/clock"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
@@ -21,9 +22,11 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
+	"github.com/pottersirawit/fontokmai/api/internal/jobs"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/resolve"
+	"github.com/pottersirawit/fontokmai/api/internal/users"
 	"github.com/pottersirawit/fontokmai/api/internal/vision"
 )
 
@@ -42,6 +45,10 @@ type Server struct {
 	// Geocoder answers place search and reverse geocoding, and the candidates
 	// of a needs_place answer.
 	Geocoder geocode.Geocoder
+	// Proactive pipeline components
+	UserStore users.UserStore
+	Evaluator *advise.Evaluator
+	Scheduler jobs.Scheduler
 }
 
 func (s *Server) Handler() http.Handler {
@@ -58,6 +65,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/places/search", s.searchPlaces)
 	mux.HandleFunc("GET /v1/places/reverse", s.reversePlace)
 	mux.HandleFunc("POST /v1/ingest", s.withClock(s.ingest))
+	mux.HandleFunc("POST /internal/pubsub/raw", s.withClock(s.handlePubSubRaw))
+	mux.HandleFunc("POST /internal/tasks/check", s.withClock(s.handleTaskCheck))
 	return cors(logRequests(mux))
 }
 
@@ -340,6 +349,7 @@ func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
 type IngestRequest struct {
+	UID       string              `json:"uid"`        // user ID for server-side state
 	Source    string              `json:"source"`     // calendar | gmail
 	SourceRef string              `json:"source_ref"` // unique id
 	Title     string              `json:"title"`
@@ -399,9 +409,149 @@ func (s *Server) ingest(w http.ResponseWriter, r *http.Request, ctx reqCtx) {
 	}
 	if needsPlace == nil {
 		resp.Trip = &trip
+		// Upsert into user store if user store is configured and UID is present
+		if s.UserStore != nil && req.UID != "" {
+			_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+				UID:    req.UID,
+				Trip:   trip,
+				Places: places,
+			})
+			// Schedule proactive check at T-45 before departure/arrival if scheduler available
+			if s.Scheduler != nil {
+				target := trip.ArriveBy
+				if target.IsZero() {
+					target = ctx.now.Add(2 * time.Hour)
+				}
+				runAt := target.Add(-45 * time.Minute)
+				if runAt.Before(ctx.now) {
+					runAt = ctx.now
+				}
+				_ = s.Scheduler.ScheduleCheck(r.Context(), req.UID, trip.ID, runAt)
+			}
+		}
 	}
 
 	writeJSON(w, http.StatusOK, resp)
+}
+
+// PubSubMessage wraps Google Cloud Pub/Sub push notification payload.
+type PubSubMessage struct {
+	Message struct {
+		Data        string            `json:"data"`
+		Attributes  map[string]string `json:"attributes"`
+		MessageID   string            `json:"messageId"`
+		PublishTime string            `json:"publishTime"`
+	} `json:"message"`
+	Subscription string `json:"subscription"`
+}
+
+func (s *Server) handlePubSubRaw(w http.ResponseWriter, r *http.Request, ctx reqCtx) {
+	var body IngestRequest
+	// Support direct JSON payload or wrapped Pub/Sub push
+	var psMsg PubSubMessage
+	rawBytes, err := io.ReadAll(r.Body)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, "cannot read request body")
+		return
+	}
+	if json.Unmarshal(rawBytes, &psMsg) == nil && psMsg.Message.Data != "" {
+		// Pub/Sub push message detected
+		_ = json.Unmarshal([]byte(psMsg.Message.Data), &body)
+		if body.SourceRef == "" {
+			body.SourceRef = psMsg.Message.MessageID
+		}
+	} else {
+		_ = json.Unmarshal(rawBytes, &body)
+	}
+
+	if body.Source == "" {
+		body.Source = extract.SourceCalendar
+	}
+
+	payload, err := extract.Extract(r.Context(), s.Gemini, extract.RawMessage{
+		Source:    body.Source,
+		SourceRef: body.SourceRef,
+		Title:     body.Title,
+		Body:      body.Body,
+	}, ctx.now)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "extract failed: "+err.Error())
+		return
+	}
+
+	if !payload.IsTrip {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "ignored", "reason": "not_a_trip"})
+		return
+	}
+
+	places := body.Places
+	if places == nil {
+		places = s.Planner.Places
+	}
+
+	trip, needsPlace, err := resolve.Trip(r.Context(), payload, body.Origin, places, s.Geocoder)
+	if err != nil || needsPlace != nil {
+		writeJSON(w, http.StatusOK, map[string]any{"status": "needs_place", "needs": needsPlace})
+		return
+	}
+
+	uid := body.UID
+	if uid == "" {
+		uid = "demo-user"
+	}
+
+	if s.UserStore != nil {
+		_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+			UID:    uid,
+			Trip:   trip,
+			Places: places,
+		})
+	}
+
+	if s.Scheduler != nil {
+		target := trip.ArriveBy
+		if target.IsZero() {
+			target = ctx.now.Add(2 * time.Hour)
+		}
+		runAt := target.Add(-45 * time.Minute)
+		if runAt.Before(ctx.now) {
+			runAt = ctx.now
+		}
+		_ = s.Scheduler.ScheduleCheck(r.Context(), uid, trip.ID, runAt)
+	}
+
+	writeJSON(w, http.StatusOK, map[string]any{
+		"status":  "scheduled",
+		"trip_id": trip.ID,
+		"uid":     uid,
+	})
+}
+
+type taskCheckRequest struct {
+	UID         string `json:"uid"`
+	TripID      string `json:"trip_id"`
+	ForceNotify bool   `json:"force_notify"`
+}
+
+func (s *Server) handleTaskCheck(w http.ResponseWriter, r *http.Request, ctx reqCtx) {
+	var req taskCheckRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid json: "+err.Error())
+		return
+	}
+
+	if s.Evaluator == nil {
+		writeError(w, http.StatusInternalServerError, "evaluator not configured")
+		return
+	}
+
+	res, err := s.Evaluator.EvaluateTrip(r.Context(), ctx.prov, ctx.now, req.UID, req.TripID, req.ForceNotify)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "evaluation failed: "+err.Error())
+		return
+	}
+
+	writeJSON(w, http.StatusOK, res)
 }
 
 func cors(next http.Handler) http.Handler {

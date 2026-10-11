@@ -13,12 +13,16 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pottersirawit/fontokmai/api/internal/advise"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
+	"github.com/pottersirawit/fontokmai/api/internal/jobs"
+	"github.com/pottersirawit/fontokmai/api/internal/notify"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
+	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
 
 func newServer(t *testing.T) http.Handler { return newServerMode(t, true) }
@@ -35,9 +39,27 @@ func newServerMode(t *testing.T, demo bool) http.Handler {
 		t.Fatal(err)
 	}
 	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
-	s := &Server{DemoMode: demo, Planner: &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts},
-		Scenario: prov, Live: prov,
-		Users: scenario.MockUsers(), Home: homestatus.Home(scenario.HomeProfile), Geocoder: geocode.Local{Landmarks: landmarks}}
+	userStore := users.NewMemoryUserStore()
+	memNotifier := notify.NewMemoryNotifier()
+	eval := &advise.Evaluator{
+		Planner:  &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts},
+		Users:    userStore,
+		Notifier: memNotifier,
+	}
+	scheduler := jobs.NewInlineScheduler(eval, prov)
+
+	s := &Server{
+		DemoMode:  demo,
+		Planner:   eval.Planner,
+		Scenario:  prov,
+		Live:      prov,
+		Users:     scenario.MockUsers(),
+		Home:      homestatus.Home(scenario.HomeProfile),
+		Geocoder:  geocode.Local{Landmarks: landmarks},
+		UserStore: userStore,
+		Evaluator: eval,
+		Scheduler: scheduler,
+	}
 	return s.Handler()
 }
 
@@ -412,5 +434,65 @@ func TestPlacesSearchAndReverse(t *testing.T) {
 		if status, _ := do(t, h, "GET", "/v1/places/reverse"+q, "", nil, ""); status != 400 {
 			t.Errorf("reverse %q: status %d, want 400", q, status)
 		}
+	}
+}
+
+func TestProactivePipelineEndToEnd(t *testing.T) {
+	spots, _ := floodspot.Load(filepath.Join("..", "..", "..", "data", "bkk_flood_risk_points.json"))
+	landmarks, _ := geocode.LoadLandmarks(filepath.Join("..", "..", "..", "data", "bkk_landmarks.json"))
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	userStore := users.NewMemoryUserStore()
+	memNotifier := notify.NewMemoryNotifier()
+	eval := &advise.Evaluator{
+		Planner:  &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts},
+		Users:    userStore,
+		Notifier: memNotifier,
+	}
+	scheduler := jobs.NewInlineScheduler(eval, prov)
+
+	srv := &Server{
+		DemoMode:  true,
+		Planner:   eval.Planner,
+		Scenario:  prov,
+		Live:      prov,
+		Geocoder:  geocode.Local{Landmarks: landmarks},
+		UserStore: userStore,
+		Evaluator: eval,
+		Scheduler: scheduler,
+	}
+	h := srv.Handler()
+
+	// 1. Ingest via Pub/Sub push message
+	pubsubPayload := `{"uid":"mew-hero","source":"calendar","title":"ไปสยาม ตอนหกโมงเย็น","body":"นัดคุยงานที่สยาม"}`
+	body := bytes.NewBufferString(pubsubPayload)
+	status, out := do(t, h, "POST", "/internal/pubsub/raw", "16:10", body, "application/json")
+	if status != 200 || out["status"] != "scheduled" {
+		t.Fatalf("pubsub raw ingest status=%d resp=%v", status, out)
+	}
+
+	tripID := out["trip_id"].(string)
+
+	// Verify task got scheduled
+	if len(scheduler.Tasks) != 1 {
+		t.Fatalf("expected 1 scheduled task, got %d", len(scheduler.Tasks))
+	}
+
+	// 2. Trigger task check endpoint for this trip at 16:10 (departure minus 45 min beat)
+	checkBody := bytes.NewBufferString(`{"uid":"mew-hero","trip_id":"` + tripID + `","force_notify":true}`)
+	status, checkOut := do(t, h, "POST", "/internal/tasks/check", "16:10", checkBody, "application/json")
+	if status != 200 {
+		t.Fatalf("task check failed: %d %v", status, checkOut)
+	}
+
+	if checkOut["notified"] != true || checkOut["verdict"] != "leave_now" {
+		t.Fatalf("expected notified true and leave_now, got %v", checkOut)
+	}
+
+	if len(memNotifier.Messages) != 1 {
+		t.Fatalf("expected 1 proactive notification message sent, got %d", len(memNotifier.Messages))
+	}
+	msg := memNotifier.Messages[0]
+	if msg.UID != "mew-hero" || msg.HeadlineTH == "" {
+		t.Fatalf("invalid notification message: %+v", msg)
 	}
 }
