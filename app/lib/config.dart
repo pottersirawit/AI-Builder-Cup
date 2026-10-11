@@ -2,7 +2,8 @@ import 'dart:io' show Platform;
 
 import 'package:flutter/foundation.dart';
 
-const _apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL');
+const _defaultApiBaseUrl = 'https://fontokmai-api-945826169258.asia-southeast1.run.app';
+const _apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL', defaultValue: _defaultApiBaseUrl);
 
 /// `--dart-define=DEMO_CLOCK=16:10` picks the starting demo time; `live`
 /// starts with no X-Demo-Clock header.
