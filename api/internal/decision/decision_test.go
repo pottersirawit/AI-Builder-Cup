@@ -169,7 +169,7 @@ func TestRiskFor(t *testing.T) {
 		{domain.ModeTransit, 5, 40, RiskLow},
 	}
 	for _, tt := range tests {
-		if got := riskFor(tt.mode, tt.rain, tt.depth); got != tt.want {
+		if got := riskFor(tt.mode, tt.rain, tt.depth, 0); got != tt.want {
 			t.Errorf("%s rain=%v depth=%v: got %s, want %s", tt.mode, tt.rain, tt.depth, got, tt.want)
 		}
 	}
@@ -227,5 +227,23 @@ func TestDontGoWhenEveryOptionStaysRisky(t *testing.T) {
 	res := Decide(in)
 	if res.Verdict != DontGo || res.HeadlineTH != "อย่าเพิ่งออก" || res.LeaveBy != nil {
 		t.Fatalf("got %s %q leave_by=%v", res.Verdict, res.HeadlineTH, res.LeaveBy)
+	}
+}
+
+func TestMotoHighRiskOnWindGust(t *testing.T) {
+	// No rain, no flood spots, but wind gusts exceed 45 km/h
+	in := Input{
+		Now: at(16, 0), DepartAt: at(16, 0), Mode: domain.ModeMoto, DestinationTH: "สยาม",
+		WindGustKMH: 48.0,
+		Travel:      func(domain.Mode, time.Time) int { return 25 },
+	}
+	ev := EvaluateMode(in, domain.ModeMoto, in.DepartAt)
+	if ev.Risk != RiskHigh {
+		t.Fatalf("expected RiskHigh for moto under 48 km/h wind gusts, got %v", ev.Risk)
+	}
+
+	res := Decide(in)
+	if res.Verdict != SwitchMode {
+		t.Errorf("expected SwitchMode away from dangerous motorcycle wind, got %v", res.Verdict)
 	}
 }

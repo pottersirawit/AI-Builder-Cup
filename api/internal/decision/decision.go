@@ -39,11 +39,12 @@ const (
 	rainModerate = 10.0
 )
 
-// Vehicle Clearance Profiles (CONTEXT.md): water depth in cm.
+// Vehicle Clearance Profiles (CONTEXT.md): water depth in cm & wind threshold in km/h.
 const (
-	carSlowDepthCM   = 5.0  // sedan slows, water sprays the floor
-	carStallDepthCM  = 15.0 // sedan clearance
-	motoStallDepthCM = 10.0
+	carSlowDepthCM            = 5.0  // sedan slows, water sprays the floor
+	carStallDepthCM           = 15.0 // sedan clearance
+	motoStallDepthCM          = 10.0
+	motoWindGustThresholdKMH  = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 )
 
 // Water drains from a flood spot linearly over drainWindow after the rain that
@@ -70,6 +71,7 @@ type Input struct {
 	Rain    []domain.RainSample
 	Spots   []floodspot.Spot // flood spots on the road route
 	Reports []domain.Report  // community reports near the road route
+	WindGustKMH float64      // peak wind gust on route (e.g. from WeatherNext 3)
 	Travel  TravelFunc
 }
 
@@ -81,6 +83,7 @@ type Eval struct {
 	Minutes     int
 	MaxRainMM   float64
 	MaxDepthCM  float64
+	WindGustKMH float64
 	DeepestTH   string // short name of the deepest flood spot or report
 	Risk        Risk
 	LateMinutes int
@@ -172,16 +175,16 @@ func EvaluateMode(in Input, mode domain.Mode, depart time.Time) Eval {
 		}
 	}
 	total := base + delay
-	e := Eval{Mode: mode, Depart: depart, Minutes: total, Arrive: depart.Add(minutes(total))}
+	e := Eval{Mode: mode, Depart: depart, Minutes: total, Arrive: depart.Add(minutes(total)), WindGustKMH: in.WindGustKMH}
 	e.MaxRainMM, e.MaxDepthCM, e.DeepestTH = hazards(in, mode, depart, e.Arrive)
-	e.Risk = riskFor(mode, e.MaxRainMM, e.MaxDepthCM)
+	e.Risk = riskFor(mode, e.MaxRainMM, e.MaxDepthCM, in.WindGustKMH)
 	if !in.ArriveBy.IsZero() && e.Arrive.After(in.ArriveBy) {
 		e.LateMinutes = int(math.Ceil(e.Arrive.Sub(in.ArriveBy).Minutes()))
 	}
 	return e
 }
 
-func riskFor(mode domain.Mode, rain, depth float64) Risk {
+func riskFor(mode domain.Mode, rain, depth, windGustKMH float64) Risk {
 	switch mode {
 	case domain.ModeCar:
 		if depth >= carStallDepthCM {
@@ -191,10 +194,10 @@ func riskFor(mode domain.Mode, rain, depth float64) Risk {
 			return RiskMedium
 		}
 	case domain.ModeMoto:
-		if depth >= motoStallDepthCM || rain >= rainModerate {
+		if depth >= motoStallDepthCM || rain >= rainModerate || windGustKMH >= motoWindGustThresholdKMH {
 			return RiskHigh
 		}
-		if depth >= 1 || rain >= rainLight {
+		if depth >= 1 || rain >= rainLight || windGustKMH >= 30.0 {
 			return RiskMedium
 		}
 	case domain.ModeTransit:
