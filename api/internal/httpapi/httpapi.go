@@ -17,11 +17,13 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/clock"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
+	"github.com/pottersirawit/fontokmai/api/internal/extract"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
+	"github.com/pottersirawit/fontokmai/api/internal/resolve"
 	"github.com/pottersirawit/fontokmai/api/internal/vision"
 )
 
@@ -55,6 +57,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/home-status", s.withClock(s.homeStatus))
 	mux.HandleFunc("GET /v1/places/search", s.searchPlaces)
 	mux.HandleFunc("GET /v1/places/reverse", s.reversePlace)
+	mux.HandleFunc("POST /v1/ingest", s.withClock(s.ingest))
 	return cors(logRequests(mux))
 }
 
@@ -335,6 +338,70 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
+}
+type IngestRequest struct {
+	Source    string              `json:"source"`     // calendar | gmail
+	SourceRef string              `json:"source_ref"` // unique id
+	Title     string              `json:"title"`
+	Body      string              `json:"body"`
+	Origin    *domain.Place       `json:"origin"`
+	Places    []domain.SavedPlace `json:"places"`
+}
+
+type IngestResponse struct {
+	Payload    extract.Payload     `json:"payload"`
+	Trip       *domain.Trip        `json:"trip,omitempty"`
+	NeedsPlace *resolve.NeedsPlace `json:"needs_place,omitempty"`
+}
+
+func (s *Server) ingest(w http.ResponseWriter, r *http.Request, ctx reqCtx) {
+	var req IngestRequest
+	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+		writeError(w, http.StatusBadRequest, "invalid json body: "+err.Error())
+		return
+	}
+	if req.Source == "" {
+		req.Source = extract.SourceCalendar
+	}
+
+	raw := extract.RawMessage{
+		Source:    req.Source,
+		SourceRef: req.SourceRef,
+		Title:     req.Title,
+		Body:      req.Body,
+	}
+
+	payload, err := extract.Extract(r.Context(), s.Gemini, raw, ctx.now)
+	if err != nil {
+		writeError(w, http.StatusInternalServerError, "failed to extract payload: "+err.Error())
+		return
+	}
+
+	if !payload.IsTrip {
+		writeJSON(w, http.StatusOK, IngestResponse{Payload: payload})
+		return
+	}
+
+	places := req.Places
+	if places == nil {
+		places = s.Planner.Places
+	}
+
+	trip, needsPlace, err := resolve.Trip(r.Context(), payload, req.Origin, places, s.Geocoder)
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+
+	resp := IngestResponse{
+		Payload:    payload,
+		NeedsPlace: needsPlace,
+	}
+	if needsPlace == nil {
+		resp.Trip = &trip
+	}
+
+	writeJSON(w, http.StatusOK, resp)
 }
 
 func cors(next http.Handler) http.Handler {

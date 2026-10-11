@@ -156,6 +156,23 @@ func TestEndpoints(t *testing.T) {
 				t.Fatal(out["actions"])
 			}
 		}},
+		{"ingest calendar meeting to siam", "POST", "/v1/ingest", "16:10", `{"source":"calendar","title":"ไปสยาม ตอนหกโมงเย็น","body":"นัดคุยงานที่สยาม"}`, 200, func(t *testing.T, out map[string]any) {
+			payload := out["payload"].(map[string]any)
+			if payload["is_trip"] != true {
+				t.Fatalf("expected payload is_trip = true, got %+v", payload)
+			}
+			trip := out["trip"].(map[string]any)
+			dest := trip["destination"].(map[string]any)
+			if dest["name_th"] != "สยาม" {
+				t.Fatalf("expected dest = สยาม, got %+v", dest)
+			}
+		}},
+		{"ingest newsletter not a trip", "POST", "/v1/ingest", "16:10", `{"source":"gmail","title":"โปรโมชั่น","body":"ลดราคาพิเศษ"}`, 200, func(t *testing.T, out map[string]any) {
+			payload := out["payload"].(map[string]any)
+			if payload["is_trip"] == true && out["trip"] != nil {
+				t.Fatalf("expected non-trip for promo email, got %+v", out)
+			}
+		}},
 		{"preflight", "OPTIONS", "/v1/decide", "", "", 204, nil},
 	}
 	for _, tt := range tests {
