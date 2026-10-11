@@ -14,16 +14,20 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/pottersirawit/fontokmai/api/internal/advise"
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/httpapi"
+	"github.com/pottersirawit/fontokmai/api/internal/jobs"
 	"github.com/pottersirawit/fontokmai/api/internal/live"
+	"github.com/pottersirawit/fontokmai/api/internal/notify"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
+	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
 
 func main() {
@@ -71,15 +75,30 @@ func main() {
 
 	gemini := agent.NewGeminiFromEnv(ctx)
 	demo := !isFalse(os.Getenv("DEMO_MODE"))
-	srv := &httpapi.Server{
-		DemoMode: demo,
-		Planner:  &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts},
-		Scenario: scen,
-		Live:     liveProv,
+
+	userStore := users.NewMemoryUserStore()
+	logNotifier := &notify.LogNotifier{}
+	plannerInst := &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts}
+	evaluator := &advise.Evaluator{
+		Planner:  plannerInst,
+		Users:    userStore,
+		Notifier: logNotifier,
 		Gemini:   gemini,
-		Users:    scenario.MockUsers(),
-		Home:     homestatus.Home(scenario.HomeProfile),
-		Geocoder: geocoder,
+	}
+	scheduler := jobs.NewInlineScheduler(evaluator, scen)
+
+	srv := &httpapi.Server{
+		DemoMode:  demo,
+		Planner:   plannerInst,
+		Scenario:  scen,
+		Live:      liveProv,
+		Gemini:    gemini,
+		Users:     scenario.MockUsers(),
+		Home:      homestatus.Home(scenario.HomeProfile),
+		Geocoder:  geocoder,
+		UserStore: userStore,
+		Evaluator: evaluator,
+		Scheduler: scheduler,
 	}
 
 	addr := ":" + env("PORT", "8080")
