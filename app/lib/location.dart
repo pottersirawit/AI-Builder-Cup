@@ -55,16 +55,25 @@ Future<Fix> currentFix() async {
 enum LocateStatus { ok, notAsked, denied, deniedForever, servicesOff, timeout, error }
 
 class LocateResult {
-  const LocateResult(this.status, {this.lat = 0, this.lng = 0, this.accuracyM});
+  const LocateResult(
+    this.status, {
+    this.lat = 0,
+    this.lng = 0,
+    this.accuracyM,
+    this.nameTh,
+    this.isManual = false,
+  });
   final LocateStatus status;
   final double lat;
   final double lng;
   final double? accuracyM;
+  final String? nameTh;
+  final bool isManual;
 
   bool get ok => status == LocateStatus.ok;
 
-  /// Worse than 200 m: show the fix, but say it may be off.
-  bool get lowAccuracy => (accuracyM ?? 0) > 200;
+  /// Worse than 200 m: show the fix, but say it may be off. Manual fixes are never low accuracy.
+  bool get lowAccuracy => !isManual && (accuracyM ?? 0) > 200;
 }
 
 /// Seam over geolocator, so tests and screenshots can stage each

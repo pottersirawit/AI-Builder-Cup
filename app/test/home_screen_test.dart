@@ -102,6 +102,10 @@ void main() {
     expect(find.text('คืนนี้เสี่ยงน้ำท่วม: ปานกลาง'), findsOneWidget);
 
     await tapAndSettle(tester, find.text('เดินทาง'));
+    final scrollable = find.byType(Scrollable).hitTestable().first;
+    await tester.drag(scrollable, const Offset(0, 1000));
+    await tester.pump();
+    await settle(tester);
     await tapAndSettle(tester, find.byTooltip('ตั้งค่า'));
     expect(find.text('บ้านลาดพร้าว'), findsOneWidget, reason: 'real saved places');
     await reveal(tester, find.text('Google Calendar'));

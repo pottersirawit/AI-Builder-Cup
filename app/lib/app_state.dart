@@ -41,6 +41,16 @@ class AppState extends ChangeNotifier {
 
   HomeLevel _homeLevel = HomeLevel.normal;
 
+  LocateResult? _currentLocation;
+
+  /// The device's current location fix, when available.
+  LocateResult? get currentLocation => _currentLocation;
+  set currentLocation(LocateResult? loc) {
+    if (loc == _currentLocation) return;
+    _currentLocation = loc;
+    notifyListeners();
+  }
+
   /// Latest flood level at home; danger switches the whole app to flood mode.
   HomeLevel get homeLevel => _homeLevel;
   bool get flood => _homeLevel == HomeLevel.danger;

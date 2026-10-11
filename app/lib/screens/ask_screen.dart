@@ -87,10 +87,13 @@ class _AskScreenState extends State<AskScreen> {
         setState(() => _messages.add(_Message.needs(q, NeedsPlace(queryTh: kindLabelTh(missing), kind: missing))));
         return;
       }
+      final currentOrigin = state.currentLocation?.ok == true
+          ? Place(nameTh: state.currentLocation!.nameTh ?? 'ตำแหน่งตอนนี้', lat: state.currentLocation!.lat, lng: state.currentLocation!.lng)
+          : null;
       final d = state.track(await api.decide(DecideRequest(
         questionTh: q,
         tripId: widget.trip?.id,
-        origin: widget.trip?.source == 'app' ? widget.trip!.origin : null,
+        origin: widget.trip?.source == 'app' ? widget.trip!.origin : currentOrigin,
         destination: widget.trip?.source == 'app' ? widget.trip!.destination : null,
         places: places ?? store.places,
       )));

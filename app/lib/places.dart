@@ -59,10 +59,12 @@ class PlacesStore extends ChangeNotifier {
   static const _kDemo = 'profile.demo';
   static const _kCalendarHint = 'profile.calendar_hint_dismissed';
   static const _kLocationAsked = 'profile.location_asked';
+  static const _kManualLocation = 'profile.manual_location';
 
   final SharedPreferences _prefs;
 
   List<SavedPlace> _places = [];
+  PlaceCandidate? _manualLocation;
   bool _onboarded = false;
   bool _demo = false;
   bool _calendarHintDismissed = false;
@@ -80,6 +82,23 @@ class PlacesStore extends ChangeNotifier {
         _places = [];
       }
     }
+    final rawLoc = _prefs.getString(_kManualLocation);
+    if (rawLoc != null) {
+      try {
+        final j = jsonDecode(rawLoc) as Map<String, dynamic>;
+        _manualLocation = PlaceCandidate(
+          nameTh: j['name_th'] as String? ?? 'ตำแหน่งที่ปักหมุด',
+          addressTh: j['address_th'] as String? ?? '',
+          lat: (j['lat'] as num).toDouble(),
+          lng: (j['lng'] as num).toDouble(),
+          source: 'manual',
+        );
+      } catch (_) {
+        _manualLocation = null;
+      }
+    } else {
+      _manualLocation = null;
+    }
     _onboarded = _prefs.getBool(_kOnboarded) ?? false;
     _demo = _prefs.getBool(_kDemo) ?? false;
     _calendarHintDismissed = _prefs.getBool(_kCalendarHint) ?? false;
@@ -93,6 +112,23 @@ class PlacesStore extends ChangeNotifier {
     _prefs.setBool(_kDemo, _demo);
     _prefs.setBool(_kCalendarHint, _calendarHintDismissed);
     _prefs.setBool(_kLocationAsked, _locationAsked);
+    notifyListeners();
+  }
+
+  PlaceCandidate? get manualLocation => _manualLocation;
+
+  void setManualLocation(PlaceCandidate? c) {
+    _manualLocation = c;
+    if (c == null) {
+      _prefs.remove(_kManualLocation);
+    } else {
+      _prefs.setString(_kManualLocation, jsonEncode({
+        'name_th': c.nameTh,
+        'address_th': c.addressTh,
+        'lat': c.lat,
+        'lng': c.lng,
+      }));
+    }
     notifyListeners();
   }
 
@@ -188,6 +224,8 @@ class PlacesStore extends ChangeNotifier {
   /// Back to a first launch: no places, onboarding shows again.
   void resetToFirstRun() {
     _places = [];
+    _manualLocation = null;
+    _prefs.remove(_kManualLocation);
     _demo = false;
     _onboarded = false;
     _calendar = LinkState.notConnected;

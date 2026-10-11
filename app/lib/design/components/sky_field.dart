@@ -62,6 +62,7 @@ class FieldHeader extends StatelessWidget {
     required this.state,
     required this.title,
     this.subtitle,
+    this.onSubtitleTap,
     this.back = false,
     this.actions = const [],
     this.badge,
@@ -69,6 +70,7 @@ class FieldHeader extends StatelessWidget {
   final SkyState state;
   final String title;
   final String? subtitle;
+  final VoidCallback? onSubtitleTap;
   final bool back;
   final List<Widget> actions;
 
@@ -94,10 +96,31 @@ class FieldHeader extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (subtitle != null)
-                  Text(subtitle!,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.labelMedium!.copyWith(color: sky.onFieldMuted)),
+                  onSubtitleTap != null
+                      ? InkWell(
+                          onTap: onSubtitleTap,
+                          borderRadius: BorderRadius.circular(Radii.xs),
+                          child: Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 2),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Flexible(
+                                  child: Text(subtitle!,
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                      style: t.labelMedium!.copyWith(color: sky.onFieldMuted)),
+                                ),
+                                const SizedBox(width: 4),
+                                Icon(Symbols.edit_location_alt_rounded, size: 14, color: sky.onFieldMuted),
+                              ],
+                            ),
+                          ),
+                        )
+                      : Text(subtitle!,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: t.labelMedium!.copyWith(color: sky.onFieldMuted)),
                 Row(
                   children: [
                     Flexible(

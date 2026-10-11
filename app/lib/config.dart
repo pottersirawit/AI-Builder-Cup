@@ -6,7 +6,7 @@ const _apiBaseUrlDefine = String.fromEnvironment('API_BASE_URL');
 
 /// `--dart-define=DEMO_CLOCK=16:10` picks the starting demo time; `live`
 /// starts with no X-Demo-Clock header.
-const _demoClockDefine = String.fromEnvironment('DEMO_CLOCK', defaultValue: '16:10');
+const _demoClockDefine = String.fromEnvironment('DEMO_CLOCK', defaultValue: 'live');
 const _demoScreenDefine = String.fromEnvironment('DEMO_SCREEN');
 
 /// Launch environment (Android/desktop), or the matching --dart-define.

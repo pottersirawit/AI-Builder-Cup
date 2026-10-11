@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../location.dart';
 import '../models.dart';
 import '../places.dart';
 import '../time_th.dart';
@@ -72,6 +73,24 @@ class _HomeScreenState extends State<HomeScreen> {
         ..homeLevel = homeR?.data.level ?? HomeLevel.normal;
       final trips = tripsR?.data ?? const <Trip>[];
       final now = state.now();
+      if (store.manualLocation != null) {
+        state.currentLocation = LocateResult(
+          LocateStatus.ok,
+          lat: store.manualLocation!.lat,
+          lng: store.manualLocation!.lng,
+          nameTh: store.manualLocation!.nameTh,
+          isManual: true,
+          accuracyM: 10,
+        );
+      } else {
+        final locator = AppScope.locatorOf(context);
+        try {
+          final loc = await locator.locate(prompt: false);
+          if (loc.ok && mounted) {
+            state.currentLocation = loc;
+          }
+        } catch (_) {}
+      }
       final resolved = trips.where((t) => !t.unresolved).toList();
       final headsHomeToday = home != null &&
           resolved.any((t) =>
@@ -128,9 +147,50 @@ class _HomeScreenState extends State<HomeScreen> {
     ));
   }
 
-  void _ask(String q) => _push(VerdictScreen(
-        request: DecideRequest(questionTh: q, places: AppScope.readPlaces(context).places),
-      ));
+  void _ask(String q) {
+    final loc = AppScope.readState(context).currentLocation;
+    final origin = loc?.ok == true
+        ? Place(nameTh: loc!.nameTh ?? 'ตำแหน่งตอนนี้', lat: loc.lat, lng: loc.lng)
+        : null;
+    _push(VerdictScreen(
+      request: DecideRequest(
+        questionTh: q,
+        origin: origin,
+        places: AppScope.readPlaces(context).places,
+      ),
+    ));
+  }
+
+  Future<void> _calibrateLocation() async {
+    final candidate = await pickPoint(context);
+    if (candidate == null || !mounted) return;
+    final store = AppScope.readPlaces(context);
+    store.setManualLocation(candidate);
+    final state = AppScope.readState(context);
+    state.currentLocation = LocateResult(
+      LocateStatus.ok,
+      lat: candidate.lat,
+      lng: candidate.lng,
+      nameTh: candidate.nameTh,
+      isManual: true,
+      accuracyM: 10,
+    );
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('ปักหมุดตำแหน่งปัจจุบันที่ “${candidate.nameTh}” แล้ว'),
+          action: SnackBarAction(
+            label: 'ใช้ GPS แทน',
+            onPressed: () {
+              store.setManualLocation(null);
+              _load();
+            },
+          ),
+        ),
+      );
+      _load();
+    }
+  }
 
   Future<void> _setPlace(PlaceKind kind) => pickPlace(context, kind: kind);
 
@@ -139,14 +199,23 @@ class _HomeScreenState extends State<HomeScreen> {
     final home = AppScope.readPlaces(context).home;
     final commute = _commute;
     if (home == null) return;
-    final here = await locateOrSearch(context);
+    final state = AppScope.readState(context);
+    final here = state.currentLocation?.ok == true
+        ? PlaceCandidate(
+            nameTh: state.currentLocation!.nameTh ?? 'ตำแหน่งตอนนี้',
+            lat: state.currentLocation!.lat,
+            lng: state.currentLocation!.lng,
+            source: state.currentLocation!.isManual ? 'manual' : 'gps',
+            accuracyM: state.currentLocation!.accuracyM,
+          )
+        : await locateOrSearch(context);
     if (here == null || !mounted) return;
     _openTrip(
       Trip(
         id: 'app-home',
         titleTh: 'กลับบ้าน',
         source: 'app',
-        origin: Place(nameTh: here.source == 'gps' ? 'ตำแหน่งตอนนี้' : here.nameTh, lat: here.lat, lng: here.lng),
+        origin: Place(nameTh: here.source == 'gps' || here.source == 'manual' ? (state.currentLocation?.nameTh ?? 'ตำแหน่งตอนนี้') : here.nameTh, lat: here.lat, lng: here.lng),
         destination: home.asPlace,
         arriveBy: null,
         mode: TravelMode.car,
@@ -265,6 +334,16 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     final hints = <Widget>[
+      if (!_loading && state.currentLocation != null && state.currentLocation!.lowAccuracy)
+        Notice(
+          icon: Symbols.location_searching_rounded,
+          tone: NoticeTone.warning,
+          text: 'ตำแหน่งจาก Wi-Fi/IP อาจคลาดเคลื่อน (~${((state.currentLocation!.accuracyM ?? 1000) / 10).round() * 10} ม.)',
+          action: TextButton(
+            onPressed: _calibrateLocation,
+            child: const Text('ระบุจุดเอง'),
+          ),
+        ),
       if (!_loading && savedHome == null && work != null)
         Notice(
           icon: Symbols.home_rounded,
@@ -323,8 +402,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             title: store.demoProfile ? 'สวัสดีมิว' : 'สวัสดี',
                             subtitle: [
                               dayTimeTh(now).split(' ').take(3).join(' '),
-                              if (trip != null && trip.origin.nameTh.isNotEmpty) trip.origin.nameTh,
+                              if (trip != null && trip.origin.nameTh.isNotEmpty)
+                                trip.origin.nameTh
+                              else if (state.currentLocation?.ok == true)
+                                state.currentLocation!.nameTh ?? 'ตำแหน่งปัจจุบัน',
                             ].join(' · '),
+                            onSubtitleTap: _calibrateLocation,
                             badge: store.demoProfile ? const DemoBadge(onField: true) : null,
                             actions: [
                               if (state.usingSample) const SampleBadge(onField: true),
