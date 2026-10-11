@@ -1,6 +1,6 @@
 # Build from the repository root so the BMA flood spots and landmark list can be copied in:
 #   docker build -f api/Dockerfile -t fontokmai-api .
-FROM golang:1.24-alpine AS build
+FROM golang:1.26-alpine AS build
 WORKDIR /src
 COPY api/go.mod api/go.sum ./
 RUN go mod download
