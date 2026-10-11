@@ -53,9 +53,13 @@ type Server struct {
 
 func (s *Server) Handler() http.Handler {
 	mux := http.NewServeMux()
-	mux.HandleFunc("GET /healthz", func(w http.ResponseWriter, r *http.Request) {
+	healthHandler := func(w http.ResponseWriter, r *http.Request) {
 		writeJSON(w, http.StatusOK, map[string]bool{"ok": true})
-	})
+	}
+	mux.HandleFunc("GET /healthz", healthHandler)
+	mux.HandleFunc("GET /v1/healthz", healthHandler)
+	mux.HandleFunc("GET /health", healthHandler)
+	mux.HandleFunc("GET /v1/health", healthHandler)
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
 	mux.HandleFunc("GET /v1/places", s.withClock(s.places))
 	mux.HandleFunc("POST /v1/decide", s.withClock(s.decide))
