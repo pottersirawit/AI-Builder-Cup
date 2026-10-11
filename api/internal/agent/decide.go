@@ -202,7 +202,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 	}
 
 	if g.Available() {
-		out, err := runAgent(ctx, g, s, depart, mode, req.QuestionTH)
+		out, err := runAgent(ctx, g, s, depart, mode, req.QuestionTH, baseline)
 		if err == nil {
 			applyAgent(&resp, out, baseline, s)
 			resp.Reasoning = append(preface, resp.Reasoning...)
@@ -263,7 +263,24 @@ func toolDeclarations() []*genai.Tool {
 	return []*genai.Tool{{FunctionDeclarations: decls}}
 }
 
-func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Time, mode domain.Mode, question string) (agentOutput, error) {
+func formatRiskSummary(b decision.Result, depart time.Time, mode domain.Mode) string {
+	leaveByStr := "ไม่มี"
+	if b.LeaveBy != nil {
+		leaveByStr = b.LeaveBy.Format("15:04")
+	}
+	summary := fmt.Sprintf("ข้อมูลวิเคราะห์ความเสี่ยงเบื้องต้น (Deterministic Risk Summary):\n"+
+		"- ผลประเมินหลัก: verdict=%s, ออกก่อน=%s, ความเชื่อมั่น=%.2f\n"+
+		"- ความเสี่ยงวิธีเดินทางที่เลือก (%s): %s (ETA %d นาที)\n"+
+		"- จุดเสี่ยงน้ำท่วมบนเส้นทาง: %d จุด\n",
+		b.Verdict, leaveByStr, b.Confidence, mode, b.Evals[mode].Risk, b.Evals[mode].Minutes, len(b.FloodSpots))
+	for _, opt := range b.ModeOptions {
+		summary += fmt.Sprintf("  * %s: verdict=%s, risk=%s, eta=%d นาที (%s)\n",
+			opt.Mode, opt.Verdict, opt.Risk, opt.EtaMin, opt.NoteTH)
+	}
+	return summary
+}
+
+func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Time, mode domain.Mode, question string, baseline decision.Result) (agentOutput, error) {
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 	cfg := &genai.GenerateContentConfig{
@@ -271,8 +288,8 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 		Tools:             toolDeclarations(),
 		Temperature:       temperature(0.2),
 	}
-	user := fmt.Sprintf("ตอนนี้ %s ทริป %s (%s จาก %s ไป %s) ผู้ใช้อยากรู้ว่าถ้าออก %s ด้วย %s เป็นอย่างไร",
-		s.Now.Format(time.RFC3339), s.Trip.ID, s.Trip.TitleTH, s.Trip.Origin.NameTH, s.Trip.Destination.NameTH, depart.Format("15:04"), mode)
+	user := fmt.Sprintf("ตอนนี้ %s ทริป %s (%s จาก %s ไป %s) ผู้ใช้อยากรู้ว่าถ้าออก %s ด้วย %s เป็นอย่างไร\n\n%s",
+		s.Now.Format(time.RFC3339), s.Trip.ID, s.Trip.TitleTH, s.Trip.Origin.NameTH, s.Trip.Destination.NameTH, depart.Format("15:04"), mode, formatRiskSummary(baseline, depart, mode))
 	if question != "" {
 		user += fmt.Sprintf("\nคำถามของผู้ใช้: %q", question)
 	}
@@ -310,18 +327,16 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 }
 
 // applyAgent takes the agent's verdict and Thai text, guarded by the
-// deterministic engine: the agent may not send someone into high-risk water.
+// deterministic engine: the agent may not send someone into high-risk water,
+// and numerical leave_by is strictly preserved from the deterministic core.
 func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *planner.Session) {
 	resp.GeneratedBy = "gemini"
 	v := decision.Verdict(out.Verdict)
 	unsafe := v == decision.LeaveNow && baseline.Evals[resp.Mode].Risk == decision.RiskHigh
 	if v.Valid() && !unsafe && out.HeadlineTH != "" && out.SummaryTH != "" {
 		resp.Verdict, resp.HeadlineTH, resp.SummaryTH = v, out.HeadlineTH, out.SummaryTH
-		if out.LeaveBy == "" {
-			resp.LeaveBy = nil
-		} else if t, err := planner.ParseTime(out.LeaveBy, s.Now); err == nil {
-			resp.LeaveBy = &t
-		}
+		// Guardrail: leave_by comes strictly from the deterministic core, never hallucinated by LLM.
+		resp.LeaveBy = baseline.LeaveBy
 		if out.Confidence > 0 && out.Confidence <= 1 {
 			resp.Confidence = out.Confidence
 		}

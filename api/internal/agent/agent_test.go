@@ -167,7 +167,9 @@ func call(name string, args map[string]any) *genai.Part {
 }
 
 func TestDecideWithGeminiAgent(t *testing.T) {
-	final := `{"verdict":"leave_now","headline_th":"ออกก่อน 16:45 นะ","summary_th":"ฝนก้อนใหญ่ถึงพระราม 4 ราวห้าโมงครึ่ง ออกตอนนี้ถึงบ้าน 17:00","leave_by":"16:45","confidence":0.8,
+	// Notice agent returns leave_by 16:30, but baseline core calculated 16:45.
+	// The hardened decider must preserve 16:45 from baseline core.
+	final := `{"verdict":"leave_now","headline_th":"ออกก่อน 16:45 นะ","summary_th":"ฝนก้อนใหญ่ถึงพระราม 4 ราวห้าโมงครึ่ง ออกตอนนี้ถึงบ้าน 17:00","leave_by":"16:30","confidence":0.8,
 	  "reasoning":[{"tool":"get_rain_along_route","summary_th":"ฝนถึงพระราม 4 ราว 17:30"}]}`
 	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{
 		reply(call("get_trip", nil), call("get_rain_along_route", nil)),
@@ -179,7 +181,7 @@ func TestDecideWithGeminiAgent(t *testing.T) {
 		t.Fatal(err)
 	}
 	if resp.GeneratedBy != "gemini" || resp.HeadlineTH != "ออกก่อน 16:45 นะ" || resp.Confidence != 0.8 || resp.LeaveBy.Format("15:04") != "16:45" {
-		t.Fatalf("got %+v", resp)
+		t.Fatalf("got %+v, want LeaveBy 16:45 strictly preserved from core", resp)
 	}
 	if len(resp.Reasoning) != 3 || resp.Reasoning[1].Tool != "get_rain_along_route" || resp.Reasoning[1].SummaryTH != "ฝนถึงพระราม 4 ราว 17:30" {
 		t.Fatalf("reasoning = %+v", resp.Reasoning)
@@ -191,6 +193,12 @@ func TestDecideWithGeminiAgent(t *testing.T) {
 	last := fake.seen[1][len(fake.seen[1])-1]
 	if last.Parts[0].FunctionResponse == nil || last.Parts[0].FunctionResponse.ID != "get_trip-1" {
 		t.Fatalf("function response not sent back: %+v", last.Parts[0])
+	}
+
+	// Verify that the first prompt sent to Gemini includes the deterministic Risk Summary.
+	firstUserMsg := fake.seen[0][0].Parts[0].Text
+	if !strings.Contains(firstUserMsg, "Deterministic Risk Summary") || !strings.Contains(firstUserMsg, "verdict=leave_now") {
+		t.Fatalf("initial user prompt missing seeded risk summary: %s", firstUserMsg)
 	}
 }
 
@@ -219,6 +227,40 @@ func TestGeminiAgentGuardrailsAndFallback(t *testing.T) {
 				t.Fatalf("got %s %s %q", resp.GeneratedBy, resp.Verdict, resp.HeadlineTH)
 			}
 		})
+	}
+}
+
+func TestDecideEvaluationHarness(t *testing.T) {
+	// Evaluation harness across modes (car, transit, moto) asserting verdict coherence
+	modes := []domain.Mode{domain.ModeCar, domain.ModeTransit, domain.ModeMoto}
+	times := []struct {
+		hh, mm int
+	}{
+		{16, 10},
+		{17, 15},
+		{18, 00},
+	}
+
+	for _, tm := range times {
+		s := session(t, at(tm.hh, tm.mm))
+		for _, m := range modes {
+			req := Request{Mode: string(m)}
+			resp, err := Decide(context.Background(), nil, s, req, nil)
+			if err != nil {
+				t.Fatalf("harness failed for %v mode %s: %v", tm, m, err)
+			}
+			if !resp.Verdict.Valid() {
+				t.Fatalf("invalid verdict %s for %v mode %s", resp.Verdict, tm, m)
+			}
+			// When motorcycle meets high wind or high flood, verdict must not be LeaveNow
+			if m == domain.ModeMoto && resp.Verdict == decision.LeaveNow {
+				for _, opt := range resp.ModeOptions {
+					if opt.Mode == domain.ModeMoto && opt.Risk == decision.RiskHigh {
+						t.Fatalf("unsafe LeaveNow verdict allowed for high-risk motorcycle mode at %v", tm)
+					}
+				}
+			}
+		}
 	}
 }
 
