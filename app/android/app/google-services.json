@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "945826169258",
+    "project_id": "ai-cup-511208",
+    "storage_bucket": "ai-cup-511208.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:945826169258:android:df8dd77b4772f526676bd3",
+        "android_client_info": {
+          "package_name": "com.fontokmai.fontokmai"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "945826169258-2npe55rhvgjl26a8mgfod4s9js5bbgpo.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAcF-FkwYfntV5cj7VpMWMFiTHfksT5P3A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "945826169258-2npe55rhvgjl26a8mgfod4s9js5bbgpo.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
