@@ -98,6 +98,9 @@ func TestDecideFallbackHero(t *testing.T) {
 	if strings.Join(tools, ",") != strings.Join(fallbackTools, ",") {
 		t.Fatalf("reasoning tools = %v", tools)
 	}
+	if resp.Explanation.ReasonWhyTH == "" || len(resp.Explanation.FactorsTH) == 0 || resp.Explanation.RouteAdviceTH == "" {
+		t.Errorf("incomplete fallback explanation: %+v", resp.Explanation)
+	}
 }
 
 func TestDecideRequests(t *testing.T) {
@@ -227,6 +230,31 @@ func TestGeminiAgentGuardrailsAndFallback(t *testing.T) {
 				t.Fatalf("got %s %s %q", resp.GeneratedBy, resp.Verdict, resp.HeadlineTH)
 			}
 		})
+	}
+}
+
+func TestGeminiAgentExplanation(t *testing.T) {
+	geminiReply := `{"verdict":"switch_mode","headline_th":"เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า","summary_th":"รัชดาน้ำท่วม","confidence":0.85,
+"explanation":{"reason_why_th":"น้ำท่วมสูง 25 ซม. เกินระยะพ้นน้ำ","factors_th":["น้ำท่วม 25 ซม."],"route_advice_th":"เลี่ยงถนนรัชดาภิเษก","avoid_spots_th":["แยกรัชดา-ลาดพร้าว"]}}`
+	gen := &scriptedGemini{replies: []*genai.GenerateContentResponse{
+		reply(call("get_flood_spots_on_route", nil)),
+		reply(&genai.Part{Text: geminiReply}),
+	}}
+	resp, err := Decide(context.Background(), &Gemini{Gen: gen, Model: "test"}, session(t, at(16, 10)), Request{DepartAt: "18:00", Mode: "car"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.GeneratedBy != "gemini" {
+		t.Fatalf("expected generated_by gemini, got %s", resp.GeneratedBy)
+	}
+	if resp.Explanation.ReasonWhyTH != "น้ำท่วมสูง 25 ซม. เกินระยะพ้นน้ำ" {
+		t.Errorf("unexpected ReasonWhyTH: %q", resp.Explanation.ReasonWhyTH)
+	}
+	if resp.Explanation.RouteAdviceTH != "เลี่ยงถนนรัชดาภิเษก" {
+		t.Errorf("unexpected RouteAdviceTH: %q", resp.Explanation.RouteAdviceTH)
+	}
+	if len(resp.Explanation.AvoidSpotsTH) != 1 || resp.Explanation.AvoidSpotsTH[0] != "แยกรัชดา-ลาดพร้าว" {
+		t.Errorf("unexpected AvoidSpotsTH: %v", resp.Explanation.AvoidSpotsTH)
 	}
 }
 

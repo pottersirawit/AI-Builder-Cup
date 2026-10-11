@@ -38,6 +38,34 @@ void main() {
     expect(d.generatedBy, 'gemini');
   });
 
+  test('decision parses explanation with factors and route advice', () {
+    final json = {
+      'verdict': 'switch_mode',
+      'headline_th': 'เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า',
+      'summary_th': 'น้ำท่วม 25 ซม.',
+      'confidence': 0.85,
+      'rain_timeline': <Map<String, dynamic>>[],
+      'mode_options': <Map<String, dynamic>>[],
+      'flood_spots': <Map<String, dynamic>>[],
+      'reasoning': <Map<String, dynamic>>[],
+      'sources': ['BMA'],
+      'generated_by': 'gemini',
+      'explanation': {
+        'reason_why_th': 'แยกรัชดาน้ำท่วม 25 ซม. เกินระยะพ้นน้ำรถเก๋ง',
+        'factors_th': ['ระดับน้ำท่วม 25 ซม.', 'ฝนตกหนัก 35 มม./ชม.'],
+        'route_advice_th': 'เลี่ยงถนนรัชดาภิเษก ใช้ทางด่วนหรือรถไฟฟ้าแทน',
+        'avoid_spots_th': ['แยกรัชดาภิเษก-ลาดพร้าว'],
+      },
+    };
+    final d = Decision.fromJson(json);
+    expect(d.explanation, isNotNull);
+    expect(d.explanation!.reasonWhyTh, contains('เกินระยะพ้นน้ำ'));
+    expect(d.explanation!.factorsTh, hasLength(2));
+    expect(d.explanation!.routeAdviceTh, contains('เลี่ยงถนนรัชดาภิเษก'));
+    expect(d.explanation!.avoidSpotsTh, ['แยกรัชดาภิเษก-ลาดพร้าว']);
+    expect(d.explanation!.isEmpty, isFalse);
+  });
+
   test('every decision fixture parses with a known verdict', () {
     final verdicts = {
       'decide_car': Verdict.leaveNow,

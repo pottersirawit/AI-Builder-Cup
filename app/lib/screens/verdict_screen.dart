@@ -170,6 +170,109 @@ class _VerdictScreenState extends State<VerdictScreen> {
                 ),
               ),
             ),
+            if (d.explanation != null && !d.explanation!.isEmpty)
+              SliverToBoxAdapter(
+                child: Section(
+                  title: 'ทำไมถึงแนะนำวิธีนี้',
+                  source: 'วิเคราะห์สภาพอากาศ · ความสูงใต้ท้องรถ · ข้อมูลระบายน้ำ กทม.',
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      if (d.explanation!.reasonWhyTh.isNotEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(Space.x4),
+                          decoration: BoxDecoration(
+                            color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                            borderRadius: BorderRadius.circular(Radii.md),
+                            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(Symbols.auto_awesome_rounded, size: 20, color: scheme.primary),
+                              const SizedBox(width: Space.x3),
+                              Expanded(
+                                child: Text(
+                                  d.explanation!.reasonWhyTh,
+                                  style: t.bodyMedium?.copyWith(height: 1.5, fontWeight: FontWeight.w500),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: Space.x4),
+                      ],
+                      if (d.explanation!.factorsTh.isNotEmpty) ...[
+                        Text('ปัจจัยที่นำมาพิจารณา', style: t.titleSmall),
+                        const SizedBox(height: Space.x2),
+                        for (final factor in d.explanation!.factorsTh)
+                          Padding(
+                            padding: const EdgeInsets.symmetric(vertical: 3),
+                            child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Padding(
+                                  padding: const EdgeInsets.only(top: 4),
+                                  child: Icon(Symbols.check_circle_outline_rounded, size: 16, color: scheme.primary),
+                                ),
+                                const SizedBox(width: Space.x2),
+                                Expanded(child: Text(factor, style: t.bodySmall?.copyWith(height: 1.4))),
+                              ],
+                            ),
+                          ),
+                        const SizedBox(height: Space.x4),
+                      ],
+                      if (d.explanation!.routeAdviceTh.isNotEmpty) ...[
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.all(Space.x4),
+                          decoration: BoxDecoration(
+                            color: scheme.secondaryContainer.withValues(alpha: 0.3),
+                            borderRadius: BorderRadius.circular(Radii.md),
+                            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
+                          ),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Icon(Symbols.alt_route_rounded, size: 20, color: scheme.onSecondaryContainer),
+                                  const SizedBox(width: Space.x2),
+                                  Text(
+                                    'คำแนะนำเลี่ยงน้ำท่วม',
+                                    style: t.titleSmall?.copyWith(color: scheme.onSecondaryContainer),
+                                  ),
+                                ],
+                              ),
+                              const SizedBox(height: Space.x2),
+                              Text(d.explanation!.routeAdviceTh, style: t.bodySmall?.copyWith(height: 1.45)),
+                              if (d.explanation!.avoidSpotsTh.isNotEmpty) ...[
+                                const SizedBox(height: Space.x3),
+                                Wrap(
+                                  spacing: Space.x2,
+                                  runSpacing: Space.x2,
+                                  children: [
+                                    for (final spot in d.explanation!.avoidSpotsTh)
+                                      Chip(
+                                        avatar: Icon(Symbols.warning_amber_rounded, size: 14, color: c.riskHigh),
+                                        label: Text('เลี่ยง: $spot'),
+                                        labelStyle: t.labelSmall?.copyWith(color: c.riskHigh),
+                                        backgroundColor: c.riskHighContainer,
+                                        visualDensity: VisualDensity.compact,
+                                        padding: EdgeInsets.zero,
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
             SliverToBoxAdapter(
               child: Section(
                 title: 'จุดน้ำท่วมบนเส้นทาง',
@@ -219,7 +322,12 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       children: [
                         for (final s in d.sources)
                           Chip(
-                            avatar: const Icon(Symbols.database_rounded, size: 16),
+                            avatar: Icon(
+                              s.contains('GPS') || s.contains('ตำแหน่ง')
+                                  ? Symbols.my_location_rounded
+                                  : Symbols.database_rounded,
+                              size: 16,
+                            ),
                             label: Text(s),
                             visualDensity: VisualDensity.compact,
                           ),

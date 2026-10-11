@@ -123,6 +123,9 @@ type Response struct {
 	// Trip is the trip actually decided: the requested one, or the one the
 	// question pointed at ("ไปสยามตอนหกโมง" -> adhoc-siam).
 	Trip domain.Trip `json:"trip"`
+	// Explanation details why the mode/time was chosen, factors evaluated,
+	// and flood-avoidance route optimization advice.
+	Explanation decision.Explanation `json:"explanation"`
 }
 
 var ErrBadRequest = errors.New("bad request")
@@ -196,6 +199,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		LeaveBy: baseline.LeaveBy, Confidence: baseline.Confidence,
 		RainTimeline: baseline.RainTimeline, ModeOptions: baseline.ModeOptions, FloodSpots: baseline.FloodSpots,
 		Sources: sources, GeneratedBy: "fallback", DepartAt: depart, Mode: mode, Trip: s.Trip,
+		Explanation: baseline.Explanation,
 	}
 	if resp.FloodSpots == nil {
 		resp.FloodSpots = []decision.FloodSpot{}
@@ -221,26 +225,33 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 }
 
 type agentOutput struct {
-	Verdict    string  `json:"verdict"`
-	HeadlineTH string  `json:"headline_th"`
-	SummaryTH  string  `json:"summary_th"`
-	LeaveBy    string  `json:"leave_by"`
-	Confidence float64 `json:"confidence"`
-	Reasoning  []struct {
+	Verdict     string                `json:"verdict"`
+	HeadlineTH  string                `json:"headline_th"`
+	SummaryTH   string                `json:"summary_th"`
+	LeaveBy     string                `json:"leave_by"`
+	Confidence  float64               `json:"confidence"`
+	Explanation *decision.Explanation `json:"explanation"`
+	Reasoning   []struct {
 		Tool      string `json:"tool"`
 		SummaryTH string `json:"summary_th"`
 	} `json:"reasoning"`
 }
 
 const systemPrompt = `คุณคือ "ฝนตกไหม" ผู้ช่วยตัดสินใจเดินทางในกรุงเทพฯ ช่วงฝนตกและน้ำท่วม
-หน้าที่: ตอบคำถามเดียวว่า "ควรออกเดินทางตอนไหน ด้วยอะไร" สำหรับทริปนี้ ด้วยภาษาไทยที่สั้น ชัด เหมือนเพื่อนบอก
+หน้าที่: ตอบคำถามเดียวว่า "ควรออกเดินทางตอนไหน ด้วยอะไร" สำหรับทริปนี้ พร้อมอธิบายเหตุผล ปัจจัยที่พิจารณา และคำแนะนำปรับเส้นทางเลี่ยงน้ำท่วม ด้วยภาษาไทยที่สั้น ชัด เหมือนเพื่อนบอก
 กติกา:
 1. ต้องเรียกเครื่องมือเพื่อดูข้อมูลจริงก่อนตัดสินใจ อย่างน้อย get_trip, get_rain_along_route, get_flood_spots_on_route และ evaluate_departure ของวิธีเดินทางที่ผู้ใช้เลือก ใช้ get_route, get_community_reports, get_canal_levels เมื่อช่วยให้คำตอบดีขึ้น
 2. ห้ามขัดกับผลของ evaluate_departure: ถ้าความเสี่ยงสูง ห้ามบอกให้ออกด้วยวิธีนั้น ความสูงใต้ท้องรถ: รถเก๋งเสี่ยงที่น้ำ 15 ซม. มอเตอร์ไซค์ 10 ซม. หรือฝนหนัก รถไฟฟ้าไม่กระทบน้ำบนถนน
 3. verdict เลือกหนึ่งใน leave_now, wait, switch_mode, dont_go
 4. ระบุเวลาเป็นตัวเลข HH:MM บอกเหตุผลจากข้อมูล ไม่ใช่ข้อความสำเร็จรูป
+5. ใน explanation:
+   - reason_why_th: อธิบายเหตุผลชัดเจนว่าทำไมถึงแนะนำวิธีนี้และเวลานี้ (เช่น แนะนำออกก่อน 16:45 หรือเปลี่ยนเป็น BTS เพราะน้ำบนถนนรัชดาฯ สูง 25 ซม. เกินระยะพ้นน้ำรถเก๋ง)
+   - factors_th: ระบุรายการปัจจัยที่นำมาพิจารณาเป็นข้อๆ (ปริมาณ/เวลาฝนตก, ความสูงน้ำท่วมขังเทียบกับความสูงใต้ท้องรถ, ความเร็วลม, กำหนดเวลานัดหมาย, รายงานน้ำท่วมจริง)
+   - route_advice_th: ให้คำแนะนำเส้นทางเพื่อเลี่ยงน้ำท่วม (เช่น แนะนำเลี่ยงถนนที่มีน้ำท่วมขัง โดยใช้ทางด่วนยกระดับ หรือจอดรถแล้วต่อรถไฟฟ้า)
+   - avoid_spots_th: ระบุรายชื่อจุดเสี่ยงหรือถนนที่ควรเลี่ยง (เช่น ["แยกรัชดาภิเษก-ลาดพร้าว"]) หากไม่มีให้เป็น array ว่าง
 เมื่อพร้อมตอบ ให้ตอบเป็น JSON อย่างเดียว ไม่มีข้อความอื่น:
 {"verdict":"...","headline_th":"ไม่เกิน 30 ตัวอักษร เช่น ออกก่อน 16:45","summary_th":"1-2 ประโยค","leave_by":"HH:MM หรือว่าง","confidence":0.0-1.0,
+ "explanation":{"reason_why_th":"...","factors_th":["..."],"route_advice_th":"...","avoid_spots_th":["..."]},
  "reasoning":[{"tool":"ชื่อเครื่องมือที่เรียก","summary_th":"สิ่งที่ได้จากเครื่องมือนั้นใน 1 ประโยค"}]}`
 
 func toolDeclarations() []*genai.Tool {
@@ -339,6 +350,20 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 		resp.LeaveBy = baseline.LeaveBy
 		if out.Confidence > 0 && out.Confidence <= 1 {
 			resp.Confidence = out.Confidence
+		}
+	}
+	if out.Explanation != nil {
+		if out.Explanation.ReasonWhyTH != "" {
+			resp.Explanation.ReasonWhyTH = out.Explanation.ReasonWhyTH
+		}
+		if len(out.Explanation.FactorsTH) > 0 {
+			resp.Explanation.FactorsTH = out.Explanation.FactorsTH
+		}
+		if out.Explanation.RouteAdviceTH != "" {
+			resp.Explanation.RouteAdviceTH = out.Explanation.RouteAdviceTH
+		}
+		if len(out.Explanation.AvoidSpotsTH) > 0 {
+			resp.Explanation.AvoidSpotsTH = out.Explanation.AvoidSpotsTH
 		}
 	}
 	explained := map[string][]string{}

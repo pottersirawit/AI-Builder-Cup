@@ -8,6 +8,8 @@ double _num(Object? v) => (v as num?)?.toDouble() ?? 0;
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
 String _str(Object? v) => v as String? ?? '';
 List<Json> _list(Object? v) => (v as List? ?? const []).cast<Json>();
+List<String> _strList(Object? v) =>
+    (v as List? ?? const []).map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
 
 /// Travel mode as named on the wire.
 enum TravelMode {
@@ -184,6 +186,30 @@ class ReasoningStep {
   final String summaryTh;
 }
 
+class DecisionExplanation {
+  const DecisionExplanation({
+    required this.reasonWhyTh,
+    required this.factorsTh,
+    required this.routeAdviceTh,
+    required this.avoidSpotsTh,
+  });
+
+  factory DecisionExplanation.fromJson(Json j) => DecisionExplanation(
+        reasonWhyTh: _str(j['reason_why_th']),
+        factorsTh: _strList(j['factors_th']),
+        routeAdviceTh: _str(j['route_advice_th']),
+        avoidSpotsTh: _strList(j['avoid_spots_th']),
+      );
+
+  final String reasonWhyTh;
+  final List<String> factorsTh;
+  final String routeAdviceTh;
+  final List<String> avoidSpotsTh;
+
+  bool get isEmpty =>
+      reasonWhyTh.isEmpty && factorsTh.isEmpty && routeAdviceTh.isEmpty && avoidSpotsTh.isEmpty;
+}
+
 class Decision {
   const Decision({
     required this.verdict,
@@ -199,23 +225,38 @@ class Decision {
     required this.generatedBy,
     this.trip,
     this.needsPlace,
+    this.explanation,
   });
 
-  factory Decision.fromJson(Json j) => Decision(
-        verdict: Verdict.parse(j['verdict']),
-        headlineTh: _str(j['headline_th']),
-        summaryTh: _str(j['summary_th']),
-        leaveBy: DateTime.tryParse(_str(j['leave_by'])),
-        confidence: _num(j['confidence']),
-        rainTimeline: _list(j['rain_timeline']).map(RainPoint.fromJson).toList(),
-        modeOptions: _list(j['mode_options']).map(ModeOption.fromJson).toList(),
-        floodSpots: _list(j['flood_spots']).map(FloodSpot.fromJson).toList(),
-        reasoning: _list(j['reasoning']).map(ReasoningStep.fromJson).toList(),
-        sources: (j['sources'] as List? ?? const []).cast<String>(),
-        generatedBy: _str(j['generated_by']),
-        trip: j['trip'] == null ? null : Trip.fromJson(j['trip'] as Json),
-        needsPlace: j['needs_place'] == null ? null : NeedsPlace.fromJson(j['needs_place'] as Json),
-      );
+  factory Decision.fromJson(Json j) {
+    final rawSources = (j['sources'] as List? ?? const []).cast<String>();
+    final trip = j['trip'] == null ? null : Trip.fromJson(j['trip'] as Json);
+    final hasGpsOrigin = trip?.origin.nameTh.contains('ตำแหน่ง') == true ||
+        (trip != null && trip.source == 'app');
+    final sources = [
+      if (hasGpsOrigin && !rawSources.any((s) => s.contains('GPS') || s.contains('ตำแหน่ง')))
+        'GPS ตำแหน่งปัจจุบัน',
+      ...rawSources,
+    ];
+    return Decision(
+      verdict: Verdict.parse(j['verdict']),
+      headlineTh: _str(j['headline_th']),
+      summaryTh: _str(j['summary_th']),
+      leaveBy: DateTime.tryParse(_str(j['leave_by'])),
+      confidence: _num(j['confidence']),
+      rainTimeline: _list(j['rain_timeline']).map(RainPoint.fromJson).toList(),
+      modeOptions: _list(j['mode_options']).map(ModeOption.fromJson).toList(),
+      floodSpots: _list(j['flood_spots']).map(FloodSpot.fromJson).toList(),
+      reasoning: _list(j['reasoning']).map(ReasoningStep.fromJson).toList(),
+      sources: sources,
+      generatedBy: _str(j['generated_by']),
+      trip: trip,
+      needsPlace: j['needs_place'] == null ? null : NeedsPlace.fromJson(j['needs_place'] as Json),
+      explanation: j['explanation'] == null
+          ? null
+          : DecisionExplanation.fromJson(j['explanation'] as Json),
+    );
+  }
 
   /// The server could not tell where the question goes; it asks instead of
   /// answering, and every verdict field is empty.
@@ -232,6 +273,7 @@ class Decision {
         sources: const [],
         generatedBy: '',
         needsPlace: n,
+        explanation: null,
       );
 
   final Verdict verdict;
@@ -255,6 +297,9 @@ class Decision {
 
   /// Set instead of a verdict when the question names no resolvable place.
   final NeedsPlace? needsPlace;
+
+  /// Transparent explanation on why chosen, factors, and flood-avoidance route advice.
+  final DecisionExplanation? explanation;
 }
 
 /// Body of POST /v1/decide. The main input is [tripId], an ad-hoc

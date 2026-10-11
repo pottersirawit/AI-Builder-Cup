@@ -109,6 +109,15 @@ type FloodSpot struct {
 	Risk            Risk    `json:"risk"`
 }
 
+// Explanation details why a mode and departure time were chosen, lists concrete
+// factors evaluated, and provides flood-avoidance route optimization advice.
+type Explanation struct {
+	ReasonWhyTH   string   `json:"reason_why_th"`
+	FactorsTH     []string `json:"factors_th"`
+	RouteAdviceTH string   `json:"route_advice_th"`
+	AvoidSpotsTH  []string `json:"avoid_spots_th"`
+}
+
 // Result is the deterministic answer. Narrative fields may later be rewritten
 // by the Gemini agent; numbers stay.
 type Result struct {
@@ -123,6 +132,7 @@ type Result struct {
 	FloodSpots   []FloodSpot
 	Evals        map[domain.Mode]Eval
 	RainOnset    *time.Time
+	Explanation  Explanation
 }
 
 // Decide answers "should I leave at DepartAt with Mode?".
@@ -144,7 +154,7 @@ func Decide(in Input) Result {
 	res.RainTimeline = timeline(in)
 	res.FloodSpots = floodSpots(in, res.Evals)
 	res.Confidence = confidence(in, res.Evals[in.Mode])
-	res.HeadlineTH, res.SummaryTH = narrate(in, res)
+	res.HeadlineTH, res.SummaryTH, res.Explanation = narrate(in, res)
 	return res
 }
 

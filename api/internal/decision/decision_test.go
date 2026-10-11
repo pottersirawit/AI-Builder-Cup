@@ -247,3 +247,33 @@ func TestMotoHighRiskOnWindGust(t *testing.T) {
 		t.Errorf("expected SwitchMode away from dangerous motorcycle wind, got %v", res.Verdict)
 	}
 }
+
+func TestDecideExplanation(t *testing.T) {
+	// 1. LeaveNow hero scenario
+	res := Decide(heroInput(t, at(16, 10), at(16, 10), domain.ModeCar))
+	if res.Explanation.ReasonWhyTH == "" {
+		t.Errorf("expected non-empty ReasonWhyTH, got empty")
+	}
+	if len(res.Explanation.FactorsTH) == 0 {
+		t.Errorf("expected factors listed in FactorsTH, got 0")
+	}
+	if res.Explanation.RouteAdviceTH == "" {
+		t.Errorf("expected non-empty RouteAdviceTH, got empty")
+	}
+
+	// 2. High flood depth scenario on Ratchada: should advise switching mode and avoiding Ratchada
+	ratchadaReport := domain.Report{
+		ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng,
+		CreatedAt: at(18, 52), DepthCMMax: 25,
+	}
+	resFlooded := Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, ratchadaReport))
+	if !strings.Contains(resFlooded.Explanation.ReasonWhyTH, "รถไฟฟ้า") && !strings.Contains(resFlooded.Explanation.ReasonWhyTH, "น้ำท่วม") {
+		t.Errorf("ReasonWhyTH should mention transit or flood, got %q", resFlooded.Explanation.ReasonWhyTH)
+	}
+	if len(resFlooded.Explanation.AvoidSpotsTH) == 0 {
+		t.Errorf("expected at least 1 avoid spot, got %v", resFlooded.Explanation.AvoidSpotsTH)
+	}
+	if !strings.Contains(resFlooded.Explanation.RouteAdviceTH, "รัชดา") {
+		t.Errorf("RouteAdviceTH should mention avoiding Ratchada, got %q", resFlooded.Explanation.RouteAdviceTH)
+	}
+}

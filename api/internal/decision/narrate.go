@@ -10,7 +10,7 @@ import (
 
 // narrate writes the plain-Thai headline and summary used when Gemini is not
 // available. Gemini rewrites these from the same numbers when it is.
-func narrate(in Input, res Result) (headline, summary string) {
+func narrate(in Input, res Result) (headline, summary string, exp Explanation) {
 	e := res.Evals[in.Mode]
 	leavingNow := e.Depart.Sub(in.Now) < 10*time.Minute
 	when := "ถ้าออก " + hhmm(e.Depart)
@@ -57,7 +57,121 @@ func narrate(in Input, res Result) (headline, summary string) {
 		parts = append(parts, fmt.Sprintf("%s จะเจอ%s", when, hazardTH(e)))
 		parts = append(parts, "ทุกทางเลือกยังเสี่ยงในอีก 3 ชั่วโมง อยู่ในที่ปลอดภัยแล้วรอติดตามอัปเดต")
 	}
-	return headline, strings.Join(nonEmpty(parts), " ")
+	exp = buildExplanation(in, res)
+	return headline, strings.Join(nonEmpty(parts), " "), exp
+}
+
+func clearanceText(m domain.Mode) string {
+	switch m {
+	case domain.ModeCar:
+		return "รถเก๋ง 15 ซม."
+	case domain.ModeMoto:
+		return "มอเตอร์ไซค์ 10 ซม."
+	default:
+		return "ระบบราง/ทางยกระดับ"
+	}
+}
+
+func buildExplanation(in Input, res Result) Explanation {
+	e := res.Evals[in.Mode]
+	tr := res.Evals[domain.ModeTransit]
+	var exp Explanation
+
+	// 1. Reason why
+	switch res.Verdict {
+	case LeaveNow:
+		switch {
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s เพื่อให้ถึงปลายทางก่อนกลุ่มฝนตกหนักสะสมจนเกิดน้ำท่วมขังบนเส้นทาง", hhmm(*res.LeaveBy), in.Mode.NameTH())
+		case e.Late():
+			exp.ReasonWhyTH = fmt.Sprintf("เส้นทางพอไปได้ด้วย%s แต่จะถึงปลายทางเลยเวลานัดหมาย %s ไป %d นาที", in.Mode.NameTH(), hhmm(in.ArriveBy), e.LateMinutes)
+		default:
+			exp.ReasonWhyTH = fmt.Sprintf("สภาพเส้นทางปัจจุบันปลอดภัย ฝนไม่หนักและไม่มีน้ำท่วมขังขวางทาง สามารถออกเดินทางด้วย%s ได้ทันที", in.Mode.NameTH())
+		}
+	case SwitchMode:
+		if e.MaxDepthCM >= 1 {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากเส้นทางมีน้ำท่วมขังที่%s สูงราว %.0f ซม. ซึ่งเกินระยะปลอดภัย (%s) ขณะที่รถไฟฟ้าวิ่งบนทางยกระดับ/ใต้ดิน ไม่ได้รับผลกระทบจากน้ำท่วมผิวถนน",
+				in.Mode.NameTH(), e.DeepestTH, e.MaxDepthCM, clearanceText(in.Mode))
+		} else if e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนรถจักรยานยนต์ เนื่องจากตรวจพบลมกระโชกแรง %.0f กม./ชม. บนเส้นทาง เสี่ยงต่อการเสียหลัก", e.WindGustKMH)
+		} else {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าเนื่องจากเส้นทางทางบกมีความเสี่ยงสูงจากสภาพอากาศ รถไฟฟ้าใช้เวลาราว %d นาทีและปลอดภัยกว่า", tr.Minutes)
+		}
+	case Wait:
+		if res.WaitUntil != nil {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้รอจนถึง %s เพื่อให้น้ำท่วมขังที่%s ระบายลงคลองและฝนซาลงก่อนออกเดินทางด้วย%s", hhmm(*res.WaitUntil), e.DeepestTH, in.Mode.NameTH())
+		} else {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ชะลอการเดินทางด้วย%s ไว้ก่อน เพื่อรอให้ระดับน้ำท่วมขังบนเส้นทางระบาย", in.Mode.NameTH())
+		}
+	case DontGo:
+		exp.ReasonWhyTH = "ยังไม่ควรออกเดินทางในขณะนี้ เนื่องจากสภาพอากาศและน้ำท่วมมีความเสี่ยงสูงในทุกเส้นทางและทุกวิธีเดินทาง ควรรอในอาคารที่ปลอดภัย"
+	}
+
+	// 2. Factors considered
+	// Rain factor
+	if res.RainOnset != nil {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("กลุ่มฝน: เริ่มตกบนเส้นทางราว %s (ความแรงสูงสุด %.0f มม./ชม.)", hhmm(*res.RainOnset), e.MaxRainMM))
+	} else if e.MaxRainMM >= rainLight {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("ปริมาณฝน: มีฝนตกระหว่างทางสูงสุด %.0f มม./ชม.", e.MaxRainMM))
+	} else {
+		exp.FactorsTH = append(exp.FactorsTH, "ปริมาณฝน: ยังไม่มีกลุ่มฝนตกสะสมบนเส้นทาง")
+	}
+
+	// Water depth & vehicle clearance factor
+	if e.MaxDepthCM >= 1 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("ระดับน้ำท่วมขัง: สูงสุดราว %.0f ซม. ที่%s (ระยะพ้นน้ำปลอดภัย: %s)", e.MaxDepthCM, e.DeepestTH, clearanceText(in.Mode)))
+	} else {
+		exp.FactorsTH = append(exp.FactorsTH, "ระดับน้ำท่วมขัง: ไม่พบจุดน้ำท่วมขังสะสมบนเส้นทาง")
+	}
+
+	// Wind factor (if relevant)
+	if e.WindGustKMH >= 30 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("แรงลม: ลมกระโชกสูงสุด %.0f กม./ชม. (เกณฑ์เฝ้าระวังมอเตอร์ไซค์ 45 กม./ชม.)", e.WindGustKMH))
+	}
+
+	// Deadline / Travel time factor
+	if !in.ArriveBy.IsZero() {
+		if e.Late() {
+			exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("เวลานัดหมาย: %s (คาดว่าจะถึง %s ล่าช้า %d นาที)", hhmm(in.ArriveBy), hhmm(e.Arrive), e.LateMinutes))
+		} else {
+			exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("เวลานัดหมาย: %s (คาดว่าจะถึง %s ทันเวลานัด)", hhmm(in.ArriveBy), hhmm(e.Arrive)))
+		}
+	} else {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("เวลาเดินทาง: ประมาณ %d นาที ถึงปลายทางราว %s", e.Minutes, hhmm(e.Arrive)))
+	}
+
+	// Community reports factor
+	if len(in.Reports) > 0 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("รายงานชุมชน: มีการแจ้งเตือนน้ำท่วมจริงในพื้นที่ %d จุด", len(in.Reports)))
+	}
+
+	// 3. Avoid spots
+	for _, s := range res.FloodSpots {
+		if s.ExpectedDepthCM > 0 || s.Risk == RiskHigh || s.Risk == RiskMedium {
+			exp.AvoidSpotsTH = append(exp.AvoidSpotsTH, s.NameTH)
+		}
+	}
+	if len(exp.AvoidSpotsTH) == 0 && e.MaxDepthCM >= 1 && e.DeepestTH != "" {
+		exp.AvoidSpotsTH = append(exp.AvoidSpotsTH, e.DeepestTH)
+	}
+
+	// 4. Route optimization advice
+	if len(exp.AvoidSpotsTH) > 0 {
+		spotsStr := strings.Join(exp.AvoidSpotsTH, ", ")
+		if res.Verdict == SwitchMode {
+			exp.RouteAdviceTH = fmt.Sprintf("แนะนำหลีกเลี่ยงเส้นทางผ่าน %s โดยเปลี่ยนไปใช้รถไฟฟ้า (BTS/MRT) หรือหากจำเป็นต้องขับรถ ควรขึ้นทางด่วนยกระดับเพื่อเลี่ยงจุดน้ำท่วมขัง", spotsStr)
+		} else {
+			exp.RouteAdviceTH = fmt.Sprintf("เฝ้าระวังจุดเสี่ยงน้ำท่วมบริเวณ %s หากมีฝนตกหนักแนะนำปรับเส้นทางเลี่ยงไปใช้ทางด่วนยกระดับหรือถนนสายหลักข้างเคียง", spotsStr)
+		}
+	} else {
+		if in.Mode == domain.ModeTransit {
+			exp.RouteAdviceTH = "เส้นทางรถไฟฟ้าไม่ได้รับผลกระทบจากจุดเสี่ยงน้ำท่วมบนถนน สามารถเดินทางตามปกติ (พกร่มช่วงเดินเข้า-ออกสถานี)"
+		} else {
+			exp.RouteAdviceTH = "เส้นทางปัจจุบันไม่ผ่านจุดเสี่ยงน้ำท่วมวิกฤตของ กทม. สามารถใช้เส้นทางหลักได้ตามปกติ"
+		}
+	}
+
+	return exp
 }
 
 func rainOnsetTH(in Input, t time.Time) string {
