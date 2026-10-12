@@ -36,6 +36,30 @@ curl 'localhost:8080/v1/places/reverse?lat=13.7441&lng=100.5431'
 
 `X-Demo-Clock` รับ RFC 3339 หรือ `HH:MM` สั้น ๆ (ตีความเป็นวันที่ 29 ก.ย. 2026)
 
+## Scorecard ของ agent (`cmd/scorecard`)
+
+ให้ agent ตัดสิน 19 เคสของพายุ 29 ก.ย. (เวลา demo 16:10, 17:15, 18:00, 18:55, 19:30 × รถยนต์/รถไฟฟ้า/มอเตอร์ไซค์ + คำถามภาษาไทย 4 ข้อ) แล้วตรวจทุกคำตอบเทียบกับแกน deterministic:
+
+| check | ตรวจอะไร |
+|---|---|
+| `valid_verdict` | verdict เป็นหนึ่งในสี่ค่า |
+| `safe_for_mode` | ไม่บอก `leave_now` ในโหมดที่แกนประเมินว่าเสี่ยงสูง |
+| `matches_demo_script` | ตรงกับ verdict ที่วิดีโอ demo ใช้ (16:10 รถยนต์, 17:15 มอไซค์, 18:55 รถยนต์) |
+| `agrees_with_core` | verdict เดียวกับแกนคำนวณ |
+| `required_tools` | เรียก `get_trip`, `get_rain_along_route`, `get_flood_spots_on_route`, `evaluate_departure` ครบ |
+| `grounded_times` | ทุกเวลา HH:MM ใน headline/summary/explanation มาจากข้อมูลของ tools (กันเวลาที่ Gemini แต่งขึ้น) |
+| `headline_length` | headline ไม่เกิน 30 ตัวอักษร |
+| `explanation_complete` | มี `reason_why_th` และ `factors_th` |
+
+```bash
+go run ./cmd/scorecard                     # ไม่มี key: ตรวจ fallback แบบ offline (ควรผ่าน 19/19)
+go run ./cmd/scorecard -strict             # exit 1 ถ้ามีเคสไม่ผ่าน (ใช้ใน CI ได้)
+GEMINI_API_KEY=... go run ./cmd/scorecard -judge -json score.json   # agent จริง + Gemini ให้คะแนนภาษาไทย 1-5 (เรียก API ราว 4-6 ครั้งต่อเคส มีค่าใช้จ่าย)
+go run ./cmd/scorecard -case 16:10         # เฉพาะเคสที่ชื่อมีคำนี้
+```
+
+ผลออกเป็นตาราง Markdown (เอาไปใส่ proposal/วิดีโอได้) ส่วน `-json` เก็บรายละเอียดทุกเคสพร้อม latency และคะแนน judge; judge เป็นข้อมูลประกอบ ไม่ทำให้เคสตก
+
 ## Environment variables
 
 | ตัวแปร | ค่าเริ่มต้น | ใช้ทำอะไร |
@@ -93,6 +117,7 @@ PROJECT=$PROJECT REPORT_STORE=firestore api/deploy/cloudrun.sh  # เก็บ�
 | `internal/decision` | **แกนตัดสินใจแบบ deterministic** ฝนบนเส้นทาง × เกณฑ์ฝนของจุดน้ำท่วม (โมเดลความลึกพอร์ตจาก `flood_matcher.py` + ระบายน้ำ 2 ชม.) × ความสูงใต้ท้องรถ (เก๋ง 15 ซม., มอไซค์ 10 ซม./ฝน ≥10 มม./ชม., รถไฟฟ้าไม่กระทบ) → verdict ต่อโหมด, `leave_by`, confidence, ข้อความไทย fallback |
 | `internal/planner` | รวบรวมข้อมูลจาก provider ต่อหนึ่งคำขอ, เปิด session จากคำขอ (`Open`: พิกัดจากแอป → ทริป `app-<hash>`, `trip_id`, หรือทริปแรก), วางทริปไปสถานที่ที่บันทึกไว้ของเดโมหรือของผู้ใช้ (`TripTo`, `PlanTo`) และเป็นกล่องเครื่องมือของ agent: `get_trip`, `get_route`, `get_rain_along_route`, `get_flood_spots_on_route`, `get_canal_levels`, `get_community_reports`, `evaluate_departure` |
 | `internal/agent` | Gemini function-calling agent (ตัดสิน + เขียนเหตุผลภาษาไทย), ตัวแยกคำถามภาษาไทย (Gemini structured output / regex fallback เช่น "สองทุ่ม" = 20:00, "BTS" → transit, "มอไซค์" → moto, ปลายทางที่พิมพ์ "ไปกินข้าวแถวสุขุมวิท 55" → "สุขุมวิท 55"), ตรวจ `origin`/`destination`/`places` ของคำขอ และตอบ `NeedsPlace` เมื่อคำถามระบุที่ที่ไม่รู้จัก |
+| `internal/agenteval` | Scorecard ของ agent: เคส demo, check เทียบแกน deterministic, Gemini judge (structured output) และรายงาน Markdown/JSON ใช้โดย `cmd/scorecard` |
 | `internal/vision` | Gemini vision ประเมินรูปน้ำท่วม (JSON schema) + ตรวจค่าผิดปกติ, fallback = ค่ารูปของมิว 20–25 ซม. 84% |
 | `internal/homestatus` | โหมดน้ำท่วมที่บ้าน ณ จุดใดก็ได้: สถานีคลองที่ใกล้สุดในรัศมี 3 กม. (ระดับเทียบตลิ่ง, อัตราขึ้น, เวลาที่น้ำถึงหน้าบ้านเมื่อรู้ความสูงหน้าบ้าน) หรือถ้าไม่มี ประเมินจากฝน + จุดน้ำท่วม กทม. ในรัศมี 2 กม. + รายงานผู้ใช้ แล้วบอกตรง ๆ ว่าไม่มีข้อมูลคลอง, รายการสิ่งที่ต้องทำเรียงลำดับ |
 | `internal/geocode` | ค้นหาสถานที่และ reverse geocode: Google Places Text Search (New) / Geocoding (ภาษาไทย, bias กรุงเทพฯ) และ fallback รายชื่อในเครื่อง (จัดอันดับตรงชื่อ/คำค้น > ขึ้นต้น > มีอยู่ใน > ชื่อที่รู้จักอยู่ในคำค้น > ทุกคำตรง; reverse = สถานที่ใกล้สุด + ระยะ) |
