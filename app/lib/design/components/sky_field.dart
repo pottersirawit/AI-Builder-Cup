@@ -63,6 +63,7 @@ class FieldHeader extends StatelessWidget {
     required this.title,
     this.subtitle,
     this.onSubtitleTap,
+    this.subtitleTapLabel,
     this.back = false,
     this.actions = const [],
     this.badge,
@@ -70,17 +71,67 @@ class FieldHeader extends StatelessWidget {
   final SkyState state;
   final String title;
   final String? subtitle;
+
+  /// Makes the title block a button that edits the place in [subtitle];
+  /// the subtitle then carries an edit-location icon.
   final VoidCallback? onSubtitleTap;
+
+  /// What [onSubtitleTap] does, for screen readers.
+  final String? subtitleTapLabel;
   final bool back;
   final List<Widget> actions;
 
   /// A small status pill right after the title, e.g. "เดโม".
   final Widget? badge;
 
+  // The subtitle line alone is ~20 dp, so the whole title block is the target.
+  Widget _tappable(Widget child) => Semantics(
+        button: true,
+        label: subtitleTapLabel,
+        child: InkWell(
+          onTap: onSubtitleTap,
+          borderRadius: BorderRadius.circular(Radii.sm),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: Space.target),
+            child: Align(alignment: Alignment.centerLeft, widthFactor: 1, child: child),
+          ),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
     final sky = FonColors.of(context).sky(state);
     final t = Theme.of(context).textTheme;
+    final subtitleText = subtitle == null
+        ? null
+        : Text(subtitle!,
+            maxLines: 1, overflow: TextOverflow.ellipsis, style: t.labelMedium!.copyWith(color: sky.onFieldMuted));
+    final titleBlock = Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        if (subtitleText != null)
+          onSubtitleTap == null
+              ? subtitleText
+              : Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Flexible(child: subtitleText),
+                    const SizedBox(width: Space.x1),
+                    Icon(Symbols.edit_location_alt_rounded, size: 14, color: sky.onFieldMuted),
+                  ],
+                ),
+        Row(
+          children: [
+            Flexible(
+              child: Text(title,
+                  maxLines: 1, overflow: TextOverflow.ellipsis, style: t.headlineSmall!.copyWith(color: sky.onField)),
+            ),
+            if (badge != null) ...[const SizedBox(width: Space.x2), Flexible(child: badge!)],
+          ],
+        ),
+      ],
+    );
     return Padding(
       padding: EdgeInsets.fromLTRB(back ? Space.x1 : Space.gutter, Space.x2, Space.x2, Space.x2),
       child: Row(
@@ -91,50 +142,7 @@ class FieldHeader extends StatelessWidget {
               onPressed: () => Navigator.maybePop(context),
               icon: Icon(Symbols.arrow_back_rounded, color: sky.onField),
             ),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                if (subtitle != null)
-                  onSubtitleTap != null
-                      ? InkWell(
-                          onTap: onSubtitleTap,
-                          borderRadius: BorderRadius.circular(Radii.xs),
-                          child: Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 2),
-                            child: Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Flexible(
-                                  child: Text(subtitle!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: t.labelMedium!.copyWith(color: sky.onFieldMuted)),
-                                ),
-                                const SizedBox(width: 4),
-                                Icon(Symbols.edit_location_alt_rounded, size: 14, color: sky.onFieldMuted),
-                              ],
-                            ),
-                          ),
-                        )
-                      : Text(subtitle!,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.labelMedium!.copyWith(color: sky.onFieldMuted)),
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(title,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: t.headlineSmall!.copyWith(color: sky.onField)),
-                    ),
-                    if (badge != null) ...[const SizedBox(width: Space.x2), Flexible(child: badge!)],
-                  ],
-                ),
-              ],
-            ),
-          ),
+          Expanded(child: onSubtitleTap == null ? titleBlock : _tappable(titleBlock)),
           ...actions,
         ],
       ),

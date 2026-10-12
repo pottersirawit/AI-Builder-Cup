@@ -689,7 +689,7 @@ class _PlaceConfirmSheetState extends State<PlaceConfirmSheet> {
               Notice(
                 icon: Symbols.location_searching_rounded,
                 tone: NoticeTone.warning,
-                text: 'ตำแหน่งอาจคลาดเคลื่อน ~${(acc / 10).round() * 10} ม.',
+                text: 'ตำแหน่งอาจคลาดเคลื่อน ${approxDistanceTh(acc)}',
                 action: TextButton(
                   onPressed: () => Navigator.pop(context, const PlaceSheetResult(searchInstead: true)),
                   child: const Text('ค้นหาแทน'),

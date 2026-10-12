@@ -102,7 +102,7 @@ class _AskScreenState extends State<AskScreen> {
           d.needsPlace != null ? _Message.needs(q, d.needsPlace!) : _Message.ai(d.summaryTh, d)));
     } catch (_) {
       if (!mounted) return;
-      setState(() => _messages.add(const _Message.failed('ตอบไม่ได้ในรอบนี้ เชื่อมต่อไม่ได้')));
+      setState(() => _messages.add(const _Message.failed('ตอบไม่ได้ เพราะติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วถามใหม่')));
     }
     finally {
       if (mounted) setState(() => _thinking = false);

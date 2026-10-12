@@ -82,7 +82,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
             PassSection(
               child: ErrorState(
                 title: 'ยังตัดสินไม่ได้',
-                message: 'ติดต่อ Gemini และข้อมูลตัวอย่างไม่ได้ ลองอีกครั้งในอีกสักครู่',
+                message: 'ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง',
                 onRetry: _c.load,
               ),
             ),
@@ -147,6 +147,8 @@ class _VerdictScreenState extends State<VerdictScreen> {
             ),
           ),
           if (d != null) ...[
+            if (d.explanation case final e? when !e.isEmpty)
+              SliverToBoxAdapter(child: _WhySection(explanation: e, decision: d)),
             SliverToBoxAdapter(
               child: Section(
                 title: 'เทียบวิธีเดินทาง',
@@ -170,109 +172,6 @@ class _VerdictScreenState extends State<VerdictScreen> {
                 ),
               ),
             ),
-            if (d.explanation != null && !d.explanation!.isEmpty)
-              SliverToBoxAdapter(
-                child: Section(
-                  title: 'ทำไมถึงแนะนำวิธีนี้',
-                  source: 'วิเคราะห์สภาพอากาศ · ความสูงใต้ท้องรถ · ข้อมูลระบายน้ำ กทม.',
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      if (d.explanation!.reasonWhyTh.isNotEmpty) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(Space.x4),
-                          decoration: BoxDecoration(
-                            color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                            borderRadius: BorderRadius.circular(Radii.md),
-                            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
-                          ),
-                          child: Row(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Icon(Symbols.auto_awesome_rounded, size: 20, color: scheme.primary),
-                              const SizedBox(width: Space.x3),
-                              Expanded(
-                                child: Text(
-                                  d.explanation!.reasonWhyTh,
-                                  style: t.bodyMedium?.copyWith(height: 1.5, fontWeight: FontWeight.w500),
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(height: Space.x4),
-                      ],
-                      if (d.explanation!.factorsTh.isNotEmpty) ...[
-                        Text('ปัจจัยที่นำมาพิจารณา', style: t.titleSmall),
-                        const SizedBox(height: Space.x2),
-                        for (final factor in d.explanation!.factorsTh)
-                          Padding(
-                            padding: const EdgeInsets.symmetric(vertical: 3),
-                            child: Row(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Padding(
-                                  padding: const EdgeInsets.only(top: 4),
-                                  child: Icon(Symbols.check_circle_outline_rounded, size: 16, color: scheme.primary),
-                                ),
-                                const SizedBox(width: Space.x2),
-                                Expanded(child: Text(factor, style: t.bodySmall?.copyWith(height: 1.4))),
-                              ],
-                            ),
-                          ),
-                        const SizedBox(height: Space.x4),
-                      ],
-                      if (d.explanation!.routeAdviceTh.isNotEmpty) ...[
-                        Container(
-                          width: double.infinity,
-                          padding: const EdgeInsets.all(Space.x4),
-                          decoration: BoxDecoration(
-                            color: scheme.secondaryContainer.withValues(alpha: 0.3),
-                            borderRadius: BorderRadius.circular(Radii.md),
-                            border: Border.all(color: scheme.outlineVariant.withValues(alpha: 0.5)),
-                          ),
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(Symbols.alt_route_rounded, size: 20, color: scheme.onSecondaryContainer),
-                                  const SizedBox(width: Space.x2),
-                                  Text(
-                                    'คำแนะนำเลี่ยงน้ำท่วม',
-                                    style: t.titleSmall?.copyWith(color: scheme.onSecondaryContainer),
-                                  ),
-                                ],
-                              ),
-                              const SizedBox(height: Space.x2),
-                              Text(d.explanation!.routeAdviceTh, style: t.bodySmall?.copyWith(height: 1.45)),
-                              if (d.explanation!.avoidSpotsTh.isNotEmpty) ...[
-                                const SizedBox(height: Space.x3),
-                                Wrap(
-                                  spacing: Space.x2,
-                                  runSpacing: Space.x2,
-                                  children: [
-                                    for (final spot in d.explanation!.avoidSpotsTh)
-                                      Chip(
-                                        avatar: Icon(Symbols.warning_amber_rounded, size: 14, color: c.riskHigh),
-                                        label: Text('เลี่ยง: $spot'),
-                                        labelStyle: t.labelSmall?.copyWith(color: c.riskHigh),
-                                        backgroundColor: c.riskHighContainer,
-                                        visualDensity: VisualDensity.compact,
-                                        padding: EdgeInsets.zero,
-                                      ),
-                                  ],
-                                ),
-                              ],
-                            ],
-                          ),
-                        ),
-                      ],
-                    ],
-                  ),
-                ),
-              ),
             SliverToBoxAdapter(
               child: Section(
                 title: 'จุดน้ำท่วมบนเส้นทาง',
@@ -351,6 +250,98 @@ class _VerdictScreenState extends State<VerdictScreen> {
                 ),
               ),
             ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// Why this answer, right under it: the reason and the way around flooded
+/// spots stay open; the full list of factors folds away.
+class _WhySection extends StatefulWidget {
+  const _WhySection({required this.explanation, required this.decision});
+  final DecisionExplanation explanation;
+  final Decision decision;
+
+  @override
+  State<_WhySection> createState() => _WhySectionState();
+}
+
+class _WhySectionState extends State<_WhySection> {
+  bool _factorsOpen = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final e = widget.explanation;
+    final d = widget.decision;
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    return Section(
+      title: 'ทำไมถึงแนะนำแบบนี้',
+      trailing: GeminiMark(size: 22, fallback: d.generatedBy == 'fallback'),
+      source: d.sources.isEmpty ? null : d.sources.join(' · '),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (e.reasonWhyTh.isNotEmpty) Text(e.reasonWhyTh, style: t.bodyLarge),
+          if (e.routeAdviceTh.isNotEmpty) ...[
+            const SizedBox(height: Space.x4),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(Symbols.alt_route_rounded, size: 20, color: scheme.primary),
+                const SizedBox(width: Space.x3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('ทางเลี่ยงน้ำท่วม', style: t.titleSmall),
+                      const SizedBox(height: Space.x1),
+                      Text(e.routeAdviceTh, style: t.bodyMedium),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+          if (e.avoidSpotsTh.isNotEmpty) ...[
+            const SizedBox(height: Space.x3),
+            Wrap(
+              spacing: Space.x2,
+              runSpacing: Space.x2,
+              children: [for (final spot in e.avoidSpotsTh) RiskChip(risk: Risk.high, label: 'เลี่ยง $spot')],
+            ),
+          ],
+          if (e.factorsTh.isNotEmpty) ...[
+            const SizedBox(height: Space.x2),
+            Semantics(
+              expanded: _factorsOpen,
+              child: TextButton.icon(
+                onPressed: () => setState(() => _factorsOpen = !_factorsOpen),
+                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: Space.x2)),
+                icon: Icon(_factorsOpen ? Symbols.expand_less_rounded : Symbols.expand_more_rounded),
+                label: Text(_factorsOpen ? 'ซ่อนปัจจัย' : 'ดูปัจจัยที่ใช้ตัดสิน (${e.factorsTh.length})'),
+              ),
+            ),
+            if (_factorsOpen)
+              for (final f in e.factorsTh)
+                Padding(
+                  padding: const EdgeInsets.only(left: Space.x2, top: Space.x1, bottom: Space.x1),
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Container(
+                        width: 6,
+                        height: 6,
+                        margin: const EdgeInsets.only(top: 9),
+                        decoration: BoxDecoration(color: scheme.onSurfaceVariant, shape: BoxShape.circle),
+                      ),
+                      const SizedBox(width: Space.x3),
+                      Expanded(child: Text(f, style: t.bodyMedium)),
+                    ],
+                  ),
+                ),
           ],
         ],
       ),

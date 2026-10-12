@@ -80,6 +80,15 @@ Risk passableRisk(String v) => switch (v) {
 
 String percent(double confidence) => '${(confidence * 100).round()}%';
 
+/// "~230 ม." or "~1.5 กม.": a GPS error radius as a person would say it.
+String approxDistanceTh(double meters) {
+  if (meters < 1000) return '~${(meters / 10).round() * 10} ม.';
+  final km = meters / 1000;
+  if (km >= 10) return '~${km.round()} กม.';
+  final tenths = (km * 10).round();
+  return '~${tenths % 10 == 0 ? tenths ~/ 10 : tenths / 10} กม.';
+}
+
 String sourceTitle(String source) => switch (source) {
       'calendar' => 'Google Calendar',
       'gmail' => 'Gmail',
