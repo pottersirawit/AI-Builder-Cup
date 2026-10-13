@@ -10,25 +10,49 @@ repo นี้มีสองส่วนที่ใช้งานคู่ก
 
 ## สิ่งที่ต้องติดตั้ง
 
-- Go 1.24 ขึ้นไป
+- Go 1.26 ขึ้นไป (`api/go.mod` ระบุ 1.26.0 ถ้าเครื่องมี Go เก่ากว่า `GOTOOLCHAIN=auto` จะโหลดตัวที่ต้องใช้ให้เองตอนรันครั้งแรก)
 - Flutter 3.35 ขึ้นไป (`flutter doctor` ต้องผ่าน)
 - Xcode สำหรับ iOS simulator หรือ Android Studio สำหรับ emulator (ไม่บังคับ เพราะรันบน Chrome ได้)
 - `gcloud` ใช้ตอน deploy เท่านั้น
 
-## รันแบบเร็วที่สุด (ไม่ต้องมี key อะไรเลย)
+## รันแบบเร็วที่สุด: app อย่างเดียว ต่อ API บน Cloud Run
 
-เปิด terminal สองหน้าต่าง
+ตั้งแต่ commit `d58ec05` app จะเรียก API ที่ deploy ไว้แล้วบน Cloud Run (`https://fontokmai-api-945826169258.asia-southeast1.run.app`) เป็นค่าเริ่มต้น จึงไม่ต้องรัน API เอง
+
+```bash
+cd app && flutter pub get && flutter run -d chrome --dart-define=DEMO_CLOCK=16:10
+```
+
+`DEMO_CLOCK=16:10` ทำให้โปรไฟล์เดโม (มิว) และฉากพายุ 29 ก.ย. ขึ้นตั้งแต่เปิดครั้งแรก ถ้าไม่ใส่ app จะใช้เวลาจริง
+เช็คว่า Cloud Run ยังทำงานด้วย `curl https://fontokmai-api-945826169258.asia-southeast1.run.app/v1/healthz` (path `/healthz` บน Cloud Run ตอบ 404 เพราะ Google จองไว้)
+
+## รัน API บนเครื่องตัวเอง (ไม่ต้องมี key อะไรเลย)
+
+เปิด terminal สองหน้าต่าง และต้องบอก app ให้ชี้มาที่เครื่องตัวเอง เพราะค่าเริ่มต้นคือ Cloud Run
 
 ```bash
 # หน้าต่าง 1: API ที่พอร์ต 8080 ใช้โหมด demo (เล่นซ้ำพายุวันที่ 29 ก.ย.)
 cd api && go run ./cmd/server
 
 # หน้าต่าง 2: app
-cd app && flutter pub get && flutter run -d chrome
+cd app && flutter pub get && flutter run -d chrome \
+  --dart-define=API_BASE_URL=http://localhost:8080 --dart-define=DEMO_CLOCK=16:10
 ```
+
+Android emulator ใช้ `API_BASE_URL=http://10.0.2.2:8080` แทน localhost
 
 ถ้าไม่มี `GEMINI_API_KEY` API จะใช้ระบบ fallback ที่ตัดสินจาก rules และตอบกลับด้วย `generated_by: "fallback"`
 ถ้า app ต่อ API ไม่ได้ จะใช้ข้อมูลตัวอย่างที่ฝังมากับ app และขึ้นป้าย "ข้อมูลตัวอย่าง"
+
+## วัดคุณภาพคำตอบของ Gemini (scorecard)
+
+```bash
+cd api
+go run ./cmd/scorecard                 # ไม่ใช้ key: ให้คะแนนระบบ fallback 19 เคส
+GEMINI_API_KEY=xxxx go run ./cmd/scorecard -judge -json score.json   # ใช้ Gemini จริง (เสียเงิน ~80 calls)
+```
+
+รายละเอียดอยู่ใน `api/README.md` และจุดอ่อนเทียบเกณฑ์ตัดสินอยู่ใน `docs/plan/competition-gaps-2026-10-13.md`
 
 ## เปิด Gemini จริง
 
@@ -52,10 +76,11 @@ go run ./cmd/server
 
 ```bash
 cd app
-flutter run -d ios        # iOS simulator: localhost ใช้ได้ตรง ๆ
-flutter run -d android    # Android emulator: app เปลี่ยนไปใช้ 10.0.2.2:8080 ให้เอง
-# เครื่องจริง หรือเมื่อ API อยู่บน Cloud Run:
-flutter run --dart-define=API_BASE_URL=https://<cloud-run-url>
+flutter run -d ios --dart-define=DEMO_CLOCK=16:10       # ต่อ Cloud Run (ค่าเริ่มต้น)
+flutter run -d android --dart-define=DEMO_CLOCK=16:10   # ต่อ Cloud Run (ค่าเริ่มต้น)
+# ถ้าจะใช้ API บนเครื่องตัวเอง:
+flutter run -d ios --dart-define=API_BASE_URL=http://localhost:8080
+flutter run -d android --dart-define=API_BASE_URL=http://10.0.2.2:8080
 ```
 
 ## เวลาจำลองสำหรับถ่ายวิดีโอ demo
@@ -87,12 +112,12 @@ printf '%s' "$GEMINI_API_KEY" | gcloud secrets create GEMINI_API_KEY --data-file
 PROJECT=<PROJECT> api/deploy/cloudrun.sh
 ```
 
-ยังไม่เคยรันสคริปต์ deploy จริง ครั้งแรกให้ดู output ทีละขั้น
+บน Windows ใช้ `api/deploy/infra.ps1` (สร้าง service account และ infra) แล้วตามด้วย `api/deploy/cloudrun.ps1 -Project <PROJECT>` สคริปต์นี้ใช้ Gemini ผ่าน Vertex AI เป็นค่าเริ่มต้น จึงไม่ต้องใช้ `GEMINI_API_KEY`
 
 ## Build app ไปแจกให้คนอื่นลอง
 
 ```bash
 cd app
-flutter build apk --dart-define=API_BASE_URL=https://<cloud-run-url>   # Android
-flutter build web --dart-define=API_BASE_URL=https://<cloud-run-url>   # เปิดบนเว็บ / ใช้ Firebase Hosting ได้
+flutter build apk   # Android (ชี้ Cloud Run เป็นค่าเริ่มต้นอยู่แล้ว)
+flutter build web   # เปิดบนเว็บ / ใช้ Firebase Hosting ได้
 ```
