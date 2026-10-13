@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"strings"
 	"time"
 
@@ -339,7 +340,8 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 
 // applyAgent takes the agent's verdict and Thai text, guarded by the
 // deterministic engine: the agent may not send someone into high-risk water,
-// and numerical leave_by is strictly preserved from the deterministic core.
+// numerical leave_by is strictly preserved from the deterministic core, and
+// text quoting a time the tools never returned is replaced by the engine's.
 func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *planner.Session) {
 	resp.GeneratedBy = "gemini"
 	v := decision.Verdict(out.Verdict)
@@ -366,6 +368,7 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 			resp.Explanation.AvoidSpotsTH = out.Explanation.AvoidSpotsTH
 		}
 	}
+	invented := groundTimes(resp, baseline, s)
 	explained := map[string][]string{}
 	for _, r := range out.Reasoning {
 		if r.SummaryTH != "" {
@@ -378,4 +381,42 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 		}
 		resp.Reasoning = append(resp.Reasoning, c)
 	}
+	if len(invented) > 0 {
+		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailTool,
+			SummaryTH: "เวลา " + strings.Join(invented, ", ") + " ไม่ตรงกับข้อมูล จึงใช้ข้อความจากระบบคำนวณแทน"})
+	}
+}
+
+// groundTimes puts back the engine's text wherever Gemini quoted an HH:MM
+// the data does not support, and lists those times. The headline and summary go back
+// with the verdict and confidence they were written for.
+func groundTimes(resp *Response, baseline decision.Result, s *planner.Session) []string {
+	g := NewGrounding(*resp, baseline, ToolTimes(s, resp.DepartAt, resp.Mode, baseline)...)
+	var invented []string
+	check := func(texts ...string) bool {
+		bad := g.Ungrounded(texts...)
+		for _, t := range bad {
+			if !slices.Contains(invented, t) {
+				invented = append(invented, t)
+			}
+		}
+		return len(bad) > 0
+	}
+	if check(resp.HeadlineTH, resp.SummaryTH) {
+		resp.Verdict, resp.HeadlineTH, resp.SummaryTH, resp.Confidence = baseline.Verdict, baseline.HeadlineTH, baseline.SummaryTH, baseline.Confidence
+	}
+	e, base := &resp.Explanation, baseline.Explanation
+	if check(e.ReasonWhyTH) {
+		e.ReasonWhyTH = base.ReasonWhyTH
+	}
+	if check(e.FactorsTH...) {
+		e.FactorsTH = base.FactorsTH
+	}
+	if check(e.RouteAdviceTH) {
+		e.RouteAdviceTH = base.RouteAdviceTH
+	}
+	if len(invented) > 0 {
+		slog.Warn("gemini quoted times not in tool data, using engine text", "times", invented)
+	}
+	return invented
 }

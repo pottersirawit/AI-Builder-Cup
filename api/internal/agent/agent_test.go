@@ -233,6 +233,62 @@ func TestGeminiAgentGuardrailsAndFallback(t *testing.T) {
 	}
 }
 
+func TestGeminiAgentInventedTimesFallBackToEngineText(t *testing.T) {
+	// The engine's leave-by at 16:10 by car is 16:45; Gemini writes 16:30.
+	invented := `{"verdict":"leave_now","headline_th":"ออกก่อน 16:30","summary_th":"ฝนมาราว 17:05 รีบออก","confidence":0.9,
+"explanation":{"reason_why_th":"ฝนหนักเริ่ม 16:58","factors_th":["ฝน"],"route_advice_th":"ใช้ทางด่วนยกระดับ","avoid_spots_th":[]}}`
+	gen := &scriptedGemini{replies: []*genai.GenerateContentResponse{
+		reply(call("get_trip", nil), call("evaluate_departure", map[string]any{"mode": "car"})),
+		reply(&genai.Part{Text: invented}),
+	}}
+	s := session(t, at(16, 10))
+	core, err := s.Baseline(at(16, 10), domain.ModeCar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := Decide(context.Background(), &Gemini{Gen: gen, Model: "test"}, s, Request{Mode: "car"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.HeadlineTH != core.HeadlineTH || resp.SummaryTH != core.SummaryTH || resp.Verdict != core.Verdict {
+		t.Fatalf("invented times must fall back to the engine's text: got %q / %q, engine %q / %q", resp.HeadlineTH, resp.SummaryTH, core.HeadlineTH, core.SummaryTH)
+	}
+	if resp.Explanation.ReasonWhyTH != core.Explanation.ReasonWhyTH {
+		t.Errorf("reason_why_th with an invented time must fall back, got %q", resp.Explanation.ReasonWhyTH)
+	}
+	if resp.Explanation.RouteAdviceTH != "ใช้ทางด่วนยกระดับ" {
+		t.Errorf("grounded fields keep Gemini's text, got %q", resp.Explanation.RouteAdviceTH)
+	}
+	if resp.GeneratedBy != "gemini" {
+		t.Errorf("generated_by = %s", resp.GeneratedBy)
+	}
+	last := resp.Reasoning[len(resp.Reasoning)-1]
+	if last.Tool != GuardrailTool || !strings.Contains(last.SummaryTH, "16:30") {
+		t.Fatalf("the replacement must be recorded in reasoning, got %+v", resp.Reasoning)
+	}
+}
+
+func TestGeminiAgentGroundedTimesPassThrough(t *testing.T) {
+	grounded := `{"verdict":"leave_now","headline_th":"ออกก่อน 16:45 นะ","summary_th":"ออกตอนนี้ทันนัด","confidence":0.8,
+"explanation":{"reason_why_th":"ออกตอน 16:10 ยังไม่เจอฝน","factors_th":["ฝน"],"route_advice_th":"ใช้ทางด่วน","avoid_spots_th":[]}}`
+	gen := &scriptedGemini{replies: []*genai.GenerateContentResponse{
+		reply(call("get_trip", nil), call("evaluate_departure", map[string]any{"mode": "car"})),
+		reply(&genai.Part{Text: grounded}),
+	}}
+	resp, err := Decide(context.Background(), &Gemini{Gen: gen, Model: "test"}, session(t, at(16, 10)), Request{Mode: "car"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if resp.HeadlineTH != "ออกก่อน 16:45 นะ" || resp.Explanation.ReasonWhyTH != "ออกตอน 16:10 ยังไม่เจอฝน" {
+		t.Fatalf("grounded text must pass through, got %q / %q", resp.HeadlineTH, resp.Explanation.ReasonWhyTH)
+	}
+	for _, c := range resp.Reasoning {
+		if c.Tool == GuardrailTool {
+			t.Fatalf("no guardrail entry for grounded text, got %+v", c)
+		}
+	}
+}
+
 func TestGeminiAgentExplanation(t *testing.T) {
 	geminiReply := `{"verdict":"switch_mode","headline_th":"เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า","summary_th":"รัชดาน้ำท่วม","confidence":0.85,
 "explanation":{"reason_why_th":"น้ำท่วมสูง 25 ซม. เกินระยะพ้นน้ำ","factors_th":["น้ำท่วม 25 ซม."],"route_advice_th":"เลี่ยงถนนรัชดาภิเษก","avoid_spots_th":["แยกรัชดา-ลาดพร้าว"]}}`
