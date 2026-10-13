@@ -9,7 +9,6 @@ package agenteval
 import (
 	"context"
 	"fmt"
-	"regexp"
 	"slices"
 	"strings"
 	"time"
@@ -180,19 +179,7 @@ func runCase(ctx context.Context, g *agent.Gemini, p *planner.Planner, c Case, o
 		res.Err = err.Error()
 		return res
 	}
-	// Times the tools returned beyond core's own: report times and the
-	// arrival when leaving at the engine's wait-until.
-	var toolTimes []time.Time
-	if in, err := s.Input(resp.DepartAt, resp.Mode); err == nil {
-		for _, r := range in.Reports {
-			toolTimes = append(toolTimes, r.CreatedAt)
-		}
-	}
-	if core.WaitUntil != nil {
-		if later, err := s.Baseline(*core.WaitUntil, resp.Mode); err == nil {
-			toolTimes = append(toolTimes, later.Evals[resp.Mode].Arrive)
-		}
-	}
+	toolTimes := agent.ToolTimes(s, resp.DepartAt, resp.Mode, core)
 	res.GeneratedBy, res.Verdict, res.CoreVerdict, res.Mode = resp.GeneratedBy, resp.Verdict, core.Verdict, resp.Mode
 	res.HeadlineTH, res.SummaryTH, res.Tools = resp.HeadlineTH, resp.SummaryTH, tools(resp)
 	res.Checks = Score(c, resp, core, toolTimes...)
@@ -214,9 +201,6 @@ func tools(resp agent.Response) []string {
 	}
 	return out
 }
-
-// clockTime matches HH:MM, the format the system prompt asks for.
-var clockTime = regexp.MustCompile(`(?:^|[^0-9])([01]?[0-9]|2[0-3]):([0-5][0-9])`)
 
 // Score checks one answer against the deterministic engine's result for the
 // same departure and mode. extra are further times the tools returned (such
@@ -247,20 +231,9 @@ func Score(c Case, resp agent.Response, core decision.Result, extra ...time.Time
 	}
 	add(CheckRequiredTools, len(missing) == 0, "missing "+strings.Join(missing, ", "))
 
-	known := groundedTimes(resp, core, extra)
-	var invented []string
-	for _, text := range []string{resp.HeadlineTH, resp.SummaryTH, resp.Explanation.ReasonWhyTH, resp.Explanation.RouteAdviceTH} {
-		for _, m := range clockTime.FindAllStringSubmatch(text, -1) {
-			hh := m[1]
-			if len(hh) == 1 {
-				hh = "0" + hh
-			}
-			hhmm := hh + ":" + m[2]
-			if !known[hhmm] && !slices.Contains(invented, hhmm) {
-				invented = append(invented, hhmm)
-			}
-		}
-	}
+	e := resp.Explanation
+	texts := append([]string{resp.HeadlineTH, resp.SummaryTH, e.ReasonWhyTH, e.RouteAdviceTH}, e.FactorsTH...)
+	invented := agent.NewGrounding(resp, core, extra...).Ungrounded(texts...)
 	add(CheckGroundedTimes, len(invented) == 0, "times not in tool data: "+strings.Join(invented, ", "))
 
 	n := utf8.RuneCountInString(resp.HeadlineTH)
@@ -275,34 +248,4 @@ func Score(c Case, resp agent.Response, core decision.Result, extra ...time.Time
 		}
 	}
 	return out
-}
-
-// groundedTimes are the HH:MM readings an answer may quote: the clock, the
-// departure, the appointment, the engine's leave-by, wait-until and rain
-// onset, each mode's arrival, the rain timeline and report times.
-func groundedTimes(resp agent.Response, core decision.Result, extra []time.Time) map[string]bool {
-	known := map[string]bool{}
-	add := func(t time.Time) {
-		if !t.IsZero() {
-			known[t.In(domain.Bangkok).Format("15:04")] = true
-		}
-	}
-	add(resp.DepartAt)
-	add(resp.Trip.ArriveBy)
-	for _, t := range []*time.Time{resp.LeaveBy, core.LeaveBy, core.WaitUntil, core.RainOnset} {
-		if t != nil {
-			add(*t)
-		}
-	}
-	for _, e := range core.Evals {
-		add(e.Depart)
-		add(e.Arrive)
-	}
-	for _, r := range core.RainTimeline {
-		add(r.Time)
-	}
-	for _, t := range extra {
-		add(t)
-	}
-	return known
 }

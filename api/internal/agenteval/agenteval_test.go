@@ -5,6 +5,7 @@ import (
 	"errors"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -72,6 +73,12 @@ func TestScoreFlagsATimeTheDataDoesNotSupport(t *testing.T) {
 	got := check(t, Score(c, resp, core), CheckGroundedTimes)
 	if got.Pass || !strings.Contains(got.Detail, "16:23") {
 		t.Fatalf("a leave-by time 22 minutes off the data must fail and be named: %+v", got)
+	}
+
+	// 16:30 is on the rain timeline, but it is not the engine's leave-by.
+	resp.HeadlineTH = "ออกก่อน 16:30"
+	if got := check(t, Score(c, resp, core), CheckGroundedTimes); got.Pass || !strings.Contains(got.Detail, "16:30") {
+		t.Fatalf("a leave-by that is not the engine's must fail even when the time exists elsewhere: %+v", got)
 	}
 }
 
@@ -184,7 +191,7 @@ func (f *fakeGemini) GenerateContent(_ context.Context, _ string, contents []*ge
 	return nil, errors.New("not scripted")
 }
 
-func TestRunScoresGeminiAndCatchesHallucinatedTimes(t *testing.T) {
+func TestRunScoresGeminiAfterTheTimeGuardrail(t *testing.T) {
 	fake := &fakeGemini{
 		answer: `{"verdict":"leave_now","headline_th":"รีบออกก่อน 16:07","summary_th":"ฝนมาเร็ว","confidence":0.7,
 			"explanation":{"reason_why_th":"ฝนหนักบนพระราม 4","factors_th":["ฝน"],"route_advice_th":"ใช้ทางด่วน","avoid_spots_th":[]}}`,
@@ -193,17 +200,18 @@ func TestRunScoresGeminiAndCatchesHallucinatedTimes(t *testing.T) {
 	cases := []Case{{Name: "16:10 car", Now: at(16, 10), Req: agent.Request{TripID: "cal-dinner", Mode: "car"}, WantVerdict: decision.LeaveNow}}
 	rep := Run(context.Background(), &agent.Gemini{Gen: fake, Model: "fake"}, demoPlanner(t), cases, Options{Judge: true})
 	r := rep.Results[0]
-	if r.GeneratedBy != "gemini" || r.HeadlineTH != "รีบออกก่อน 16:07" {
-		t.Fatalf("got %s %q", r.GeneratedBy, r.HeadlineTH)
+	// The invented 16:07 never reaches the user: the engine's headline does.
+	if r.GeneratedBy != "gemini" || r.HeadlineTH != "ออกก่อน 16:45" || !slices.Contains(r.Tools, agent.GuardrailTool) {
+		t.Fatalf("got %s %q tools %v", r.GeneratedBy, r.HeadlineTH, r.Tools)
 	}
-	if check(t, r.Checks, CheckGroundedTimes).Pass || !check(t, r.Checks, CheckRequiredTools).Pass {
+	if !check(t, r.Checks, CheckGroundedTimes).Pass || !check(t, r.Checks, CheckRequiredTools).Pass {
 		t.Fatalf("checks %+v", r.Checks)
 	}
 	if r.Judge == nil || r.Judge.Score != 2 || r.Judge.NoteTH == "" {
 		t.Fatalf("judge = %+v", r.Judge)
 	}
 	sum := rep.Summary()
-	if sum.GeminiRate != 1 || sum.Passed != 0 || sum.JudgeMean != 2 || sum.ChecksFailed[CheckGroundedTimes] != 1 {
+	if sum.GeminiRate != 1 || sum.Passed != 1 || sum.JudgeMean != 2 || sum.ChecksFailed[CheckGroundedTimes] != 0 {
 		t.Fatalf("summary %+v", sum)
 	}
 	if rep.Model != "fake" {
