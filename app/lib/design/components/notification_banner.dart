@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../tokens.dart';
+import '../../l10n/l10n.dart';
 
 /// In-app stand-in for the push notification that opens the app at 16:10.
 class NotificationBanner extends StatelessWidget {
@@ -48,13 +49,23 @@ class NotificationBanner extends StatelessWidget {
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(radius),
               boxShadow: const [
-                BoxShadow(color: Color(0x290B1F3A), blurRadius: 30, offset: Offset(0, 12), spreadRadius: -8),
+                BoxShadow(
+                  color: Color(0x290B1F3A),
+                  blurRadius: 30,
+                  offset: Offset(0, 12),
+                  spreadRadius: -8,
+                ),
               ],
             ),
             child: InkWell(
               onTap: onOpen,
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(Space.x3, Space.x3, Space.x1, Space.x3),
+                padding: const EdgeInsets.fromLTRB(
+                  Space.x3,
+                  Space.x3,
+                  Space.x1,
+                  Space.x3,
+                ),
                 child: Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -65,26 +76,49 @@ class NotificationBanner extends StatelessWidget {
                         color: const Color(0xFF0B57D0),
                         borderRadius: BorderRadius.circular(radius - Space.x3),
                       ),
-                      child: const Icon(Symbols.rainy_rounded, color: Colors.white, size: 24, fill: 1),
+                      child: const Icon(
+                        Symbols.rainy_rounded,
+                        color: Colors.white,
+                        size: 24,
+                        fill: 1,
+                      ),
                     ),
                     const SizedBox(width: Space.x3),
                     Expanded(
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('ฝนตกไหม · $time', style: t.labelMedium!.copyWith(color: muted)),
-                          Text(title, style: t.titleMedium!.copyWith(color: ink, fontWeight: FontWeight.w700)),
-                          Text(body,
-                              maxLines: 3,
-                              overflow: TextOverflow.ellipsis,
-                              style: t.bodyMedium!.copyWith(color: ink, height: 1.5)),
+                          Text(
+                            '${context.l10n.appTitle} · $time',
+                            style: t.labelMedium!.copyWith(color: muted),
+                          ),
+                          Text(
+                            title,
+                            style: t.titleMedium!.copyWith(
+                              color: ink,
+                              fontWeight: FontWeight.w700,
+                            ),
+                          ),
+                          Text(
+                            body,
+                            maxLines: 3,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.bodyMedium!.copyWith(
+                              color: ink,
+                              height: 1.5,
+                            ),
+                          ),
                         ],
                       ),
                     ),
                     IconButton(
-                      tooltip: 'ปิดแจ้งเตือน',
+                      tooltip: context.l10n.designDismissBanner,
                       onPressed: onDismiss,
-                      icon: const Icon(Symbols.close_rounded, color: muted, size: 20),
+                      icon: const Icon(
+                        Symbols.close_rounded,
+                        color: muted,
+                        size: 20,
+                      ),
                     ),
                   ],
                 ),

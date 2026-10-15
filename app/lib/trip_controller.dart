@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'api.dart';
 import 'app_state.dart';
 import 'departure.dart';
+import 'l10n/l10n.dart';
 import 'models.dart';
 import 'places.dart';
 import 'time_th.dart';
@@ -16,11 +17,11 @@ class TripController extends ChangeNotifier {
     required DecideRequest request,
     DateTime? departAt,
     TravelMode? mode,
-  })  : _api = api,
-        _state = state,
-        _request = request,
-        _departAt = departAt ?? state.now(),
-        _mode = mode ?? request.mode ?? state.mode;
+  }) : _api = api,
+       _state = state,
+       _request = request,
+       _departAt = departAt ?? state.now(),
+       _mode = mode ?? request.mode ?? state.mode;
 
   final FonTokMaiApi _api;
   final AppState _state;
@@ -65,7 +66,11 @@ class TripController extends ChangeNotifier {
   List<Departure> get board {
     final d = _decision;
     if (d == null) return const [];
-    return rankOptions(_previewing ? previewOptions(d, _departAt) : serverOptions(d, _departAt));
+    return rankOptions(
+      _previewing
+          ? previewOptions(d, _departAt, _l)
+          : serverOptions(d, _departAt),
+    );
   }
 
   Departure? get selected => board.where((o) => o.mode == _mode).firstOrNull;
@@ -73,8 +78,12 @@ class TripController extends ChangeNotifier {
   String get headline {
     final d = _decision;
     if (d == null) return '';
-    return _previewing ? previewHeadline(previewOptions(d, _departAt), _mode) : d.headlineTh;
+    return _previewing
+        ? previewHeadline(previewOptions(d, _departAt, _l), _mode, _l)
+        : d.headlineTh;
   }
+
+  AppLocalizations get _l => lookupAppLocalizations(_state.locale);
 
   Verdict? get verdict => _previewing ? selected?.verdict : _decision?.verdict;
 
@@ -82,15 +91,22 @@ class TripController extends ChangeNotifier {
 
   SkyState sky({HomeLevel? home}) {
     final d = _decision;
-    if (d == null) return home == HomeLevel.danger ? SkyState.flood : SkyState.clear;
-    return skyFor(d.rainTimeline, _departAt, etaMin, verdict: verdict, home: home);
+    if (d == null)
+      return home == HomeLevel.danger ? SkyState.flood : SkyState.clear;
+    return skyFor(
+      d.rainTimeline,
+      _departAt,
+      etaMin,
+      verdict: verdict,
+      home: home,
+    );
   }
 
   Future<void> load() async {
     final seq = ++_seq;
     final missing = _missingPlace();
     if (missing != null) {
-      _needsPlace = NeedsPlace(queryTh: kindLabelTh(missing), kind: missing);
+      _needsPlace = NeedsPlace(queryTh: kindLabel(_l, missing), kind: missing);
       _decision = null;
       _loading = false;
       _notify();
@@ -100,7 +116,9 @@ class TripController extends ChangeNotifier {
     _error = null;
     _notify();
     try {
-      final r = await _api.decide(_request.copyWith(departAt: isoBangkok(_departAt), mode: _mode));
+      final r = await _api.decide(
+        _request.copyWith(departAt: isoBangkok(_departAt), mode: _mode),
+      );
       if (seq != _seq || _disposed) return;
       _state.markSample(r.isSample);
       if (r.data.needsPlace != null) {
@@ -144,9 +162,15 @@ class TripController extends ChangeNotifier {
   /// "กลับบ้าน" before home is saved: known without asking the server.
   PlaceKind? _missingPlace() {
     final q = _request.questionTh;
-    if (q == null || _request.tripId != null || _request.destination != null) return null;
-    SavedPlace? of(PlaceKind k) => _request.places.where((p) => p.kind == k).firstOrNull;
-    return missingPlaceFor(q, home: of(PlaceKind.home), work: of(PlaceKind.work));
+    if (q == null || _request.tripId != null || _request.destination != null)
+      return null;
+    SavedPlace? of(PlaceKind k) =>
+        _request.places.where((p) => p.kind == k).firstOrNull;
+    return missingPlaceFor(
+      q,
+      home: of(PlaceKind.home),
+      work: of(PlaceKind.work),
+    );
   }
 
   /// Once the server names the trip it decided, moving the slider or mode
@@ -168,7 +192,10 @@ class TripController extends ChangeNotifier {
   Future<void> resolvePlace(Place destination, List<SavedPlace> places) {
     final needs = _needsPlace;
     _request = _request.copyWith(
-        places: needs == null ? places : placesWithAnswer(needs, destination, places));
+      places: needs == null
+          ? places
+          : placesWithAnswer(needs, destination, places),
+    );
     _needsPlace = null;
     _decision = null;
     return load();

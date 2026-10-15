@@ -3,19 +3,22 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../tokens.dart';
 import 'marks.dart';
+import '../../l10n/l10n.dart';
 
-/// The plain-Thai question field: the app's primary action.
+/// The plain-language question field: the app's primary action.
 class AskBar extends StatefulWidget {
   const AskBar({
     super.key,
     required this.onSubmit,
-    this.hint = 'ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม',
+    this.hint,
     this.enabled = true,
     this.controller,
   });
 
   final ValueChanged<String> onSubmit;
-  final String hint;
+
+  /// Defaults to the localized "where and when?" prompt.
+  final String? hint;
   final bool enabled;
   final TextEditingController? controller;
 
@@ -24,7 +27,8 @@ class AskBar extends StatefulWidget {
 }
 
 class _AskBarState extends State<AskBar> {
-  late final TextEditingController _c = widget.controller ?? TextEditingController();
+  late final TextEditingController _c =
+      widget.controller ?? TextEditingController();
 
   @override
   void dispose() {
@@ -51,7 +55,11 @@ class _AskBarState extends State<AskBar> {
         borderRadius: BorderRadius.circular(Radii.pill),
         border: Border.all(color: scheme.outlineVariant),
         boxShadow: const [
-          BoxShadow(color: Color(0x140B1F3A), blurRadius: 16, offset: Offset(0, 4)),
+          BoxShadow(
+            color: Color(0x140B1F3A),
+            blurRadius: 16,
+            offset: Offset(0, 4),
+          ),
         ],
       ),
       child: Row(
@@ -66,14 +74,16 @@ class _AskBarState extends State<AskBar> {
               textInputAction: TextInputAction.send,
               style: t.bodyLarge,
               decoration: InputDecoration.collapsed(
-                hintText: widget.hint,
-                hintStyle: t.bodyLarge!.copyWith(color: scheme.onSurfaceVariant),
+                hintText: widget.hint ?? context.l10n.designAskHint,
+                hintStyle: t.bodyLarge!.copyWith(
+                  color: scheme.onSurfaceVariant,
+                ),
               ),
             ),
           ),
           const SizedBox(width: Space.x2),
           IconButton.filled(
-            tooltip: 'ถาม',
+            tooltip: context.l10n.designAskTooltip,
             onPressed: widget.enabled ? _send : null,
             icon: const Icon(Symbols.arrow_upward_rounded, weight: 600),
           ),

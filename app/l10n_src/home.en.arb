@@ -1,0 +1,205 @@
+{
+  "shellTabTrip": "Travel",
+  "shellTabReport": "Report flood",
+  "shellTabHome": "Home",
+  "designBack": "Back",
+  "designAskTooltip": "Ask",
+  "designAskHint": "Where and when? e.g. “Siam at 5 pm”",
+  "designDismissBanner": "Dismiss notification",
+  "designRetry": "Try again",
+  "designLoadingAnswer": "Loading the answer",
+  "boardNoteTransitCrowded": "Trains run in the rain, but platforms get crowded. Leave extra time.",
+  "boardNoteDry": "No rain on the way",
+  "boardNoteCarHeavy": "Heavy rain, slow drainage, traffic building up",
+  "boardNoteCarDrizzle": "Light rain near the end. Drive slower.",
+  "boardNoteBeatRain": "You get there before the rain",
+  "boardNoteMotoHeavy": "Heavy rain on the way. Skip the motorbike.",
+  "boardNoteMotoTight": "Just in time. Any later and you get rained on.",
+  "boardHeadlineLeave": "Leave at {time}",
+  "@boardHeadlineLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "boardHeadlineWait": "Hold off for now",
+  "boardHeadlineSwitchTransit": "Take the BTS instead",
+  "homeLoadErrorTitle": "Couldn’t load your trips",
+  "homeLoadErrorBody": "Can’t reach the server and there’s no sample data on this device. Check your connection and try again.",
+  "homeSeeWhatToDo": "See what to do now",
+  "homeDecideErrorTitle": "No verdict yet",
+  "homeDecideErrorBody": "Can’t reach the server. Check your connection and try again.",
+  "homeSeeReasons": "See why and the options",
+  "homeAskMore": "Ask more",
+  "homeNoTripTitle": "No trips yet",
+  "homeNoTripBody": "Save your home and the app will warn you before you leave work each day. Or just ask above.",
+  "homeSetHome": "Set home",
+  "homeSetWork": "Set work",
+  "homeNoHomeTripTitle": "No trip home today",
+  "homeWfhBody": "You’re working from home, so the app only warns about other trips. Ask below, e.g. “Siam at 5 pm”.",
+  "homeNotWorkdayBody": "Today isn’t a workday. If you’re heading out, ask below.",
+  "homePastCommuteBody": "It’s past your usual time to head home. Tomorrow the app will check before you leave work.",
+  "homeGpsInaccurate": "Location may be off by {distance}",
+  "@homeGpsInaccurate": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "homePinMyself": "Pin it myself",
+  "homeSetHomeHint": "Set home to get a warning before you head back",
+  "homeSetWorkHint": "Set your workplace for more accurate warnings",
+  "homeWfhNotice": "Working from home — only other trips get warnings",
+  "homeCalendarHint": "Connect Calendar so the app can see your plans",
+  "homeConnect": "Connect",
+  "homeNoCalendarSoon": "No events with a location in the next 24 h",
+  "homeAskHintHero": "Where to, and when?",
+  "homeGreetingDemo": "Hi Miw",
+  "homeGreeting": "Hello",
+  "homeCurrentPlace": "Current location",
+  "homeCurrentPlaceAlt": "Current location",
+  "homeHereSemantics": "Current location {name}. Tap to pin your location yourself.",
+  "@homeHereSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSettings": "Settings",
+  "homeRouteTo": "Route to {place}",
+  "@homeRouteTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homePreview": "Preview {time}",
+  "@homePreview": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDepart": "Leave {time}",
+  "@homeDepart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeArriveCaption": "Arrive",
+  "homeModeEta": "{mode} · {minutes, plural, =1{1 min} other{{minutes} min}}",
+  "@homeModeEta": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextTrips": "Upcoming trips",
+  "homeUnresolvedSubtitle": "“{location}” · Tap to pick the place",
+  "@homeUnresolvedSubtitle": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "homeUnresolvedStatus": "Unknown place",
+  "homeFutureSubtitle": "{place} · We’ll tell you when to leave on the day",
+  "@homeFutureSubtitle": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFutureStatus": "Upcoming",
+  "homeTonightTitle": "Home tonight",
+  "homeNoCanalStation": "No canal gauge near home",
+  "homeOutOfArea": "Outside the covered area · rain data only",
+  "homeCanalLevel": "{canal} {level} of {bank} m",
+  "@homeCanalLevel": {
+    "placeholders": {
+      "canal": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "homeQuickAsk": "Quick ask",
+  "homeQuestionHomeNow": "Go home now",
+  "homeQuestionToNow": "Go to {place} now",
+  "@homeQuestionToNow": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSetPlaceTooltip": "Set {label}",
+  "@homeSetPlaceTooltip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDefaultPlaceHome": "Home",
+  "homeDefaultPlaceWork": "Work",
+  "homeDefaultPlaceSiam": "Siam",
+  "homeDefaultPlaceThonglor": "Thonglor",
+  "homeDefaultPlaceImpact": "IMPACT",
+  "homeUsingPinned": "Using “{name}” as your current location",
+  "@homeUsingPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeBackToGps": "Use GPS again",
+  "homeTripGoHome": "Go home",
+  "homeFromHereSemantics": "Going home, from your current location",
+  "homeFromHereTitle": "Going home · from your current location",
+  "homeLeaveAround": "Leave around {time}",
+  "@homeLeaveAround": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeCheckRainHome": "Check the rain on your way home",
+  "homeLocationOnTap": "The app uses your location only when you tap, as the starting point.",
+  "homeCheckWayHome": "Check the way home",
+  "askSuggestion1": "What if I wait until 8 pm?",
+  "askSuggestion2": "Should I take the BTS instead?",
+  "askOpeningPlain": "Ask me anything about rain and getting around.",
+  "askOpeningWith": "Right now I suggest “{headline}”. Anything else you’d like to ask?",
+  "@askOpeningWith": {
+    "placeholders": {
+      "headline": {
+        "type": "String"
+      }
+    }
+  },
+  "askFailed": "Couldn’t answer because the server isn’t reachable. Check your connection and ask again.",
+  "askTitle": "Ask more",
+  "askInputHint": "Type a question, e.g. “What about the motorbike?”",
+  "askRetry": "Ask again"
+}

@@ -1,0 +1,1026 @@
+{
+  "@@locale": "en",
+  "appTitle": "Fon Tok Mai",
+  "settingsLanguage": "Language",
+  "settingsLanguageThai": "ไทย",
+  "settingsLanguageEnglish": "English",
+  "shellTabTrip": "Travel",
+  "shellTabReport": "Report flood",
+  "shellTabHome": "Home",
+  "designBack": "Back",
+  "designAskTooltip": "Ask",
+  "designAskHint": "Where and when? e.g. “Siam at 5 pm”",
+  "designDismissBanner": "Dismiss notification",
+  "designRetry": "Try again",
+  "designLoadingAnswer": "Loading the answer",
+  "boardNoteTransitCrowded": "Trains run in the rain, but platforms get crowded. Leave extra time.",
+  "boardNoteDry": "No rain on the way",
+  "boardNoteCarHeavy": "Heavy rain, slow drainage, traffic building up",
+  "boardNoteCarDrizzle": "Light rain near the end. Drive slower.",
+  "boardNoteBeatRain": "You get there before the rain",
+  "boardNoteMotoHeavy": "Heavy rain on the way. Skip the motorbike.",
+  "boardNoteMotoTight": "Just in time. Any later and you get rained on.",
+  "boardHeadlineLeave": "Leave at {time}",
+  "@boardHeadlineLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "boardHeadlineWait": "Hold off for now",
+  "boardHeadlineSwitchTransit": "Take the BTS instead",
+  "homeLoadErrorTitle": "Couldn’t load your trips",
+  "homeLoadErrorBody": "Can’t reach the server and there’s no sample data on this device. Check your connection and try again.",
+  "homeSeeWhatToDo": "See what to do now",
+  "homeDecideErrorTitle": "No verdict yet",
+  "homeDecideErrorBody": "Can’t reach the server. Check your connection and try again.",
+  "homeSeeReasons": "See why and the options",
+  "homeAskMore": "Ask more",
+  "homeNoTripTitle": "No trips yet",
+  "homeNoTripBody": "Save your home and the app will warn you before you leave work each day. Or just ask above.",
+  "homeSetHome": "Set home",
+  "homeSetWork": "Set work",
+  "homeNoHomeTripTitle": "No trip home today",
+  "homeWfhBody": "You’re working from home, so the app only warns about other trips. Ask below, e.g. “Siam at 5 pm”.",
+  "homeNotWorkdayBody": "Today isn’t a workday. If you’re heading out, ask below.",
+  "homePastCommuteBody": "It’s past your usual time to head home. Tomorrow the app will check before you leave work.",
+  "homeGpsInaccurate": "Location may be off by {distance}",
+  "@homeGpsInaccurate": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "homePinMyself": "Pin it myself",
+  "homeSetHomeHint": "Set home to get a warning before you head back",
+  "homeSetWorkHint": "Set your workplace for more accurate warnings",
+  "homeWfhNotice": "Working from home — only other trips get warnings",
+  "homeCalendarHint": "Connect Calendar so the app can see your plans",
+  "homeConnect": "Connect",
+  "homeNoCalendarSoon": "No events with a location in the next 24 h",
+  "homeAskHintHero": "Where to, and when?",
+  "homeGreetingDemo": "Hi Miw",
+  "homeGreeting": "Hello",
+  "homeCurrentPlace": "Current location",
+  "homeCurrentPlaceAlt": "Current location",
+  "homeHereSemantics": "Current location {name}. Tap to pin your location yourself.",
+  "@homeHereSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSettings": "Settings",
+  "homeRouteTo": "Route to {place}",
+  "@homeRouteTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homePreview": "Preview {time}",
+  "@homePreview": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDepart": "Leave {time}",
+  "@homeDepart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeArriveCaption": "Arrive",
+  "homeModeEta": "{mode} · {minutes, plural, =1{1 min} other{{minutes} min}}",
+  "@homeModeEta": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextTrips": "Upcoming trips",
+  "homeUnresolvedSubtitle": "“{location}” · Tap to pick the place",
+  "@homeUnresolvedSubtitle": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "homeUnresolvedStatus": "Unknown place",
+  "homeFutureSubtitle": "{place} · We’ll tell you when to leave on the day",
+  "@homeFutureSubtitle": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFutureStatus": "Upcoming",
+  "homeTonightTitle": "Home tonight",
+  "homeNoCanalStation": "No canal gauge near home",
+  "homeOutOfArea": "Outside the covered area · rain data only",
+  "homeCanalLevel": "{canal} {level} of {bank} m",
+  "@homeCanalLevel": {
+    "placeholders": {
+      "canal": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "homeQuickAsk": "Quick ask",
+  "homeQuestionHomeNow": "Go home now",
+  "homeQuestionToNow": "Go to {place} now",
+  "@homeQuestionToNow": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSetPlaceTooltip": "Set {label}",
+  "@homeSetPlaceTooltip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDefaultPlaceHome": "Home",
+  "homeDefaultPlaceWork": "Work",
+  "homeDefaultPlaceSiam": "Siam",
+  "homeDefaultPlaceThonglor": "Thonglor",
+  "homeDefaultPlaceImpact": "IMPACT",
+  "homeUsingPinned": "Using “{name}” as your current location",
+  "@homeUsingPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeBackToGps": "Use GPS again",
+  "homeTripGoHome": "Go home",
+  "homeFromHereSemantics": "Going home, from your current location",
+  "homeFromHereTitle": "Going home · from your current location",
+  "homeLeaveAround": "Leave around {time}",
+  "@homeLeaveAround": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeCheckRainHome": "Check the rain on your way home",
+  "homeLocationOnTap": "The app uses your location only when you tap, as the starting point.",
+  "homeCheckWayHome": "Check the way home",
+  "askSuggestion1": "What if I wait until 8 pm?",
+  "askSuggestion2": "Should I take the BTS instead?",
+  "askOpeningPlain": "Ask me anything about rain and getting around.",
+  "askOpeningWith": "Right now I suggest “{headline}”. Anything else you’d like to ask?",
+  "@askOpeningWith": {
+    "placeholders": {
+      "headline": {
+        "type": "String"
+      }
+    }
+  },
+  "askFailed": "Couldn’t answer because the server isn’t reachable. Check your connection and ask again.",
+  "askTitle": "Ask more",
+  "askInputHint": "Type a question, e.g. “What about the motorbike?”",
+  "askRetry": "Ask again",
+  "partsQuestion": "Question: “{question}”",
+  "@partsQuestion": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "partsArriveBy": "Arrive by {time}",
+  "@partsArriveBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsChecking": "Checking this time…",
+  "partsPreviewEstimate": "Estimated from rain along the route. Release to confirm.",
+  "partsTakesMin": "Takes {minutes} min",
+  "@partsTakesMin": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "partsSegLeave": "Leave",
+  "partsSegArrive": "Arrive",
+  "partsSegMode": "Mode",
+  "partsSegConfidence": "Sure",
+  "partsNow": "Now",
+  "partsDragHint": "Drag the pin to try a departure time",
+  "partsLeaveNow": "Leave now",
+  "partsOutOfArea": "Outside coverage area",
+  "partsRainToday": "Rain today",
+  "partsMm": "{mm} mm",
+  "@partsMm": {
+    "placeholders": {
+      "mm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsFloodSpots": "Flood spots, 2 km",
+  "partsReports": "Reports, 500 m",
+  "partsCanalLevel": "Canal level",
+  "partsCanalLevelValue": "{level}/{bank} m",
+  "@partsCanalLevelValue": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "partsCanalRise": "Rise in 2 h",
+  "partsCm": "{cm} cm",
+  "@partsCm": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsToBank": "To the bank",
+  "partsAtBank": "At the bank",
+  "partsCmLeft": "{cm} cm to go",
+  "@partsCmLeft": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsNoCanalStation": "No canal gauge near home",
+  "partsOutsideBangkok": "Home is outside Bangkok, so canal levels and flood spots are not covered yet. The app can only warn about rain.",
+  "partsDemoClockSemantic": "Demo time {time}, tap to change",
+  "@partsDemoClockSemantic": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsRealTime": "Live time",
+  "partsDemoTime": "Demo time",
+  "partsDemoReplay": "Replays the storm of Tue 29 Sep 2026 · sent as X-Demo-Clock",
+  "partsRealTimeNoHeader": "Live time (no header sent)",
+  "partsPreset1610": "Before leaving work, rain not here yet",
+  "partsPreset1852": "Storm over Ratchada, water waiting to drain",
+  "partsPreset2140": "Flood mode at home",
+  "partsPresetDevice": "Use the device clock",
+  "partsKindLabel": "{kind, select, home{home} work{work} other{place}}",
+  "@partsKindLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsFirst": "Need this first",
+  "partsNeedsWhere": "Where is your {place}?",
+  "@partsNeedsWhere": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsSaveOnce": "Save it once and the app picks this question right back up.",
+  "partsUseMyLocation": "Use my location",
+  "partsSearch": "Search",
+  "partsWhichPlace": "Which place?",
+  "partsNotFound": "No match for “{query}”. Try another name.",
+  "@partsNotFound": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSimilar": "Several places look like “{query}”",
+  "@partsSimilar": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSearchFor": "Search “{query}”",
+  "@partsSearchFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNoneOfThese": "None of these · search myself",
+  "marksSourceSemantic": "Source: {text}",
+  "@marksSourceSemantic": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "marksSample": "Sample data",
+  "marksSampleSemantic": "Sample data, cannot reach the server",
+  "marksDemo": "Demo",
+  "marksDemoSemantic": "Demo profile, simulated data",
+  "marksConfidence": "Sure",
+  "marksConfidenceSemantic": "Confidence {percent}",
+  "@marksConfidenceSemantic": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "marksGeneratedByAi": "Analyzed by AI",
+  "marksGeneratedByFallback": "Using backup calculation · AI did not respond this time",
+  "rainBandLeave": "Leave {time}",
+  "@rainBandLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "rainBandSlider": "Departure time. Drag to try another.",
+  "galleryTitle": "Design system",
+  "gallerySubtitle": "Fon Tok Mai · tokens and components",
+  "galleryClear": "Clear",
+  "galleryStorm": "Storm",
+  "galleryFlood": "Flood",
+  "gallerySkySwatches": "Sky fields",
+  "galleryPassPerSky": "Pass in each sky",
+  "galleryColors": "Colors",
+  "galleryType": "Type · Chakra Petch",
+  "gallerySpace": "Spacing · radius · shadow",
+  "galleryMotion": "Motion",
+  "galleryRainBand": "RainBand · draggable",
+  "galleryRerank": "Re-rank",
+  "galleryPlaces": "Places · Notice · ConnectRow",
+  "galleryNoticeWork": "Set your workplace for more accurate alerts",
+  "galleryNoticeOff": "Notifications are off, so the app cannot warn you before you leave",
+  "galleryOpenSettings": "Open settings",
+  "galleryNoticeCalendar": "Connect Calendar so the app can see your plans",
+  "galleryCalendarDetail": "Only events with a location",
+  "galleryCalendarAccount": "miw.demo@gmail.com · demo account",
+  "galleryRiskChips": "RiskChip · ConfidenceMeter · SourceLabel",
+  "galleryNotifTitle": "Leave before 16:45 · dinner with family",
+  "galleryNotifBody": "Rain reaches Rama 4 around 17:30. Leave now and you get home before it.",
+  "galleryStateLoading": "State: loading",
+  "galleryStateError": "State: error",
+  "galleryStateEmpty": "State: empty",
+  "galleryErrorTitle": "Could not load trips",
+  "galleryErrorMessage": "Cannot reach the server. Check your connection and try again.",
+  "galleryEmptyTitle": "No trips today",
+  "galleryEmptyMessage": "Just ask, for example “Siam at 5 pm”",
+  "galleryConnectCalendar": "Connect Calendar",
+  "galleryRowTransitSub": "Sala Daeng → Lat Phrao, no umbrella needed",
+  "galleryRowCarSub": "Arrive before the rain, on time for 18:30",
+  "galleryRowMotoSub": "Just in time; any later and you get wet",
+  "galleryRowTitle": "{mode} · {minutes} min",
+  "@galleryRowTitle": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "galleryHeadClear": "Leave before 16:45",
+  "galleryHeadStorm": "Do not leave yet",
+  "galleryHeadFlood": "Water reaches your door in 40 min",
+  "galleryColorPass": "Pass",
+  "galleryColorRain": "Rain (none → heavy)",
+  "galleryColorRisk": "Risk",
+  "galleryTypeVerdict": "verdict",
+  "galleryTypeSampleLong": "Rain reaches Rama 4 around 17:30, 25 cm of standing water",
+  "galleryTypeTabular": "Tabular figures (Petch Tabular) vs. regular figures",
+  "galleryMotionTap": "Button and selection states",
+  "galleryMotionFlap": "Verdict flips its letters",
+  "galleryMotionRerank": "Board re-ranks",
+  "galleryMotionEnter": "Notification slides down",
+  "galleryMotionSky": "Sky color changes state",
+  "galleryMotionCurves": "Curves: standard (0.2, 0, 0, 1) · emphasized decelerate (0.05, 0.7, 0.1, 1)",
+  "galleryMotionReduced": "Reduce motion is on: every duration is 0",
+  "galleryFlipDemo": "OK to leave at 16:45",
+  "galleryFlip": "Flip",
+  "galleryModeStatus": "{minutes} min · {status}",
+  "@galleryModeStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "placeKindHome": "Home",
+  "placeKindWork": "Work",
+  "placeKindOther": "Place",
+  "placeDemoSiam": "Siam",
+  "placeDemoThonglor": "Thong Lo",
+  "placeDemoImpact": "IMPACT",
+  "locationGpsOff": "GPS is off",
+  "locationDenied": "Location access not allowed",
+  "locationUnavailable": "Couldn't find your location",
+  "locationCurrent": "Current location",
+  "locationFallbackSpot": "Ratchadaphisek Rd at Soi Lat Phrao 32",
+  "placesPinLabel": "Location pin {lat}, {lng}",
+  "@placesPinLabel": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "placesDismiss": "Dismiss",
+  "placesNotConnected": "Not connected",
+  "placesNotConnectedDetail": "Not connected · {detail}",
+  "@placesNotConnectedDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "placesConnecting": "Connecting…",
+  "placesConnected": "Connected",
+  "placesConnectFailed": "Couldn't connect. Try again",
+  "placesComingSoon": "Coming soon",
+  "placesConnect": "Connect",
+  "placesDisconnect": "Disconnect",
+  "placesRetry": "Try again",
+  "placesSearching": "Searching",
+  "onboardingHeadline": "Get a heads-up before you head home",
+  "onboardingIntro": "Tell us where home and work are. Every evening we'll check rain and flooding on your way back, and the flood risk near your home.",
+  "onboardingSkipNote": "You can skip this and just ask anytime",
+  "onboardingStart": "Get started",
+  "onboardingSkip": "Skip for now",
+  "onboardingDemo": "Use the demo profile (Miw)",
+  "onboardingSet": "Set",
+  "onboardingHomeHint": "Used for warnings before you head home and flooding near your home",
+  "onboardingWorkHint": "Optional · makes end-of-work warnings more accurate",
+  "onboardingWorkSummary": "{name} · {days}, leaves {time}",
+  "@onboardingWorkSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingUseHere": "Use my location",
+  "onboardingSearch": "Search",
+  "onboardingEdit": "Edit",
+  "pickerDeleted": "Deleted “{label}”",
+  "@pickerDeleted": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerUndo": "Undo",
+  "pickerTitlePoint": "Choose a spot",
+  "pickerTitleMove": "Move {label}",
+  "@pickerTitleMove": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerTitleHome": "Set home",
+  "pickerTitleWork": "Set work",
+  "pickerTitleOther": "Add a place",
+  "pickerSubtitle": "Search, or use your current location",
+  "pickerHintTyping": "Type at least {count} characters: a BTS station, mall, soi or district",
+  "@pickerHintTyping": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickerSearchFailedTitle": "Search failed",
+  "pickerSearchFailedMessage": "Can't reach the server, and there's no offline place list on this device",
+  "pickerNoResultsTitle": "No results for “{query}”",
+  "@pickerNoResultsTitle": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerNoResultsMessage": "Try a BTS station or mall name",
+  "pickerNoResultsMessageOffline": "Try a BTS station or mall name. Right now only the offline list is searchable",
+  "pickerUseLocation": "Use my location",
+  "pickerSearchOnlineAgain": "Search online again",
+  "pickerOfflineNotice": "Can't search online. Showing offline results",
+  "pickerOutOfArea": "Out of area",
+  "pickerSourceGoogle": "Results from Google Maps",
+  "pickerSourceLocal": "BTS/MRT stations, malls and districts in Bangkok",
+  "pickerSearchHint": "A place name, e.g. BTS Ari or Central",
+  "pickerClear": "Clear",
+  "pickerNaming": "Finding the place name…",
+  "pickerDroppedPin": "Dropped pin",
+  "pickerHereNow": "Current location",
+  "locateBusy": "Finding your location…",
+  "locateBusyHint": "Using your phone's GPS, up to 10 seconds",
+  "locateSearchInstead": "Search instead",
+  "locateIdleHint": "Uses GPS, and you confirm before saving",
+  "locateAskTitle": "Allow location this time",
+  "locateAskMessage": "We only use your location to work out where you are. We don't keep a travel history.",
+  "locateAllow": "Allow location",
+  "locateDeniedTitle": "Location permission needed",
+  "locateDeniedForeverMessage": "Turn on location for Fon Tok Mai in your phone's settings, or search for a place by name.",
+  "locateDeniedMessage": "You can allow it in the app's settings, or search for a place by name.",
+  "locateOpenSettings": "Open settings",
+  "locateOffTitle": "Location is off",
+  "locateOffMessage": "Turn on location services first, or search for a place by name.",
+  "locateOpenLocationSettings": "Open location settings",
+  "locateTimeoutTitle": "Location timed out",
+  "locateErrorTitle": "Couldn't find your location",
+  "locateWeakMessage": "The GPS signal is weak. Try again near a window, or search for a place by name.",
+  "sheetEdit": "Edit {label}",
+  "@sheetEdit": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetConfirm": "Confirm {label}",
+  "@sheetConfirm": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetSourceGps": "Location from GPS",
+  "sheetSourceSaved": "Saved on this device",
+  "sheetSourceLocal": "Offline data",
+  "sheetOutOfArea": "Outside the area we cover. Rain warnings still work, but there's no flood spot or canal data.",
+  "sheetLowAccuracy": "Your location may be off by {distance}",
+  "@sheetLowAccuracy": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetWorkFromHome": "Working from home — we'll only warn about other trips",
+  "sheetDuplicate": "Close to your saved ‘{label}’",
+  "@sheetDuplicate": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetNameLabel": "Name",
+  "sheetIcon": "Icon",
+  "sheetWorkDays": "Work days",
+  "sheetLeaveTime": "Usual time you leave work",
+  "sheetLeaveHint": "We'll check your way home before this time",
+  "sheetUpdateExisting": "Update the existing one",
+  "sheetSaveSeparate": "Save as a separate place",
+  "sheetSave": "Save",
+  "sheetMove": "Move",
+  "sheetDelete": "Delete {label}",
+  "@sheetDelete": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetTooMany": "You can save up to {max} places. Delete one to add another.",
+  "@sheetTooMany": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingAppName": "Fon Tok Mai",
+  "modeCar": "Car",
+  "modeTransit": "BTS / MRT",
+  "modeMoto": "Motorbike",
+  "modeCarShort": "Car",
+  "modeTransitShort": "Transit",
+  "modeMotoShort": "Bike",
+  "riskLow": "Low risk",
+  "riskMedium": "Medium risk",
+  "riskHigh": "High risk",
+  "boardLeaveOk": "Go",
+  "boardLeaveWithBuffer": "Leave early",
+  "boardWait": "Wait",
+  "boardSwitchMode": "Switch mode",
+  "boardDontGo": "Skip it",
+  "homeLevelNormal": "Normal",
+  "homeLevelWatch": "Watch",
+  "homeLevelDanger": "Danger",
+  "passableYes": "Passable",
+  "passableSlow": "Go slowly",
+  "passableNo": "Avoid",
+  "approxMeters": "~{meters} m",
+  "@approxMeters": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "approxKm": "~{km} km",
+  "@approxKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "weekdayInitial": "{day, select, 1{M} 2{T} 3{W} 4{Th} 5{F} 6{Sa} 7{Su} other{}}",
+  "@weekdayInitial": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "weekdayName": "{day, select, 1{Mon} 2{Tue} 3{Wed} 4{Thu} 5{Fri} 6{Sat} 7{Sun} other{}}",
+  "@weekdayName": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "monthShort": "{month, select, 1{Jan} 2{Feb} 3{Mar} 4{Apr} 5{May} 6{Jun} 7{Jul} 8{Aug} 9{Sep} 10{Oct} 11{Nov} 12{Dec} other{}}",
+  "@monthShort": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "workDaysEveryday": "Every day",
+  "workDaysWeekdays": "Mon–Fri",
+  "verdictCantDecide": "Can't decide yet",
+  "verdictServerError": "Couldn't reach the server. Check your connection and try again.",
+  "verdictRetry": "Try again",
+  "verdictSavePlace": "Save this place",
+  "verdictSavedSnack": "Saved “{label}”",
+  "@verdictSavedSnack": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictQuestionTitle": "Question",
+  "verdictReadingQuestion": "Reading your question…",
+  "verdictGoTo": "To {place}",
+  "@verdictGoTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictCompareModes": "Compare ways to travel",
+  "verdictModeStatus": "{eta} min · {status}",
+  "@verdictModeStatus": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictFloodSpotsTitle": "Flood spots on your route",
+  "verdictNoFloodSpots": "No standing water on this route",
+  "verdictNoFloodSpotsMsg": "This route avoids the city's known flood-prone spots.",
+  "verdictExpectedDepth": "Expected depth {cm} cm",
+  "@verdictExpectedDepth": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictStillDry": "Still dry",
+  "verdictTraceTitle": "How we got here",
+  "verdictSources": "Sources",
+  "verdictSourceGps": "GPS · current location",
+  "verdictAskMore": "Ask a follow-up",
+  "verdictWhyTitle": "Why we suggest this",
+  "verdictRouteAdvice": "Getting around the flooding",
+  "verdictAvoid": "Avoid {spot}",
+  "@verdictAvoid": {
+    "placeholders": {
+      "spot": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictHideFactors": "Hide factors",
+  "verdictShowFactors": "See what we weighed ({count})",
+  "@verdictShowFactors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "floodSetHomeTitle": "Set your home to see flood risk at your door",
+  "floodSetHomeMsg": "We watch nearby canal levels, known flood spots and neighbours' reports, and warn you even when the app is closed.",
+  "floodUseLocation": "Use my location",
+  "floodSearch": "Search",
+  "floodReadError": "Can't read water levels",
+  "floodReadErrorMsg": "Couldn't reach ThaiWater through the server. If water is rising fast, move your things up high first.",
+  "floodRetry": "Try again",
+  "floodModeTitle": "Flood mode",
+  "floodHome": "Home",
+  "floodSameQuestion": "Same question, higher stakes",
+  "floodNoHome": "No home set yet",
+  "floodDoNow": "Do this now, in order",
+  "floodPrepare": "Get ready",
+  "floodSpotsTitle": "Flood-prone spots near home",
+  "floodNoSpots": "No flood spots within 2 km",
+  "floodNoSpotsMsg": "Home isn't near any chronic flood spot the city has listed.",
+  "floodFromHome": "{meters} m from home",
+  "@floodFromHome": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "floodNeighborsTitle": "Neighbours on your street",
+  "floodNeighborsDanger": "11 people got the same alert",
+  "floodNeighborsWatch": "3 people reported standing water in 20 minutes",
+  "floodNeighborsNote": "People without smartphones get a LINE / SMS message, or a call that reads it aloud.",
+  "floodStepSemantics": "Step {order}: {text}",
+  "@floodStepSemantics": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "floodNearbyTitle": "Flood reports near me",
+  "floodNearbyButton": "See flood reports near me",
+  "floodHereNow": "Your location",
+  "floodAround": "Around {where}",
+  "@floodAround": {
+    "placeholders": {
+      "where": {
+        "type": "String"
+      }
+    }
+  },
+  "floodNoReports": "No reports within 500 m",
+  "floodNoReportsMsg": "Nobody has reported standing water here in the last 24 hours.",
+  "floodWaterDepth": "Water {min}–{max} cm",
+  "@floodWaterDepth": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "floodCarPassable": "Car: {status}",
+  "@floodCarPassable": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "floodOtherSpot": "Check another spot",
+  "reportCameraError": "Couldn't open the camera. Try picking from your gallery instead.",
+  "reportGalleryError": "Couldn't open your gallery. Check photo permission in your device settings.",
+  "reportTitle": "Report flooding",
+  "reportSubtitle": "Snap the water on the road and warn people heading there",
+  "reportTakePhoto": "Take photo",
+  "reportFromGallery": "From gallery",
+  "reportFailed": "Couldn't send the report",
+  "reportFailedMsg": "Couldn't reach the server. Your photo is still on your phone, so you can send it again.",
+  "reportResend": "Send again",
+  "reportAnalyzing": "Gemini is looking at the photo and judging the water against wheels and the curb…",
+  "reportAnalyzeHint": "Gemini estimates the water depth from your photo, then warns people whose route passes within 300 m.",
+  "reportSeeHome": "See conditions at home",
+  "reportLocating": "Finding your location…",
+  "reportUsingGps": "Using your phone's GPS",
+  "reportGpsDetail": "GPS · {lat}, {lng} · {time}",
+  "@reportGpsDetail": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reportFallbackDetail": "{note} · using the demo's backup location",
+  "@reportFallbackDetail": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "reportRetryGps": "Retry GPS",
+  "reportDepthSemantics": "Water about {min} to {max} centimetres deep",
+  "@reportDepthSemantics": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reportSeenByGemini": "Gemini has looked at it",
+  "reportDepth": "Water {min}–{max} cm deep",
+  "@reportDepth": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reportNotified": "{count, plural, =1{Alerted 1 person heading through here} other{Alerted {count} people heading through here}}",
+  "@reportNotified": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportCorroborated": "{count, plural, =1{Backed up by 1 other report within 300 m} other{Backed up by {count} other reports within 300 m}}",
+  "@reportCorroborated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportDemoNumbers": "The number of people alerted is a simulated figure for the demo",
+  "reportFrameHint": "Include a wheel or the curb in the shot",
+  "reportNoPhoto": "No photo · sample result",
+  "settingsTitle": "Settings",
+  "settingsSubtitle": "Your data stays on this device",
+  "settingsNotificationsOff": "Notifications are off, so the app can't warn you before you leave.",
+  "settingsOpenSettings": "Open settings",
+  "settingsMyPlaces": "My places",
+  "settingsSetHome": "Set home",
+  "settingsSetWork": "Set work",
+  "settingsSetHomeHint": "So we can warn you before you head home and watch flooding at your door",
+  "settingsSetWorkHint": "So we can time your end-of-day warning better",
+  "settingsWorkDetail": " · {days}, leaves {time}",
+  "@settingsWorkDetail": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsOutOfArea": "Outside coverage",
+  "settingsWfh": "Working from home — we'll only warn you about other trips",
+  "settingsAddPlace": "Add a place",
+  "settingsAddPlaceHint": "Gym, kids' school, parents' place · {count} of {max}",
+  "@settingsAddPlaceHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsAddPlaceFull": "All {max} slots used. Remove one to add another.",
+  "@settingsAddPlaceFull": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsTravelGroup": "Travel",
+  "settingsRemindAhead": "Remind me ahead",
+  "settingsRemindAheadHint": "2 hours before you should leave",
+  "settingsAutoGroup": "Let the app find trips",
+  "settingsCalendarDetail": "Only events with a location",
+  "settingsCalendarAccount": "{account} · demo account",
+  "@settingsCalendarAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsGmailHint": "Only ticket and appointment confirmations. We don't store email content.",
+  "settingsRoutine": "Learn my routine",
+  "settingsRoutineHint": "Notices you head home around 6 pm every day · coming soon",
+  "settingsCommunityGroup": "Community and flooding",
+  "settingsShareReports": "Share my flood reports",
+  "settingsShareReportsHint": "Anonymous. Only location and water depth.",
+  "settingsHomeAlerts": "Flood alerts for home",
+  "settingsHomeAlertsHint": "Even when the app is closed",
+  "settingsSmsBackup": "SMS backup",
+  "settingsSmsBackupHint": "When there's no internet",
+  "settingsProfileGroup": "Profile",
+  "settingsExitDemo": "Leave the demo profile",
+  "settingsExitDemoHint": "Removes Mew's places and goes back to the start",
+  "settingsUseDemo": "Use the demo profile (Mew)",
+  "settingsUseDemoHint": "Mew's sample places and appointments, for demos",
+  "settingsTeamGroup": "For the team",
+  "settingsDesignSystem": "Design system",
+  "settingsDesignSystemHint": "Colour, type, spacing and components in every sky state",
+  "settingsDemoClock": "Demo clock",
+  "settingsRealTime": "Real time",
+  "settingsDemoNote": "The name “Mew”, user counts and community reports in this app are simulated for the demo.",
+  "settingsPlaceHome": "Home",
+  "settingsPlaceWork": "Work",
+  "settingsPlaceSiam": "Siam",
+  "settingsPlaceThonglor": "Thong Lo",
+  "settingsPlaceImpact": "IMPACT",
+  "verdictToolParseQuestion": "Understood your question",
+  "verdictToolGetTrip": "Checked your trip",
+  "verdictToolGetRoute": "Found the route",
+  "verdictToolRain": "Checked rain on the way",
+  "verdictToolFloodSpots": "Checked flood spots",
+  "verdictToolCanals": "Checked canal levels",
+  "verdictToolReports": "Read community reports",
+  "verdictToolEvaluate": "Weighed the risk"
+}

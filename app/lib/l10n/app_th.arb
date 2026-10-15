@@ -1,0 +1,1026 @@
+{
+  "@@locale": "th",
+  "appTitle": "ฝนตกไหม",
+  "settingsLanguage": "ภาษา",
+  "settingsLanguageThai": "ไทย",
+  "settingsLanguageEnglish": "English",
+  "shellTabTrip": "เดินทาง",
+  "shellTabReport": "แจ้งน้ำท่วม",
+  "shellTabHome": "บ้าน",
+  "designBack": "กลับ",
+  "designAskTooltip": "ถาม",
+  "designAskHint": "ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม",
+  "designDismissBanner": "ปิดแจ้งเตือน",
+  "designRetry": "ลองอีกครั้ง",
+  "designLoadingAnswer": "กำลังโหลดคำตอบ",
+  "boardNoteTransitCrowded": "ขบวนไม่สนฝน แต่ชานชาลาแน่น เผื่อเวลา",
+  "boardNoteDry": "ไม่โดนฝนระหว่างทาง",
+  "boardNoteCarHeavy": "ฝนหนัก น้ำรอระบาย รถติดสะสม",
+  "boardNoteCarDrizzle": "เจอฝนปรอยช่วงท้าย ขับช้าลง",
+  "boardNoteBeatRain": "ถึงก่อนฝน",
+  "boardNoteMotoHeavy": "ฝนหนักกลางทาง มอเตอร์ไซค์ไม่ควรไป",
+  "boardNoteMotoTight": "ทันพอดี ช้ากว่านี้จะโดนฝน",
+  "boardHeadlineLeave": "ออก {time} ได้",
+  "@boardHeadlineLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "boardHeadlineWait": "อย่าเพิ่งออก",
+  "boardHeadlineSwitchTransit": "เปลี่ยนเป็น BTS ดีกว่า",
+  "homeLoadErrorTitle": "โหลดทริปไม่ได้",
+  "homeLoadErrorBody": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้และไม่มีข้อมูลตัวอย่างในเครื่อง ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
+  "homeSeeWhatToDo": "ดูสิ่งที่ต้องทำตอนนี้",
+  "homeDecideErrorTitle": "ยังตัดสินไม่ได้",
+  "homeDecideErrorBody": "ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
+  "homeSeeReasons": "ดูเหตุผลและทางเลือก",
+  "homeAskMore": "ถามต่อ",
+  "homeNoTripTitle": "ยังไม่มีทริป",
+  "homeNoTripBody": "ตั้งบ้านไว้ แอปจะเตือนก่อนเวลาเลิกงานทุกวัน หรือพิมพ์ถามด้านบนได้เลย",
+  "homeSetHome": "ตั้งบ้าน",
+  "homeSetWork": "ตั้งที่ทำงาน",
+  "homeNoHomeTripTitle": "วันนี้ไม่มีทริปกลับบ้าน",
+  "homeWfhBody": "ทำงานที่บ้าน แอปจะเตือนเฉพาะทริปอื่น พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม”",
+  "homeNotWorkdayBody": "วันนี้ไม่ใช่วันทำงาน ถ้าจะออกไปไหน พิมพ์ถามด้านล่างได้เลย",
+  "homePastCommuteBody": "เลยเวลากลับบ้านปกติมาแล้ว พรุ่งนี้แอปจะเช็กให้ก่อนเลิกงาน",
+  "homeGpsInaccurate": "ตำแหน่งอาจคลาดเคลื่อน {distance}",
+  "@homeGpsInaccurate": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "homePinMyself": "ปักหมุดเอง",
+  "homeSetHomeHint": "ตั้งบ้านเพื่อให้เตือนตอนกลับ",
+  "homeSetWorkHint": "ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น",
+  "homeWfhNotice": "ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น",
+  "homeCalendarHint": "เชื่อม Calendar เพื่อให้แอปเห็นนัด",
+  "homeConnect": "เชื่อมต่อ",
+  "homeNoCalendarSoon": "ไม่มีนัดที่มีสถานที่ใน 24 ชม.",
+  "homeAskHintHero": "ไปไหน กี่โมง?",
+  "homeGreetingDemo": "สวัสดีมิว",
+  "homeGreeting": "สวัสดี",
+  "homeCurrentPlace": "ตำแหน่งตอนนี้",
+  "homeCurrentPlaceAlt": "ตำแหน่งปัจจุบัน",
+  "homeHereSemantics": "ตำแหน่งตอนนี้ {name} แตะเพื่อปักหมุดตำแหน่งเอง",
+  "@homeHereSemantics": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSettings": "ตั้งค่า",
+  "homeRouteTo": "ทางกลับ{place}",
+  "@homeRouteTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homePreview": "พรีวิว {time}",
+  "@homePreview": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDepart": "ออก {time}",
+  "@homeDepart": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeArriveCaption": "ถึง",
+  "homeModeEta": "{mode} · {minutes} นาที",
+  "@homeModeEta": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "homeNextTrips": "ทริปถัดไป",
+  "homeUnresolvedSubtitle": "“{location}” · แตะเพื่อเลือกสถานที่",
+  "@homeUnresolvedSubtitle": {
+    "placeholders": {
+      "location": {
+        "type": "String"
+      }
+    }
+  },
+  "homeUnresolvedStatus": "ไม่รู้ว่าที่ไหน",
+  "homeFutureSubtitle": "{place} · จะเตือนวันเดินทางว่าออกกี่โมงดี",
+  "@homeFutureSubtitle": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homeFutureStatus": "รอวัน",
+  "homeTonightTitle": "ที่บ้านคืนนี้",
+  "homeNoCanalStation": "ไม่มีสถานีวัดระดับคลองใกล้บ้าน",
+  "homeOutOfArea": "นอกพื้นที่ที่รองรับ · มีเฉพาะข้อมูลฝน",
+  "homeCanalLevel": "{canal} {level} จาก {bank} ม.",
+  "@homeCanalLevel": {
+    "placeholders": {
+      "canal": {
+        "type": "String"
+      },
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "homeQuickAsk": "ถามเร็ว",
+  "homeQuestionHomeNow": "กลับบ้านตอนนี้",
+  "homeQuestionToNow": "ไป{place}ตอนนี้",
+  "@homeQuestionToNow": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "homeSetPlaceTooltip": "ตั้ง{label}",
+  "@homeSetPlaceTooltip": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "homeDefaultPlaceHome": "บ้าน",
+  "homeDefaultPlaceWork": "ที่ทำงาน",
+  "homeDefaultPlaceSiam": "สยาม",
+  "homeDefaultPlaceThonglor": "ทองหล่อ",
+  "homeDefaultPlaceImpact": "อิมแพ็ค",
+  "homeUsingPinned": "ใช้ “{name}” เป็นตำแหน่งตอนนี้แล้ว",
+  "@homeUsingPinned": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "homeBackToGps": "กลับไปใช้ GPS",
+  "homeTripGoHome": "กลับบ้าน",
+  "homeFromHereSemantics": "กลับบ้าน จากตำแหน่งตอนนี้",
+  "homeFromHereTitle": "กลับบ้าน · จากตำแหน่งตอนนี้",
+  "homeLeaveAround": "ออกราว {time}",
+  "@homeLeaveAround": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "homeCheckRainHome": "เช็กฝนบนทางกลับบ้าน",
+  "homeLocationOnTap": "แอปใช้ตำแหน่งตอนกดเท่านั้น เพื่อเป็นจุดเริ่มต้นของทาง",
+  "homeCheckWayHome": "เช็กทางกลับบ้าน",
+  "askSuggestion1": "ถ้ารอถึงสองทุ่มค่อยกลับล่ะ",
+  "askSuggestion2": "ไป BTS แทนดีไหม",
+  "askOpeningPlain": "อยากรู้อะไรเรื่องฝนกับการเดินทาง ถามได้เลย",
+  "askOpeningWith": "ตอนนี้แนะนำ “{headline}” นะ มีอะไรอยากถามต่อไหม",
+  "@askOpeningWith": {
+    "placeholders": {
+      "headline": {
+        "type": "String"
+      }
+    }
+  },
+  "askFailed": "ตอบไม่ได้ เพราะติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วถามใหม่",
+  "askTitle": "ถามต่อ",
+  "askInputHint": "พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ",
+  "askRetry": "ถามใหม่",
+  "partsQuestion": "คำถาม: “{question}”",
+  "@partsQuestion": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "partsArriveBy": "ถึงก่อน {time}",
+  "@partsArriveBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsChecking": "กำลังตรวจเวลานี้…",
+  "partsPreviewEstimate": "ประเมินจากฝนบนเส้นทาง ปล่อยนิ้วเพื่อยืนยัน",
+  "partsTakesMin": "ใช้เวลา {minutes} นาที",
+  "@partsTakesMin": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "partsSegLeave": "ออก",
+  "partsSegArrive": "ถึง",
+  "partsSegMode": "โหมด",
+  "partsSegConfidence": "มั่นใจ",
+  "partsNow": "ตอนนี้",
+  "partsDragHint": "ลากหมุดเพื่อลองเวลาออก",
+  "partsLeaveNow": "ออกตอนนี้",
+  "partsOutOfArea": "นอกพื้นที่ที่รองรับ",
+  "partsRainToday": "ฝนวันนี้",
+  "partsMm": "{mm} มม.",
+  "@partsMm": {
+    "placeholders": {
+      "mm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsFloodSpots": "จุดเสี่ยง 2 กม.",
+  "partsReports": "รายงาน 500 ม.",
+  "partsCanalLevel": "ระดับคลอง",
+  "partsCanalLevelValue": "{level}/{bank} ม.",
+  "@partsCanalLevelValue": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "partsCanalRise": "ขึ้นใน 2 ชม.",
+  "partsCm": "{cm} ซม.",
+  "@partsCm": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsToBank": "ถึงตลิ่ง",
+  "partsAtBank": "ถึงแล้ว",
+  "partsCmLeft": "อีก {cm} ซม.",
+  "@partsCmLeft": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsNoCanalStation": "ไม่มีสถานีวัดระดับคลองใกล้บ้าน",
+  "partsOutsideBangkok": "บ้านอยู่นอกกรุงเทพฯ ข้อมูลระดับคลองและจุดน้ำท่วมยังไม่ครอบคลุม แอปเตือนได้เฉพาะฝน",
+  "partsDemoClockSemantic": "เวลาสาธิต {time} แตะเพื่อเปลี่ยน",
+  "@partsDemoClockSemantic": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsRealTime": "เวลาจริง",
+  "partsDemoTime": "เวลาสาธิต",
+  "partsDemoReplay": "เล่นซ้ำพายุ อังคาร 29 ก.ย. 2026 · ส่งเป็น X-Demo-Clock",
+  "partsRealTimeNoHeader": "เวลาจริง (ไม่ส่ง header)",
+  "partsPreset1610": "ก่อนเลิกงาน ฝนยังไม่มา",
+  "partsPreset1852": "พายุบนรัชดา น้ำรอระบาย",
+  "partsPreset2140": "โหมดน้ำท่วมที่บ้าน",
+  "partsPresetDevice": "ใช้นาฬิกาเครื่อง",
+  "partsKindLabel": "{kind, select, home{บ้าน} work{ที่ทำงาน} other{สถานที่}}",
+  "@partsKindLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsFirst": "ต้องรู้ก่อนตอบ",
+  "partsNeedsWhere": "ยังไม่รู้ว่า{place}อยู่ไหน",
+  "@partsNeedsWhere": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsSaveOnce": "บันทึกไว้ครั้งเดียว แล้วแอปจะตอบคำถามนี้ต่อทันที",
+  "partsUseMyLocation": "ใช้ตำแหน่งตอนนี้",
+  "partsSearch": "ค้นหา",
+  "partsWhichPlace": "หมายถึงที่ไหน",
+  "partsNotFound": "หา “{query}” ไม่เจอ ลองค้นด้วยชื่ออื่น",
+  "@partsNotFound": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSimilar": "เจอหลายที่ที่ชื่อคล้าย “{query}”",
+  "@partsSimilar": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSearchFor": "ค้นหา “{query}”",
+  "@partsSearchFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNoneOfThese": "ไม่ใช่ทั้งหมด · ค้นหาเอง",
+  "marksSourceSemantic": "แหล่งข้อมูล: {text}",
+  "@marksSourceSemantic": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "marksSample": "ข้อมูลตัวอย่าง",
+  "marksSampleSemantic": "ข้อมูลตัวอย่าง เชื่อมต่อเซิร์ฟเวอร์ไม่ได้",
+  "marksDemo": "เดโม",
+  "marksDemoSemantic": "โปรไฟล์เดโม ข้อมูลจำลอง",
+  "marksConfidence": "มั่นใจ",
+  "marksConfidenceSemantic": "ความมั่นใจ {percent}",
+  "@marksConfidenceSemantic": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "marksGeneratedByAi": "AI วิเคราะห์ให้",
+  "marksGeneratedByFallback": "ใช้การคำนวณสำรอง · AI ไม่ตอบในรอบนี้",
+  "rainBandLeave": "ออก {time}",
+  "@rainBandLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "rainBandSlider": "เวลาออกเดินทาง ลากเพื่อลองเวลาอื่น",
+  "galleryTitle": "ระบบดีไซน์",
+  "gallerySubtitle": "ฝนตกไหม · โทเคนและคอมโพเนนต์",
+  "galleryClear": "ฟ้าใส",
+  "galleryStorm": "พายุ",
+  "galleryFlood": "น้ำท่วม",
+  "gallerySkySwatches": "พื้นท้องฟ้า",
+  "galleryPassPerSky": "พาสในแต่ละท้องฟ้า",
+  "galleryColors": "สี",
+  "galleryType": "ตัวอักษร · Chakra Petch",
+  "gallerySpace": "ระยะ · รัศมี · เงา",
+  "galleryMotion": "การเคลื่อนไหว",
+  "galleryRainBand": "RainBand · ลากได้",
+  "galleryRerank": "จัดอันดับใหม่",
+  "galleryPlaces": "สถานที่ · Notice · ConnectRow",
+  "galleryNoticeWork": "ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น",
+  "galleryNoticeOff": "ปิดการแจ้งเตือนอยู่ แอปเตือนก่อนออกไม่ได้",
+  "galleryOpenSettings": "เปิดการตั้งค่า",
+  "galleryNoticeCalendar": "เชื่อม Calendar เพื่อให้แอปเห็นนัด",
+  "galleryCalendarDetail": "เฉพาะนัดที่มีสถานที่",
+  "galleryCalendarAccount": "miw.demo@gmail.com · บัญชีจำลอง",
+  "galleryRiskChips": "RiskChip · ConfidenceMeter · SourceLabel",
+  "galleryNotifTitle": "ออกก่อน 16:45 · กินข้าวเย็นกับที่บ้าน",
+  "galleryNotifBody": "ฝนถึงพระราม 4 ประมาณ 17:30 ถ้าออกตอนนี้ถึงบ้านก่อนฝน",
+  "galleryStateLoading": "สถานะ: กำลังโหลด",
+  "galleryStateError": "สถานะ: ผิดพลาด",
+  "galleryStateEmpty": "สถานะ: ว่าง",
+  "galleryErrorTitle": "โหลดทริปไม่ได้",
+  "galleryErrorMessage": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
+  "galleryEmptyTitle": "วันนี้ยังไม่มีทริป",
+  "galleryEmptyMessage": "พิมพ์ถามได้เลย เช่น “ห้าโมงไปสยาม”",
+  "galleryConnectCalendar": "เชื่อม Calendar",
+  "galleryRowTransitSub": "ศาลาแดง → ลาดพร้าว ไม่ต้องพกร่ม",
+  "galleryRowCarSub": "ถึงก่อนฝน ทันนัด 18:30",
+  "galleryRowMotoSub": "ทันพอดี ช้ากว่านี้จะโดนฝน",
+  "galleryRowTitle": "{mode} · {minutes} นาที",
+  "@galleryRowTitle": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "galleryHeadClear": "ออกก่อน 16:45",
+  "galleryHeadStorm": "อย่าเพิ่งออก",
+  "galleryHeadFlood": "น้ำจะถึงหน้าบ้านใน 40 นาที",
+  "galleryColorPass": "พาส",
+  "galleryColorRain": "ฝน (ไม่มี → หนัก)",
+  "galleryColorRisk": "ความเสี่ยง",
+  "galleryTypeVerdict": "คำตัดสิน",
+  "galleryTypeSampleLong": "ฝนถึงพระราม 4 ราว 17:30 น้ำขัง 25 ซม.",
+  "galleryTypeTabular": "ตัวเลขเท่ากัน (Petch Tabular) เทียบตัวเลขปกติ",
+  "galleryMotionTap": "สถานะปุ่มและการเลือก",
+  "galleryMotionFlap": "คำตัดสินพลิกตัวอักษร",
+  "galleryMotionRerank": "กระดานเลื่อนอันดับ",
+  "galleryMotionEnter": "แจ้งเตือนเลื่อนลง",
+  "galleryMotionSky": "สีท้องฟ้าเปลี่ยนสถานะ",
+  "galleryMotionCurves": "เส้นโค้ง: standard (0.2, 0, 0, 1) · emphasized decelerate (0.05, 0.7, 0.1, 1)",
+  "galleryMotionReduced": "ลดการเคลื่อนไหวเปิดอยู่: ทุกระยะเวลาเป็น 0",
+  "galleryFlipDemo": "ออก 16:45 ได้",
+  "galleryFlip": "พลิก",
+  "galleryModeStatus": "{minutes} น. · {status}",
+  "@galleryModeStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "placeKindHome": "บ้าน",
+  "placeKindWork": "ที่ทำงาน",
+  "placeKindOther": "สถานที่",
+  "placeDemoSiam": "สยาม",
+  "placeDemoThonglor": "ทองหล่อ",
+  "placeDemoImpact": "อิมแพ็ค",
+  "locationGpsOff": "GPS ปิดอยู่",
+  "locationDenied": "ไม่ได้อนุญาตให้ใช้ตำแหน่ง",
+  "locationUnavailable": "หาตำแหน่งไม่ได้",
+  "locationCurrent": "ตำแหน่งปัจจุบัน",
+  "locationFallbackSpot": "ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32",
+  "placesPinLabel": "หมุดตำแหน่ง {lat}, {lng}",
+  "@placesPinLabel": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "placesDismiss": "ปิด",
+  "placesNotConnected": "ยังไม่เชื่อมต่อ",
+  "placesNotConnectedDetail": "ยังไม่เชื่อมต่อ · {detail}",
+  "@placesNotConnectedDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "placesConnecting": "กำลังเชื่อมต่อ…",
+  "placesConnected": "เชื่อมต่อแล้ว",
+  "placesConnectFailed": "เชื่อมต่อไม่สำเร็จ ลองอีกครั้ง",
+  "placesComingSoon": "เร็ว ๆ นี้",
+  "placesConnect": "เชื่อมต่อ",
+  "placesDisconnect": "ยกเลิก",
+  "placesRetry": "ลองอีกครั้ง",
+  "placesSearching": "กำลังค้นหา",
+  "onboardingHeadline": "ให้แอปเตือนก่อนกลับบ้าน",
+  "onboardingIntro": "บอกว่าบ้านกับที่ทำงานอยู่ไหน แอปจะเช็กฝนและน้ำท่วมบนทางกลับให้ทุกเย็น และดูความเสี่ยงน้ำท่วมหน้าบ้าน",
+  "onboardingSkipNote": "ข้ามไปก่อนก็ได้ ถามเองได้เสมอ",
+  "onboardingStart": "เริ่มใช้",
+  "onboardingSkip": "ข้ามไปก่อน",
+  "onboardingDemo": "ใช้โปรไฟล์เดโม (มิว)",
+  "onboardingSet": "ตั้งแล้ว",
+  "onboardingHomeHint": "ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน",
+  "onboardingWorkHint": "ไม่บังคับ · ทำให้เตือนตอนเลิกงานได้แม่นขึ้น",
+  "onboardingWorkSummary": "{name} · {days} ออก {time}",
+  "@onboardingWorkSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingUseHere": "ใช้ตำแหน่งตอนนี้",
+  "onboardingSearch": "ค้นหา",
+  "onboardingEdit": "แก้ไข",
+  "pickerDeleted": "ลบ “{label}” แล้ว",
+  "@pickerDeleted": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerUndo": "เลิกทำ",
+  "pickerTitlePoint": "เลือกจุด",
+  "pickerTitleMove": "ย้าย{label}",
+  "@pickerTitleMove": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerTitleHome": "ตั้งบ้าน",
+  "pickerTitleWork": "ตั้งที่ทำงาน",
+  "pickerTitleOther": "เพิ่มสถานที่",
+  "pickerSubtitle": "ค้นหา หรือใช้ตำแหน่งตอนนี้",
+  "pickerHintTyping": "พิมพ์อย่างน้อย {count} ตัวอักษร ชื่อสถานี BTS ห้าง ซอย หรือเขต",
+  "@pickerHintTyping": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickerSearchFailedTitle": "ค้นหาไม่ได้",
+  "pickerSearchFailedMessage": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ และไม่มีรายชื่อสถานที่ในเครื่อง",
+  "pickerNoResultsTitle": "ไม่พบ “{query}”",
+  "@pickerNoResultsTitle": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerNoResultsMessage": "ลองพิมพ์ชื่อสถานี BTS หรือห้าง",
+  "pickerNoResultsMessageOffline": "ลองพิมพ์ชื่อสถานี BTS หรือห้าง ตอนนี้ค้นได้เฉพาะรายชื่อในเครื่อง",
+  "pickerUseLocation": "ใช้ตำแหน่งตอนนี้",
+  "pickerSearchOnlineAgain": "ค้นออนไลน์อีกครั้ง",
+  "pickerOfflineNotice": "ค้นออนไลน์ไม่ได้ แสดงข้อมูลในเครื่อง",
+  "pickerOutOfArea": "นอกพื้นที่",
+  "pickerSourceGoogle": "ผลการค้นหาจาก Google Maps",
+  "pickerSourceLocal": "สถานี BTS/MRT ห้าง และเขตในกรุงเทพฯ",
+  "pickerSearchHint": "ชื่อสถานที่ เช่น BTS อารีย์ หรือ Central",
+  "pickerClear": "ล้าง",
+  "pickerNaming": "กำลังหาชื่อสถานที่…",
+  "pickerDroppedPin": "ตำแหน่งที่ปักหมุด",
+  "pickerHereNow": "ตำแหน่งตอนนี้",
+  "locateBusy": "กำลังหาตำแหน่ง…",
+  "locateBusyHint": "ใช้ GPS ของเครื่อง ไม่เกิน 10 วินาที",
+  "locateSearchInstead": "ค้นหาแทน",
+  "locateIdleHint": "หาจาก GPS แล้วให้ยืนยันก่อนบันทึก",
+  "locateAskTitle": "ขอใช้ตำแหน่งครั้งนี้",
+  "locateAskMessage": "แอปใช้ตำแหน่งเพื่อหาว่าตรงนี้คือที่ไหนเท่านั้น ไม่เก็บประวัติการเดินทาง",
+  "locateAllow": "อนุญาตตำแหน่ง",
+  "locateDeniedTitle": "ไม่ได้รับสิทธิ์ตำแหน่ง",
+  "locateDeniedForeverMessage": "เปิดสิทธิ์ตำแหน่งให้ฝนตกไหมในการตั้งค่าของเครื่อง หรือค้นหาชื่อสถานที่แทน",
+  "locateDeniedMessage": "อนุญาตได้ในการตั้งค่าของแอป หรือค้นหาชื่อสถานที่แทน",
+  "locateOpenSettings": "เปิดการตั้งค่า",
+  "locateOffTitle": "ตำแหน่งปิดอยู่",
+  "locateOffMessage": "เปิดบริการตำแหน่งของเครื่องก่อน หรือค้นหาชื่อสถานที่แทน",
+  "locateOpenLocationSettings": "เปิดการตั้งค่าตำแหน่ง",
+  "locateTimeoutTitle": "หาตำแหน่งไม่ทันเวลา",
+  "locateErrorTitle": "หาตำแหน่งไม่ได้",
+  "locateWeakMessage": "สัญญาณ GPS อ่อน ลองอีกครั้งใกล้หน้าต่าง หรือค้นหาชื่อสถานที่แทน",
+  "sheetEdit": "แก้{label}",
+  "@sheetEdit": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetConfirm": "ยืนยัน{label}",
+  "@sheetConfirm": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetSourceGps": "ตำแหน่งจาก GPS",
+  "sheetSourceSaved": "บันทึกไว้ในเครื่อง",
+  "sheetSourceLocal": "ข้อมูลในเครื่อง",
+  "sheetOutOfArea": "นอกพื้นที่ที่แอปรองรับ ยังเตือนฝนได้ แต่ไม่มีข้อมูลจุดน้ำท่วมและระดับคลอง",
+  "sheetLowAccuracy": "ตำแหน่งอาจคลาดเคลื่อน {distance}",
+  "@sheetLowAccuracy": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetWorkFromHome": "ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น",
+  "sheetDuplicate": "ใกล้กับ ‘{label}’ ที่บันทึกไว้",
+  "@sheetDuplicate": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetNameLabel": "ชื่อที่เรียก",
+  "sheetIcon": "ไอคอน",
+  "sheetWorkDays": "วันทำงาน",
+  "sheetLeaveTime": "เวลาออกจากที่ทำงานปกติ",
+  "sheetLeaveHint": "แอปเช็กทางกลับบ้านให้ก่อนเวลานี้",
+  "sheetUpdateExisting": "อัปเดตที่เดิม",
+  "sheetSaveSeparate": "บันทึกแยก",
+  "sheetSave": "บันทึก",
+  "sheetMove": "ย้ายตำแหน่ง",
+  "sheetDelete": "ลบ{label}",
+  "@sheetDelete": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetTooMany": "บันทึกได้ไม่เกิน {max} แห่ง ลบที่เดิมก่อนจึงเพิ่มได้",
+  "@sheetTooMany": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingAppName": "ฝนตกไหม",
+  "modeCar": "รถยนต์",
+  "modeTransit": "BTS / MRT",
+  "modeMoto": "มอเตอร์ไซค์",
+  "modeCarShort": "รถยนต์",
+  "modeTransitShort": "รถไฟฟ้า",
+  "modeMotoShort": "มอไซค์",
+  "riskLow": "เสี่ยงต่ำ",
+  "riskMedium": "เสี่ยงกลาง",
+  "riskHigh": "เสี่ยงสูง",
+  "boardLeaveOk": "ออกได้",
+  "boardLeaveWithBuffer": "เผื่อเวลา",
+  "boardWait": "รอก่อน",
+  "boardSwitchMode": "เปลี่ยนทาง",
+  "boardDontGo": "งดไป",
+  "homeLevelNormal": "ปกติ",
+  "homeLevelWatch": "จับตา",
+  "homeLevelDanger": "อันตราย",
+  "passableYes": "ผ่านได้",
+  "passableSlow": "ผ่านช้า ๆ",
+  "passableNo": "ไม่ควรผ่าน",
+  "approxMeters": "~{meters} ม.",
+  "@approxMeters": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "approxKm": "~{km} กม.",
+  "@approxKm": {
+    "placeholders": {
+      "km": {
+        "type": "String"
+      }
+    }
+  },
+  "weekdayInitial": "{day, select, 1{จ} 2{อ} 3{พ} 4{พฤ} 5{ศ} 6{ส} 7{อา} other{}}",
+  "@weekdayInitial": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "weekdayName": "{day, select, 1{จันทร์} 2{อังคาร} 3{พุธ} 4{พฤหัส} 5{ศุกร์} 6{เสาร์} 7{อาทิตย์} other{}}",
+  "@weekdayName": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      }
+    }
+  },
+  "monthShort": "{month, select, 1{ม.ค.} 2{ก.พ.} 3{มี.ค.} 4{เม.ย.} 5{พ.ค.} 6{มิ.ย.} 7{ก.ค.} 8{ส.ค.} 9{ก.ย.} 10{ต.ค.} 11{พ.ย.} 12{ธ.ค.} other{}}",
+  "@monthShort": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      }
+    }
+  },
+  "workDaysEveryday": "ทุกวัน",
+  "workDaysWeekdays": "จ–ศ",
+  "verdictCantDecide": "ยังตัดสินไม่ได้",
+  "verdictServerError": "ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
+  "verdictRetry": "ลองอีกครั้ง",
+  "verdictSavePlace": "บันทึกที่นี่ไว้",
+  "verdictSavedSnack": "บันทึก “{label}” แล้ว",
+  "@verdictSavedSnack": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictQuestionTitle": "คำถาม",
+  "verdictReadingQuestion": "กำลังอ่านคำถามของคุณ",
+  "verdictGoTo": "ไป{place}",
+  "@verdictGoTo": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictCompareModes": "เทียบวิธีเดินทาง",
+  "verdictModeStatus": "{eta} น. · {status}",
+  "@verdictModeStatus": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictFloodSpotsTitle": "จุดน้ำท่วมบนเส้นทาง",
+  "verdictNoFloodSpots": "ไม่มีจุดน้ำขังบนเส้นทางนี้",
+  "verdictNoFloodSpotsMsg": "เส้นทางนี้ไม่ผ่านจุดเสี่ยงน้ำท่วมของ กทม.",
+  "verdictExpectedDepth": "คาดน้ำสูง {cm} ซม.",
+  "@verdictExpectedDepth": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictStillDry": "ยังแห้ง",
+  "verdictTraceTitle": "เหตุผลที่แนะนำแบบนี้",
+  "verdictSources": "แหล่งข้อมูล",
+  "verdictSourceGps": "GPS ตำแหน่งปัจจุบัน",
+  "verdictAskMore": "ถามต่อ",
+  "verdictWhyTitle": "ทำไมถึงแนะนำแบบนี้",
+  "verdictRouteAdvice": "ทางเลี่ยงน้ำท่วม",
+  "verdictAvoid": "เลี่ยง {spot}",
+  "@verdictAvoid": {
+    "placeholders": {
+      "spot": {
+        "type": "String"
+      }
+    }
+  },
+  "verdictHideFactors": "ซ่อนปัจจัย",
+  "verdictShowFactors": "ดูปัจจัยที่ใช้ตัดสิน ({count})",
+  "@verdictShowFactors": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "floodSetHomeTitle": "ตั้งบ้านเพื่อดูความเสี่ยงน้ำท่วมหน้า⁠บ้าน",
+  "floodSetHomeMsg": "แอปจะดูระดับคลองใกล้บ้าน จุดน้ำท่วมของ กทม. และรายงานจากเพื่อนบ้าน แล้วเตือนแม้ไม่ได้เปิดแอป",
+  "floodUseLocation": "ใช้ตำแหน่งตอนนี้",
+  "floodSearch": "ค้นหา",
+  "floodReadError": "อ่านระดับน้ำไม่ได้",
+  "floodReadErrorMsg": "เชื่อมต่อ ThaiWater ผ่านเซิร์ฟเวอร์ไม่ได้ ถ้าน้ำขึ้นเร็วให้ยกของขึ้นที่สูงไว้ก่อน",
+  "floodRetry": "ลองอีกครั้ง",
+  "floodModeTitle": "โหมดน้ำท่วม",
+  "floodHome": "บ้าน",
+  "floodSameQuestion": "คำถามเดิม ระดับใหม่",
+  "floodNoHome": "ยังไม่ได้ตั้งบ้าน",
+  "floodDoNow": "ทำตอนนี้ เรียงตามลำดับ",
+  "floodPrepare": "เตรียมไว้ก่อน",
+  "floodSpotsTitle": "จุดเสี่ยงน้ำท่วม กทม. ใกล้บ้าน",
+  "floodNoSpots": "ไม่มีจุดเสี่ยงใน 2 กม.",
+  "floodNoSpotsMsg": "บ้านไม่อยู่ใกล้จุดน้ำท่วมซ้ำซากที่ กทม. ประกาศไว้",
+  "floodFromHome": "ห่างบ้าน {meters} ม.",
+  "@floodFromHome": {
+    "placeholders": {
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
+  "floodNeighborsTitle": "เพื่อนบ้านในซอย",
+  "floodNeighborsDanger": "11 คนได้รับเตือนเดียวกัน",
+  "floodNeighborsWatch": "3 คนรายงานน้ำขังใน 20 นาที",
+  "floodNeighborsNote": "คนที่ไม่มีสมาร์ทโฟนได้รับข้อความทาง LINE / SMS หรือโทรอ่านให้ฟัง",
+  "floodStepSemantics": "ขั้นที่ {order} {text}",
+  "@floodStepSemantics": {
+    "placeholders": {
+      "order": {
+        "type": "int"
+      },
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "floodNearbyTitle": "รายงานน้ำท่วมใกล้ฉัน",
+  "floodNearbyButton": "ดูรายงานน้ำท่วมใกล้ฉัน",
+  "floodHereNow": "ตำแหน่งตอนนี้",
+  "floodAround": "รอบ {where}",
+  "@floodAround": {
+    "placeholders": {
+      "where": {
+        "type": "String"
+      }
+    }
+  },
+  "floodNoReports": "ไม่มีรายงานใน 500 ม.",
+  "floodNoReportsMsg": "ยังไม่มีใครรายงานน้ำขังแถวนี้ใน 24 ชั่วโมง",
+  "floodWaterDepth": "น้ำ {min}–{max} ซม.",
+  "@floodWaterDepth": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "floodCarPassable": "รถยนต์ {status}",
+  "@floodCarPassable": {
+    "placeholders": {
+      "status": {
+        "type": "String"
+      }
+    }
+  },
+  "floodOtherSpot": "ดูจุดอื่น",
+  "reportCameraError": "เปิดกล้องไม่ได้ ลองเลือกจากคลังภาพแทน",
+  "reportGalleryError": "เปิดคลังภาพไม่ได้ ตรวจสิทธิ์รูปภาพในตั้งค่าเครื่อง",
+  "reportTitle": "แจ้งน้ำท่วม",
+  "reportSubtitle": "ถ่ายรูปน้ำบนถนน บอกคนที่กำลังจะผ่าน",
+  "reportTakePhoto": "ถ่ายรูป",
+  "reportFromGallery": "จากคลังภาพ",
+  "reportFailed": "ส่งรายงานไม่สำเร็จ",
+  "reportFailedMsg": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ รูปยังอยู่ในเครื่อง ส่งใหม่ได้เลย",
+  "reportResend": "ส่งอีกครั้ง",
+  "reportAnalyzing": "Gemini กำลังดูภาพ ประเมินระดับน้ำเทียบกับล้อรถและขอบทาง…",
+  "reportAnalyzeHint": "Gemini จะประเมินระดับน้ำจากภาพ แล้วเตือนคนที่เส้นทางผ่านจุดนี้ในรัศมี 300 ม.",
+  "reportSeeHome": "ดูสถานการณ์ที่บ้าน",
+  "reportLocating": "กำลังหาตำแหน่ง…",
+  "reportUsingGps": "ใช้ GPS ของเครื่อง",
+  "reportGpsDetail": "GPS · {lat}, {lng} · {time}",
+  "@reportGpsDetail": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "reportFallbackDetail": "{note} · ใช้ตำแหน่งสำรองของเดโม",
+  "@reportFallbackDetail": {
+    "placeholders": {
+      "note": {
+        "type": "String"
+      }
+    }
+  },
+  "reportRetryGps": "ลองหา GPS",
+  "reportDepthSemantics": "น้ำสูงประมาณ {min} ถึง {max} เซนติเมตร",
+  "@reportDepthSemantics": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reportSeenByGemini": "Gemini ดูภาพแล้ว",
+  "reportDepth": "น้ำสูง {min}–{max} ซม.",
+  "@reportDepth": {
+    "placeholders": {
+      "min": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "reportNotified": "แจ้งคน {count} คนที่กำลังจะผ่านจุดนี้",
+  "@reportNotified": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportCorroborated": "ยืนยันกับอีก {count} รายงานในรัศมี 300 ม.",
+  "@reportCorroborated": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "reportDemoNumbers": "จำนวนคนที่แจ้งเตือนเป็นตัวเลขจำลองสำหรับเดโม",
+  "reportFrameHint": "ถ่ายให้เห็นล้อรถหรือขอบทาง",
+  "reportNoPhoto": "ไม่มีภาพ · ผลตัวอย่าง",
+  "settingsTitle": "ตั้งค่า",
+  "settingsSubtitle": "ข้อมูลเก็บไว้ในเครื่องนี้",
+  "settingsNotificationsOff": "ปิดการแจ้งเตือนอยู่ แอปเตือนก่อนออกไม่ได้",
+  "settingsOpenSettings": "เปิดการตั้งค่า",
+  "settingsMyPlaces": "สถานที่ของฉัน",
+  "settingsSetHome": "ตั้งบ้าน",
+  "settingsSetWork": "ตั้งที่ทำงาน",
+  "settingsSetHomeHint": "ให้แอปเตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน",
+  "settingsSetWorkHint": "ให้เตือนตอนเลิกงานได้แม่นขึ้น",
+  "settingsWorkDetail": " · {days} ออก {time}",
+  "@settingsWorkDetail": {
+    "placeholders": {
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsOutOfArea": "นอกพื้นที่ที่รองรับ",
+  "settingsWfh": "ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น",
+  "settingsAddPlace": "เพิ่มสถานที่",
+  "settingsAddPlaceHint": "ยิม โรงเรียนลูก บ้านพ่อแม่ · {count} จาก {max}",
+  "@settingsAddPlaceHint": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsAddPlaceFull": "ครบ {max} แห่งแล้ว ลบที่เดิมก่อนจึงเพิ่มได้",
+  "@settingsAddPlaceFull": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "settingsTravelGroup": "การเดินทาง",
+  "settingsRemindAhead": "เตือนล่วงหน้า",
+  "settingsRemindAheadHint": "2 ชั่วโมงก่อนเวลาที่ควรออก",
+  "settingsAutoGroup": "ให้แอปหาทริปให้เอง",
+  "settingsCalendarDetail": "เฉพาะนัดที่มีสถานที่",
+  "settingsCalendarAccount": "{account} · บัญชีจำลอง",
+  "@settingsCalendarAccount": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsGmailHint": "เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล",
+  "settingsRoutine": "เรียนรู้กิจวัตร",
+  "settingsRoutineHint": "รู้เองว่ากลับบ้านราวหกโมงทุกวัน · เร็ว ๆ นี้",
+  "settingsCommunityGroup": "ชุมชนและน้ำท่วม",
+  "settingsShareReports": "แชร์รายงานน้ำท่วมของฉัน",
+  "settingsShareReportsHint": "ไม่ระบุตัว เฉพาะตำแหน่งและระดับน้ำ",
+  "settingsHomeAlerts": "เตือนน้ำท่วมที่บ้าน",
+  "settingsHomeAlertsHint": "แม้ไม่ได้เปิดแอป",
+  "settingsSmsBackup": "สำรองทาง SMS",
+  "settingsSmsBackupHint": "เมื่อไม่มีอินเทอร์เน็ต",
+  "settingsProfileGroup": "โปรไฟล์",
+  "settingsExitDemo": "ออกจากโปรไฟล์เดโม",
+  "settingsExitDemoHint": "ลบสถานที่ของมิวและกลับไปหน้าเริ่มต้น",
+  "settingsUseDemo": "ใช้โปรไฟล์เดโม (มิว)",
+  "settingsUseDemoHint": "สถานที่และนัดจำลองของมิว สำหรับสาธิต",
+  "settingsTeamGroup": "สำหรับทีม",
+  "settingsDesignSystem": "ระบบดีไซน์",
+  "settingsDesignSystemHint": "สี ตัวอักษร ระยะ และคอมโพเนนต์ทุกสถานะท้องฟ้า",
+  "settingsDemoClock": "เวลาสาธิต",
+  "settingsRealTime": "เวลาจริง",
+  "settingsDemoNote": "ชื่อ “มิว” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม",
+  "settingsPlaceHome": "บ้าน",
+  "settingsPlaceWork": "ที่ทำงาน",
+  "settingsPlaceSiam": "สยาม",
+  "settingsPlaceThonglor": "ทองหล่อ",
+  "settingsPlaceImpact": "อิมแพ็ค",
+  "verdictToolParseQuestion": "เข้าใจคำถาม",
+  "verdictToolGetTrip": "ดูทริปของคุณ",
+  "verdictToolGetRoute": "หาเส้นทาง",
+  "verdictToolRain": "เช็กฝนระหว่างทาง",
+  "verdictToolFloodSpots": "เช็กจุดน้ำท่วม",
+  "verdictToolCanals": "เช็กระดับน้ำในคลอง",
+  "verdictToolReports": "ดูรายงานจากคนในพื้นที่",
+  "verdictToolEvaluate": "ประเมินความเสี่ยง"
+}

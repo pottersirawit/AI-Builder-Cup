@@ -24,9 +24,10 @@ class FonTokMaiApi {
     http.Client? client,
     AssetBundle? bundle,
     this.demoClock,
+    this.language,
     this.timeout = const Duration(seconds: 20),
-  })  : _client = client ?? http.Client(),
-        _bundle = bundle ?? rootBundle;
+  }) : _client = client ?? http.Client(),
+       _bundle = bundle ?? rootBundle;
 
   final String baseUrl;
   final http.Client _client;
@@ -36,10 +37,15 @@ class FonTokMaiApi {
   /// Returns the current X-Demo-Clock value, or null for live mode.
   final String? Function()? demoClock;
 
+  /// Returns the app language code (`th` or `en`) the server should answer in.
+  final String Function()? language;
+
   Map<String, String> get _headers {
     final clock = demoClock?.call();
+    final lang = language?.call();
     return {
       'Accept': 'application/json',
+      if (lang != null) 'Accept-Language': lang,
       if (clock != null) 'X-Demo-Clock': clock,
     };
   }
@@ -48,34 +54,52 @@ class FonTokMaiApi {
       Uri.parse('$baseUrl$path').replace(queryParameters: query);
 
   Future<ApiResult<List<Trip>>> trips() => _withFallback(
-        () async => Trip.listFromJson(await _get('/v1/trips')),
-        () async => Trip.listFromJson(await _fixture('trips')),
-      );
+    () async => Trip.listFromJson(await _get('/v1/trips')),
+    () async => Trip.listFromJson(await _fixture('trips')),
+  );
 
   Future<ApiResult<Decision>> decide(DecideRequest req) => _withFallback(
-        () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),
-        () async => Decision.fromJson(await _fixture(sampleDecisionName(req))),
-      );
+    () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),
+    () async => Decision.fromJson(await _fixture(sampleDecisionName(req))),
+  );
 
   /// Flood status at [home]; without it, the server's demo home.
   Future<ApiResult<HomeStatus>> homeStatus({SavedPlace? home}) => _withFallback(
-        () async => HomeStatus.fromJson(await _get('/v1/home-status', home == null
+    () async => HomeStatus.fromJson(
+      await _get(
+        '/v1/home-status',
+        home == null
             ? null
-            : {'lat': '${home.lat}', 'lng': '${home.lng}', 'name_th': home.nameTh})),
-        () async => HomeStatus.fromJson(
-            await _fixture(sampleHomeStatusName(demoClock?.call(), lat: home?.lat, lng: home?.lng))),
-      );
+            : {
+                'lat': '${home.lat}',
+                'lng': '${home.lng}',
+                'name_th': home.nameTh,
+              },
+      ),
+    ),
+    () async => HomeStatus.fromJson(
+      await _fixture(
+        sampleHomeStatusName(demoClock?.call(), lat: home?.lat, lng: home?.lng),
+      ),
+    ),
+  );
 
   /// Places matching [q] (Thai or English). Offline: the bundled landmark
   /// list, marked `source: local`.
-  Future<ApiResult<List<PlaceCandidate>>> searchPlaces(String q) => _withFallback(
-        () async => PlaceCandidate.listFromJson(await _get('/v1/places/search', {'q': q})),
+  Future<ApiResult<List<PlaceCandidate>>> searchPlaces(String q) =>
+      _withFallback(
+        () async => PlaceCandidate.listFromJson(
+          await _get('/v1/places/search', {'q': q}),
+        ),
         () async => searchLocal(await localLandmarks(), q),
       );
 
   /// What is at a point. Offline: the nearest bundled landmark.
-  Future<ApiResult<PlaceCandidate>> reversePlace(double lat, double lng) => _withFallback(
-        () async => PlaceCandidate.fromJson(await _get('/v1/places/reverse', {'lat': '$lat', 'lng': '$lng'})),
+  Future<ApiResult<PlaceCandidate>> reversePlace(double lat, double lng) =>
+      _withFallback(
+        () async => PlaceCandidate.fromJson(
+          await _get('/v1/places/reverse', {'lat': '$lat', 'lng': '$lng'}),
+        ),
         () async => reverseLocal(await localLandmarks(), lat, lng),
       );
 
@@ -91,30 +115,34 @@ class FonTokMaiApi {
     required String filename,
     required double lat,
     required double lng,
-  }) =>
-      _withFallback(
-        () async {
-          final req = http.MultipartRequest('POST', _uri('/v1/reports'))
-            ..headers.addAll(_headers)
-            ..fields['lat'] = '$lat'
-            ..fields['lng'] = '$lng'
-            ..files.add(http.MultipartFile.fromBytes('photo', photo, filename: filename));
-          final res = await http.Response.fromStream(await _client.send(req).timeout(timeout));
-          return FloodReport.fromJson(_decode(res));
-        },
-        () async => FloodReport.fromJson(await _fixture('report')),
+  }) => _withFallback(() async {
+    final req = http.MultipartRequest('POST', _uri('/v1/reports'))
+      ..headers.addAll(_headers)
+      ..fields['lat'] = '$lat'
+      ..fields['lng'] = '$lng'
+      ..files.add(
+        http.MultipartFile.fromBytes('photo', photo, filename: filename),
       );
+    final res = await http.Response.fromStream(
+      await _client.send(req).timeout(timeout),
+    );
+    return FloodReport.fromJson(_decode(res));
+  }, () async => FloodReport.fromJson(await _fixture('report')));
 
   Future<ApiResult<List<FloodReport>>> reportsNear({
     required double lat,
     required double lng,
     int radiusM = 500,
-  }) =>
-      _withFallback(
-        () async => FloodReport.listFromJson(await _get(
-            '/v1/reports', {'lat': '$lat', 'lng': '$lng', 'radius_m': '$radiusM'})),
-        () async => FloodReport.listFromJson(await _fixture('reports')),
-      );
+  }) => _withFallback(
+    () async => FloodReport.listFromJson(
+      await _get('/v1/reports', {
+        'lat': '$lat',
+        'lng': '$lng',
+        'radius_m': '$radiusM',
+      }),
+    ),
+    () async => FloodReport.listFromJson(await _fixture('reports')),
+  );
 
   Future<ApiResult<T>> _withFallback<T>(
     Future<T> Function() live,
@@ -129,15 +157,19 @@ class FonTokMaiApi {
   }
 
   Future<Json> _get(String path, [Map<String, String>? query]) async {
-    final res = await _client.get(_uri(path, query), headers: _headers).timeout(timeout);
+    final res = await _client
+        .get(_uri(path, query), headers: _headers)
+        .timeout(timeout);
     return _decode(res);
   }
 
   Future<Json> _postJson(String path, Json body) async {
     final res = await _client
-        .post(_uri(path),
-            headers: {..._headers, 'Content-Type': 'application/json'},
-            body: jsonEncode(body))
+        .post(
+          _uri(path),
+          headers: {..._headers, 'Content-Type': 'application/json'},
+          body: jsonEncode(body),
+        )
         .timeout(timeout);
     return _decode(res);
   }
@@ -150,20 +182,21 @@ class FonTokMaiApi {
   }
 
   Future<Json> _fixture(String name) async =>
-      jsonDecode(await _bundle.loadString('assets/fixtures/$name.json')) as Json;
+      jsonDecode(await _bundle.loadString('assets/fixtures/$name.json'))
+          as Json;
 }
 
 List<PlaceCandidate> _landmarkList(Json j) => [
-      for (final p in (j['places'] as List).cast<Json>())
-        PlaceCandidate(
-          nameTh: p['name_th'] as String,
-          addressTh: p['address_th'] as String,
-          nameEn: p['name_en'] as String?,
-          lat: (p['lat'] as num).toDouble(),
-          lng: (p['lng'] as num).toDouble(),
-          source: 'local',
-        ),
-    ];
+  for (final p in (j['places'] as List).cast<Json>())
+    PlaceCandidate(
+      nameTh: p['name_th'] as String,
+      addressTh: p['address_th'] as String,
+      nameEn: p['name_en'] as String?,
+      lat: (p['lat'] as num).toDouble(),
+      lng: (p['lng'] as num).toDouble(),
+      source: 'local',
+    ),
+];
 
 /// Case-insensitive match on name, address and English name; shorter names
 /// first so "สยาม" outranks "สยามพารากอน".
@@ -171,17 +204,20 @@ List<PlaceCandidate> _landmarkList(Json j) => [
 List<PlaceCandidate> searchLocal(List<PlaceCandidate> all, String q) {
   final needle = q.trim().toLowerCase();
   if (needle.isEmpty) return const [];
-  final hits = all
-      .where((p) =>
-          p.nameTh.toLowerCase().contains(needle) ||
-          p.addressTh.toLowerCase().contains(needle) ||
-          (p.nameEn?.toLowerCase().contains(needle) ?? false))
-      .toList()
-    ..sort((a, b) {
-      final an = a.nameTh.toLowerCase().contains(needle) ? 0 : 1;
-      final bn = b.nameTh.toLowerCase().contains(needle) ? 0 : 1;
-      return an != bn ? an - bn : a.nameTh.length - b.nameTh.length;
-    });
+  final hits =
+      all
+          .where(
+            (p) =>
+                p.nameTh.toLowerCase().contains(needle) ||
+                p.addressTh.toLowerCase().contains(needle) ||
+                (p.nameEn?.toLowerCase().contains(needle) ?? false),
+          )
+          .toList()
+        ..sort((a, b) {
+          final an = a.nameTh.toLowerCase().contains(needle) ? 0 : 1;
+          final bn = b.nameTh.toLowerCase().contains(needle) ? 0 : 1;
+          return an != bn ? an - bn : a.nameTh.length - b.nameTh.length;
+        });
   return hits.take(8).toList();
 }
 
@@ -210,7 +246,9 @@ PlaceCandidate reverseLocal(List<PlaceCandidate> all, double lat, double lng) {
   }
   return PlaceCandidate(
     nameTh: bestD > 150 ? 'ใกล้${best.nameTh}' : best.nameTh,
-    addressTh: bestD > 150 ? '${best.addressTh} · ห่างราว ${(bestD / 50).round() * 50} ม.' : best.addressTh,
+    addressTh: bestD > 150
+        ? '${best.addressTh} · ห่างราว ${(bestD / 50).round() * 50} ม.'
+        : best.addressTh,
     lat: lat,
     lng: lng,
     inServiceArea: inArea,
@@ -250,7 +288,8 @@ const _demoHome = (lat: 13.8160, lng: 100.5900);
 String sampleHomeStatusName(String? demoClock, {double? lat, double? lng}) {
   if (lat != null && lng != null) {
     if (!inServiceArea(lat, lng)) return 'home_status_outside';
-    if (distanceM(lat, lng, _demoHome.lat, _demoHome.lng) > 3000) return 'home_status_nocanal';
+    if (distanceM(lat, lng, _demoHome.lat, _demoHome.lng) > 3000)
+      return 'home_status_nocanal';
   }
   final t = demoClock == null ? null : DateTime.tryParse(demoClock);
   if (t == null) return 'home_status_watch';

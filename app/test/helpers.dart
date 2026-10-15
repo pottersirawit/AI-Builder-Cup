@@ -43,6 +43,7 @@ Future<AppState> pumpApp(WidgetTester tester, String? clock,
   final api = FonTokMaiApi(
     baseUrl: 'http://offline.test',
     demoClock: () => state.demoClock,
+    language: () => state.locale.languageCode,
     client: MockClient((req) async {
       if (req.url.path == '/v1/decide') decideLog?.add(req.body);
       final r = respond?.call(req);

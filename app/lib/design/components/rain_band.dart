@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
 import '../../departure.dart';
+import '../../l10n/l10n.dart';
 import '../../models.dart';
 import '../../time_th.dart';
 import '../theme.dart';
@@ -53,7 +54,8 @@ class RainBand extends StatelessWidget {
     return _start.add(Duration(seconds: (x / width * span).round()));
   }
 
-  DateTime _snap(DateTime t) => snapDeparture(t, earliest.isAfter(_start) ? earliest : _start, _end);
+  DateTime _snap(DateTime t) =>
+      snapDeparture(t, earliest.isAfter(_start) ? earliest : _start, _end);
 
   void _set(DateTime t, ValueChanged<DateTime>? cb) {
     final s = _snap(t);
@@ -67,91 +69,104 @@ class RainBand extends StatelessWidget {
     final c = FonColors.of(context);
     final t = Theme.of(context).textTheme;
     final interactive = onChanged != null || onChangeEnd != null;
-    final label = 'ออก ${hhmm(departAt)}';
+    final l = context.l10n;
+    final label = l.rainBandLeave(hhmm(departAt));
     const step = Duration(minutes: 15);
     // The band's geometry is fixed; its labels grow only so far.
     final scaler = MediaQuery.textScalerOf(context).clamp(maxScaleFactor: 1.3);
 
-    return LayoutBuilder(builder: (context, box) {
-      final w = box.maxWidth;
-      final mx = _x(departAt, w);
-      final bubbleStyle = tabular(t.labelLarge!).copyWith(color: c.paper);
-      final bubbleW = (TextPainter(
-                text: TextSpan(text: label, style: bubbleStyle),
-                textDirection: TextDirection.ltr,
-                textScaler: scaler,
-              )..layout())
-              .width +
-          Space.x5;
-      final height = _bubble + Space.x1 + barHeight + _bracket + _axis;
+    return LayoutBuilder(
+      builder: (context, box) {
+        final w = box.maxWidth;
+        final mx = _x(departAt, w);
+        final bubbleStyle = tabular(t.labelLarge!).copyWith(color: c.paper);
+        final bubbleW =
+            (TextPainter(
+              text: TextSpan(text: label, style: bubbleStyle),
+              textDirection: TextDirection.ltr,
+              textScaler: scaler,
+            )..layout()).width +
+            Space.x5;
+        final height = _bubble + Space.x1 + barHeight + _bracket + _axis;
 
-      Widget band = SizedBox(
-        height: height,
-        width: w,
-        child: Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Positioned.fill(
-              child: CustomPaint(
-                painter: _RainBandPainter(
-                  points: points,
-                  x: (d) => _x(d, w),
-                  departAt: departAt,
-                  arriveAt: departAt.add(Duration(minutes: etaMin)),
-                  now: now,
-                  top: _bubble + Space.x1,
-                  barHeight: barHeight,
-                  colors: c,
-                  axisStyle: tabular(t.labelSmall!).copyWith(color: c.paperMuted),
-                  textScaler: scaler,
+        Widget band = SizedBox(
+          height: height,
+          width: w,
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Positioned.fill(
+                child: CustomPaint(
+                  painter: _RainBandPainter(
+                    points: points,
+                    x: (d) => _x(d, w),
+                    departAt: departAt,
+                    arriveAt: departAt.add(Duration(minutes: etaMin)),
+                    now: now,
+                    top: _bubble + Space.x1,
+                    barHeight: barHeight,
+                    colors: c,
+                    axisStyle: tabular(
+                      t.labelSmall!,
+                    ).copyWith(color: c.paperMuted),
+                    textScaler: scaler,
+                  ),
                 ),
               ),
-            ),
-            Positioned(
-              left: (mx - bubbleW / 2).clamp(0.0, math.max(0.0, w - bubbleW)),
-              top: 0,
-              height: _bubble,
-              child: Container(
-                key: const ValueKey('rain-band-bubble'),
-                padding: const EdgeInsets.symmetric(horizontal: Space.x5 / 2),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: c.marker,
-                  borderRadius: BorderRadius.circular(Radii.sm),
+              Positioned(
+                left: (mx - bubbleW / 2).clamp(0.0, math.max(0.0, w - bubbleW)),
+                top: 0,
+                height: _bubble,
+                child: Container(
+                  key: const ValueKey('rain-band-bubble'),
+                  padding: const EdgeInsets.symmetric(horizontal: Space.x5 / 2),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: c.marker,
+                    borderRadius: BorderRadius.circular(Radii.sm),
+                  ),
+                  child: Text(
+                    label,
+                    style: bubbleStyle,
+                    maxLines: 1,
+                    softWrap: false,
+                    textScaler: scaler,
+                  ),
                 ),
-                child: Text(label, style: bubbleStyle, maxLines: 1, softWrap: false, textScaler: scaler),
               ),
-            ),
-          ],
-        ),
-      );
+            ],
+          ),
+        );
 
-      if (!interactive) return band;
+        if (!interactive) return band;
 
-      band = GestureDetector(
-        behavior: HitTestBehavior.opaque,
-        onHorizontalDragStart: (d) => _set(_timeAt(d.localPosition.dx, w), onChanged),
-        onHorizontalDragUpdate: (d) => _set(_timeAt(d.localPosition.dx, w), onChanged),
-        onHorizontalDragEnd: (_) => onChangeEnd?.call(departAt),
-        onTapUp: (d) {
-          final s = _snap(_timeAt(d.localPosition.dx, w));
-          onChanged?.call(s);
-          onChangeEnd?.call(s);
-        },
-        child: band,
-      );
+        band = GestureDetector(
+          behavior: HitTestBehavior.opaque,
+          onHorizontalDragStart: (d) =>
+              _set(_timeAt(d.localPosition.dx, w), onChanged),
+          onHorizontalDragUpdate: (d) =>
+              _set(_timeAt(d.localPosition.dx, w), onChanged),
+          onHorizontalDragEnd: (_) => onChangeEnd?.call(departAt),
+          onTapUp: (d) {
+            final s = _snap(_timeAt(d.localPosition.dx, w));
+            onChanged?.call(s);
+            onChangeEnd?.call(s);
+          },
+          child: band,
+        );
 
-      return Semantics(
-        slider: true,
-        label: 'เวลาออกเดินทาง ลากเพื่อลองเวลาอื่น',
-        value: label,
-        increasedValue: 'ออก ${hhmm(_snap(departAt.add(step)))}',
-        decreasedValue: 'ออก ${hhmm(_snap(departAt.subtract(step)))}',
-        onIncrease: () => onChangeEnd?.call(_snap(departAt.add(step))),
-        onDecrease: () => onChangeEnd?.call(_snap(departAt.subtract(step))),
-        child: band,
-      );
-    });
+        return Semantics(
+          slider: true,
+          label: l.rainBandSlider,
+          value: label,
+          increasedValue: l.rainBandLeave(hhmm(_snap(departAt.add(step)))),
+          decreasedValue: l.rainBandLeave(hhmm(_snap(departAt.subtract(step)))),
+          onIncrease: () => onChangeEnd?.call(_snap(departAt.add(step))),
+          onDecrease: () => onChangeEnd?.call(_snap(departAt.subtract(step))),
+          child: band,
+        );
+      },
+    );
   }
 }
 
@@ -181,7 +196,8 @@ class _RainBandPainter extends CustomPainter {
   final TextScaler textScaler;
 
   /// Bars use a soft power curve so drizzle stays visible next to 16 mm/hr.
-  double _h(double mm) => 4 + math.pow((mm / 18).clamp(0.0, 1.0), .6) * (barHeight - 4);
+  double _h(double mm) =>
+      4 + math.pow((mm / 18).clamp(0.0, 1.0), .6) * (barHeight - 4);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -191,7 +207,8 @@ class _RainBandPainter extends CustomPainter {
       final x0 = x(p.time);
       final x1 = x(p.time.add(const Duration(minutes: 15)));
       final h = _h(p.mmPerHr);
-      final past = now != null && p.time.add(const Duration(minutes: 15)).isBefore(now!);
+      final past =
+          now != null && p.time.add(const Duration(minutes: 15)).isBefore(now!);
       final color = colors.rain[rainLevel(p.mmPerHr)];
       canvas.drawRRect(
         RRect.fromRectAndCorners(

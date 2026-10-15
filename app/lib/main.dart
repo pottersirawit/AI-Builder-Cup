@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'api.dart';
 import 'app_state.dart';
 import 'config.dart';
 import 'design/design.dart';
+import 'l10n/l10n.dart';
 import 'location.dart';
 import 'models.dart';
 import 'places.dart';
@@ -20,6 +22,7 @@ Future<void> main() async {
   final clock = initialDemoClock();
   final launch = DemoLaunch.fromEnvironment();
   final state = AppState(demoClock: clock);
+  await state.restoreLocale();
   final places = await PlacesStore.open(demoByDefault: clock != null);
   if (launch != null) {
     if (launch.screen == 'onboarding') {
@@ -34,14 +37,22 @@ Future<void> main() async {
     // Settings screenshots show the notifications-off banner (stubbed check).
     state.notificationsDenied = launch.screen == 'settings_places';
   }
-  final api = FonTokMaiApi(baseUrl: resolveApiBaseUrl(), demoClock: () => state.demoClock);
-  runApp(FonTokMaiApp(
-    state: state,
-    places: places,
-    api: api,
-    launch: launch,
-    locator: launch?.screen == 'location_denied' ? const StagedLocator(LocateStatus.deniedForever) : const Locator(),
-  ));
+  final api = FonTokMaiApi(
+    baseUrl: resolveApiBaseUrl(),
+    demoClock: () => state.demoClock,
+    language: () => state.locale.languageCode,
+  );
+  runApp(
+    FonTokMaiApp(
+      state: state,
+      places: places,
+      api: api,
+      launch: launch,
+      locator: launch?.screen == 'location_denied'
+          ? const StagedLocator(LocateStatus.deniedForever)
+          : const Locator(),
+    ),
+  );
 }
 
 class FonTokMaiApp extends StatefulWidget {
@@ -75,7 +86,8 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
   void initState() {
     super.initState();
     final l = widget.launch;
-    if (l != null) WidgetsBinding.instance.addPostFrameCallback((_) => _open(l));
+    if (l != null)
+      WidgetsBinding.instance.addPostFrameCallback((_) => _open(l));
   }
 
   Future<void> _open(DemoLaunch l) async {
@@ -87,12 +99,18 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
         final trip = trips.where((t) => t.source == 'calendar').firstOrNull;
         if (trip == null) return;
         final hhmm = l.departHhmm;
-        nav.push(route(VerdictScreen(
-          request: DecideRequest(tripId: trip.id),
-          trip: trip,
-          departAt: hhmm == null ? null : DateTime.parse('${demoDate}T$hhmm:00+07:00'),
-          mode: l.mode == null ? null : TravelMode.parse(l.mode),
-        )));
+        nav.push(
+          route(
+            VerdictScreen(
+              request: DecideRequest(tripId: trip.id),
+              trip: trip,
+              departAt: hhmm == null
+                  ? null
+                  : DateTime.parse('${demoDate}T$hhmm:00+07:00'),
+              mode: l.mode == null ? null : TravelMode.parse(l.mode),
+            ),
+          ),
+        );
       case 'ask':
         nav.push(route(const AskScreen(opening: 'ออกก่อน 16:45')));
       case 'settings' || 'settings_places':
@@ -101,11 +119,21 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
         nav.push(route(const SettingsScreen()));
         nav.push(route(const GalleryScreen()));
       case 'place_search':
-        nav.push(route(const PlacePickerScreen(kind: PlaceKind.home, initialQuery: 'สยาม')));
+        nav.push(
+          route(
+            const PlacePickerScreen(kind: PlaceKind.home, initialQuery: 'สยาม'),
+          ),
+        );
       case 'location_denied':
-        nav.push(route(const PlacePickerScreen(kind: PlaceKind.home, locateNow: true)));
+        nav.push(
+          route(const PlacePickerScreen(kind: PlaceKind.home, locateNow: true)),
+        );
       case 'place_confirm':
-        nav.push(route(const PlacePickerScreen(kind: PlaceKind.work, initialQuery: 'สีลม')));
+        nav.push(
+          route(
+            const PlacePickerScreen(kind: PlaceKind.work, initialQuery: 'สีลม'),
+          ),
+        );
         final hits = (await widget.api.searchPlaces('สีลม')).data;
         final ctx = _nav.currentContext;
         if (hits.isEmpty || ctx == null || !ctx.mounted) return;
@@ -127,11 +155,22 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
         listenable: widget.state,
         builder: (context, _) => MaterialApp(
           navigatorKey: _nav,
-          title: 'ฝนตกไหม',
+          onGenerateTitle: (context) => context.l10n.appTitle,
+          locale: widget.state.locale,
+          supportedLocales: AppState.supportedLocales,
+          localizationsDelegates: const [
+            AppLocalizations.delegate,
+            GlobalMaterialLocalizations.delegate,
+            GlobalWidgetsLocalizations.delegate,
+            GlobalCupertinoLocalizations.delegate,
+          ],
           debugShowCheckedModeBanner: false,
           theme: widget.state.flood ? _flood : _light,
           themeAnimationDuration: Motion.sky,
-          builder: (context, child) => MediaQuery.withClampedTextScaling(maxScaleFactor: 2, child: child!),
+          builder: (context, child) => MediaQuery.withClampedTextScaling(
+            maxScaleFactor: 2,
+            child: child!,
+          ),
           home: _Root(
             initialTab: switch (l?.screen) {
               'report' || 'report_result' => ShellTab.report,

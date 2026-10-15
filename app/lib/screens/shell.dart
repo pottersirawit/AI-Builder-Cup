@@ -6,12 +6,17 @@ import '../design/design.dart';
 import 'flood_screen.dart';
 import 'home_screen.dart';
 import 'report_screen.dart';
+import '../l10n/l10n.dart';
 
 enum ShellTab { board, report, home }
 
 /// Root: Material navigation bar over three destinations.
 class Shell extends StatefulWidget {
-  const Shell({super.key, this.initialTab = ShellTab.board, this.autoSubmitReport = false});
+  const Shell({
+    super.key,
+    this.initialTab = ShellTab.board,
+    this.autoSubmitReport = false,
+  });
   final ShellTab initialTab;
 
   /// Demo hook: the report tab submits a sample report on open.
@@ -48,15 +53,24 @@ class _ShellState extends State<Shell> {
             ReportScreen(autoSubmit: widget.autoSubmitReport)
           else
             const SizedBox.shrink(),
-          if (_visited.contains(ShellTab.home)) const FloodScreen() else const SizedBox.shrink(),
+          if (_visited.contains(ShellTab.home))
+            const FloodScreen()
+          else
+            const SizedBox.shrink(),
         ],
       ),
       bottomNavigationBar: NavigationBar(
         selectedIndex: _tab.index,
         onDestinationSelected: (i) => _go(ShellTab.values[i]),
         destinations: [
-          const NavigationDestination(icon: Icon(Symbols.departure_board_rounded), label: 'เดินทาง'),
-          const NavigationDestination(icon: Icon(Symbols.photo_camera_rounded), label: 'แจ้งน้ำท่วม'),
+          NavigationDestination(
+            icon: const Icon(Symbols.departure_board_rounded),
+            label: context.l10n.shellTabTrip,
+          ),
+          NavigationDestination(
+            icon: const Icon(Symbols.photo_camera_rounded),
+            label: context.l10n.shellTabReport,
+          ),
           NavigationDestination(
             icon: Badge(
               isLabelVisible: state.flood,
@@ -65,7 +79,7 @@ class _ShellState extends State<Shell> {
               label: const Text('!'),
               child: const Icon(Symbols.home_rounded),
             ),
-            label: 'บ้าน',
+            label: context.l10n.shellTabHome,
           ),
         ],
       ),

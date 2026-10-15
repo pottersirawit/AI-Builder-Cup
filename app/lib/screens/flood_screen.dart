@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../l10n/l10n.dart';
 import '../models.dart';
 import 'parts.dart';
 import 'place_picker.dart';
@@ -28,7 +29,8 @@ class _FloodScreenState extends State<FloodScreen> {
     super.didChangeDependencies();
     final store = AppScope.placesOf(context);
     final h = store.home;
-    final key = '${AppScope.stateOf(context).demoClock ?? 'live'}|${h?.id},${h?.lat},${h?.lng}|${store.demoProfile}';
+    final key =
+        '${AppScope.stateOf(context).locale.languageCode}|${AppScope.stateOf(context).demoClock ?? 'live'}|${h?.id},${h?.lat},${h?.lng}|${store.demoProfile}';
     if (key != _loadedFor) {
       _loadedFor = key;
       _load();
@@ -49,7 +51,9 @@ class _FloodScreenState extends State<FloodScreen> {
       return;
     }
     try {
-      final s = state.track(await api.homeStatus(home: store.demoProfile ? null : home));
+      final s = state.track(
+        await api.homeStatus(home: store.demoProfile ? null : home),
+      );
       if (!mounted) return;
       state.homeLevel = s.level;
       setState(() {
@@ -63,6 +67,7 @@ class _FloodScreenState extends State<FloodScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final state = AppScope.stateOf(context);
     final store = AppScope.placesOf(context);
     final home = store.home;
@@ -79,44 +84,59 @@ class _FloodScreenState extends State<FloodScreen> {
 
     final Widget top;
     if (home == null) {
-      top = Pass(sections: [
-        PassSection(
-          child: EmptyState(
-            icon: Symbols.home_pin_rounded,
-            title: 'ตั้งบ้านเพื่อดูความเสี่ยงน้ำท่วมหน้า\u2060บ้าน',
-            message: 'แอปจะดูระดับคลองใกล้บ้าน จุดน้ำท่วมของ กทม. และรายงานจากเพื่อนบ้าน แล้วเตือนแม้ไม่ได้เปิดแอป',
-            action: Wrap(spacing: Space.x2, runSpacing: Space.x2, children: [
-              FilledButton.icon(
-                onPressed: () => pickPlace(context, kind: PlaceKind.home, locateNow: true),
-                icon: const Icon(Symbols.my_location_rounded),
-                label: const Text('ใช้ตำแหน่งตอนนี้'),
+      top = Pass(
+        sections: [
+          PassSection(
+            child: EmptyState(
+              icon: Symbols.home_pin_rounded,
+              title: l.floodSetHomeTitle,
+              message: l.floodSetHomeMsg,
+              action: Wrap(
+                spacing: Space.x2,
+                runSpacing: Space.x2,
+                children: [
+                  FilledButton.icon(
+                    onPressed: () => pickPlace(
+                      context,
+                      kind: PlaceKind.home,
+                      locateNow: true,
+                    ),
+                    icon: const Icon(Symbols.my_location_rounded),
+                    label: Text(l.floodUseLocation),
+                  ),
+                  OutlinedButton.icon(
+                    onPressed: () => pickPlace(context, kind: PlaceKind.home),
+                    icon: const Icon(Symbols.search_rounded),
+                    label: Text(l.floodSearch),
+                  ),
+                ],
               ),
-              OutlinedButton.icon(
-                onPressed: () => pickPlace(context, kind: PlaceKind.home),
-                icon: const Icon(Symbols.search_rounded),
-                label: const Text('ค้นหา'),
-              ),
-            ]),
+            ),
           ),
-        ),
-      ]);
+        ],
+      );
     } else if (_error != null) {
-      top = Pass(sections: [
-        PassSection(
-          child: ErrorState(
-            title: 'อ่านระดับน้ำไม่ได้',
-            message: 'เชื่อมต่อ ThaiWater ผ่านเซิร์ฟเวอร์ไม่ได้ ถ้าน้ำขึ้นเร็วให้ยกของขึ้นที่สูงไว้ก่อน',
-            onRetry: _load,
+      top = Pass(
+        sections: [
+          PassSection(
+            child: ErrorState(
+              title: l.floodReadError,
+              message: l.floodReadErrorMsg,
+              retryLabel: l.floodRetry,
+              onRetry: _load,
+            ),
           ),
-        ),
-      ]);
+        ],
+      );
     } else if (s == null) {
       top = const PassSkeleton();
     } else {
       top = HomeStatusPass(
         status: s,
         now: state.now(),
-        placeName: home.addressTh.isEmpty ? home.nameTh : '${home.nameTh} · ${home.addressTh.split(' · ').first}',
+        placeName: home.addressTh.isEmpty
+            ? home.nameTh
+            : '${home.nameTh} · ${home.addressTh.split(' · ').first}',
       );
     }
 
@@ -134,21 +154,27 @@ class _FloodScreenState extends State<FloodScreen> {
                     children: [
                       FieldHeader(
                         state: sky,
-                        title: danger ? 'โหมดน้ำท่วม' : 'บ้าน',
+                        title: danger ? l.floodModeTitle : l.floodHome,
                         subtitle: danger
-                            ? 'คำถามเดิม ระดับใหม่'
+                            ? l.floodSameQuestion
                             : home == null
-                                ? 'ยังไม่ได้ตั้งบ้าน'
-                                : home.addressTh.isEmpty
-                                    ? home.nameTh
-                                    : '${home.nameTh} · ${home.addressTh.split(' · ').last}',
+                            ? l.floodNoHome
+                            : home.addressTh.isEmpty
+                            ? home.nameTh
+                            : '${home.nameTh} · ${home.addressTh.split(' · ').last}',
                         actions: [
-                          if (state.usingSample) const SampleBadge(onField: true),
+                          if (state.usingSample)
+                            const SampleBadge(onField: true),
                           DemoClockChip(state: state, sky: sky),
                         ],
                       ),
                       Padding(
-                        padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, 0),
+                        padding: const EdgeInsets.fromLTRB(
+                          Space.gutter,
+                          Space.x2,
+                          Space.gutter,
+                          0,
+                        ),
                         child: top,
                       ),
                     ],
@@ -159,8 +185,7 @@ class _FloodScreenState extends State<FloodScreen> {
             if (s != null && s.actions.isNotEmpty)
               SliverToBoxAdapter(
                 child: Section(
-                  title: danger ? 'ทำตอนนี้ เรียงตามลำดับ' : 'เตรียมไว้ก่อน',
-                  source: 'Gemini เรียงตามเวลาที่เหลือและระยะทางจากบ้าน',
+                  title: danger ? l.floodDoNow : l.floodPrepare,
                   child: Column(
                     children: [
                       for (final a in s.actions)
@@ -168,60 +193,84 @@ class _FloodScreenState extends State<FloodScreen> {
                           action: a,
                           done: _done.contains(a.order),
                           large: danger,
-                          onToggle: () => setState(() =>
-                              _done.contains(a.order) ? _done.remove(a.order) : _done.add(a.order)),
+                          onToggle: () => setState(
+                            () => _done.contains(a.order)
+                                ? _done.remove(a.order)
+                                : _done.add(a.order),
+                          ),
                         ),
                     ],
                   ),
                 ),
               ),
-            if (home == null)
-              const SliverToBoxAdapter(child: _NearbyReports()),
+            if (home == null) const SliverToBoxAdapter(child: _NearbyReports()),
             if (s != null && s.canal == null && s.inServiceArea)
               SliverToBoxAdapter(
                 child: Section(
-                  title: 'จุดเสี่ยงน้ำท่วม กทม. ใกล้บ้าน',
-                  source: 'จุดเสี่ยงน้ำท่วม กทม. ในรัศมี 2 กม.',
+                  title: l.floodSpotsTitle,
                   child: s.floodSpots.isEmpty
-                      ? const EmptyState(
+                      ? EmptyState(
                           icon: Symbols.check_circle_rounded,
-                          title: 'ไม่มีจุดเสี่ยงใน 2 กม.',
-                          message: 'บ้านไม่อยู่ใกล้จุดน้ำท่วมซ้ำซากที่ กทม. ประกาศไว้',
+                          title: l.floodNoSpots,
+                          message: l.floodNoSpotsMsg,
                         )
-                      : Column(children: [
-                          for (final f in s.floodSpots)
-                            ListTile(
-                              contentPadding: EdgeInsets.zero,
-                              leading: Icon(Symbols.flood_rounded, color: c.riskInk(f.risk)),
-                              title: Text(f.nameTh),
-                              subtitle: f.distanceM == null
-                                  ? null
-                                  : Text('ห่างบ้าน ${(f.distanceM! / 10).round() * 10} ม.',
-                                      style: tabular(Theme.of(context).textTheme.bodySmall!)),
-                              trailing: RiskChip(risk: f.risk, dense: true),
-                            ),
-                        ]),
+                      : Column(
+                          children: [
+                            for (final f in s.floodSpots)
+                              ListTile(
+                                contentPadding: EdgeInsets.zero,
+                                leading: Icon(
+                                  Symbols.flood_rounded,
+                                  color: c.riskInk(f.risk),
+                                ),
+                                title: Text(f.nameTh),
+                                subtitle: f.distanceM == null
+                                    ? null
+                                    : Text(
+                                        l.floodFromHome(
+                                          (f.distanceM! / 10).round() * 10,
+                                        ),
+                                        style: tabular(
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.bodySmall!,
+                                        ),
+                                      ),
+                                trailing: RiskChip(risk: f.risk, dense: true),
+                              ),
+                          ],
+                        ),
                 ),
               ),
             if (s != null && store.demoProfile)
               SliverToBoxAdapter(
                 child: Section(
-                  title: 'เพื่อนบ้านในซอย',
-                  source: 'Pub/Sub → LINE / SMS / โทรอ่านข้อความ · จำนวนคนเป็นตัวเลขจำลองสำหรับเดโม',
+                  title: l.floodNeighborsTitle,
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Symbols.groups_rounded, color: danger ? c.warning : scheme.onSurfaceVariant),
+                      Icon(
+                        Symbols.groups_rounded,
+                        color: danger ? c.warning : scheme.onSurfaceVariant,
+                      ),
                       const SizedBox(width: Space.x3),
                       Expanded(
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            Text(danger ? '11 คนได้รับเตือนเดียวกัน' : '3 คนรายงานน้ำขังใน 20 นาที',
-                                style: tabular(t.titleMedium!)),
+                            Text(
+                              danger
+                                  ? l.floodNeighborsDanger
+                                  : l.floodNeighborsWatch,
+                              style: tabular(t.titleMedium!),
+                            ),
                             const SizedBox(height: Space.x1),
-                            Text('คนที่ไม่มีสมาร์ทโฟนได้รับข้อความทาง LINE / SMS หรือโทรอ่านให้ฟัง',
-                                style: t.bodyMedium!.copyWith(color: scheme.onSurfaceVariant)),
+                            Text(
+                              l.floodNeighborsNote,
+                              style: t.bodyMedium!.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
                           ],
                         ),
                       ),
@@ -238,7 +287,12 @@ class _FloodScreenState extends State<FloodScreen> {
 }
 
 class _ActionRow extends StatelessWidget {
-  const _ActionRow({required this.action, required this.done, required this.large, required this.onToggle});
+  const _ActionRow({
+    required this.action,
+    required this.done,
+    required this.large,
+    required this.onToggle,
+  });
   final HomeAction action;
   final bool done;
   final bool large;
@@ -252,15 +306,20 @@ class _ActionRow extends StatelessWidget {
     return Semantics(
       checked: done,
       button: true,
-      label: 'ขั้นที่ ${action.order} ${action.textTh}',
+      label: context.l10n.floodStepSemantics(action.order, action.textTh),
       excludeSemantics: true,
       child: InkWell(
         onTap: onToggle,
         borderRadius: BorderRadius.circular(Radii.md),
         child: ConstrainedBox(
-          constraints: BoxConstraints(minHeight: large ? Space.targetLarge : Space.target),
+          constraints: BoxConstraints(
+            minHeight: large ? Space.targetLarge : Space.target,
+          ),
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: Space.x3, horizontal: Space.x1),
+            padding: const EdgeInsets.symmetric(
+              vertical: Space.x3,
+              horizontal: Space.x1,
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -269,14 +328,22 @@ class _ActionRow extends StatelessWidget {
                   height: tile,
                   alignment: Alignment.center,
                   decoration: BoxDecoration(
-                    color: done ? scheme.surfaceContainerHighest : scheme.primary,
+                    color: done
+                        ? scheme.surfaceContainerHighest
+                        : scheme.primary,
                     borderRadius: BorderRadius.circular(Radii.sm),
                   ),
                   child: done
-                      ? Icon(Symbols.check_rounded, color: scheme.onSurfaceVariant)
-                      : Text('${action.order}',
-                          style: tabular(large ? t.titleLarge! : t.titleMedium!)
-                              .copyWith(color: scheme.onPrimary)),
+                      ? Icon(
+                          Symbols.check_rounded,
+                          color: scheme.onSurfaceVariant,
+                        )
+                      : Text(
+                          '${action.order}',
+                          style: tabular(
+                            large ? t.titleLarge! : t.titleMedium!,
+                          ).copyWith(color: scheme.onPrimary),
+                        ),
                 ),
                 const SizedBox(width: Space.x4),
                 Expanded(
@@ -307,7 +374,7 @@ class _NearbyReports extends StatefulWidget {
 
 class _NearbyReportsState extends State<_NearbyReports> {
   List<FloodReport>? _reports;
-  String? _where;
+  String? _where; // null: the phone's own position
   bool _loading = false;
 
   Future<void> _look() async {
@@ -320,17 +387,17 @@ class _NearbyReportsState extends State<_NearbyReports> {
     setState(() {
       _loading = false;
       _reports = r.data;
-      _where = here.source == 'gps' ? 'ตำแหน่งตอนนี้' : here.nameTh;
+      _where = here.source == 'gps' ? null : here.nameTh;
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final t = Theme.of(context).textTheme;
     final reports = _reports;
     return Section(
-      title: 'รายงานน้ำท่วมใกล้ฉัน',
-      source: 'รายงานจากผู้ใช้ใน 24 ชม. · ประเมินระดับน้ำจากรูปโดย Gemini · รัศมี 500 ม.',
+      title: l.floodNearbyTitle,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -338,36 +405,45 @@ class _NearbyReportsState extends State<_NearbyReports> {
             OutlinedButton.icon(
               onPressed: _look,
               icon: const Icon(Symbols.my_location_rounded),
-              label: const Text('ดูรายงานน้ำท่วมใกล้ฉัน'),
+              label: Text(l.floodNearbyButton),
             ),
           if (_loading) const SkeletonList(rows: 2),
           if (reports != null) ...[
-            Text('รอบ $_where', style: t.titleSmall),
+            Text(l.floodAround(_where ?? l.floodHereNow), style: t.titleSmall),
             if (reports.isEmpty)
-              const EmptyState(
+              EmptyState(
                 icon: Symbols.check_circle_rounded,
-                title: 'ไม่มีรายงานใน 500 ม.',
-                message: 'ยังไม่มีใครรายงานน้ำขังแถวนี้ใน 24 ชั่วโมง',
+                title: l.floodNoReports,
+                message: l.floodNoReportsMsg,
               )
             else
               for (final r in reports)
                 ListTile(
                   contentPadding: EdgeInsets.zero,
                   leading: const Icon(Symbols.flood_rounded),
-                  title: Text('น้ำ ${r.depthCmMin}–${r.depthCmMax} ซม.', style: tabular(t.titleMedium!)),
-                  subtitle: Text(r.descriptionTh, maxLines: 2, overflow: TextOverflow.ellipsis),
+                  title: Text(
+                    l.floodWaterDepth(r.depthCmMin, r.depthCmMax),
+                    style: tabular(t.titleMedium!),
+                  ),
+                  subtitle: Text(
+                    r.descriptionTh,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                  ),
                   trailing: r.passable[TravelMode.car] == null
                       ? null
                       : RiskChip(
                           risk: passableRisk(r.passable[TravelMode.car]!),
-                          label: 'รถยนต์ ${passableLabel(r.passable[TravelMode.car]!)}',
+                          label: l.floodCarPassable(
+                            passableText(l, r.passable[TravelMode.car]!),
+                          ),
                           dense: true,
                         ),
                 ),
             TextButton.icon(
               onPressed: _look,
               icon: const Icon(Symbols.refresh_rounded),
-              label: const Text('ดูจุดอื่น'),
+              label: Text(l.floodOtherSpot),
             ),
           ],
         ],

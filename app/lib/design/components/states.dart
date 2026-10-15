@@ -3,11 +3,17 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../tokens.dart';
 import 'pass.dart';
+import '../../l10n/l10n.dart';
 
 /// A placeholder block that pulses while content loads (still under
 /// reduce motion).
 class Skeleton extends StatefulWidget {
-  const Skeleton({super.key, this.width, this.height = 14, this.radius = Radii.xs});
+  const Skeleton({
+    super.key,
+    this.width,
+    this.height = 14,
+    this.radius = Radii.xs,
+  });
   final double? width;
   final double height;
   final double radius;
@@ -16,9 +22,12 @@ class Skeleton extends StatefulWidget {
   State<Skeleton> createState() => _SkeletonState();
 }
 
-class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin {
-  late final AnimationController _a =
-      AnimationController(vsync: this, duration: const Duration(milliseconds: 1100));
+class _SkeletonState extends State<Skeleton>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _a = AnimationController(
+    vsync: this,
+    duration: const Duration(milliseconds: 1100),
+  );
 
   @override
   void didChangeDependencies() {
@@ -40,11 +49,17 @@ class _SkeletonState extends State<Skeleton> with SingleTickerProviderStateMixin
   Widget build(BuildContext context) {
     final base = FonColors.of(context).perforation;
     return FadeTransition(
-      opacity: Tween(begin: .45, end: 1.0).animate(CurvedAnimation(parent: _a, curve: Curves.easeInOut)),
+      opacity: Tween(
+        begin: .45,
+        end: 1.0,
+      ).animate(CurvedAnimation(parent: _a, curve: Curves.easeInOut)),
       child: Container(
         width: widget.width,
         height: widget.height,
-        decoration: BoxDecoration(color: base, borderRadius: BorderRadius.circular(widget.radius)),
+        decoration: BoxDecoration(
+          color: base,
+          borderRadius: BorderRadius.circular(widget.radius),
+        ),
       ),
     );
   }
@@ -56,36 +71,38 @@ class PassSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: 'กำลังโหลดคำตอบ',
-        child: const Pass(sections: [
-          PassSection(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Skeleton(width: 180),
-                SizedBox(height: Space.x3),
-                Skeleton(width: 240, height: 40, radius: Radii.sm),
-                SizedBox(height: Space.x3),
-                Skeleton(),
-                SizedBox(height: Space.x2),
-                Skeleton(width: 200),
-              ],
-            ),
+    label: context.l10n.designLoadingAnswer,
+    child: const Pass(
+      sections: [
+        PassSection(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Skeleton(width: 180),
+              SizedBox(height: Space.x3),
+              Skeleton(width: 240, height: 40, radius: Radii.sm),
+              SizedBox(height: Space.x3),
+              Skeleton(),
+              SizedBox(height: Space.x2),
+              Skeleton(width: 200),
+            ],
           ),
-          PassSection(
-            child: Row(
-              children: [
-                Expanded(child: Skeleton(height: 36)),
-                SizedBox(width: Space.x4),
-                Expanded(child: Skeleton(height: 36)),
-                SizedBox(width: Space.x4),
-                Expanded(child: Skeleton(height: 36)),
-              ],
-            ),
+        ),
+        PassSection(
+          child: Row(
+            children: [
+              Expanded(child: Skeleton(height: 36)),
+              SizedBox(width: Space.x4),
+              Expanded(child: Skeleton(height: 36)),
+              SizedBox(width: Space.x4),
+              Expanded(child: Skeleton(height: 36)),
+            ],
           ),
-          PassSection(child: Skeleton(height: 72, radius: Radii.sm)),
-        ]),
-      );
+        ),
+        PassSection(child: Skeleton(height: 72, radius: Radii.sm)),
+      ],
+    ),
+  );
 }
 
 /// Something failed: say what, and offer the way back.
@@ -95,29 +112,35 @@ class ErrorState extends StatelessWidget {
     required this.title,
     required this.message,
     required this.onRetry,
-    this.retryLabel = 'ลองอีกครั้ง',
+    this.retryLabel,
   });
   final String title;
   final String message;
   final VoidCallback onRetry;
-  final String retryLabel;
+  final String? retryLabel;
 
   @override
   Widget build(BuildContext context) => _StateBlock(
-        icon: Symbols.wifi_off_rounded,
-        title: title,
-        message: message,
-        action: FilledButton.icon(
-          onPressed: onRetry,
-          icon: const Icon(Symbols.refresh_rounded),
-          label: Text(retryLabel),
-        ),
-      );
+    icon: Symbols.wifi_off_rounded,
+    title: title,
+    message: message,
+    action: FilledButton.icon(
+      onPressed: onRetry,
+      icon: const Icon(Symbols.refresh_rounded),
+      label: Text(retryLabel ?? context.l10n.designRetry),
+    ),
+  );
 }
 
 /// Nothing to show yet, and what to do about it.
 class EmptyState extends StatelessWidget {
-  const EmptyState({super.key, required this.icon, required this.title, required this.message, this.action});
+  const EmptyState({
+    super.key,
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
   final IconData icon;
   final String title;
   final String message;
@@ -129,7 +152,12 @@ class EmptyState extends StatelessWidget {
 }
 
 class _StateBlock extends StatelessWidget {
-  const _StateBlock({required this.icon, required this.title, required this.message, this.action});
+  const _StateBlock({
+    required this.icon,
+    required this.title,
+    required this.message,
+    this.action,
+  });
   final IconData icon;
   final String title;
   final String message;
@@ -140,7 +168,10 @@ class _StateBlock extends StatelessWidget {
     final scheme = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: Space.x4, vertical: Space.x6),
+      padding: const EdgeInsets.symmetric(
+        horizontal: Space.x4,
+        vertical: Space.x6,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -148,7 +179,10 @@ class _StateBlock extends StatelessWidget {
           const SizedBox(height: Space.x3),
           Text(title, style: t.titleLarge),
           const SizedBox(height: Space.x1),
-          Text(message, style: t.bodyMedium!.copyWith(color: scheme.onSurfaceVariant)),
+          Text(
+            message,
+            style: t.bodyMedium!.copyWith(color: scheme.onSurfaceVariant),
+          ),
           if (action != null) ...[const SizedBox(height: Space.x4), action!],
         ],
       ),

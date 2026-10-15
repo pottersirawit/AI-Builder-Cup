@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'l10n/l10n.dart';
 import 'models.dart';
 import 'time_th.dart';
 
@@ -22,14 +23,18 @@ double distanceM(double lat1, double lng1, double lat2, double lng2) {
   double rad(double d) => d * math.pi / 180;
   final dLat = rad(lat2 - lat1);
   final dLng = rad(lng2 - lng1);
-  final a = math.pow(math.sin(dLat / 2), 2) +
-      math.cos(rad(lat1)) * math.cos(rad(lat2)) * math.pow(math.sin(dLng / 2), 2);
+  final a =
+      math.pow(math.sin(dLat / 2), 2) +
+      math.cos(rad(lat1)) *
+          math.cos(rad(lat2)) *
+          math.pow(math.sin(dLng / 2), 2);
   return 2 * r * math.asin(math.sqrt(a));
 }
 
 extension SavedPlaceGeo on SavedPlace {
   bool get inArea => inServiceArea(lat, lng);
-  double distanceTo(double lat2, double lng2) => distanceM(lat, lng, lat2, lng2);
+  double distanceTo(double lat2, double lng2) =>
+      distanceM(lat, lng, lat2, lng2);
 }
 
 /// Why [PlacesStore.save] refused a place.
@@ -77,7 +82,10 @@ class PlacesStore extends ChangeNotifier {
     final raw = _prefs.getString(_kPlaces);
     if (raw != null) {
       try {
-        _places = (jsonDecode(raw) as List).cast<Json>().map(SavedPlace.fromJson).toList();
+        _places = (jsonDecode(raw) as List)
+            .cast<Json>()
+            .map(SavedPlace.fromJson)
+            .toList();
       } catch (_) {
         _places = [];
       }
@@ -107,7 +115,10 @@ class PlacesStore extends ChangeNotifier {
   }
 
   void _write() {
-    _prefs.setString(_kPlaces, jsonEncode([for (final p in _places) p.toJson()]));
+    _prefs.setString(
+      _kPlaces,
+      jsonEncode([for (final p in _places) p.toJson()]),
+    );
     _prefs.setBool(_kOnboarded, _onboarded);
     _prefs.setBool(_kDemo, _demo);
     _prefs.setBool(_kCalendarHint, _calendarHintDismissed);
@@ -122,20 +133,26 @@ class PlacesStore extends ChangeNotifier {
     if (c == null) {
       _prefs.remove(_kManualLocation);
     } else {
-      _prefs.setString(_kManualLocation, jsonEncode({
-        'name_th': c.nameTh,
-        'address_th': c.addressTh,
-        'lat': c.lat,
-        'lng': c.lng,
-      }));
+      _prefs.setString(
+        _kManualLocation,
+        jsonEncode({
+          'name_th': c.nameTh,
+          'address_th': c.addressTh,
+          'lat': c.lat,
+          'lng': c.lng,
+        }),
+      );
     }
     notifyListeners();
   }
 
   List<SavedPlace> get places => List.unmodifiable(_places);
-  SavedPlace? get home => _places.where((p) => p.kind == PlaceKind.home).firstOrNull;
-  SavedPlace? get work => _places.where((p) => p.kind == PlaceKind.work).firstOrNull;
-  List<SavedPlace> get others => _places.where((p) => p.kind == PlaceKind.other).toList();
+  SavedPlace? get home =>
+      _places.where((p) => p.kind == PlaceKind.home).firstOrNull;
+  SavedPlace? get work =>
+      _places.where((p) => p.kind == PlaceKind.work).firstOrNull;
+  List<SavedPlace> get others =>
+      _places.where((p) => p.kind == PlaceKind.other).toList();
   SavedPlace? byId(String id) => _places.where((p) => p.id == id).firstOrNull;
 
   bool get canAddOther => others.length < maxOthers;
@@ -143,18 +160,28 @@ class PlacesStore extends ChangeNotifier {
   /// Home and work within [duplicateRadiusM]: the commute is skipped.
   bool get workFromHome {
     final h = home, w = work;
-    return h != null && w != null && h.distanceTo(w.lat, w.lng) <= duplicateRadiusM;
+    return h != null &&
+        w != null &&
+        h.distanceTo(w.lat, w.lng) <= duplicateRadiusM;
   }
 
   /// The saved place within [duplicateRadiusM] of a point, nearest first.
   /// Home and work never count as duplicates of each other (working from
   /// home is allowed), so [forKind] skips the other one of the pair.
-  SavedPlace? duplicateOf(double lat, double lng, {String? exceptId, PlaceKind? forKind}) {
+  SavedPlace? duplicateOf(
+    double lat,
+    double lng, {
+    String? exceptId,
+    PlaceKind? forKind,
+  }) {
     SavedPlace? best;
     var bestD = double.infinity;
     for (final p in _places) {
       if (p.id == exceptId) continue;
-      if (forKind != null && forKind != PlaceKind.other && p.kind != PlaceKind.other && p.kind != forKind) {
+      if (forKind != null &&
+          forKind != PlaceKind.other &&
+          p.kind != PlaceKind.other &&
+          p.kind != forKind) {
         continue;
       }
       final d = p.distanceTo(lat, lng);
@@ -166,21 +193,25 @@ class PlacesStore extends ChangeNotifier {
     return best;
   }
 
-  String newId() => 'p${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
+  String newId() =>
+      'p${DateTime.now().microsecondsSinceEpoch.toRadixString(36)}';
 
   /// Adds or replaces [p]. A home or work replaces the current one of that
   /// kind; anything else replaces the place with the same id. Returns why it
   /// refused, or null when saved.
   SaveRefusal? save(SavedPlace p) {
     final same = _places.indexWhere((x) => x.id == p.id);
-    final sameKind = p.kind == PlaceKind.other ? -1 : _places.indexWhere((x) => x.kind == p.kind);
+    final sameKind = p.kind == PlaceKind.other
+        ? -1
+        : _places.indexWhere((x) => x.kind == p.kind);
     if (same >= 0) {
       _places[same] = p;
       if (sameKind >= 0 && sameKind != same) _places.removeAt(sameKind);
     } else if (sameKind >= 0) {
       _places[sameKind] = p;
     } else {
-      if (p.kind == PlaceKind.other && !canAddOther) return SaveRefusal.tooManyOthers;
+      if (p.kind == PlaceKind.other && !canAddOther)
+        return SaveRefusal.tooManyOthers;
       _places.add(p);
     }
     _write();
@@ -198,7 +229,8 @@ class PlacesStore extends ChangeNotifier {
 
   void restore(SavedPlace p, int index) {
     if (_places.any((x) => x.id == p.id)) return;
-    if (p.kind != PlaceKind.other && _places.any((x) => x.kind == p.kind)) return;
+    if (p.kind != PlaceKind.other && _places.any((x) => x.kind == p.kind))
+      return;
     _places.insert(index.clamp(0, _places.length), p);
     _write();
   }
@@ -256,7 +288,9 @@ class PlacesStore extends ChangeNotifier {
   /// OAuth is stubbed: only the demo profile can connect.
   bool get canConnectCalendar => _demo;
 
-  Future<void> connectCalendar({Duration delay = const Duration(milliseconds: 1200)}) async {
+  Future<void> connectCalendar({
+    Duration delay = const Duration(milliseconds: 1200),
+  }) async {
     if (!canConnectCalendar || _calendar == LinkState.connecting) return;
     _calendar = LinkState.connecting;
     notifyListeners();
@@ -333,7 +367,11 @@ const demoPlaces = [
 
 /// The daily trip home the app builds from saved places.
 class CommutePlan {
-  const CommutePlan({required this.trip, required this.departAt, required this.fromCurrentLocation});
+  const CommutePlan({
+    required this.trip,
+    required this.departAt,
+    required this.fromCurrentLocation,
+  });
   final Trip trip;
   final DateTime departAt;
 
@@ -343,15 +381,26 @@ class CommutePlan {
 
 /// Today's trip home, or null when there is none: no home, working from
 /// home, not a work day, or long past the usual leave time.
-CommutePlan? commuteFor({SavedPlace? home, SavedPlace? work, required DateTime now}) {
+CommutePlan? commuteFor({
+  SavedPlace? home,
+  SavedPlace? work,
+  required DateTime now,
+}) {
   if (home == null) return null;
-  if (work != null && home.distanceTo(work.lat, work.lng) <= PlacesStore.duplicateRadiusM) return null;
+  if (work != null &&
+      home.distanceTo(work.lat, work.lng) <= PlacesStore.duplicateRadiusM)
+    return null;
   final b = toBangkok(now);
   final days = work?.days ?? SavedPlace.defaultWorkDays;
   if (!days.contains(b.weekday)) return null;
   final hm = (work?.leaveTime ?? SavedPlace.defaultLeaveTime).split(':');
-  final leaveAt = DateTime.utc(b.year, b.month, b.day, int.parse(hm[0]), int.parse(hm[1]))
-      .subtract(const Duration(hours: 7));
+  final leaveAt = DateTime.utc(
+    b.year,
+    b.month,
+    b.day,
+    int.parse(hm[0]),
+    int.parse(hm[1]),
+  ).subtract(const Duration(hours: 7));
   if (now.isAfter(leaveAt.add(const Duration(hours: 4)))) return null;
   final fromHere = work == null;
   return CommutePlan(
@@ -361,7 +410,8 @@ CommutePlan? commuteFor({SavedPlace? home, SavedPlace? work, required DateTime n
       id: 'routine-home',
       titleTh: 'กลับบ้าน',
       source: 'routine',
-      origin: work?.asPlace ?? const Place(nameTh: 'ตำแหน่งตอนนี้', lat: 0, lng: 0),
+      origin:
+          work?.asPlace ?? const Place(nameTh: 'ตำแหน่งตอนนี้', lat: 0, lng: 0),
       destination: home.asPlace,
       arriveBy: null,
       mode: TravelMode.car,
@@ -371,9 +421,17 @@ CommutePlan? commuteFor({SavedPlace? home, SavedPlace? work, required DateTime n
 
 /// A question that names home or work before the user saved it: ask for the
 /// place instead of guessing.
-PlaceKind? missingPlaceFor(String question, {SavedPlace? home, SavedPlace? work}) {
+PlaceKind? missingPlaceFor(
+  String question, {
+  SavedPlace? home,
+  SavedPlace? work,
+}) {
   if (home == null && question.contains('บ้าน')) return PlaceKind.home;
-  if (work == null && RegExp('ที่ทำงาน|ไปทำงาน|ออฟฟิศ|office', caseSensitive: false).hasMatch(question)) {
+  if (work == null &&
+      RegExp(
+        'ที่ทำงาน|ไปทำงาน|ออฟฟิศ|office',
+        caseSensitive: false,
+      ).hasMatch(question)) {
     return PlaceKind.work;
   }
   return null;
@@ -383,10 +441,19 @@ PlaceKind? missingPlaceFor(String question, {SavedPlace? home, SavedPlace? work}
 /// resolves on the server (a destination without an origin is refused).
 /// A saved home/work or an already-saved spot needs nothing extra; a picked
 /// candidate rides along as a transient place labelled with the asked words.
-List<SavedPlace> placesWithAnswer(NeedsPlace needs, Place answer, List<SavedPlace> places) {
-  if (needs.kind == PlaceKind.home || needs.kind == PlaceKind.work) return places;
-  final known = places.any((p) =>
-      p.labelTh == needs.queryTh && distanceM(p.lat, p.lng, answer.lat, answer.lng) <= PlacesStore.duplicateRadiusM);
+List<SavedPlace> placesWithAnswer(
+  NeedsPlace needs,
+  Place answer,
+  List<SavedPlace> places,
+) {
+  if (needs.kind == PlaceKind.home || needs.kind == PlaceKind.work)
+    return places;
+  final known = places.any(
+    (p) =>
+        p.labelTh == needs.queryTh &&
+        distanceM(p.lat, p.lng, answer.lat, answer.lng) <=
+            PlacesStore.duplicateRadiusM,
+  );
   if (known) return places;
   return [
     ...places,
@@ -402,7 +469,27 @@ List<SavedPlace> placesWithAnswer(NeedsPlace needs, Place answer, List<SavedPlac
 }
 
 String kindLabelTh(PlaceKind k) => switch (k) {
-      PlaceKind.home => 'บ้าน',
-      PlaceKind.work => 'ที่ทำงาน',
-      PlaceKind.other => 'สถานที่',
-    };
+  PlaceKind.home => 'บ้าน',
+  PlaceKind.work => 'ที่ทำงาน',
+  PlaceKind.other => 'สถานที่',
+};
+
+String kindLabel(AppLocalizations l, PlaceKind k) => switch (k) {
+  PlaceKind.home => l.placeKindHome,
+  PlaceKind.work => l.placeKindWork,
+  PlaceKind.other => l.placeKindOther,
+};
+
+extension SavedPlaceLabel on SavedPlace {
+  /// The label as shown: a default Thai label the app invented (บ้าน, สยาม, …)
+  /// follows the app language; anything the user typed shows as typed.
+  String labelFor(AppLocalizations l) => switch (labelTh) {
+    'บ้าน' when kind == PlaceKind.home => l.placeKindHome,
+    'ที่ทำงาน' when kind == PlaceKind.work => l.placeKindWork,
+    'สถานที่' when kind == PlaceKind.other => l.placeKindOther,
+    'สยาม' when id == 'siam' => l.placeDemoSiam,
+    'ทองหล่อ' when id == 'thonglor' => l.placeDemoThonglor,
+    'อิมแพ็ค' when id == 'impact' => l.placeDemoImpact,
+    _ => labelTh,
+  };
+}

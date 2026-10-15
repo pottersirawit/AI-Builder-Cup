@@ -4,6 +4,7 @@ import '../../models.dart';
 import '../labels.dart';
 import '../theme.dart';
 import '../tokens.dart';
+import '../../l10n/l10n.dart';
 
 /// Per-mode status shown under each segment.
 class ModeStatus {
@@ -49,7 +50,8 @@ class ModeSegmented extends StatelessWidget {
                 child: Semantics(
                   selected: m == selected,
                   button: true,
-                  label: '${m.labelTh}${status[m] == null ? '' : ' ${status[m]!.text}'}',
+                  label:
+                      '${m.label(context.l10n)}${status[m] == null ? '' : ' ${status[m]!.text}'}',
                   excludeSemantics: true,
                   child: InkWell(
                     onTap: () => onChanged(m),
@@ -58,38 +60,58 @@ class ModeSegmented extends StatelessWidget {
                       duration: motion.d(Motion.tap),
                       curve: Motion.standard,
                       constraints: const BoxConstraints(minHeight: 64),
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: Space.x2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: Space.x2,
+                      ),
                       decoration: BoxDecoration(
-                        color: m == selected ? scheme.secondaryContainer : Colors.transparent,
+                        color: m == selected
+                            ? scheme.secondaryContainer
+                            : Colors.transparent,
                         borderRadius: BorderRadius.circular(Radii.md),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          Icon(m.icon,
-                              size: 22,
-                              fill: m == selected ? 1 : 0,
-                              color: m == selected ? scheme.onSecondaryContainer : scheme.onSurfaceVariant),
+                          Icon(
+                            m.icon,
+                            size: 22,
+                            fill: m == selected ? 1 : 0,
+                            color: m == selected
+                                ? scheme.onSecondaryContainer
+                                : scheme.onSurfaceVariant,
+                          ),
                           const SizedBox(height: 2),
-                          Text(m.shortTh,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: t.labelLarge!.copyWith(
-                                color: m == selected ? scheme.onSecondaryContainer : scheme.onSurface,
-                              )),
+                          Text(
+                            m.shortLabel(context.l10n),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: t.labelLarge!.copyWith(
+                              color: m == selected
+                                  ? scheme.onSecondaryContainer
+                                  : scheme.onSurface,
+                            ),
+                          ),
                           if (status[m] != null)
                             Row(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                Icon(status[m]!.risk.icon,
-                                    size: 12, fill: 1, color: c.riskInk(status[m]!.risk)),
+                                Icon(
+                                  status[m]!.risk.icon,
+                                  size: 12,
+                                  fill: 1,
+                                  color: c.riskInk(status[m]!.risk),
+                                ),
                                 const SizedBox(width: 3),
                                 Flexible(
-                                  child: Text(status[m]!.text,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style: tabular(t.labelSmall!)
-                                          .copyWith(color: c.riskInk(status[m]!.risk))),
+                                  child: Text(
+                                    status[m]!.text,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: tabular(t.labelSmall!).copyWith(
+                                      color: c.riskInk(status[m]!.risk),
+                                    ),
+                                  ),
                                 ),
                               ],
                             ),

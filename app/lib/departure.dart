@@ -3,7 +3,12 @@
 // shows a local preview from the rain timeline it already has; on release the
 // agent's real verdict replaces it.
 
+import 'package:flutter/widgets.dart' show Locale;
+
+import 'l10n/l10n.dart';
 import 'models.dart';
+
+AppLocalizations _thai() => lookupAppLocalizations(const Locale('th'));
 
 /// The sky the user is travelling under; it drives the colour of the ground.
 enum SkyState { clear, storm, flood }
@@ -19,15 +24,16 @@ const heavyRain = 7.6;
 int rainLevel(double mmPerHr) => mmPerHr < lightRain
     ? 0
     : mmPerHr < moderateRain
-        ? 1
-        : mmPerHr < heavyRain
-            ? 2
-            : 3;
+    ? 1
+    : mmPerHr < heavyRain
+    ? 2
+    : 3;
 
 /// Rain in the 15-minute bucket containing [t]; 0 outside the timeline.
 double rainAt(List<RainPoint> points, DateTime t) {
   for (final p in points) {
-    if (!t.isBefore(p.time) && t.isBefore(p.time.add(_bucket))) return p.mmPerHr;
+    if (!t.isBefore(p.time) && t.isBefore(p.time.add(_bucket)))
+      return p.mmPerHr;
   }
   return 0;
 }
@@ -36,7 +42,9 @@ double rainAt(List<RainPoint> points, DateTime t) {
 double peakRain(List<RainPoint> points, DateTime from, DateTime to) {
   var peak = 0.0;
   for (final p in points) {
-    if (p.time.isBefore(to) && p.time.add(_bucket).isAfter(from) && p.mmPerHr > peak) {
+    if (p.time.isBefore(to) &&
+        p.time.add(_bucket).isAfter(from) &&
+        p.mmPerHr > peak) {
       peak = p.mmPerHr;
     }
   }
@@ -71,12 +79,23 @@ class Departure {
 /// Car trips through heavy rain on this route take roughly twice as long.
 const _stormSlowdown = 1.9;
 
-/// Local estimate of every mode in [d] for a departure at [departAt].
-List<Departure> previewOptions(Decision d, DateTime departAt) => [
-      for (final o in d.modeOptions) _preview(d.rainTimeline, o, departAt),
-    ];
+/// Local estimate of every mode in [d] for a departure at [departAt]. The
+/// notes are written in [l]'s language (Thai when omitted).
+List<Departure> previewOptions(
+  Decision d,
+  DateTime departAt, [
+  AppLocalizations? l,
+]) => [
+  for (final o in d.modeOptions)
+    _preview(d.rainTimeline, o, departAt, l ?? _thai()),
+];
 
-Departure _preview(List<RainPoint> rain, ModeOption o, DateTime departAt) {
+Departure _preview(
+  List<RainPoint> rain,
+  ModeOption o,
+  DateTime departAt,
+  AppLocalizations l,
+) {
   // The agent's car ETA already includes storm traffic when it judged high risk.
   final calmEta = o.mode == TravelMode.car && o.risk == Risk.high
       ? (o.etaMin / _stormSlowdown).round()
@@ -85,69 +104,78 @@ Departure _preview(List<RainPoint> rain, ModeOption o, DateTime departAt) {
   final peak = peakRain(rain, departAt, calmArrive);
 
   Departure make(Verdict v, Risk r, String note, [int? eta]) => Departure(
-        mode: o.mode,
-        verdict: v,
-        risk: r,
-        etaMin: eta ?? calmEta,
-        departAt: departAt,
-        noteTh: note,
-        isPreview: true,
-      );
+    mode: o.mode,
+    verdict: v,
+    risk: r,
+    etaMin: eta ?? calmEta,
+    departAt: departAt,
+    noteTh: note,
+    isPreview: true,
+  );
 
   switch (o.mode) {
     case TravelMode.transit:
       return peak >= heavyRain
-          ? make(Verdict.leaveNow, Risk.medium, 'ขบวนไม่สนฝน แต่ชานชาลาแน่น เผื่อเวลา')
-          : make(Verdict.leaveNow, Risk.low, 'ไม่โดนฝนระหว่างทาง');
+          ? make(Verdict.leaveNow, Risk.medium, l.boardNoteTransitCrowded)
+          : make(Verdict.leaveNow, Risk.low, l.boardNoteDry);
     case TravelMode.car:
       if (peak >= heavyRain) {
-        return make(Verdict.wait, Risk.high, 'ฝนหนัก น้ำรอระบาย รถติดสะสม',
-            (calmEta * _stormSlowdown).round());
+        return make(
+          Verdict.wait,
+          Risk.high,
+          l.boardNoteCarHeavy,
+          (calmEta * _stormSlowdown).round(),
+        );
       }
       return peak >= lightRain
-          ? make(Verdict.leaveNow, Risk.medium, 'เจอฝนปรอยช่วงท้าย ขับช้าลง')
-          : make(Verdict.leaveNow, Risk.low, 'ถึงก่อนฝน');
+          ? make(Verdict.leaveNow, Risk.medium, l.boardNoteCarDrizzle)
+          : make(Verdict.leaveNow, Risk.low, l.boardNoteBeatRain);
     case TravelMode.moto:
       if (peak >= moderateRain) {
-        return make(Verdict.dontGo, Risk.high, 'ฝนหนักกลางทาง มอเตอร์ไซค์ไม่ควรไป');
+        return make(Verdict.dontGo, Risk.high, l.boardNoteMotoHeavy);
       }
       // Riders get caught by rain that starts soon after they arrive too.
-      final soon = peakRain(rain, departAt, calmArrive.add(const Duration(hours: 1)));
+      final soon = peakRain(
+        rain,
+        departAt,
+        calmArrive.add(const Duration(hours: 1)),
+      );
       return peak >= lightRain || soon >= lightRain
-          ? make(Verdict.leaveNow, Risk.medium, 'ทันพอดี ช้ากว่านี้จะโดนฝน')
-          : make(Verdict.leaveNow, Risk.low, 'ถึงก่อนฝน');
+          ? make(Verdict.leaveNow, Risk.medium, l.boardNoteMotoTight)
+          : make(Verdict.leaveNow, Risk.low, l.boardNoteBeatRain);
   }
 }
 
 /// The agent's own per-mode answers, as departures at [departAt].
 List<Departure> serverOptions(Decision d, DateTime departAt) => [
-      for (final o in d.modeOptions)
-        Departure(
-          mode: o.mode,
-          verdict: o.verdict,
-          risk: o.risk,
-          etaMin: o.etaMin,
-          departAt: departAt,
-          noteTh: o.noteTh,
-          isPreview: false,
-        ),
-    ];
+  for (final o in d.modeOptions)
+    Departure(
+      mode: o.mode,
+      verdict: o.verdict,
+      risk: o.risk,
+      etaMin: o.etaMin,
+      departAt: departAt,
+      noteTh: o.noteTh,
+      isPreview: false,
+    ),
+];
 
 int _verdictRank(Verdict v) => switch (v) {
-      Verdict.leaveNow => 0,
-      Verdict.switchMode => 1,
-      Verdict.wait => 2,
-      Verdict.dontGo => 3,
-    };
+  Verdict.leaveNow => 0,
+  Verdict.switchMode => 1,
+  Verdict.wait => 2,
+  Verdict.dontGo => 3,
+};
 
 /// Board order: go-able first, then lower risk, then earlier arrival.
-List<Departure> rankOptions(List<Departure> options) => [...options]..sort((a, b) {
-    final v = _verdictRank(a.verdict).compareTo(_verdictRank(b.verdict));
-    if (v != 0) return v;
-    final r = a.risk.index.compareTo(b.risk.index);
-    if (r != 0) return r;
-    return a.arriveAt.compareTo(b.arriveAt);
-  });
+List<Departure> rankOptions(List<Departure> options) =>
+    [...options]..sort((a, b) {
+      final v = _verdictRank(a.verdict).compareTo(_verdictRank(b.verdict));
+      if (v != 0) return v;
+      final r = a.risk.index.compareTo(b.risk.index);
+      if (r != 0) return r;
+      return a.arriveAt.compareTo(b.arriveAt);
+    });
 
 String _hhmm(DateTime t) {
   final b = t.toUtc().add(const Duration(hours: 7));
@@ -155,19 +183,28 @@ String _hhmm(DateTime t) {
 }
 
 /// Verdict line for [mode] while previewing, in the agent's voice.
-String previewHeadline(List<Departure> options, TravelMode mode) {
+String previewHeadline(
+  List<Departure> options,
+  TravelMode mode, [
+  AppLocalizations? l10n,
+]) {
+  final l = l10n ?? _thai();
   final mine = options.where((o) => o.mode == mode).firstOrNull;
   if (mine == null) return '';
   switch (mine.verdict) {
     case Verdict.leaveNow:
-      return 'ออก ${_hhmm(mine.departAt)} ได้';
+      return l.boardHeadlineLeave(_hhmm(mine.departAt));
     case Verdict.wait:
-      return 'อย่าเพิ่งออก';
+      return l.boardHeadlineWait;
     case Verdict.switchMode:
     case Verdict.dontGo:
-      final transitOk = options.any((o) =>
-          o.mode == TravelMode.transit && o.mode != mode && o.verdict == Verdict.leaveNow);
-      return transitOk ? 'เปลี่ยนเป็น BTS ดีกว่า' : 'อย่าเพิ่งออก';
+      final transitOk = options.any(
+        (o) =>
+            o.mode == TravelMode.transit &&
+            o.mode != mode &&
+            o.verdict == Verdict.leaveNow,
+      );
+      return transitOk ? l.boardHeadlineSwitchTransit : l.boardHeadlineWait;
   }
 }
 
@@ -181,23 +218,31 @@ SkyState skyFor(
 }) {
   if (home == HomeLevel.danger) return SkyState.flood;
   if (verdict != null && verdict != Verdict.leaveNow) return SkyState.storm;
-  final peak = peakRain(rain, departAt, departAt.add(Duration(minutes: etaMin)));
+  final peak = peakRain(
+    rain,
+    departAt,
+    departAt.add(Duration(minutes: etaMin)),
+  );
   return peak >= moderateRain ? SkyState.storm : SkyState.clear;
 }
 
 const _step = Duration(minutes: 5);
 
 DateTime _floor5(DateTime t) => DateTime.fromMillisecondsSinceEpoch(
-    t.millisecondsSinceEpoch - t.millisecondsSinceEpoch % _step.inMilliseconds,
-    isUtc: true);
+  t.millisecondsSinceEpoch - t.millisecondsSinceEpoch % _step.inMilliseconds,
+  isUtc: true,
+);
 
 /// Nearest five-minute mark, kept within [start, end].
 DateTime snapDeparture(DateTime t, DateTime start, DateTime end) {
   final ms = _step.inMilliseconds;
   final rounded = DateTime.fromMillisecondsSinceEpoch(
-      ((t.millisecondsSinceEpoch + ms / 2) ~/ ms) * ms,
-      isUtc: true);
-  final lo = _floor5(start).isBefore(start) ? _floor5(start).add(_step) : _floor5(start);
+    ((t.millisecondsSinceEpoch + ms / 2) ~/ ms) * ms,
+    isUtc: true,
+  );
+  final lo = _floor5(start).isBefore(start)
+      ? _floor5(start).add(_step)
+      : _floor5(start);
   final hi = _floor5(end);
   if (rounded.isBefore(lo)) return lo;
   if (rounded.isAfter(hi)) return hi;

@@ -1,3 +1,5 @@
+import 'l10n/l10n.dart';
+
 // Bangkok (UTC+7, no DST) time helpers. The app always shows Bangkok time
 // regardless of the device time zone, so demo screenshots match the scenario.
 
@@ -19,17 +21,13 @@ String isoBangkok(DateTime t) {
       'T${_two(b.hour)}:${_two(b.minute)}:00+07:00';
 }
 
-const _monthsShortTh = [
-  'ม.ค.', 'ก.พ.', 'มี.ค.', 'เม.ย.', 'พ.ค.', 'มิ.ย.',
-  'ก.ค.', 'ส.ค.', 'ก.ย.', 'ต.ค.', 'พ.ย.', 'ธ.ค.',
-];
-const _weekdaysTh = ['จันทร์', 'อังคาร', 'พุธ', 'พฤหัส', 'ศุกร์', 'เสาร์', 'อาทิตย์'];
-
-String monthShortTh(DateTime t) => _monthsShortTh[toBangkok(t).month - 1];
 int dayOfMonth(DateTime t) => toBangkok(t).day;
 
-/// e.g. "เสาร์ 3 ต.ค. 19:00"
-String dayTimeTh(DateTime t) {
+String monthShort(AppLocalizations l, DateTime t) =>
+    l.monthShort('${toBangkok(t).month}');
+
+/// e.g. "เสาร์ 3 ต.ค. 19:00" or "Sat 3 Oct 19:00"
+String dayTime(AppLocalizations l, DateTime t) {
   final b = toBangkok(t);
-  return '${_weekdaysTh[b.weekday - 1]} ${b.day} ${_monthsShortTh[b.month - 1]} ${hhmm(t)}';
+  return '${l.weekdayName('${b.weekday}')} ${b.day} ${monthShort(l, t)} ${hhmm(t)}';
 }

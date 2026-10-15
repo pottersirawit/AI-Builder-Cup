@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models.dart';
 import '../labels.dart';
 import '../theme.dart';
@@ -8,7 +9,12 @@ import '../tokens.dart';
 
 /// Risk as icon + word + colour, so it never rests on colour alone.
 class RiskChip extends StatelessWidget {
-  const RiskChip({super.key, required this.risk, this.label, this.dense = false});
+  const RiskChip({
+    super.key,
+    required this.risk,
+    this.label,
+    this.dense = false,
+  });
   final Risk risk;
 
   /// Defaults to the risk's own words.
@@ -21,7 +27,12 @@ class RiskChip extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final ink = c.riskInk(risk);
     return Container(
-      padding: EdgeInsets.fromLTRB(dense ? 6 : 8, dense ? 2 : 4, dense ? 8 : 10, dense ? 2 : 4),
+      padding: EdgeInsets.fromLTRB(
+        dense ? 6 : 8,
+        dense ? 2 : 4,
+        dense ? 8 : 10,
+        dense ? 2 : 4,
+      ),
       decoration: BoxDecoration(
         color: c.riskContainer(risk),
         borderRadius: BorderRadius.circular(Radii.pill),
@@ -33,10 +44,12 @@ class RiskChip extends StatelessWidget {
           const SizedBox(width: 4),
           Flexible(
             child: Text(
-              label ?? risk.labelTh,
+              label ?? risk.label(context.l10n),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: (dense ? t.labelSmall : t.labelMedium)!.copyWith(color: ink),
+              style: (dense ? t.labelSmall : t.labelMedium)!.copyWith(
+                color: ink,
+              ),
             ),
           ),
         ],
@@ -47,7 +60,12 @@ class RiskChip extends StatelessWidget {
 
 /// Where a card's facts came from. Every card carries one.
 class SourceLabel extends StatelessWidget {
-  const SourceLabel(this.text, {super.key, this.color, this.icon = Symbols.database_rounded});
+  const SourceLabel(
+    this.text, {
+    super.key,
+    this.color,
+    this.icon = Symbols.database_rounded,
+  });
   final String text;
   final Color? color;
   final IconData icon;
@@ -57,7 +75,7 @@ class SourceLabel extends StatelessWidget {
     final ink = color ?? FonColors.of(context).sourceInk;
     final t = Theme.of(context).textTheme;
     return Semantics(
-      label: 'แหล่งข้อมูล: $text',
+      label: context.l10n.marksSourceSemantic(text),
       excludeSemantics: true,
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -67,7 +85,12 @@ class SourceLabel extends StatelessWidget {
             child: Icon(icon, size: 14, color: ink),
           ),
           const SizedBox(width: 6),
-          Expanded(child: Text(text, style: t.bodySmall!.copyWith(color: ink, height: 1.45))),
+          Expanded(
+            child: Text(
+              text,
+              style: t.bodySmall!.copyWith(color: ink, height: 1.45),
+            ),
+          ),
         ],
       ),
     );
@@ -85,7 +108,7 @@ class SampleBadge extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final ink = onField ? const Color(0xFF2A1A00) : c.riskMedium;
     return Semantics(
-      label: 'ข้อมูลตัวอย่าง เชื่อมต่อเซิร์ฟเวอร์ไม่ได้',
+      label: context.l10n.marksSampleSemantic,
       excludeSemantics: true,
       child: Container(
         padding: const EdgeInsets.fromLTRB(6, 3, 10, 3),
@@ -98,7 +121,10 @@ class SampleBadge extends StatelessWidget {
           children: [
             Icon(Symbols.cloud_off_rounded, size: 14, color: ink),
             const SizedBox(width: 4),
-            Text('ข้อมูลตัวอย่าง', style: t.labelSmall!.copyWith(color: ink)),
+            Text(
+              context.l10n.marksSample,
+              style: t.labelSmall!.copyWith(color: ink),
+            ),
           ],
         ),
       ),
@@ -117,24 +143,32 @@ class DemoBadge extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final ink = onField ? Colors.white : scheme.onSecondaryContainer;
     return Semantics(
-      label: 'โปรไฟล์เดโม ข้อมูลจำลอง',
+      label: context.l10n.marksDemoSemantic,
       excludeSemantics: true,
-      child: Container(
-        padding: const EdgeInsets.fromLTRB(6, 3, 10, 3),
-        decoration: BoxDecoration(
-          color: onField ? Colors.white.withValues(alpha: .18) : scheme.secondaryContainer,
-          borderRadius: BorderRadius.circular(Radii.pill),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Symbols.person_play_rounded, size: 14, color: ink),
-            const SizedBox(width: 4),
-            Flexible(
-              child: Text('เดโม',
-                  maxLines: 1, overflow: TextOverflow.clip, style: t.labelSmall!.copyWith(color: ink)),
-            ),
-          ],
+      child: FittedBox(
+        fit: BoxFit.scaleDown,
+        alignment: Alignment.centerLeft,
+        child: Container(
+          padding: const EdgeInsets.fromLTRB(6, 3, 10, 3),
+          decoration: BoxDecoration(
+            color: onField
+                ? Colors.white.withValues(alpha: .18)
+                : scheme.secondaryContainer,
+            borderRadius: BorderRadius.circular(Radii.pill),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Symbols.person_play_rounded, size: 14, color: ink),
+              const SizedBox(width: 4),
+              Text(
+                context.l10n.marksDemo,
+                maxLines: 1,
+                overflow: TextOverflow.clip,
+                style: t.labelSmall!.copyWith(color: ink),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -154,12 +188,15 @@ class ConfidenceMeter extends StatelessWidget {
     final ink = color ?? c.paperInk;
     final filled = (value * 10).round();
     return Semantics(
-      label: 'ความมั่นใจ ${percent(value)}',
+      label: context.l10n.marksConfidenceSemantic(percent(value)),
       excludeSemantics: true,
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Text('มั่นใจ', style: t.labelMedium!.copyWith(color: c.paperMuted)),
+          Text(
+            context.l10n.marksConfidence,
+            style: t.labelMedium!.copyWith(color: c.paperMuted),
+          ),
           const SizedBox(width: Space.x2),
           for (var i = 0; i < 10; i++)
             Container(
@@ -172,7 +209,10 @@ class ConfidenceMeter extends StatelessWidget {
               ),
             ),
           const SizedBox(width: Space.x2 - 2),
-          Text(percent(value), style: tabular(t.labelLarge!).copyWith(color: ink)),
+          Text(
+            percent(value),
+            style: tabular(t.labelLarge!).copyWith(color: ink),
+          ),
         ],
       ),
     );
@@ -190,12 +230,21 @@ class GeminiMark extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (fallback) {
-      return Icon(Symbols.rule_rounded, size: size, color: FonColors.of(context).paperMuted);
+      return Icon(
+        Symbols.rule_rounded,
+        size: size,
+        color: FonColors.of(context).paperMuted,
+      );
     }
     return ShaderMask(
       blendMode: BlendMode.srcIn,
       shaderCallback: geminiGradient.createShader,
-      child: Icon(Symbols.auto_awesome_rounded, size: size, fill: 1, color: Colors.white),
+      child: Icon(
+        Symbols.auto_awesome_rounded,
+        size: size,
+        fill: 1,
+        color: Colors.white,
+      ),
     );
   }
 }
@@ -217,7 +266,9 @@ class GeneratedBy extends StatelessWidget {
         const SizedBox(width: 6),
         Flexible(
           child: Text(
-            fallback ? 'กฎสำรอง · Gemini ไม่ตอบในรอบนี้' : 'ตัดสินโดย Gemini',
+            fallback
+                ? context.l10n.marksGeneratedByFallback
+                : context.l10n.marksGeneratedByAi,
             style: t.labelMedium!.copyWith(color: c.paperMuted),
           ),
         ),

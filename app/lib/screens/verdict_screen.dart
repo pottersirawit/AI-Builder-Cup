@@ -3,7 +3,9 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../l10n/l10n.dart';
 import '../models.dart';
+import '../places.dart';
 import '../trip_controller.dart';
 import 'ask_screen.dart';
 import 'parts.dart';
@@ -11,7 +13,13 @@ import 'place_picker.dart';
 
 /// One trip in full: drag the departure, compare modes, see why.
 class VerdictScreen extends StatefulWidget {
-  const VerdictScreen({super.key, required this.request, this.trip, this.departAt, this.mode});
+  const VerdictScreen({
+    super.key,
+    required this.request,
+    this.trip,
+    this.departAt,
+    this.mode,
+  });
 
   /// A trip id, an origin/destination pair, or a Thai question.
   final DecideRequest request;
@@ -42,13 +50,20 @@ class _VerdictScreenState extends State<VerdictScreen> {
 
   Future<void> _savePlace(Place dest) async {
     final messenger = ScaffoldMessenger.of(context);
+    final l = context.l10n;
     final r = await showPlaceConfirmSheet(
       context,
       kind: PlaceKind.other,
-      candidate: PlaceCandidate(nameTh: dest.nameTh, lat: dest.lat, lng: dest.lng),
+      candidate: PlaceCandidate(
+        nameTh: dest.nameTh,
+        lat: dest.lat,
+        lng: dest.lng,
+      ),
     );
     if (r?.saved != null) {
-      messenger.showSnackBar(SnackBar(content: Text('บันทึก “${r!.saved!.labelTh}” แล้ว')));
+      messenger.showSnackBar(
+        SnackBar(content: Text(l.verdictSavedSnack(r!.saved!.labelFor(l)))),
+      );
     }
   }
 
@@ -60,12 +75,14 @@ class _VerdictScreenState extends State<VerdictScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final state = AppScope.stateOf(context);
     final d = _c.decision;
     final trip = widget.trip ?? d?.trip;
     final store = AppScope.placesOf(context);
     final dest = trip?.destination;
-    final unsaved = dest != null &&
+    final unsaved =
+        dest != null &&
         !trip!.unresolved &&
         (dest.lat != 0 || dest.lng != 0) &&
         store.duplicateOf(dest.lat, dest.lng) == null;
@@ -78,15 +95,18 @@ class _VerdictScreenState extends State<VerdictScreen> {
     final Widget pass = needs != null
         ? NeedsPlacePass(needs: needs, onResolved: _c.resolvePlace)
         : _c.error != null && d == null
-        ? Pass(sections: [
-            PassSection(
-              child: ErrorState(
-                title: 'ยังตัดสินไม่ได้',
-                message: 'ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง',
-                onRetry: _c.load,
+        ? Pass(
+            sections: [
+              PassSection(
+                child: ErrorState(
+                  title: l.verdictCantDecide,
+                  message: l.verdictServerError,
+                  retryLabel: l.verdictRetry,
+                  onRetry: _c.load,
+                ),
               ),
-            ),
-          ])
+            ],
+          )
         : TripPass(
             controller: _c,
             now: state.now(),
@@ -96,7 +116,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
               if (unsaved && store.canAddOther)
                 ActionChip(
                   avatar: const Icon(Symbols.bookmark_add_rounded, size: 18),
-                  label: const Text('บันทึกที่นี่ไว้'),
+                  label: Text(l.verdictSavePlace),
                   onPressed: () => _savePlace(dest),
                 ),
             ],
@@ -117,16 +137,20 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       state: sky,
                       back: true,
                       title: trip == null
-                          ? 'คำถาม'
-                          : trip.source == 'routine' || trip.titleTh == 'กลับบ้าน'
-                              ? trip.titleTh
-                              : 'ไป${trip.destination.nameTh}',
-                      subtitle: trip == null ? 'Gemini แกะคำถามเป็นทริป' : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
+                          ? l.verdictQuestionTitle
+                          : trip.source == 'routine' ||
+                                trip.titleTh == 'กลับบ้าน'
+                          ? trip.titleTh
+                          : l.verdictGoTo(trip.destination.nameTh),
+                      subtitle: trip == null
+                          ? l.verdictReadingQuestion
+                          : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
                       actions: [
-                        if (state.usingSample) const Padding(
-                          padding: EdgeInsets.only(right: Space.x3),
-                          child: SampleBadge(onField: true),
-                        ),
+                        if (state.usingSample)
+                          const Padding(
+                            padding: EdgeInsets.only(right: Space.x3),
+                            child: SampleBadge(onField: true),
+                          ),
                       ],
                     ),
                     if (_c.loading)
@@ -138,7 +162,12 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     else
                       const SizedBox(height: 2),
                     Padding(
-                      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x2, Space.gutter, 0),
+                      padding: const EdgeInsets.fromLTRB(
+                        Space.gutter,
+                        Space.x2,
+                        Space.gutter,
+                        0,
+                      ),
                       child: pass,
                     ),
                   ],
@@ -148,11 +177,12 @@ class _VerdictScreenState extends State<VerdictScreen> {
           ),
           if (d != null) ...[
             if (d.explanation case final e? when !e.isEmpty)
-              SliverToBoxAdapter(child: _WhySection(explanation: e, decision: d)),
+              SliverToBoxAdapter(
+                child: _WhySection(explanation: e, decision: d),
+              ),
             SliverToBoxAdapter(
               child: Section(
-                title: 'เทียบวิธีเดินทาง',
-                source: 'ระยะพ้นน้ำตามประเภทรถ · Google Routes API',
+                title: l.verdictCompareModes,
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -161,7 +191,13 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       onChanged: _c.setMode,
                       status: {
                         for (final o in board)
-                          o.mode: ModeStatus(risk: o.risk, text: '${o.etaMin} น. · ${boardStatus(o.verdict, o.risk)}'),
+                          o.mode: ModeStatus(
+                            risk: o.risk,
+                            text: l.verdictModeStatus(
+                              o.etaMin,
+                              boardStatusText(l, o.verdict, o.risk),
+                            ),
+                          ),
                       },
                     ),
                     if (_c.selected != null) ...[
@@ -174,24 +210,32 @@ class _VerdictScreenState extends State<VerdictScreen> {
             ),
             SliverToBoxAdapter(
               child: Section(
-                title: 'จุดน้ำท่วมบนเส้นทาง',
-                source: 'จุดเสี่ยงน้ำท่วม กทม. · ThaiWater · รายงานผู้ใช้',
+                title: l.verdictFloodSpotsTitle,
                 child: d.floodSpots.isEmpty
                     ? EmptyState(
                         icon: Symbols.check_circle_rounded,
-                        title: 'ไม่มีจุดน้ำขังบนเส้นทางนี้',
-                        message: 'เส้นทางนี้ไม่ผ่านจุดเสี่ยงน้ำท่วมของ กทม.',
+                        title: l.verdictNoFloodSpots,
+                        message: l.verdictNoFloodSpotsMsg,
                       )
                     : Column(
                         children: [
                           for (final s in d.floodSpots) ...[
                             ListTile(
                               contentPadding: EdgeInsets.zero,
-                              leading: Icon(Symbols.flood_rounded, color: c.riskInk(s.risk)),
+                              leading: Icon(
+                                Symbols.flood_rounded,
+                                color: c.riskInk(s.risk),
+                              ),
                               title: Text(s.nameTh),
                               subtitle: Text(
-                                s.expectedDepthCm > 0 ? 'คาดน้ำสูง ${s.expectedDepthCm.round()} ซม.' : 'ยังแห้ง',
-                                style: tabular(t.bodySmall!).copyWith(color: scheme.onSurfaceVariant),
+                                s.expectedDepthCm > 0
+                                    ? l.verdictExpectedDepth(
+                                        s.expectedDepthCm.round(),
+                                      )
+                                    : l.verdictStillDry,
+                                style: tabular(
+                                  t.bodySmall!,
+                                ).copyWith(color: scheme.onSurfaceVariant),
                               ),
                               trailing: RiskChip(risk: s.risk, dense: true),
                             ),
@@ -203,17 +247,24 @@ class _VerdictScreenState extends State<VerdictScreen> {
             ),
             SliverToBoxAdapter(
               child: Section(
-                title: 'Gemini คิดแบบนี้',
+                title: l.verdictTraceTitle,
                 trailing: const GeminiMark(size: 22),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     for (var i = 0; i < d.reasoning.length; i++)
-                      _TraceStep(step: d.reasoning[i], index: i + 1, last: i == d.reasoning.length - 1),
+                      _TraceStep(
+                        step: d.reasoning[i],
+                        index: i + 1,
+                        last: i == d.reasoning.length - 1,
+                      ),
                     const SizedBox(height: Space.x4),
-                    ConfidenceMeter(value: d.confidence, color: scheme.onSurface),
+                    ConfidenceMeter(
+                      value: d.confidence,
+                      color: scheme.onSurface,
+                    ),
                     const SizedBox(height: Space.x4),
-                    Text('แหล่งข้อมูล', style: t.titleSmall),
+                    Text(l.verdictSources, style: t.titleSmall),
                     const SizedBox(height: Space.x2),
                     Wrap(
                       spacing: Space.x2,
@@ -227,7 +278,9 @@ class _VerdictScreenState extends State<VerdictScreen> {
                                   : Symbols.database_rounded,
                               size: 16,
                             ),
-                            label: Text(s),
+                            label: Text(
+                              s == gpsSourceLabel ? l.verdictSourceGps : s,
+                            ),
                             visualDensity: VisualDensity.compact,
                           ),
                       ],
@@ -240,13 +293,21 @@ class _VerdictScreenState extends State<VerdictScreen> {
             ),
             SliverToBoxAdapter(
               child: Padding(
-                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x8, Space.gutter, Space.x10),
+                padding: const EdgeInsets.fromLTRB(
+                  Space.gutter,
+                  Space.x8,
+                  Space.gutter,
+                  Space.x10,
+                ),
                 child: FilledButton.icon(
-                  onPressed: () => Navigator.of(context).push(MaterialPageRoute<void>(
-                    builder: (_) => AskScreen(trip: trip, opening: _c.headline),
-                  )),
+                  onPressed: () => Navigator.of(context).push(
+                    MaterialPageRoute<void>(
+                      builder: (_) =>
+                          AskScreen(trip: trip, opening: _c.headline),
+                    ),
+                  ),
                   icon: const Icon(Symbols.chat_rounded),
-                  label: const Text('ถามต่อ'),
+                  label: Text(l.verdictAskMore),
                 ),
               ),
             ),
@@ -273,14 +334,14 @@ class _WhySectionState extends State<_WhySection> {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final e = widget.explanation;
     final d = widget.decision;
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     return Section(
-      title: 'ทำไมถึงแนะนำแบบนี้',
+      title: l.verdictWhyTitle,
       trailing: GeminiMark(size: 22, fallback: d.generatedBy == 'fallback'),
-      source: d.sources.isEmpty ? null : d.sources.join(' · '),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -290,13 +351,17 @@ class _WhySectionState extends State<_WhySection> {
             Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Symbols.alt_route_rounded, size: 20, color: scheme.primary),
+                Icon(
+                  Symbols.alt_route_rounded,
+                  size: 20,
+                  color: scheme.primary,
+                ),
                 const SizedBox(width: Space.x3),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('ทางเลี่ยงน้ำท่วม', style: t.titleSmall),
+                      Text(l.verdictRouteAdvice, style: t.titleSmall),
                       const SizedBox(height: Space.x1),
                       Text(e.routeAdviceTh, style: t.bodyMedium),
                     ],
@@ -310,7 +375,10 @@ class _WhySectionState extends State<_WhySection> {
             Wrap(
               spacing: Space.x2,
               runSpacing: Space.x2,
-              children: [for (final spot in e.avoidSpotsTh) RiskChip(risk: Risk.high, label: 'เลี่ยง $spot')],
+              children: [
+                for (final spot in e.avoidSpotsTh)
+                  RiskChip(risk: Risk.high, label: l.verdictAvoid(spot)),
+              ],
             ),
           ],
           if (e.factorsTh.isNotEmpty) ...[
@@ -319,15 +387,29 @@ class _WhySectionState extends State<_WhySection> {
               expanded: _factorsOpen,
               child: TextButton.icon(
                 onPressed: () => setState(() => _factorsOpen = !_factorsOpen),
-                style: TextButton.styleFrom(padding: const EdgeInsets.symmetric(horizontal: Space.x2)),
-                icon: Icon(_factorsOpen ? Symbols.expand_less_rounded : Symbols.expand_more_rounded),
-                label: Text(_factorsOpen ? 'ซ่อนปัจจัย' : 'ดูปัจจัยที่ใช้ตัดสิน (${e.factorsTh.length})'),
+                style: TextButton.styleFrom(
+                  padding: const EdgeInsets.symmetric(horizontal: Space.x2),
+                ),
+                icon: Icon(
+                  _factorsOpen
+                      ? Symbols.expand_less_rounded
+                      : Symbols.expand_more_rounded,
+                ),
+                label: Text(
+                  _factorsOpen
+                      ? l.verdictHideFactors
+                      : l.verdictShowFactors(e.factorsTh.length),
+                ),
               ),
             ),
             if (_factorsOpen)
               for (final f in e.factorsTh)
                 Padding(
-                  padding: const EdgeInsets.only(left: Space.x2, top: Space.x1, bottom: Space.x1),
+                  padding: const EdgeInsets.only(
+                    left: Space.x2,
+                    top: Space.x1,
+                    bottom: Space.x1,
+                  ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
@@ -335,7 +417,10 @@ class _WhySectionState extends State<_WhySection> {
                         width: 6,
                         height: 6,
                         margin: const EdgeInsets.only(top: 9),
-                        decoration: BoxDecoration(color: scheme.onSurfaceVariant, shape: BoxShape.circle),
+                        decoration: BoxDecoration(
+                          color: scheme.onSurfaceVariant,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                       const SizedBox(width: Space.x3),
                       Expanded(child: Text(f, style: t.bodyMedium)),
@@ -349,9 +434,13 @@ class _WhySectionState extends State<_WhySection> {
   }
 }
 
-/// One tool call in the agent's trace: a numbered rail, tool id, summary.
+/// One tool call in the agent's trace: a numbered rail, a plain-words step title, summary.
 class _TraceStep extends StatelessWidget {
-  const _TraceStep({required this.step, required this.index, required this.last});
+  const _TraceStep({
+    required this.step,
+    required this.index,
+    required this.last,
+  });
   final ReasoningStep step;
   final int index;
   final bool last;
@@ -360,6 +449,18 @@ class _TraceStep extends StatelessWidget {
   Widget build(BuildContext context) {
     final scheme = Theme.of(context).colorScheme;
     final t = Theme.of(context).textTheme;
+    final l = context.l10n;
+    final title = switch (step.tool) {
+      'parse_question' => l.verdictToolParseQuestion,
+      'get_trip' => l.verdictToolGetTrip,
+      'get_route' => l.verdictToolGetRoute,
+      'get_rain_along_route' => l.verdictToolRain,
+      'get_flood_spots_on_route' => l.verdictToolFloodSpots,
+      'get_canal_levels' => l.verdictToolCanals,
+      'get_community_reports' => l.verdictToolReports,
+      'evaluate_departure' => l.verdictToolEvaluate,
+      _ => null,
+    };
     return IntrinsicHeight(
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -372,11 +473,25 @@ class _TraceStep extends StatelessWidget {
                   width: 24,
                   height: 24,
                   alignment: Alignment.center,
-                  decoration: BoxDecoration(color: scheme.secondaryContainer, shape: BoxShape.circle),
-                  child: Text('$index',
-                      style: tabular(t.labelMedium!).copyWith(color: scheme.onSecondaryContainer)),
+                  decoration: BoxDecoration(
+                    color: scheme.secondaryContainer,
+                    shape: BoxShape.circle,
+                  ),
+                  child: Text(
+                    '$index',
+                    style: tabular(
+                      t.labelMedium!,
+                    ).copyWith(color: scheme.onSecondaryContainer),
+                  ),
                 ),
-                if (!last) Expanded(child: VerticalDivider(width: 2, thickness: 2, color: scheme.outlineVariant)),
+                if (!last)
+                  Expanded(
+                    child: VerticalDivider(
+                      width: 2,
+                      thickness: 2,
+                      color: scheme.outlineVariant,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -387,13 +502,11 @@ class _TraceStep extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Tool names are code identifiers, so they stay monospace.
-                  Text(step.tool,
-                      style: t.labelMedium!.copyWith(
-                        fontFamily: 'Menlo',
-                        fontFamilyFallback: const ['monospace', 'Courier'],
-                        color: scheme.primary,
-                      )),
+                  if (title != null)
+                    Text(
+                      title,
+                      style: t.labelLarge!.copyWith(color: scheme.primary),
+                    ),
                   const SizedBox(height: 2),
                   Text(step.summaryTh, style: t.bodyMedium),
                 ],

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import '../../l10n/l10n.dart';
 import '../../models.dart';
 import '../theme.dart';
 import '../tokens.dart';
@@ -10,7 +11,13 @@ import 'states.dart';
 /// The grid shifts with the coordinates so two places never look identical;
 /// the ring is the GPS accuracy radius when there is one.
 class PinPreview extends StatelessWidget {
-  const PinPreview({super.key, required this.lat, required this.lng, this.accuracyM, this.height = 132});
+  const PinPreview({
+    super.key,
+    required this.lat,
+    required this.lng,
+    this.accuracyM,
+    this.height = 132,
+  });
   final double lat;
   final double lng;
   final double? accuracyM;
@@ -22,7 +29,10 @@ class PinPreview extends StatelessWidget {
     final c = FonColors.of(context);
     final t = Theme.of(context).textTheme;
     return Semantics(
-      label: 'หมุดตำแหน่ง ${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+      label: context.l10n.placesPinLabel(
+        lat.toStringAsFixed(4),
+        lng.toStringAsFixed(4),
+      ),
       excludeSemantics: true,
       child: ClipRRect(
         borderRadius: BorderRadius.circular(Radii.md),
@@ -39,21 +49,32 @@ class PinPreview extends StatelessWidget {
                     road: scheme.surfaceContainerLowest,
                     ring: scheme.primary,
                     phase: Offset((lng * 1e4) % 28, (lat * 1e4) % 28),
-                    ringRadius: accuracyM == null ? null : (accuracyM! / 4).clamp(14.0, height * .45),
+                    ringRadius: accuracyM == null
+                        ? null
+                        : (accuracyM! / 4).clamp(14.0, height * .45),
                   ),
                 ),
               ),
               Center(
                 child: Padding(
                   padding: const EdgeInsets.only(bottom: 26),
-                  child: Icon(Symbols.location_on_rounded, size: 36, fill: 1, color: scheme.primary),
+                  child: Icon(
+                    Symbols.location_on_rounded,
+                    size: 36,
+                    fill: 1,
+                    color: scheme.primary,
+                  ),
                 ),
               ),
               Positioned(
                 left: Space.x3,
                 bottom: Space.x2,
-                child: Text('${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
-                    style: tabular(t.labelSmall!).copyWith(color: scheme.onSurfaceVariant)),
+                child: Text(
+                  '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+                  style: tabular(
+                    t.labelSmall!,
+                  ).copyWith(color: scheme.onSurfaceVariant),
+                ),
               ),
             ],
           ),
@@ -94,25 +115,40 @@ class _GridPainter extends CustomPainter {
     final wide = Paint()
       ..color = road
       ..strokeWidth = 7;
-    canvas.drawLine(Offset(0, size.height * .62), Offset(size.width, size.height * .48), wide);
-    canvas.drawLine(Offset(size.width * .36, 0), Offset(size.width * .44, size.height), wide);
+    canvas.drawLine(
+      Offset(0, size.height * .62),
+      Offset(size.width, size.height * .48),
+      wide,
+    );
+    canvas.drawLine(
+      Offset(size.width * .36, 0),
+      Offset(size.width * .44, size.height),
+      wide,
+    );
     final r = ringRadius;
     if (r != null) {
       final center = Offset(size.width / 2, size.height / 2);
-      canvas.drawCircle(center, r, Paint()..color = ring.withValues(alpha: .12));
       canvas.drawCircle(
-          center,
-          r,
-          Paint()
-            ..color = ring.withValues(alpha: .5)
-            ..style = PaintingStyle.stroke
-            ..strokeWidth = 1.5);
+        center,
+        r,
+        Paint()..color = ring.withValues(alpha: .12),
+      );
+      canvas.drawCircle(
+        center,
+        r,
+        Paint()
+          ..color = ring.withValues(alpha: .5)
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = 1.5,
+      );
     }
   }
 
   @override
   bool shouldRepaint(_GridPainter old) =>
-      old.phase != phase || old.ringRadius != ringRadius || old.ground != ground;
+      old.phase != phase ||
+      old.ringRadius != ringRadius ||
+      old.ground != ground;
 }
 
 enum NoticeTone { info, warning }
@@ -146,7 +182,12 @@ class Notice extends StatelessWidget {
       color: bg,
       borderRadius: BorderRadius.circular(Radii.md),
       child: Padding(
-        padding: EdgeInsets.fromLTRB(Space.x3, Space.x2, onDismiss == null ? Space.x3 : 0, Space.x2),
+        padding: EdgeInsets.fromLTRB(
+          Space.x3,
+          Space.x2,
+          onDismiss == null ? Space.x3 : 0,
+          Space.x2,
+        ),
         child: Row(
           children: [
             Icon(icon, size: 20, color: ink),
@@ -154,13 +195,18 @@ class Notice extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: const EdgeInsets.symmetric(vertical: Space.x1),
-                child: Text(text, style: t.bodyMedium!.copyWith(color: warn ? scheme.onSurface : ink)),
+                child: Text(
+                  text,
+                  style: t.bodyMedium!.copyWith(
+                    color: warn ? scheme.onSurface : ink,
+                  ),
+                ),
               ),
             ),
             if (action != null) ...[const SizedBox(width: Space.x1), action!],
             if (onDismiss != null)
               IconButton(
-                tooltip: 'ปิด',
+                tooltip: context.l10n.placesDismiss,
                 onPressed: onDismiss,
                 icon: Icon(Symbols.close_rounded, size: 18, color: ink),
               ),
@@ -201,28 +247,49 @@ class ConnectRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final c = FonColors.of(context);
     final scheme = Theme.of(context).colorScheme;
+    final l = context.l10n;
     final subtitle = switch (state) {
-      LinkState.notConnected => detail == null ? 'ยังไม่เชื่อมต่อ' : 'ยังไม่เชื่อมต่อ · $detail',
-      LinkState.connecting => 'กำลังเชื่อมต่อ…',
-      LinkState.connected => account ?? 'เชื่อมต่อแล้ว',
-      LinkState.error => 'เชื่อมต่อไม่สำเร็จ ลองอีกครั้ง',
+      LinkState.notConnected =>
+        detail == null
+            ? l.placesNotConnected
+            : l.placesNotConnectedDetail(detail!),
+      LinkState.connecting => l.placesConnecting,
+      LinkState.connected => account ?? l.placesConnected,
+      LinkState.error => l.placesConnectFailed,
     };
     final Widget trailing = switch (state) {
-      LinkState.notConnected => comingSoon
-          ? const OutlinedButton(onPressed: null, child: Text('เร็ว ๆ นี้'))
-          : FilledButton.tonal(onPressed: onConnect, child: const Text('เชื่อมต่อ')),
+      LinkState.notConnected =>
+        comingSoon
+            ? OutlinedButton(onPressed: null, child: Text(l.placesComingSoon))
+            : FilledButton.tonal(
+                onPressed: onConnect,
+                child: Text(l.placesConnect),
+              ),
       LinkState.connecting => const SizedBox.square(
-          dimension: Space.target,
-          child: Center(child: SizedBox.square(dimension: 22, child: CircularProgressIndicator(strokeWidth: 2.5))),
+        dimension: Space.target,
+        child: Center(
+          child: SizedBox.square(
+            dimension: 22,
+            child: CircularProgressIndicator(strokeWidth: 2.5),
+          ),
         ),
-      LinkState.connected => TextButton(onPressed: onDisconnect, child: const Text('ยกเลิก')),
-      LinkState.error => FilledButton.tonal(onPressed: onConnect, child: const Text('ลองอีกครั้ง')),
+      ),
+      LinkState.connected => TextButton(
+        onPressed: onDisconnect,
+        child: Text(l.placesDisconnect),
+      ),
+      LinkState.error => FilledButton.tonal(
+        onPressed: onConnect,
+        child: Text(l.placesRetry),
+      ),
     };
     return ListTile(
       leading: Icon(icon),
       title: Text(title),
-      subtitle: Text(subtitle,
-          style: state == LinkState.error ? TextStyle(color: scheme.error) : null),
+      subtitle: Text(
+        subtitle,
+        style: state == LinkState.error ? TextStyle(color: scheme.error) : null,
+      ),
       trailing: trailing,
       iconColor: state == LinkState.connected ? c.riskLow : null,
     );
@@ -236,30 +303,33 @@ class SkeletonList extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Semantics(
-        label: 'กำลังค้นหา',
-        child: Column(
-          children: [
-            for (var i = 0; i < rows; i++)
-              Padding(
-                padding: const EdgeInsets.symmetric(horizontal: Space.x4, vertical: Space.x3),
-                child: Row(
-                  children: [
-                    const Skeleton(width: 24, height: 24, radius: Radii.pill),
-                    const SizedBox(width: Space.x4),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Skeleton(width: 120.0 + 40 * (i % 3)),
-                          const SizedBox(height: Space.x2),
-                          Skeleton(width: 200.0 - 30 * (i % 2), height: 10),
-                        ],
-                      ),
-                    ),
-                  ],
+    label: context.l10n.placesSearching,
+    child: Column(
+      children: [
+        for (var i = 0; i < rows; i++)
+          Padding(
+            padding: const EdgeInsets.symmetric(
+              horizontal: Space.x4,
+              vertical: Space.x3,
+            ),
+            child: Row(
+              children: [
+                const Skeleton(width: 24, height: 24, radius: Radii.pill),
+                const SizedBox(width: Space.x4),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Skeleton(width: 120.0 + 40 * (i % 3)),
+                      const SizedBox(height: Space.x2),
+                      Skeleton(width: 200.0 - 30 * (i % 2), height: 10),
+                    ],
+                  ),
                 ),
-              ),
-          ],
-        ),
-      );
+              ],
+            ),
+          ),
+      ],
+    ),
+  );
 }

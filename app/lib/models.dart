@@ -8,8 +8,10 @@ double _num(Object? v) => (v as num?)?.toDouble() ?? 0;
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
 String _str(Object? v) => v as String? ?? '';
 List<Json> _list(Object? v) => (v as List? ?? const []).cast<Json>();
-List<String> _strList(Object? v) =>
-    (v as List? ?? const []).map((e) => e?.toString() ?? '').where((s) => s.isNotEmpty).toList();
+List<String> _strList(Object? v) => (v as List? ?? const [])
+    .map((e) => e?.toString() ?? '')
+    .where((s) => s.isNotEmpty)
+    .toList();
 
 /// Travel mode as named on the wire.
 enum TravelMode {
@@ -51,8 +53,11 @@ enum Risk {
 
 class Place {
   const Place({required this.nameTh, required this.lat, required this.lng});
-  factory Place.fromJson(Json j) =>
-      Place(nameTh: _str(j['name_th']), lat: _num(j['lat']), lng: _num(j['lng']));
+  factory Place.fromJson(Json j) => Place(
+    nameTh: _str(j['name_th']),
+    lat: _num(j['lat']),
+    lng: _num(j['lng']),
+  );
   final String nameTh;
   final double lat;
   final double lng;
@@ -75,7 +80,8 @@ class Trip {
   factory Trip.fromJson(Json j) {
     final dest = j['destination'] as Json?;
     final resolved = dest != null && dest['lat'] != null && dest['lng'] != null;
-    final text = j['location_text_th'] as String? ?? j['location_th'] as String?;
+    final text =
+        j['location_text_th'] as String? ?? j['location_th'] as String?;
     return Trip(
       id: _str(j['id']),
       titleTh: _str(j['title_th']),
@@ -128,12 +134,12 @@ class ModeOption {
     required this.noteTh,
   });
   factory ModeOption.fromJson(Json j) => ModeOption(
-        mode: TravelMode.parse(j['mode']),
-        verdict: Verdict.parse(j['verdict']),
-        etaMin: _int(j['eta_min']),
-        risk: Risk.parse(j['risk']),
-        noteTh: _str(j['note_th']),
-      );
+    mode: TravelMode.parse(j['mode']),
+    verdict: Verdict.parse(j['verdict']),
+    etaMin: _int(j['eta_min']),
+    risk: Risk.parse(j['risk']),
+    noteTh: _str(j['note_th']),
+  );
   final TravelMode mode;
   final Verdict verdict;
   final int etaMin;
@@ -152,21 +158,21 @@ class FloodSpot {
     this.distanceM,
   });
   factory FloodSpot.fromJson(Json j) => FloodSpot(
-        id: _str(j['id']),
-        nameTh: _str(j['name_th']),
-        lat: _num(j['lat']),
-        lng: _num(j['lng']),
-        expectedDepthCm: _num(j['expected_depth_cm']),
-        // home-status spots carry their history instead of a risk.
-        risk: j['risk'] == null && j['historical_max_depth_cm'] != null
-            ? switch (_num(j['historical_max_depth_cm'])) {
-                >= 30 => Risk.high,
-                >= 10 => Risk.medium,
-                _ => Risk.low,
-              }
-            : Risk.parse(j['risk']),
-        distanceM: (j['distance_m'] as num?)?.toDouble(),
-      );
+    id: _str(j['id']),
+    nameTh: _str(j['name_th']),
+    lat: _num(j['lat']),
+    lng: _num(j['lng']),
+    expectedDepthCm: _num(j['expected_depth_cm']),
+    // home-status spots carry their history instead of a risk.
+    risk: j['risk'] == null && j['historical_max_depth_cm'] != null
+        ? switch (_num(j['historical_max_depth_cm'])) {
+            >= 30 => Risk.high,
+            >= 10 => Risk.medium,
+            _ => Risk.low,
+          }
+        : Risk.parse(j['risk']),
+    distanceM: (j['distance_m'] as num?)?.toDouble(),
+  );
   final String id;
   final String nameTh;
   final double lat;
@@ -195,11 +201,11 @@ class DecisionExplanation {
   });
 
   factory DecisionExplanation.fromJson(Json j) => DecisionExplanation(
-        reasonWhyTh: _str(j['reason_why_th']),
-        factorsTh: _strList(j['factors_th']),
-        routeAdviceTh: _str(j['route_advice_th']),
-        avoidSpotsTh: _strList(j['avoid_spots_th']),
-      );
+    reasonWhyTh: _str(j['reason_why_th']),
+    factorsTh: _strList(j['factors_th']),
+    routeAdviceTh: _str(j['route_advice_th']),
+    avoidSpotsTh: _strList(j['avoid_spots_th']),
+  );
 
   final String reasonWhyTh;
   final List<String> factorsTh;
@@ -207,8 +213,15 @@ class DecisionExplanation {
   final List<String> avoidSpotsTh;
 
   bool get isEmpty =>
-      reasonWhyTh.isEmpty && factorsTh.isEmpty && routeAdviceTh.isEmpty && avoidSpotsTh.isEmpty;
+      reasonWhyTh.isEmpty &&
+      factorsTh.isEmpty &&
+      routeAdviceTh.isEmpty &&
+      avoidSpotsTh.isEmpty;
 }
+
+/// Source line added when the trip starts at the phone's position; screens
+/// swap it for localized text.
+const gpsSourceLabel = 'GPS ตำแหน่งปัจจุบัน';
 
 class Decision {
   const Decision({
@@ -231,11 +244,13 @@ class Decision {
   factory Decision.fromJson(Json j) {
     final rawSources = (j['sources'] as List? ?? const []).cast<String>();
     final trip = j['trip'] == null ? null : Trip.fromJson(j['trip'] as Json);
-    final hasGpsOrigin = trip?.origin.nameTh.contains('ตำแหน่ง') == true ||
+    final hasGpsOrigin =
+        trip?.origin.nameTh.contains('ตำแหน่ง') == true ||
         (trip != null && trip.source == 'app');
     final sources = [
-      if (hasGpsOrigin && !rawSources.any((s) => s.contains('GPS') || s.contains('ตำแหน่ง')))
-        'GPS ตำแหน่งปัจจุบัน',
+      if (hasGpsOrigin &&
+          !rawSources.any((s) => s.contains('GPS') || s.contains('ตำแหน่ง')))
+        gpsSourceLabel,
       ...rawSources,
     ];
     return Decision(
@@ -251,7 +266,9 @@ class Decision {
       sources: sources,
       generatedBy: _str(j['generated_by']),
       trip: trip,
-      needsPlace: j['needs_place'] == null ? null : NeedsPlace.fromJson(j['needs_place'] as Json),
+      needsPlace: j['needs_place'] == null
+          ? null
+          : NeedsPlace.fromJson(j['needs_place'] as Json),
       explanation: j['explanation'] == null
           ? null
           : DecisionExplanation.fromJson(j['explanation'] as Json),
@@ -261,20 +278,20 @@ class Decision {
   /// The server could not tell where the question goes; it asks instead of
   /// answering, and every verdict field is empty.
   factory Decision.asking(NeedsPlace n) => Decision(
-        verdict: Verdict.wait,
-        headlineTh: '',
-        summaryTh: '',
-        leaveBy: null,
-        confidence: 0,
-        rainTimeline: const [],
-        modeOptions: const [],
-        floodSpots: const [],
-        reasoning: const [],
-        sources: const [],
-        generatedBy: '',
-        needsPlace: n,
-        explanation: null,
-      );
+    verdict: Verdict.wait,
+    headlineTh: '',
+    summaryTh: '',
+    leaveBy: null,
+    confidence: 0,
+    rainTimeline: const [],
+    modeOptions: const [],
+    floodSpots: const [],
+    reasoning: const [],
+    sources: const [],
+    generatedBy: '',
+    needsPlace: n,
+    explanation: null,
+  );
 
   final Verdict verdict;
   final String headlineTh;
@@ -331,26 +348,25 @@ class DecideRequest {
     TravelMode? mode,
     Place? destination,
     List<SavedPlace>? places,
-  }) =>
-      DecideRequest(
-        tripId: tripId,
-        departAt: departAt ?? this.departAt,
-        mode: mode ?? this.mode,
-        questionTh: questionTh,
-        origin: origin,
-        destination: destination ?? this.destination,
-        places: places ?? this.places,
-      );
+  }) => DecideRequest(
+    tripId: tripId,
+    departAt: departAt ?? this.departAt,
+    mode: mode ?? this.mode,
+    questionTh: questionTh,
+    origin: origin,
+    destination: destination ?? this.destination,
+    places: places ?? this.places,
+  );
 
   Json toJson() => {
-        if (tripId != null) 'trip_id': tripId,
-        if (departAt != null) 'depart_at': departAt,
-        if (mode != null) 'mode': mode!.wire,
-        if (questionTh != null) 'question_th': questionTh,
-        if (origin != null) 'origin': origin!.toJson(),
-        if (destination != null) 'destination': destination!.toJson(),
-        if (places.isNotEmpty) 'places': [for (final p in places) p.toWire()],
-      };
+    if (tripId != null) 'trip_id': tripId,
+    if (departAt != null) 'depart_at': departAt,
+    if (mode != null) 'mode': mode!.wire,
+    if (questionTh != null) 'question_th': questionTh,
+    if (origin != null) 'origin': origin!.toJson(),
+    if (destination != null) 'destination': destination!.toJson(),
+    if (places.isNotEmpty) 'places': [for (final p in places) p.toWire()],
+  };
 }
 
 class FloodReport {
@@ -366,16 +382,17 @@ class FloodReport {
   });
 
   factory FloodReport.fromJson(Json j) => FloodReport(
-        id: _str(j['id']),
-        depthCmMin: _int(j['depth_cm_min']),
-        depthCmMax: _int(j['depth_cm_max']),
-        confidence: _num(j['confidence']),
-        descriptionTh: _str(j['description_th']),
-        passable: (j['passable'] as Map? ?? const {})
-            .map((k, v) => MapEntry(TravelMode.parse(k), v as String)),
-        notifiedUsers: _int(j['notified_users']),
-        corroboratingReports: _int(j['corroborating_reports']),
-      );
+    id: _str(j['id']),
+    depthCmMin: _int(j['depth_cm_min']),
+    depthCmMax: _int(j['depth_cm_max']),
+    confidence: _num(j['confidence']),
+    descriptionTh: _str(j['description_th']),
+    passable: (j['passable'] as Map? ?? const {}).map(
+      (k, v) => MapEntry(TravelMode.parse(k), v as String),
+    ),
+    notifiedUsers: _int(j['notified_users']),
+    corroboratingReports: _int(j['corroborating_reports']),
+  );
 
   static List<FloodReport> listFromJson(Json j) =>
       _list(j['reports']).map(FloodReport.fromJson).toList();
@@ -412,11 +429,11 @@ class Canal {
     required this.riseCm2h,
   });
   factory Canal.fromJson(Json j) => Canal(
-        nameTh: _str(j['name_th']),
-        levelM: _num(j['level_m']),
-        bankM: _num(j['bank_m']),
-        riseCm2h: _num(j['rise_cm_2h']),
-      );
+    nameTh: _str(j['name_th']),
+    levelM: _num(j['level_m']),
+    bankM: _num(j['bank_m']),
+    riseCm2h: _num(j['rise_cm_2h']),
+  );
   final String nameTh;
   final double levelM;
   final double bankM;
@@ -517,17 +534,17 @@ class SavedPlace {
   });
 
   factory SavedPlace.fromJson(Json j) => SavedPlace(
-        id: _str(j['id']),
-        kind: PlaceKind.parse(j['kind']),
-        labelTh: _str(j['label_th']),
-        nameTh: _str(j['name_th']),
-        addressTh: _str(j['address_th']),
-        lat: _num(j['lat']),
-        lng: _num(j['lng']),
-        icon: j['icon'] as String? ?? 'pin',
-        days: (j['days'] as List?)?.cast<int>() ?? defaultWorkDays,
-        leaveTime: j['leave_time'] as String? ?? defaultLeaveTime,
-      );
+    id: _str(j['id']),
+    kind: PlaceKind.parse(j['kind']),
+    labelTh: _str(j['label_th']),
+    nameTh: _str(j['name_th']),
+    addressTh: _str(j['address_th']),
+    lat: _num(j['lat']),
+    lng: _num(j['lng']),
+    icon: j['icon'] as String? ?? 'pin',
+    days: (j['days'] as List?)?.cast<int>() ?? defaultWorkDays,
+    leaveTime: j['leave_time'] as String? ?? defaultLeaveTime,
+  );
 
   /// ISO weekdays, Monday = 1.
   static const defaultWorkDays = [1, 2, 3, 4, 5];
@@ -554,7 +571,8 @@ class SavedPlace {
   /// Usual time to leave for home, HH:MM (work only).
   final String leaveTime;
 
-  Place get asPlace => Place(nameTh: labelTh.isEmpty ? nameTh : labelTh, lat: lat, lng: lng);
+  Place get asPlace =>
+      Place(nameTh: labelTh.isEmpty ? nameTh : labelTh, lat: lat, lng: lng);
 
   SavedPlace copyWith({
     String? id,
@@ -567,38 +585,37 @@ class SavedPlace {
     String? icon,
     List<int>? days,
     String? leaveTime,
-  }) =>
-      SavedPlace(
-        id: id ?? this.id,
-        kind: kind ?? this.kind,
-        labelTh: labelTh ?? this.labelTh,
-        nameTh: nameTh ?? this.nameTh,
-        addressTh: addressTh ?? this.addressTh,
-        lat: lat ?? this.lat,
-        lng: lng ?? this.lng,
-        icon: icon ?? this.icon,
-        days: days ?? this.days,
-        leaveTime: leaveTime ?? this.leaveTime,
-      );
+  }) => SavedPlace(
+    id: id ?? this.id,
+    kind: kind ?? this.kind,
+    labelTh: labelTh ?? this.labelTh,
+    nameTh: nameTh ?? this.nameTh,
+    addressTh: addressTh ?? this.addressTh,
+    lat: lat ?? this.lat,
+    lng: lng ?? this.lng,
+    icon: icon ?? this.icon,
+    days: days ?? this.days,
+    leaveTime: leaveTime ?? this.leaveTime,
+  );
 
   /// The `places` entry of POST /v1/decide.
   Json toWire() => {
-        'id': id,
-        'kind': kind.wire,
-        'label_th': labelTh,
-        'name_th': nameTh,
-        'lat': lat,
-        'lng': lng,
-      };
+    'id': id,
+    'kind': kind.wire,
+    'label_th': labelTh,
+    'name_th': nameTh,
+    'lat': lat,
+    'lng': lng,
+  };
 
   /// Everything, for on-device storage.
   Json toJson() => {
-        ...toWire(),
-        'address_th': addressTh,
-        'icon': icon,
-        if (kind == PlaceKind.work) 'days': days,
-        if (kind == PlaceKind.work) 'leave_time': leaveTime,
-      };
+    ...toWire(),
+    'address_th': addressTh,
+    'icon': icon,
+    if (kind == PlaceKind.work) 'days': days,
+    if (kind == PlaceKind.work) 'leave_time': leaveTime,
+  };
 }
 
 /// A search or reverse-geocode hit from `/v1/places/*`.
@@ -615,14 +632,14 @@ class PlaceCandidate {
   });
 
   factory PlaceCandidate.fromJson(Json j) => PlaceCandidate(
-        nameTh: _str(j['name_th']),
-        nameEn: j['name_en'] as String?,
-        addressTh: _str(j['address_th']),
-        lat: _num(j['lat']),
-        lng: _num(j['lng']),
-        source: j['source'] as String? ?? 'local',
-        inServiceArea: j['in_service_area'] as bool?,
-      );
+    nameTh: _str(j['name_th']),
+    nameEn: j['name_en'] as String?,
+    addressTh: _str(j['address_th']),
+    lat: _num(j['lat']),
+    lng: _num(j['lng']),
+    source: j['source'] as String? ?? 'local',
+    inServiceArea: j['in_service_area'] as bool?,
+  );
 
   static List<PlaceCandidate> listFromJson(Json j) =>
       _list(j['places']).map(PlaceCandidate.fromJson).toList();
@@ -643,27 +660,31 @@ class PlaceCandidate {
   final double? accuracyM;
 
   PlaceCandidate withAccuracy(double? m) => PlaceCandidate(
-        nameTh: nameTh,
-        addressTh: addressTh,
-        nameEn: nameEn,
-        lat: lat,
-        lng: lng,
-        source: source,
-        inServiceArea: inServiceArea,
-        accuracyM: m,
-      );
+    nameTh: nameTh,
+    addressTh: addressTh,
+    nameEn: nameEn,
+    lat: lat,
+    lng: lng,
+    source: source,
+    inServiceArea: inServiceArea,
+    accuracyM: m,
+  );
 }
 
 /// `needs_place` from POST /v1/decide: the question's place is unknown.
 class NeedsPlace {
-  const NeedsPlace({required this.queryTh, this.kind, this.candidates = const []});
+  const NeedsPlace({
+    required this.queryTh,
+    this.kind,
+    this.candidates = const [],
+  });
 
   /// "บ้าน" / "ที่ทำงาน" for a missing home/work, else the asked words.
   factory NeedsPlace.fromJson(Json j) => NeedsPlace(
-        queryTh: _str(j['query_th']),
-        kind: j['kind'] == null ? null : PlaceKind.parse(j['kind']),
-        candidates: _list(j['candidates']).map(PlaceCandidate.fromJson).toList(),
-      );
+    queryTh: _str(j['query_th']),
+    kind: j['kind'] == null ? null : PlaceKind.parse(j['kind']),
+    candidates: _list(j['candidates']).map(PlaceCandidate.fromJson).toList(),
+  );
 
   final String queryTh;
 

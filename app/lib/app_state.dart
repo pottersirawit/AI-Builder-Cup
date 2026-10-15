@@ -1,4 +1,5 @@
 import 'package:flutter/widgets.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
 import 'location.dart';
@@ -23,6 +24,29 @@ class AppState extends ChangeNotifier {
   /// "Now" as the app should show it: the demo clock when set.
   DateTime now() =>
       _demoClock == null ? DateTime.now() : DateTime.parse(_demoClock!);
+
+  static const _localeKey = 'language';
+  static const supportedLocales = [Locale('th'), Locale('en')];
+
+  Locale _locale = supportedLocales.first;
+
+  /// The language of the whole app: its screens and the server's answers.
+  Locale get locale => _locale;
+  set locale(Locale l) {
+    if (l == _locale) return;
+    _locale = l;
+    notifyListeners();
+    SharedPreferences.getInstance()
+        .then((p) => p.setString(_localeKey, l.languageCode))
+        .ignore();
+  }
+
+  /// Restores the language chosen in an earlier session.
+  Future<void> restoreLocale() async {
+    final code = (await SharedPreferences.getInstance()).getString(_localeKey);
+    final saved = supportedLocales.where((l) => l.languageCode == code);
+    if (saved.isNotEmpty) _locale = saved.first;
+  }
 
   bool _usingSample = false;
   bool get usingSample => _usingSample;

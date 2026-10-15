@@ -3,6 +3,7 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
 import '../time_th.dart';
@@ -17,20 +18,25 @@ class SettingsScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final state = AppScope.stateOf(context);
     final store = AppScope.placesOf(context);
-    final api = AppScope.apiOf(context);
     final locator = AppScope.locatorOf(context);
     final sky = state.flood ? SkyState.flood : SkyState.clear;
 
-    Widget toggle(String id, IconData icon, String title, String subtitle, {bool enabled = true}) =>
-        SwitchListTile(
-          secondary: Icon(icon),
-          title: Text(title),
-          subtitle: Text(subtitle),
-          value: state.toggles[id]!,
-          onChanged: enabled ? (v) => state.setToggle(id, v) : null,
-        );
+    Widget toggle(
+      String id,
+      IconData icon,
+      String title,
+      String subtitle, {
+      bool enabled = true,
+    }) => SwitchListTile(
+      secondary: Icon(icon),
+      title: Text(title),
+      subtitle: Text(subtitle),
+      value: state.toggles[id]!,
+      onChanged: enabled ? (v) => state.setToggle(id, v) : null,
+    );
 
     return Scaffold(
       body: CustomScrollView(
@@ -41,114 +47,195 @@ class SettingsScreen extends StatelessWidget {
               height: double.infinity,
               child: SafeArea(
                 bottom: false,
-                child: FieldHeader(state: sky, back: true, title: 'ตั้งค่า', subtitle: 'เก็บไว้ในเครื่องนี้เท่านั้น'),
+                child: FieldHeader(
+                  state: sky,
+                  back: true,
+                  title: l.settingsTitle,
+                  subtitle: l.settingsSubtitle,
+                ),
               ),
             ),
           ),
-          SliverList.list(children: [
-            if (state.notificationsDenied)
+          SliverList.list(
+            children: [
+              if (state.notificationsDenied)
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Space.gutter,
+                    Space.x4,
+                    Space.gutter,
+                    0,
+                  ),
+                  child: Notice(
+                    icon: Symbols.notifications_off_rounded,
+                    tone: NoticeTone.warning,
+                    text: l.settingsNotificationsOff,
+                    action: TextButton(
+                      onPressed: locator.openAppSettings,
+                      child: Text(l.settingsOpenSettings),
+                    ),
+                  ),
+                ),
+              _Group(l.settingsLanguage),
               Padding(
-                padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, 0),
-                child: Notice(
-                  icon: Symbols.notifications_off_rounded,
-                  tone: NoticeTone.warning,
-                  text: 'ปิดการแจ้งเตือนอยู่ แอปเตือนก่อนออกไม่ได้',
-                  action: TextButton(onPressed: locator.openAppSettings, child: const Text('เปิดการตั้งค่า')),
+                padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                child: SegmentedButton<Locale>(
+                  key: const ValueKey('language'),
+                  showSelectedIcon: false,
+                  segments: [
+                    ButtonSegment(
+                      value: const Locale('th'),
+                      label: Text(l.settingsLanguageThai),
+                    ),
+                    ButtonSegment(
+                      value: const Locale('en'),
+                      label: Text(l.settingsLanguageEnglish),
+                    ),
+                  ],
+                  selected: {state.locale},
+                  onSelectionChanged: (v) => state.locale = v.first,
                 ),
               ),
-            _Group('สถานที่ของฉัน', source: 'เก็บไว้ในเครื่องนี้เท่านั้น · ส่งพิกัดไปกับคำถามตอนถาม'),
-            _PlaceTile(kind: PlaceKind.home, place: store.home),
-            _PlaceTile(kind: PlaceKind.work, place: store.work),
-            if (store.workFromHome)
-              const Padding(
-                padding: EdgeInsets.symmetric(horizontal: Space.gutter, vertical: Space.x1),
-                child: Notice(icon: Symbols.home_work_rounded, text: 'ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น'),
-              ),
-            for (final p in store.others) _PlaceTile(kind: PlaceKind.other, place: p),
-            ListTile(
-              key: const ValueKey('add-place'),
-              enabled: store.canAddOther,
-              leading: const Icon(Symbols.add_location_alt_rounded),
-              title: const Text('เพิ่มสถานที่'),
-              subtitle: Text(store.canAddOther
-                  ? 'ยิม โรงเรียนลูก บ้านพ่อแม่ · ${store.others.length} จาก ${PlacesStore.maxOthers}'
-                  : 'ครบ ${PlacesStore.maxOthers} แห่งแล้ว ลบที่เดิมก่อนจึงเพิ่มได้'),
-              onTap: () => pickPlace(context, kind: PlaceKind.other),
-            ),
-            const _Group('การเดินทาง'),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-              child: ModeSegmented(selected: state.mode, onChanged: (m) => state.mode = m),
-            ),
-            const SizedBox(height: Space.x2),
-            const ListTile(
-              leading: Icon(Symbols.notifications_rounded),
-              title: Text('เตือนล่วงหน้า'),
-              subtitle: Text('2 ชั่วโมงก่อนเวลาที่ควรออก'),
-            ),
-            const _Group('ให้แอปหาทริปให้เอง', source: 'ปิดได้ทีละอย่าง ถามเองยังใช้ได้เสมอ'),
-            ConnectRow(
-              icon: Symbols.calendar_month_rounded,
-              title: 'Google Calendar',
-              state: store.calendar,
-              detail: 'เฉพาะนัดที่มีสถานที่',
-              account: '${store.calendarAccount} · บัญชีจำลอง',
-              comingSoon: !store.canConnectCalendar,
-              onConnect: store.connectCalendar,
-              onDisconnect: store.disconnectCalendar,
-            ),
-            toggle('gmail', Symbols.mail_rounded, 'Gmail', 'เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล'),
-            toggle('routine', Symbols.repeat_rounded, 'เรียนรู้กิจวัตร', 'รู้เองว่ากลับบ้านราวหกโมงทุกวัน · เร็ว ๆ นี้',
-                enabled: false),
-            const _Group('ชุมชนและน้ำท่วม'),
-            toggle('share_reports', Symbols.photo_camera_rounded, 'แชร์รายงานน้ำท่วมของฉัน',
-                'ไม่ระบุตัว เฉพาะตำแหน่งและระดับน้ำ'),
-            toggle('home_alerts', Symbols.home_rounded, 'เตือนน้ำท่วมที่บ้าน', 'แม้ไม่ได้เปิดแอป'),
-            toggle('sms_backup', Symbols.sms_rounded, 'สำรองทาง SMS', 'เมื่อไม่มีอินเทอร์เน็ต'),
-            const _Group('โปรไฟล์'),
-            if (store.demoProfile)
+              _Group(l.settingsMyPlaces),
+              _PlaceTile(kind: PlaceKind.home, place: store.home),
+              _PlaceTile(kind: PlaceKind.work, place: store.work),
+              if (store.workFromHome)
+                Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: Space.gutter,
+                    vertical: Space.x1,
+                  ),
+                  child: Notice(
+                    icon: Symbols.home_work_rounded,
+                    text: l.settingsWfh,
+                  ),
+                ),
+              for (final p in store.others)
+                _PlaceTile(kind: PlaceKind.other, place: p),
               ListTile(
-                leading: const Icon(Symbols.logout_rounded),
-                title: const Text('ออกจากโปรไฟล์เดโม'),
-                subtitle: const Text('ลบสถานที่ของมิวและกลับไปหน้าเริ่มต้น'),
-                onTap: () {
-                  Navigator.of(context).popUntil((r) => r.isFirst);
-                  store.resetToFirstRun();
-                },
-              )
-            else
-              ListTile(
-                leading: const Icon(Symbols.person_play_rounded),
-                title: const Text('ใช้โปรไฟล์เดโม (มิว)'),
-                subtitle: const Text('สถานที่และนัดจำลองของมิว สำหรับสาธิต'),
-                onTap: store.useDemoProfile,
+                key: const ValueKey('add-place'),
+                enabled: store.canAddOther,
+                leading: const Icon(Symbols.add_location_alt_rounded),
+                title: Text(l.settingsAddPlace),
+                subtitle: Text(
+                  store.canAddOther
+                      ? l.settingsAddPlaceHint(
+                          store.others.length,
+                          PlacesStore.maxOthers,
+                        )
+                      : l.settingsAddPlaceFull(PlacesStore.maxOthers),
+                ),
+                onTap: () => pickPlace(context, kind: PlaceKind.other),
               ),
-            const _Group('สำหรับทีม'),
-            ListTile(
-              leading: const Icon(Symbols.palette_rounded),
-              title: const Text('ระบบดีไซน์'),
-              subtitle: const Text('สี ตัวอักษร ระยะ และคอมโพเนนต์ทุกสถานะท้องฟ้า'),
-              trailing: const Icon(Symbols.chevron_right_rounded),
-              onTap: () => Navigator.of(context)
-                  .push(MaterialPageRoute<void>(builder: (_) => const GalleryScreen())),
-            ),
-            ListTile(
-              leading: const Icon(Symbols.schedule_rounded),
-              title: const Text('เวลาสาธิต'),
-              subtitle: Text(state.demoClock == null ? 'เวลาจริง' : 'อังคาร 29 ก.ย. ${hhmm(state.now())}'),
-              trailing: const Icon(Symbols.chevron_right_rounded),
-              onTap: () => showDemoClockPicker(context),
-            ),
-            ListTile(
-              leading: const Icon(Symbols.dns_rounded),
-              title: const Text('เซิร์ฟเวอร์'),
-              subtitle: Text(api.baseUrl),
-            ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, Space.x10),
-              child: SourceLabel('ชื่อ “มิว” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม'),
-            ),
-          ]),
+              _Group(l.settingsTravelGroup),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                child: ModeSegmented(
+                  selected: state.mode,
+                  onChanged: (m) => state.mode = m,
+                ),
+              ),
+              const SizedBox(height: Space.x2),
+              ListTile(
+                leading: const Icon(Symbols.notifications_rounded),
+                title: Text(l.settingsRemindAhead),
+                subtitle: Text(l.settingsRemindAheadHint),
+              ),
+              _Group(l.settingsAutoGroup),
+              ConnectRow(
+                icon: Symbols.calendar_month_rounded,
+                title: 'Google Calendar',
+                state: store.calendar,
+                detail: l.settingsCalendarDetail,
+                account: l.settingsCalendarAccount(store.calendarAccount),
+                comingSoon: !store.canConnectCalendar,
+                onConnect: store.connectCalendar,
+                onDisconnect: store.disconnectCalendar,
+              ),
+              toggle(
+                'gmail',
+                Symbols.mail_rounded,
+                'Gmail',
+                l.settingsGmailHint,
+              ),
+              toggle(
+                'routine',
+                Symbols.repeat_rounded,
+                l.settingsRoutine,
+                l.settingsRoutineHint,
+                enabled: false,
+              ),
+              _Group(l.settingsCommunityGroup),
+              toggle(
+                'share_reports',
+                Symbols.photo_camera_rounded,
+                l.settingsShareReports,
+                l.settingsShareReportsHint,
+              ),
+              toggle(
+                'home_alerts',
+                Symbols.home_rounded,
+                l.settingsHomeAlerts,
+                l.settingsHomeAlertsHint,
+              ),
+              toggle(
+                'sms_backup',
+                Symbols.sms_rounded,
+                l.settingsSmsBackup,
+                l.settingsSmsBackupHint,
+              ),
+              _Group(l.settingsProfileGroup),
+              if (store.demoProfile)
+                ListTile(
+                  leading: const Icon(Symbols.logout_rounded),
+                  title: Text(l.settingsExitDemo),
+                  subtitle: Text(l.settingsExitDemoHint),
+                  onTap: () {
+                    Navigator.of(context).popUntil((r) => r.isFirst);
+                    store.resetToFirstRun();
+                  },
+                )
+              else
+                ListTile(
+                  leading: const Icon(Symbols.person_play_rounded),
+                  title: Text(l.settingsUseDemo),
+                  subtitle: Text(l.settingsUseDemoHint),
+                  onTap: store.useDemoProfile,
+                ),
+              _Group(l.settingsTeamGroup),
+              ListTile(
+                leading: const Icon(Symbols.palette_rounded),
+                title: Text(l.settingsDesignSystem),
+                subtitle: Text(l.settingsDesignSystemHint),
+                trailing: const Icon(Symbols.chevron_right_rounded),
+                onTap: () => Navigator.of(context).push(
+                  MaterialPageRoute<void>(
+                    builder: (_) => const GalleryScreen(),
+                  ),
+                ),
+              ),
+              ListTile(
+                leading: const Icon(Symbols.schedule_rounded),
+                title: Text(l.settingsDemoClock),
+                subtitle: Text(
+                  state.demoClock == null
+                      ? l.settingsRealTime
+                      : dayTime(l, state.now()),
+                ),
+                trailing: const Icon(Symbols.chevron_right_rounded),
+                onTap: () => showDemoClockPicker(context),
+              ),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  Space.gutter,
+                  Space.x4,
+                  Space.gutter,
+                  Space.x10,
+                ),
+                child: SourceLabel(l.settingsDemoNote),
+              ),
+            ],
+          ),
         ],
       ),
     );
@@ -156,25 +243,44 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _Group extends StatelessWidget {
-  const _Group(this.title, {this.source});
+  const _Group(this.title);
   final String title;
-  final String? source;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x8, Space.gutter, Space.x2),
+      padding: const EdgeInsets.fromLTRB(
+        Space.gutter,
+        Space.x8,
+        Space.gutter,
+        Space.x2,
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text(title, style: t.titleMedium!.copyWith(color: Theme.of(context).colorScheme.primary)),
-          if (source != null) ...[const SizedBox(height: Space.x1), SourceLabel(source!)],
+          Text(
+            title,
+            style: t.titleMedium!.copyWith(
+              color: Theme.of(context).colorScheme.primary,
+            ),
+          ),
         ],
       ),
     );
   }
 }
+
+/// A saved place still carrying the default Thai word for its kind reads in
+/// the current language; names the person typed show as typed.
+String _placeText(AppLocalizations l, String text) => switch (text) {
+  'บ้าน' => l.settingsPlaceHome,
+  'ที่ทำงาน' => l.settingsPlaceWork,
+  'สยาม' => l.settingsPlaceSiam,
+  'ทองหล่อ' => l.settingsPlaceThonglor,
+  'อิมแพ็ค' => l.settingsPlaceImpact,
+  _ => text,
+};
 
 /// One saved place, or the empty slot for home/work with why to set it.
 class _PlaceTile extends StatelessWidget {
@@ -184,25 +290,36 @@ class _PlaceTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final p = place;
     if (p == null) {
       final home = kind == PlaceKind.home;
       return ListTile(
         leading: Icon(home ? Symbols.home_rounded : Symbols.work_rounded),
-        title: Text(home ? 'ตั้งบ้าน' : 'ตั้งที่ทำงาน'),
-        subtitle: Text(home ? 'ให้แอปเตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน' : 'ให้เตือนตอนเลิกงานได้แม่นขึ้น'),
+        title: Text(home ? l.settingsSetHome : l.settingsSetWork),
+        subtitle: Text(home ? l.settingsSetHomeHint : l.settingsSetWorkHint),
         trailing: const Icon(Symbols.add_rounded),
         onTap: () => pickPlace(context, kind: kind),
       );
     }
-    final detail = p.kind == PlaceKind.work ? ' · ${workDaysLabel(p.days)} ออก ${p.leaveTime}' : '';
+    final detail = p.kind == PlaceKind.work
+        ? l.settingsWorkDetail(workDaysText(l, p.days), p.leaveTime)
+        : '';
     return ListTile(
       leading: Icon(placeIcon(p.icon)),
-      title: Text(p.labelTh),
-      subtitle: Text('${p.nameTh}$detail', maxLines: 2, overflow: TextOverflow.ellipsis),
+      title: Text(p.labelFor(l)),
+      subtitle: Text(
+        '${_placeText(l, p.nameTh)}$detail',
+        maxLines: 2,
+        overflow: TextOverflow.ellipsis,
+      ),
       trailing: p.inArea
           ? const Icon(Symbols.chevron_right_rounded)
-          : const RiskChip(risk: Risk.medium, label: 'นอกพื้นที่ที่รองรับ', dense: true),
+          : RiskChip(
+              risk: Risk.medium,
+              label: l.settingsOutOfArea,
+              dense: true,
+            ),
       onTap: () => editPlace(context, p),
     );
   }

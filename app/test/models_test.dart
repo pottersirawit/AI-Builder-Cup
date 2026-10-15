@@ -2,6 +2,8 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fontokmai/l10n/app_localizations_en.dart';
+import 'package:fontokmai/l10n/app_localizations_th.dart';
 import 'package:fontokmai/models.dart';
 import 'package:fontokmai/time_th.dart';
 
@@ -29,7 +31,10 @@ void main() {
     expect(hhmm(d.leaveBy!), '16:45');
     expect(d.confidence, 0.78);
     expect(d.rainTimeline, hasLength(20));
-    expect(d.rainTimeline.map((r) => r.mmPerHr).reduce((a, b) => a > b ? a : b), 16.5);
+    expect(
+      d.rainTimeline.map((r) => r.mmPerHr).reduce((a, b) => a > b ? a : b),
+      16.5,
+    );
     expect(d.modeOptions.map((o) => o.mode), TravelMode.values);
     expect(d.modeOptions.last.risk, Risk.medium);
     expect(d.floodSpots.first.id, 'BKK-FL-012');
@@ -87,7 +92,11 @@ void main() {
     final r = FloodReport.fromJson(fixture('report'));
     expect((r.depthCmMin, r.depthCmMax), (20, 25));
     expect(r.confidence, 0.84);
-    expect(r.passable, {TravelMode.car: 'slow', TravelMode.transit: 'yes', TravelMode.moto: 'no'});
+    expect(r.passable, {
+      TravelMode.car: 'slow',
+      TravelMode.transit: 'yes',
+      TravelMode.moto: 'no',
+    });
     expect(r.notifiedUsers, 27);
     expect(r.corroboratingReports, 2);
     expect(FloodReport.listFromJson(fixture('reports')), hasLength(1));
@@ -113,17 +122,39 @@ void main() {
 
   test('DecideRequest only sends the fields that are set', () {
     expect(
-      const DecideRequest(tripId: 'cal-dinner', departAt: '2026-09-29T16:15:00+07:00', mode: TravelMode.moto)
-          .toJson(),
-      {'trip_id': 'cal-dinner', 'depart_at': '2026-09-29T16:15:00+07:00', 'mode': 'moto'},
+      const DecideRequest(
+        tripId: 'cal-dinner',
+        departAt: '2026-09-29T16:15:00+07:00',
+        mode: TravelMode.moto,
+      ).toJson(),
+      {
+        'trip_id': 'cal-dinner',
+        'depart_at': '2026-09-29T16:15:00+07:00',
+        'mode': 'moto',
+      },
     );
-    expect(const DecideRequest(questionTh: 'ถ้ารอถึงสองทุ่ม').toJson(), {'question_th': 'ถ้ารอถึงสองทุ่ม'});
+    expect(const DecideRequest(questionTh: 'ถ้ารอถึงสองทุ่ม').toJson(), {
+      'question_th': 'ถ้ารอถึงสองทุ่ม',
+    });
   });
 
   test('Bangkok time helpers ignore the device time zone', () {
     final t = DateTime.parse('2026-09-29T16:10:00+07:00');
     expect(hhmm(t), '16:10');
     expect(isoBangkok(t), '2026-09-29T16:10:00+07:00');
-    expect(dayTimeTh(DateTime.parse('2026-10-03T19:00:00+07:00')), 'เสาร์ 3 ต.ค. 19:00');
+    expect(
+      dayTime(
+        AppLocalizationsTh(),
+        DateTime.parse('2026-10-03T19:00:00+07:00'),
+      ),
+      'เสาร์ 3 ต.ค. 19:00',
+    );
+    expect(
+      dayTime(
+        AppLocalizationsEn(),
+        DateTime.parse('2026-10-03T19:00:00+07:00'),
+      ),
+      'Sat 3 Oct 19:00',
+    );
   });
 }

@@ -1,0 +1,201 @@
+{
+  "placeKindHome": "Home",
+  "placeKindWork": "Work",
+  "placeKindOther": "Place",
+  "placeDemoSiam": "Siam",
+  "placeDemoThonglor": "Thong Lo",
+  "placeDemoImpact": "IMPACT",
+  "locationGpsOff": "GPS is off",
+  "locationDenied": "Location access not allowed",
+  "locationUnavailable": "Couldn't find your location",
+  "locationCurrent": "Current location",
+  "locationFallbackSpot": "Ratchadaphisek Rd at Soi Lat Phrao 32",
+  "placesPinLabel": "Location pin {lat}, {lng}",
+  "@placesPinLabel": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "placesDismiss": "Dismiss",
+  "placesNotConnected": "Not connected",
+  "placesNotConnectedDetail": "Not connected · {detail}",
+  "@placesNotConnectedDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "placesConnecting": "Connecting…",
+  "placesConnected": "Connected",
+  "placesConnectFailed": "Couldn't connect. Try again",
+  "placesComingSoon": "Coming soon",
+  "placesConnect": "Connect",
+  "placesDisconnect": "Disconnect",
+  "placesRetry": "Try again",
+  "placesSearching": "Searching",
+  "onboardingHeadline": "Get a heads-up before you head home",
+  "onboardingIntro": "Tell us where home and work are. Every evening we'll check rain and flooding on your way back, and the flood risk near your home.",
+  "onboardingSkipNote": "You can skip this and just ask anytime",
+  "onboardingStart": "Get started",
+  "onboardingSkip": "Skip for now",
+  "onboardingDemo": "Use the demo profile (Miw)",
+  "onboardingSet": "Set",
+  "onboardingHomeHint": "Used for warnings before you head home and flooding near your home",
+  "onboardingWorkHint": "Optional · makes end-of-work warnings more accurate",
+  "onboardingWorkSummary": "{name} · {days}, leaves {time}",
+  "@onboardingWorkSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingUseHere": "Use my location",
+  "onboardingSearch": "Search",
+  "onboardingEdit": "Edit",
+  "pickerDeleted": "Deleted “{label}”",
+  "@pickerDeleted": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerUndo": "Undo",
+  "pickerTitlePoint": "Choose a spot",
+  "pickerTitleMove": "Move {label}",
+  "@pickerTitleMove": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerTitleHome": "Set home",
+  "pickerTitleWork": "Set work",
+  "pickerTitleOther": "Add a place",
+  "pickerSubtitle": "Search, or use your current location",
+  "pickerHintTyping": "Type at least {count} characters: a BTS station, mall, soi or district",
+  "@pickerHintTyping": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickerSearchFailedTitle": "Search failed",
+  "pickerSearchFailedMessage": "Can't reach the server, and there's no offline place list on this device",
+  "pickerNoResultsTitle": "No results for “{query}”",
+  "@pickerNoResultsTitle": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerNoResultsMessage": "Try a BTS station or mall name",
+  "pickerNoResultsMessageOffline": "Try a BTS station or mall name. Right now only the offline list is searchable",
+  "pickerUseLocation": "Use my location",
+  "pickerSearchOnlineAgain": "Search online again",
+  "pickerOfflineNotice": "Can't search online. Showing offline results",
+  "pickerOutOfArea": "Out of area",
+  "pickerSourceGoogle": "Results from Google Maps",
+  "pickerSourceLocal": "BTS/MRT stations, malls and districts in Bangkok",
+  "pickerSearchHint": "A place name, e.g. BTS Ari or Central",
+  "pickerClear": "Clear",
+  "pickerNaming": "Finding the place name…",
+  "pickerDroppedPin": "Dropped pin",
+  "pickerHereNow": "Current location",
+  "locateBusy": "Finding your location…",
+  "locateBusyHint": "Using your phone's GPS, up to 10 seconds",
+  "locateSearchInstead": "Search instead",
+  "locateIdleHint": "Uses GPS, and you confirm before saving",
+  "locateAskTitle": "Allow location this time",
+  "locateAskMessage": "We only use your location to work out where you are. We don't keep a travel history.",
+  "locateAllow": "Allow location",
+  "locateDeniedTitle": "Location permission needed",
+  "locateDeniedForeverMessage": "Turn on location for Fon Tok Mai in your phone's settings, or search for a place by name.",
+  "locateDeniedMessage": "You can allow it in the app's settings, or search for a place by name.",
+  "locateOpenSettings": "Open settings",
+  "locateOffTitle": "Location is off",
+  "locateOffMessage": "Turn on location services first, or search for a place by name.",
+  "locateOpenLocationSettings": "Open location settings",
+  "locateTimeoutTitle": "Location timed out",
+  "locateErrorTitle": "Couldn't find your location",
+  "locateWeakMessage": "The GPS signal is weak. Try again near a window, or search for a place by name.",
+  "sheetEdit": "Edit {label}",
+  "@sheetEdit": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetConfirm": "Confirm {label}",
+  "@sheetConfirm": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetSourceGps": "Location from GPS",
+  "sheetSourceSaved": "Saved on this device",
+  "sheetSourceLocal": "Offline data",
+  "sheetOutOfArea": "Outside the area we cover. Rain warnings still work, but there's no flood spot or canal data.",
+  "sheetLowAccuracy": "Your location may be off by {distance}",
+  "@sheetLowAccuracy": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetWorkFromHome": "Working from home — we'll only warn about other trips",
+  "sheetDuplicate": "Close to your saved ‘{label}’",
+  "@sheetDuplicate": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetNameLabel": "Name",
+  "sheetIcon": "Icon",
+  "sheetWorkDays": "Work days",
+  "sheetLeaveTime": "Usual time you leave work",
+  "sheetLeaveHint": "We'll check your way home before this time",
+  "sheetUpdateExisting": "Update the existing one",
+  "sheetSaveSeparate": "Save as a separate place",
+  "sheetSave": "Save",
+  "sheetMove": "Move",
+  "sheetDelete": "Delete {label}",
+  "@sheetDelete": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetTooMany": "You can save up to {max} places. Delete one to add another.",
+  "@sheetTooMany": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingAppName": "Fon Tok Mai"
+}

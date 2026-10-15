@@ -2,33 +2,37 @@ import 'package:flutter/material.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
 import 'parts.dart';
 
-const suggestedQuestions = ['ถ้ารอถึงสองทุ่มค่อยกลับล่ะ', 'ไป BTS แทนดีไหม'];
+List<String> suggestedQuestions(AppLocalizations l) => [
+  l.askSuggestion1,
+  l.askSuggestion2,
+];
 
 class _Message {
   const _Message.me(this.text)
-      : mine = true,
-        decision = null,
-        needs = null,
-        failed = false;
+    : mine = true,
+      decision = null,
+      needs = null,
+      failed = false;
   const _Message.ai(this.text, [this.decision])
-      : mine = false,
-        needs = null,
-        failed = false;
+    : mine = false,
+      needs = null,
+      failed = false;
   const _Message.failed(this.text)
-      : mine = false,
-        decision = null,
-        needs = null,
-        failed = true;
+    : mine = false,
+      decision = null,
+      needs = null,
+      failed = true;
 
   /// The answer is a question back: where is [text]'s place?
   const _Message.needs(this.text, NeedsPlace this.needs)
-      : mine = false,
-        decision = null,
-        failed = false;
+    : mine = false,
+      decision = null,
+      failed = false;
   final bool mine;
   final String text;
   final Decision? decision;
@@ -50,9 +54,11 @@ class AskScreen extends StatefulWidget {
 
 class _AskScreenState extends State<AskScreen> {
   late final List<_Message> _messages = [
-    _Message.ai(widget.opening == null
-        ? 'อยากรู้อะไรเรื่องฝนกับการเดินทาง ถามได้เลย'
-        : 'ตอนนี้แนะนำ “${widget.opening}” นะ มีอะไรอยากถามต่อไหม'),
+    _Message.ai(
+      widget.opening == null
+          ? context.l10n.askOpeningPlain
+          : context.l10n.askOpeningWith(widget.opening!),
+    ),
   ];
   final _asked = <String>{};
   final _scroll = ScrollController();
@@ -84,38 +90,69 @@ class _AskScreenState extends State<AskScreen> {
           ? missingPlaceFor(q, home: store.home, work: store.work)
           : null;
       if (missing != null) {
-        setState(() => _messages.add(_Message.needs(q, NeedsPlace(queryTh: kindLabelTh(missing), kind: missing))));
+        setState(
+          () => _messages.add(
+            _Message.needs(
+              q,
+              NeedsPlace(
+                queryTh: kindLabel(context.l10n, missing),
+                kind: missing,
+              ),
+            ),
+          ),
+        );
         return;
       }
       final currentOrigin = state.currentLocation?.ok == true
-          ? Place(nameTh: state.currentLocation!.nameTh ?? 'ตำแหน่งตอนนี้', lat: state.currentLocation!.lat, lng: state.currentLocation!.lng)
+          ? Place(
+              nameTh:
+                  state.currentLocation!.nameTh ??
+                  context.l10n.homeCurrentPlace,
+              lat: state.currentLocation!.lat,
+              lng: state.currentLocation!.lng,
+            )
           : null;
-      final d = state.track(await api.decide(DecideRequest(
-        questionTh: q,
-        tripId: widget.trip?.id,
-        origin: widget.trip?.source == 'app' ? widget.trip!.origin : currentOrigin,
-        destination: widget.trip?.source == 'app' ? widget.trip!.destination : null,
-        places: places ?? store.places,
-      )));
+      final d = state.track(
+        await api.decide(
+          DecideRequest(
+            questionTh: q,
+            tripId: widget.trip?.id,
+            origin: widget.trip?.source == 'app'
+                ? widget.trip!.origin
+                : currentOrigin,
+            destination: widget.trip?.source == 'app'
+                ? widget.trip!.destination
+                : null,
+            places: places ?? store.places,
+          ),
+        ),
+      );
       if (!mounted) return;
-      setState(() => _messages.add(
-          d.needsPlace != null ? _Message.needs(q, d.needsPlace!) : _Message.ai(d.summaryTh, d)));
+      setState(
+        () => _messages.add(
+          d.needsPlace != null
+              ? _Message.needs(q, d.needsPlace!)
+              : _Message.ai(d.summaryTh, d),
+        ),
+      );
     } catch (_) {
       if (!mounted) return;
-      setState(() => _messages.add(const _Message.failed('ตอบไม่ได้ เพราะติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วถามใหม่')));
-    }
-    finally {
+      setState(() => _messages.add(_Message.failed(context.l10n.askFailed)));
+    } finally {
       if (mounted) setState(() => _thinking = false);
     }
     _scrollToEnd();
   }
 
   void _scrollToEnd() => WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (!_scroll.hasClients) return;
-        final motion = Motion.of(context);
-        _scroll.animateTo(_scroll.position.maxScrollExtent + 200,
-            duration: motion.d(Motion.enter), curve: Motion.standard);
-      });
+    if (!_scroll.hasClients) return;
+    final motion = Motion.of(context);
+    _scroll.animateTo(
+      _scroll.position.maxScrollExtent + 200,
+      duration: motion.d(Motion.enter),
+      curve: Motion.standard,
+    );
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -133,8 +170,8 @@ class _AskScreenState extends State<AskScreen> {
               child: FieldHeader(
                 state: sky,
                 back: true,
-                title: 'ถามต่อ',
-                subtitle: widget.trip?.titleTh ?? 'ฝนตกไหม',
+                title: context.l10n.askTitle,
+                subtitle: widget.trip?.titleTh ?? context.l10n.appTitle,
                 actions: [
                   if (state.usingSample)
                     const Padding(
@@ -148,7 +185,12 @@ class _AskScreenState extends State<AskScreen> {
           Expanded(
             child: ListView(
               controller: _scroll,
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.x4, Space.gutter, Space.x4),
+              padding: const EdgeInsets.fromLTRB(
+                Space.gutter,
+                Space.x4,
+                Space.gutter,
+                Space.x4,
+              ),
               children: [
                 for (final m in _messages)
                   if (m.needs != null)
@@ -156,20 +198,29 @@ class _AskScreenState extends State<AskScreen> {
                       padding: const EdgeInsets.only(bottom: Space.x3),
                       child: NeedsPlacePass(
                         needs: m.needs!,
-                        onResolved: (dest, places) =>
-                            _ask(m.text, places: placesWithAnswer(m.needs!, dest, places)),
+                        onResolved: (dest, places) => _ask(
+                          m.text,
+                          places: placesWithAnswer(m.needs!, dest, places),
+                        ),
                       ),
                     )
                   else
-                    _Bubble(message: m, onRetry: m.failed && _lastQuestion != null ? () => _ask(_lastQuestion!) : null),
+                    _Bubble(
+                      message: m,
+                      onRetry: m.failed && _lastQuestion != null
+                          ? () => _ask(_lastQuestion!)
+                          : null,
+                    ),
                 if (_thinking)
                   const Padding(
                     padding: EdgeInsets.only(bottom: Space.x3),
-                    child: Row(children: [
-                      GeminiMark(size: 18),
-                      SizedBox(width: Space.x2),
-                      Skeleton(width: 160),
-                    ]),
+                    child: Row(
+                      children: [
+                        GeminiMark(size: 18),
+                        SizedBox(width: Space.x2),
+                        Skeleton(width: 160),
+                      ],
+                    ),
                   ),
               ],
             ),
@@ -177,7 +228,11 @@ class _AskScreenState extends State<AskScreen> {
           Container(
             color: scheme.surfaceContainerLow,
             padding: EdgeInsets.fromLTRB(
-                Space.gutter, Space.x3, Space.gutter, Space.x3 + MediaQuery.paddingOf(context).bottom),
+              Space.gutter,
+              Space.x3,
+              Space.gutter,
+              Space.x3 + MediaQuery.paddingOf(context).bottom,
+            ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -185,15 +240,21 @@ class _AskScreenState extends State<AskScreen> {
                   spacing: Space.x2,
                   runSpacing: Space.x2,
                   children: [
-                    for (final q in suggestedQuestions)
+                    for (final q in suggestedQuestions(context.l10n))
                       ActionChip(
                         label: Text(q),
-                        onPressed: _asked.contains(q) || _thinking ? null : () => _ask(q),
+                        onPressed: _asked.contains(q) || _thinking
+                            ? null
+                            : () => _ask(q),
                       ),
                   ],
                 ),
                 const SizedBox(height: Space.x3),
-                AskBar(onSubmit: _ask, enabled: !_thinking, hint: 'พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ'),
+                AskBar(
+                  onSubmit: _ask,
+                  enabled: !_thinking,
+                  hint: context.l10n.askInputHint,
+                ),
               ],
             ),
           ),
@@ -222,7 +283,10 @@ class _Bubble extends StatelessWidget {
         child: Container(
           constraints: BoxConstraints(maxWidth: maxW),
           margin: const EdgeInsets.only(bottom: Space.x3),
-          padding: const EdgeInsets.symmetric(horizontal: Space.x4, vertical: Space.x3),
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.x4,
+            vertical: Space.x3,
+          ),
           decoration: BoxDecoration(
             color: scheme.primary,
             borderRadius: const BorderRadius.only(
@@ -232,7 +296,10 @@ class _Bubble extends StatelessWidget {
               bottomRight: Radius.circular(Radii.xs),
             ),
           ),
-          child: Text(message.text, style: t.bodyLarge!.copyWith(color: scheme.onPrimary)),
+          child: Text(
+            message.text,
+            style: t.bodyLarge!.copyWith(color: scheme.onPrimary),
+          ),
         ),
       );
     }
@@ -242,32 +309,47 @@ class _Bubble extends StatelessWidget {
         padding: const EdgeInsets.only(bottom: Space.x3),
         child: ConstrainedBox(
           constraints: BoxConstraints(maxWidth: maxW + 24),
-          child: Pass(sections: [
-            PassSection(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(d.headlineTh, style: tabular(t.headlineMedium!).copyWith(color: c.paperInk)),
-                  const SizedBox(height: Space.x2),
-                  RiskChip(risk: riskOfVerdict(d.verdict), label: boardStatus(d.verdict, riskOfVerdict(d.verdict))),
-                  const SizedBox(height: Space.x3),
-                  Text(message.text, style: t.bodyMedium!.copyWith(color: c.paperInk)),
-                ],
+          child: Pass(
+            sections: [
+              PassSection(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      d.headlineTh,
+                      style: tabular(
+                        t.headlineMedium!,
+                      ).copyWith(color: c.paperInk),
+                    ),
+                    const SizedBox(height: Space.x2),
+                    RiskChip(
+                      risk: riskOfVerdict(d.verdict),
+                      label: boardStatusText(
+                        context.l10n,
+                        d.verdict,
+                        riskOfVerdict(d.verdict),
+                      ),
+                    ),
+                    const SizedBox(height: Space.x3),
+                    Text(
+                      message.text,
+                      style: t.bodyMedium!.copyWith(color: c.paperInk),
+                    ),
+                  ],
+                ),
               ),
-            ),
-            PassSection(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  ConfidenceMeter(value: d.confidence),
-                  const SizedBox(height: Space.x3),
-                  SourceLabel(d.sources.join(' · ')),
-                  const SizedBox(height: Space.x2),
-                  GeneratedBy(d.generatedBy),
-                ],
+              PassSection(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    ConfidenceMeter(value: d.confidence),
+                    const SizedBox(height: Space.x3),
+                    GeneratedBy(d.generatedBy),
+                  ],
+                ),
               ),
-            ),
-          ]),
+            ],
+          ),
         ),
       );
     }
@@ -277,15 +359,26 @@ class _Bubble extends StatelessWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Padding(padding: EdgeInsets.only(top: 3), child: GeminiMark(size: 18)),
+          const Padding(
+            padding: EdgeInsets.only(top: 3),
+            child: GeminiMark(size: 18),
+          ),
           const SizedBox(width: Space.x2),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(message.text,
-                    style: t.bodyLarge!.copyWith(color: message.failed ? scheme.error : scheme.onSurface)),
-                if (onRetry != null) TextButton(onPressed: onRetry, child: const Text('ถามใหม่')),
+                Text(
+                  message.text,
+                  style: t.bodyLarge!.copyWith(
+                    color: message.failed ? scheme.error : scheme.onSurface,
+                  ),
+                ),
+                if (onRetry != null)
+                  TextButton(
+                    onPressed: onRetry,
+                    child: Text(context.l10n.askRetry),
+                  ),
               ],
             ),
           ),
