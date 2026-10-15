@@ -61,7 +61,7 @@ func (e *Evaluator) EvaluateTrip(ctx context.Context, prov planner.Providers, no
 		DepartAt: depart.Format(time.RFC3339),
 		Mode:     string(ut.Trip.Mode),
 	}
-	sources := []string{prov.Weather.Name(), prov.Routes.Name(), prov.Canals.Name(), "BMA flood spots"}
+	sources := sess.SourcesUsed()
 
 	resp, err := agent.Decide(ctx, e.Gemini, sess, req, sources)
 	if err != nil {

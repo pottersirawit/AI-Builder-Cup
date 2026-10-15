@@ -29,7 +29,15 @@ func newPlanner(t *testing.T) *Planner {
 }
 
 func scenarioProviders() Providers {
-	return Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	return Providers{
+		Weather:     scenario.Weather{},
+		Routes:      scenario.Routes{},
+		Canals:      scenario.Canals{},
+		Reports:     reports.NewMemoryStore(scenario.SeedReports()...),
+		WeatherNext: scenario.WeatherNext{},
+		BMAFlood:    scenario.BMAFlood{},
+		BMATidal:    scenario.BMATidal{},
+	}
 }
 
 func TestNewSessionTrips(t *testing.T) {
@@ -372,4 +380,42 @@ func TestWeatherNextHighWindGustElevatesMotorbikeRisk(t *testing.T) {
 		t.Fatalf("expected HIGH motorbike risk with 52km/h wind gusts, got %v", motoEval.Risk)
 	}
 }
+
+func TestSourcesUsed_DynamicAttribution(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+
+	gps := domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	s, err := p.Open(context.Background(), prov, at(16, 10), TripRequest{
+		Origin:      &gps,
+		Destination: &scenario.Home,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sources := s.SourcesUsed()
+	if len(sources) == 0 {
+		t.Fatal("expected non-empty sources")
+	}
+
+	// First source should be GPS
+	if sources[0] != "GPS ตำแหน่งปัจจุบัน" {
+		t.Errorf("expected first source to be GPS, got %q", sources[0])
+	}
+
+	// Must contain BMA flood spots, BMA Road Flood Sensors, BMA Canal Flow & Tidal Map, and WeatherNext
+	joined := strings.Join(sources, ",")
+	for _, want := range []string{
+		"BMA flood spots",
+		"BMA Road Flood Sensors",
+		"BMA Canal Flow & Tidal Map",
+		"Google DeepMind WeatherNext 3",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("sources %v should contain %q", sources, want)
+		}
+	}
+}
+
 

@@ -65,8 +65,18 @@ func main() {
 		os.Exit(1)
 	}
 	defer closeStore()
+	bmaFloodScen := scenario.BMAFlood{}
+	bmaTidalScen := scenario.BMATidal{}
 	wnScen := scenario.WeatherNext{}
-	scen := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: store, WeatherNext: wnScen}
+	scen := planner.Providers{
+		Weather:     scenario.Weather{},
+		Routes:      scenario.Routes{},
+		Canals:      scenario.Canals{},
+		Reports:     store,
+		WeatherNext: wnScen,
+		BMAFlood:    bmaFloodScen,
+		BMATidal:    bmaTidalScen,
+	}
 	liveProv := scen
 	if key := os.Getenv("GOOGLE_MAPS_API_KEY"); key != "" {
 		liveProv.Weather = live.WeatherFallback{Primary: live.GoogleWeather{APIKey: key}, Fallback: scenario.Weather{}}
@@ -74,6 +84,14 @@ func main() {
 		geocoder = geocode.Fallback{Primary: geocode.Google{APIKey: key}, Fallback: geocoder}
 	}
 	liveProv.Canals = live.CanalFallback{Primary: live.ThaiWater{URL: os.Getenv("THAIWATER_URL")}, Fallback: scenario.Canals{}}
+	liveProv.BMAFlood = live.RoadFloodFallback{
+		Primary:  live.NewBMARoadFloodFetcher(os.Getenv("BMA_FLOOD_URL"), nil, 3*time.Minute),
+		Fallback: bmaFloodScen,
+	}
+	liveProv.BMATidal = live.TidalFallback{
+		Primary:  live.NewBMATidalFetcher(os.Getenv("BMA_TIDE_URL"), nil, 15*time.Minute),
+		Fallback: bmaTidalScen,
+	}
 
 	// BigQuery WeatherNext 3 Fetcher with 6-hour in-memory cache
 	bqFetcher, bqErr := live.NewBigQueryWeatherNextFetcher(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))

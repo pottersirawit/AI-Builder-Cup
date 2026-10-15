@@ -329,3 +329,53 @@ func (WeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (maxGust float64,
 	return 25.0, 32.0, nil
 }
 
+// BMAFlood replays scenario BMA road flood sensors along commuter routes.
+type BMAFlood struct{}
+
+func (BMAFlood) Name() string { return "BMA Road Flood Sensors (scenario)" }
+
+func (BMAFlood) SensorsNearRoute(polyline []domain.LatLng, radiusM float64) ([]domain.RoadFloodSensor, error) {
+	scenarioSensors := []domain.RoadFloodSensor{
+		{
+			Code:      "TN.DDG.01",
+			NameTH:    "อุโมงค์ทางลอดดินแดง",
+			NameEN:    "Din Daeng Underpass Tunnel",
+			Lat:       13.76391,
+			Lng:       100.54820,
+			DepthCM:   12.0,
+			UpdatedAt: time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok),
+		},
+		{
+			Code:      "FL.RTC.01",
+			NameTH:    "ถนนรัชดาภิเษก หน้าศาลอาญา",
+			NameEN:    "Ratchadapisek Rd (Criminal Court)",
+			Lat:       13.8165,
+			Lng:       100.5750,
+			DepthCM:   18.0,
+			UpdatedAt: time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok),
+		},
+	}
+	var out []domain.RoadFloodSensor
+	for _, s := range scenarioSensors {
+		if geo.DistanceToPolylineM(s.Point(), polyline) <= radiusM {
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}
+
+// BMATidal replays scenario BMA KlongMap high tide telemetry.
+type BMATidal struct{}
+
+func (BMATidal) Name() string { return "BMA Canal Flow & Tidal Map (scenario)" }
+
+func (BMATidal) TidalStatus(_ context.Context, at time.Time) (domain.TidalReading, error) {
+	return domain.TidalReading{
+		HighTideM:    1.09,
+		HighTideTime: at,
+		LowTideM:     -0.41,
+		SurgeRisk:    "high",
+	}, nil
+}
+
+

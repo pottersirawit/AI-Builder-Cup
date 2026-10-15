@@ -167,13 +167,7 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	sources := []string{rc.prov.Weather.Name(), rc.prov.Routes.Name(), rc.prov.Canals.Name(), "BMA flood spots"}
-	if rc.prov.WeatherNext != nil {
-		sources = append(sources, rc.prov.WeatherNext.Name())
-	}
-	if tripReq.Origin != nil {
-		sources = append([]string{rc.lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location")}, sources...)
-	}
+	sources := sess.SourcesUsed()
 	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, sources)
 	var needs *agent.NeedsPlace
 	switch {

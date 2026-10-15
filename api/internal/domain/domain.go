@@ -221,3 +221,38 @@ type WeatherNextProvider interface {
 	PeakConditionsAlongRoute(polyline []LatLng) (maxGust float64, maxTemp float64, err error)
 	Name() string
 }
+
+// RoadFloodSensor represents in-situ telemetry from BMA road flood sensors.
+type RoadFloodSensor struct {
+	Code      string    `json:"code"`
+	NameTH    string    `json:"name_th"`
+	NameEN    string    `json:"name_en"`
+	Lat       float64   `json:"lat"`
+	Lng       float64   `json:"lng"`
+	DepthCM   float64   `json:"depth_cm"`
+	UpdatedAt time.Time `json:"updated_at"`
+}
+
+// Point returns the geographical coordinates of the sensor.
+func (s RoadFloodSensor) Point() LatLng { return LatLng{Lat: s.Lat, Lng: s.Lng} }
+
+// RoadFloodProvider delivers live in-situ water depth from municipal road flood sensors.
+type RoadFloodProvider interface {
+	SensorsNearRoute(polyline []LatLng, radiusM float64) ([]RoadFloodSensor, error)
+	Name() string
+}
+
+// TidalReading captures daily sea-tide backwater potential in the lower Chao Phraya river.
+type TidalReading struct {
+	HighTideM    float64   `json:"high_tide_m"`
+	HighTideTime time.Time `json:"high_tide_time"`
+	LowTideM     float64   `json:"low_tide_m"`
+	SurgeRisk    string    `json:"surge_risk"` // "low", "medium", "high"
+}
+
+// TidalProvider provides astronomical high tide & canal drainage backwater potential.
+type TidalProvider interface {
+	TidalStatus(ctx context.Context, at time.Time) (TidalReading, error)
+	Name() string
+}
+

@@ -273,9 +273,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
                         for (final s in d.sources)
                           Chip(
                             avatar: Icon(
-                              s.contains('GPS') || s.contains('ตำแหน่ง')
-                                  ? Symbols.my_location_rounded
-                                  : Symbols.database_rounded,
+                              _sourceIcon(s),
                               size: 16,
                             ),
                             label: Text(
@@ -518,3 +516,20 @@ class _TraceStep extends StatelessWidget {
     );
   }
 }
+
+IconData _sourceIcon(String s) {
+  if (s.contains('GPS') || s.contains('ตำแหน่ง')) {
+    return Symbols.my_location_rounded;
+  }
+  if (s.contains('Road Flood') || s.contains('Sensor') || s.contains('เซ็นเซอร์')) {
+    return Symbols.sensors_rounded;
+  }
+  if (s.contains('WeatherNext') || s.contains('Wind')) {
+    return Symbols.air_rounded;
+  }
+  if (s.contains('Tidal') || s.contains('Canal') || s.contains('คลอง')) {
+    return Symbols.waves_rounded;
+  }
+  return Symbols.database_rounded;
+}
+

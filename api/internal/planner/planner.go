@@ -29,6 +29,8 @@ type Providers struct {
 	Canals      domain.CanalProvider
 	Reports     domain.ReportStore
 	WeatherNext domain.WeatherNextProvider
+	BMAFlood    domain.RoadFloodProvider
+	BMATidal    domain.TidalProvider
 }
 
 // Planner holds static data shared by all requests.
@@ -186,6 +188,10 @@ type Session struct {
 	rain    []domain.RainSample
 	rainSet bool
 	calls   []Call
+
+	usedWeatherNext bool
+	usedBMAFlood    bool
+	usedTidal       bool
 }
 
 // TripRequest is what a decision request says about the trip.
@@ -405,6 +411,17 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	if s.prov.WeatherNext != nil && len(road.Polyline) > 0 {
 		if g, _, err := s.prov.WeatherNext.PeakConditionsAlongRoute(road.Polyline); err == nil {
 			windGustKMH = g
+			s.usedWeatherNext = true
+		}
+	}
+	if s.prov.BMAFlood != nil && len(road.Polyline) > 0 {
+		if sensors, err := s.prov.BMAFlood.SensorsNearRoute(road.Polyline, 250); err == nil && len(sensors) > 0 {
+			s.usedBMAFlood = true
+		}
+	}
+	if s.prov.BMATidal != nil {
+		if _, err := s.prov.BMATidal.TidalStatus(s.ctx, depart); err == nil {
+			s.usedTidal = true
 		}
 	}
 	in := decision.Input{
@@ -437,6 +454,35 @@ func (s *Session) Baseline(depart time.Time, mode domain.Mode) (decision.Result,
 		return decision.Result{}, err
 	}
 	return decision.Decide(in), nil
+}
+
+// SourcesUsed returns the human-readable names of data sources configured in Providers
+// and actively queried during the route evaluation.
+func (s *Session) SourcesUsed() []string {
+	var out []string
+	if s.origin != nil {
+		out = append(out, s.Lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location"))
+	}
+	if s.prov.Weather != nil {
+		out = append(out, s.prov.Weather.Name())
+	}
+	if s.prov.Routes != nil {
+		out = append(out, s.prov.Routes.Name())
+	}
+	if s.prov.Canals != nil {
+		out = append(out, s.prov.Canals.Name())
+	}
+	out = append(out, "BMA flood spots")
+	if s.prov.WeatherNext != nil {
+		out = append(out, s.prov.WeatherNext.Name())
+	}
+	if s.prov.BMAFlood != nil {
+		out = append(out, s.prov.BMAFlood.Name())
+	}
+	if s.prov.BMATidal != nil {
+		out = append(out, s.prov.BMATidal.Name())
+	}
+	return out
 }
 
 // ---- tools ----
