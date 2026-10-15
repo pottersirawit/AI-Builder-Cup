@@ -18,6 +18,7 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
+	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
 // Providers are the data sources for one request (scenario or live).
@@ -89,7 +90,7 @@ func (p *Planner) TripTo(now time.Time, placeID string) (domain.Trip, error) {
 	if t, ok := p.upcomingTo(now, dest.Point()); ok {
 		return t, nil
 	}
-	return p.adHocTrip(now, dest), nil
+	return p.adHocTrip(now, dest, domain.LangTH), nil
 }
 
 // upcomingTo is a Calendar or Gmail trip to near there within tripWindow.
@@ -102,9 +103,9 @@ func (p *Planner) upcomingTo(now time.Time, dest domain.LatLng) (domain.Trip, bo
 	return domain.Trip{}, false
 }
 
-func (p *Planner) adHocTrip(now time.Time, dest domain.SavedPlace) domain.Trip {
+func (p *Planner) adHocTrip(now time.Time, dest domain.SavedPlace, lang domain.Lang) domain.Trip {
 	return domain.Trip{
-		ID: AdHocPrefix + dest.ID, TitleTH: "ไป" + dest.LabelTH, Source: "question",
+		ID: AdHocPrefix + dest.ID, TitleTH: goTo(lang, dest.LabelFor(lang)), Source: "question",
 		Origin: p.origin(now, dest.ID).Place, Destination: dest.Place, Mode: domain.ModeCar,
 	}
 }
@@ -125,6 +126,11 @@ func (p *Planner) origin(now time.Time, destID string) domain.SavedPlace {
 	return p.Places[0]
 }
 
+// goTo is the title of a trip to a named place.
+func goTo(lang domain.Lang, name string) string {
+	return lang.Pick("ไป"+name, "Go to "+name)
+}
+
 // Call is one tool invocation, as shown in the "Gemini คิดแบบนี้" trace.
 type Call struct {
 	Tool      string         `json:"tool"`
@@ -135,6 +141,9 @@ type Call struct {
 // Session is one decision: a trip, a clock reading, cached provider results
 // and the log of tool calls.
 type Session struct {
+	// Lang is the language of the text the session writes; zero is Thai.
+	Lang domain.Lang
+
 	ctx  context.Context
 	p    *Planner
 	prov Providers
@@ -160,6 +169,8 @@ type TripRequest struct {
 	Origin, Destination *domain.Place
 	// Places are the user's saved places; nil means the demo user's.
 	Places []domain.SavedPlace
+	// Lang is the language of the trip titles and decision text; zero is Thai.
+	Lang domain.Lang
 }
 
 func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time, tripID string) (*Session, error) {
@@ -169,12 +180,20 @@ func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time,
 // Open starts a decision for the requested trip: the app's coordinates, a
 // known trip ID, or the first upcoming trip.
 func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
-	s := &Session{ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}, places: req.Places, origin: req.Origin}
+	s, err := p.open(ctx, prov, now, req)
+	if err == nil {
+		s.Trip = scenario.LocalizeTrip(s.Trip, s.Lang)
+	}
+	return s, err
+}
+
+func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
+	s := &Session{Lang: req.Lang, ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}, places: req.Places, origin: req.Origin}
 	switch {
 	case req.Destination != nil && req.Origin == nil:
 		return nil, fmt.Errorf("%w: destination needs an origin", ErrBadTrip)
 	case req.Destination != nil:
-		s.Trip = AppTrip(*req.Origin, *req.Destination, "ไป"+req.Destination.NameTH)
+		s.Trip = AppTrip(*req.Origin, *req.Destination, goTo(req.Lang, req.Destination.NameTH))
 		return s, nil
 	case strings.HasPrefix(req.TripID, AppPrefix):
 		return nil, fmt.Errorf("%w: %q is not stored; send origin and destination with it", ErrBadTrip, req.TripID)
@@ -196,7 +215,7 @@ func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req T
 	}
 	if placeID, ok := strings.CutPrefix(tripID, AdHocPrefix); ok {
 		if dest, known := p.place(placeID); known {
-			s.Trip = p.adHocTrip(now, dest)
+			s.Trip = p.adHocTrip(now, dest, req.Lang)
 			return s, nil
 		}
 	}
@@ -221,7 +240,11 @@ func (s *Session) PlanTo(placeID string) error {
 	}
 	var t domain.Trip
 	if s.places == nil && s.origin == nil {
-		t, _ = s.p.TripTo(s.Now, placeID)
+		if up, ok := s.p.upcomingTo(s.Now, dest.Point()); ok {
+			t = up
+		} else {
+			t = s.p.adHocTrip(s.Now, dest, s.Lang)
+		}
 	} else if up, ok := s.p.upcomingTo(s.Now, dest.Point()); ok {
 		t = up
 	} else {
@@ -229,13 +252,13 @@ func (s *Session) PlanTo(placeID string) error {
 		if !ok {
 			return fmt.Errorf("%w: send origin (where the user is now) to plan a trip to %s", ErrBadTrip, dest.LabelTH)
 		}
-		title := "ไป" + dest.LabelTH
+		title := goTo(s.Lang, dest.LabelFor(s.Lang))
 		if dest.Kind == domain.KindHome {
-			title = "กลับบ้าน"
+			title = s.Lang.Pick("กลับบ้าน", "Going home")
 		}
 		t = AppTrip(origin, dest.Place, title)
 	}
-	s.Trip, s.routes, s.rain, s.rainSet = t, map[string]domain.Route{}, nil, false
+	s.Trip, s.routes, s.rain, s.rainSet = scenario.LocalizeTrip(t, s.Lang), map[string]domain.Route{}, nil, false
 	return nil
 }
 
@@ -265,6 +288,18 @@ func (s *Session) Places() []domain.SavedPlace {
 		return s.places
 	}
 	return s.p.Places
+}
+
+// localVia gives road names in the session's language.
+func (s *Session) localVia(via []string) []string {
+	if s.Lang != domain.LangEN {
+		return via
+	}
+	out := make([]string, len(via))
+	for i, v := range via {
+		out[i] = scenario.Text(v, s.Lang)
+	}
+	return out
 }
 
 func (s *Session) Calls() []Call { return append([]Call(nil), s.calls...) }
@@ -340,8 +375,8 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 		return decision.Input{}, err
 	}
 	in := decision.Input{
-		Now: s.Now, DepartAt: depart, ArriveBy: s.Trip.ArriveBy, Mode: mode,
-		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: road.ViaTH,
+		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: s.Trip.ArriveBy, Mode: mode,
+		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
 		Rain: rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,
 	}
 	from, to := s.Trip.Origin.Point(), s.Trip.Destination.Point()
@@ -410,7 +445,7 @@ var Tools = []Tool{
 func (s *Session) Call(name string, args map[string]any) (map[string]any, error) {
 	out, summary, err := s.dispatch(name, args)
 	if err != nil {
-		out, summary = map[string]any{"error": err.Error()}, "เรียกข้อมูลไม่สำเร็จ: "+err.Error()
+		out, summary = map[string]any{"error": err.Error()}, s.Lang.Pick("เรียกข้อมูลไม่สำเร็จ: ", "Could not fetch the data: ")+err.Error()
 	}
 	s.calls = append(s.calls, Call{Tool: name, Args: args, SummaryTH: summary})
 	return out, err
@@ -437,6 +472,12 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		if t.ArriveBy.IsZero() {
 			summary = fmt.Sprintf("%s จาก%s ไม่มีเวลานัด (%s)", t.TitleTH, t.Origin.NameTH, sourceTH(t.Source))
 		}
+		if s.Lang == domain.LangEN {
+			summary = fmt.Sprintf("%s: be at %s by %s (%s)", t.TitleTH, t.Destination.NameTH, hhmm(t.ArriveBy), sourceEN(t.Source))
+			if t.ArriveBy.IsZero() {
+				summary = fmt.Sprintf("%s from %s, no appointment time (%s)", t.TitleTH, t.Origin.NameTH, sourceEN(t.Source))
+			}
+		}
 		return map[string]any{"trip": t, "now": s.Now.Format(time.RFC3339)}, summary, nil
 
 	case "get_route":
@@ -450,8 +491,13 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		}
 		mins := in.Travel(mode, depart)
 		summary := fmt.Sprintf("%s ออก %s ใช้เวลา %d นาที", mode.NameTH(), hhmm(depart), mins)
+		via := " ผ่าน "
+		if s.Lang == domain.LangEN {
+			summary = fmt.Sprintf("By %s, leaving %s takes %d min", mode.NameFor(s.Lang), hhmm(depart), mins)
+			via = " via "
+		}
 		if len(r.ViaTH) > 0 {
-			summary += " ผ่าน " + strings.Join(r.ViaTH, " → ")
+			summary += via + strings.Join(s.localVia(r.ViaTH), " → ")
 		}
 		return map[string]any{"mode": mode, "depart_at": depart.Format(time.RFC3339), "duration_min": mins, "via_th": r.ViaTH, "source": r.Source},
 			summary, nil
@@ -479,13 +525,16 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 				peak = &rain[i]
 			}
 		}
-		summary := "ไม่มีฝนบนเส้นทางใน 5 ชั่วโมงข้างหน้า"
+		summary := s.Lang.Pick("ไม่มีฝนบนเส้นทางใน 5 ชั่วโมงข้างหน้า", "No rain on the route in the next 5 hours")
 		if onset != nil {
 			where := "เส้นทาง"
-			if len(road.ViaTH) > 0 {
-				where = road.ViaTH[0]
+			if s.Lang == domain.LangEN {
+				where = "your route"
 			}
-			summary = fmt.Sprintf("ฝนถึง%s ราว %s หนักสุด %.0f มม./ชม. ตอน %s", where, hhmm(onset.Time), peak.MMPerHr, hhmm(peak.Time))
+			if len(road.ViaTH) > 0 {
+				where = s.localVia(road.ViaTH)[0]
+			}
+			summary = fmt.Sprintf(s.Lang.Pick("ฝนถึง%s ราว %s หนักสุด %.0f มม./ชม. ตอน %s", "Rain reaches %s around %s, peaking at %.0f mm/h at %s"), where, hhmm(onset.Time), peak.MMPerHr, hhmm(peak.Time))
 		}
 		return map[string]any{"samples": samples, "source": s.prov.Weather.Name()}, summary, nil
 
@@ -494,13 +543,13 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		if err != nil {
 			return nil, "", err
 		}
-		summary := fmt.Sprintf("เส้นทางผ่านจุดเสี่ยงน้ำท่วม %d จุด", len(res.FloodSpots))
+		summary := fmt.Sprintf(s.Lang.Pick("เส้นทางผ่านจุดเสี่ยงน้ำท่วม %d จุด", "The route passes %d flood-prone spots"), len(res.FloodSpots))
 		if len(res.FloodSpots) > 0 {
 			d := res.FloodSpots[0]
 			if d.ExpectedDepthCM > 0 {
-				summary += fmt.Sprintf(" ลึกสุดคาด %d ซม. ที่ %s ถ้าออก %s", d.ExpectedDepthCM, d.NameTH, hhmm(depart))
+				summary += fmt.Sprintf(s.Lang.Pick(" ลึกสุดคาด %d ซม. ที่ %s ถ้าออก %s", ", deepest expected %d cm at %[2]s if you leave at %[3]s"), d.ExpectedDepthCM, d.NameTH, hhmm(depart))
 			} else {
-				summary += fmt.Sprintf(" ออก %s ยังไม่มีน้ำขัง", hhmm(depart))
+				summary += fmt.Sprintf(s.Lang.Pick(" ออก %s ยังไม่มีน้ำขัง", ", no standing water if you leave at %s"), hhmm(depart))
 			}
 		}
 		return map[string]any{"depart_at": depart.Format(time.RFC3339), "flood_spots": res.FloodSpots, "source": "BMA flood spots"}, summary, nil
@@ -513,10 +562,10 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		if len(canals) > 3 {
 			canals = canals[:3]
 		}
-		summary := "ไม่มีข้อมูลคลองใกล้ปลายทาง"
+		summary := s.Lang.Pick("ไม่มีข้อมูลคลองใกล้ปลายทาง", "No canal data near the destination")
 		if len(canals) > 0 {
 			c := canals[0]
-			summary = fmt.Sprintf("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", c.NameTH, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
+			summary = fmt.Sprintf(s.Lang.Pick("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", "%s at %.1f m, bank at %.1f m (%.0f cm below the bank)"), c.NameTH, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
 		}
 		return map[string]any{"canals": canals}, summary, nil
 
@@ -529,10 +578,10 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		if err != nil {
 			return nil, "", err
 		}
-		summary := "ยังไม่มีรายงานน้ำท่วมจากผู้ใช้บนเส้นทางในชั่วโมงที่ผ่านมา"
+		summary := s.Lang.Pick("ยังไม่มีรายงานน้ำท่วมจากผู้ใช้บนเส้นทางในชั่วโมงที่ผ่านมา", "No flood reports from users on the route in the past hour")
 		if len(reps) > 0 {
 			last := reps[len(reps)-1]
-			summary = fmt.Sprintf("รายงานจากผู้ใช้ %d รายการบนเส้นทาง ล่าสุด %s น้ำ %d-%d ซม.", len(reps), hhmm(last.CreatedAt), last.DepthCMMin, last.DepthCMMax)
+			summary = fmt.Sprintf(s.Lang.Pick("รายงานจากผู้ใช้ %d รายการบนเส้นทาง ล่าสุด %s น้ำ %d-%d ซม.", "%d user reports on the route, latest at %s with water %d-%d cm"), len(reps), hhmm(last.CreatedAt), last.DepthCMMin, last.DepthCMMax)
 		}
 		return map[string]any{"reports": reps}, summary, nil
 
@@ -546,6 +595,13 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 			"max_rain_mm_per_hr": e.MaxRainMM, "max_water_depth_cm": math.Round(e.MaxDepthCM), "risk": e.Risk, "late_minutes": e.LateMinutes}
 		if lb := decision.LeaveBy(in, mode); lb != nil {
 			out["latest_safe_departure"] = hhmm(*lb)
+		}
+		if s.Lang == domain.LangEN {
+			late := ""
+			if e.Late() {
+				late = fmt.Sprintf(", %d min past the appointment", e.LateMinutes)
+			}
+			return out, fmt.Sprintf("Leaving at %s by %s, arrive %s, %s risk%s", hhmm(depart), mode.NameFor(s.Lang), hhmm(e.Arrive), riskEN(e.Risk), late), nil
 		}
 		late := ""
 		if e.Late() {
@@ -586,4 +642,20 @@ func sourceTH(src string) string {
 
 func riskTH(r decision.Risk) string {
 	return map[decision.Risk]string{decision.RiskLow: "ต่ำ", decision.RiskMedium: "ปานกลาง", decision.RiskHigh: "สูง"}[r]
+}
+
+func sourceEN(src string) string {
+	switch src {
+	case "calendar":
+		return "from Google Calendar"
+	case "gmail":
+		return "from a Gmail confirmation"
+	case "app":
+		return "picked in the app"
+	}
+	return "typed in as a question"
+}
+
+func riskEN(r decision.Risk) string {
+	return map[decision.Risk]string{decision.RiskLow: "low", decision.RiskMedium: "medium", decision.RiskHigh: "high"}[r]
 }

@@ -78,3 +78,13 @@ func TestShortNameTH(t *testing.T) {
 		}
 	}
 }
+
+func TestShortNameEN(t *testing.T) {
+	s := Spot{NameEN: "Ratchadaphisek Rd (Criminal Court - Soi Suea Yai)"}
+	if got := s.ShortNameEN(); got != "Ratchadaphisek Rd" {
+		t.Errorf("got %q", got)
+	}
+	if got := (Spot{NameEN: "Sukhumvit 103"}).ShortNameEN(); got != "Sukhumvit 103" {
+		t.Errorf("got %q", got)
+	}
+}

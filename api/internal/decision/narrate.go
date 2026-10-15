@@ -223,6 +223,14 @@ func deadlineTH(in Input, e Eval) string {
 	return fmt.Sprintf(" ทันนัด %s", hhmm(in.ArriveBy))
 }
 
+// modeNote is the one-line note under a mode option, in the input's language.
+func modeNote(in Input, e Eval) string {
+	if in.Lang == domain.LangEN {
+		return modeNoteEN(e)
+	}
+	return modeNoteTH(in, e)
+}
+
 func modeNoteTH(in Input, e Eval) string {
 	eta := fmt.Sprintf("%d นาที ถึง %s", e.Minutes, hhmm(e.Arrive))
 	if e.Late() {

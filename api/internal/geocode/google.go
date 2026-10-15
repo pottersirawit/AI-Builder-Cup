@@ -59,7 +59,7 @@ func (g Google) Search(ctx context.Context, q string) ([]Place, error) {
 		base = "https://places.googleapis.com"
 	}
 	b, _ := json.Marshal(map[string]any{
-		"textQuery": q, "languageCode": "th", "regionCode": "TH", "pageSize": maxResults,
+		"textQuery": q, "languageCode": langOf(ctx).Pick("th", "en"), "regionCode": "TH", "pageSize": maxResults,
 		"locationBias": map[string]any{"circle": map[string]any{
 			"center": map[string]float64{"latitude": bangkokCenter.Lat, "longitude": bangkokCenter.Lng}, "radius": biasRadiusM}},
 	})
@@ -103,7 +103,7 @@ func (g Google) Reverse(ctx context.Context, at domain.LatLng) (Address, error) 
 	}
 	q := url.Values{
 		"latlng":   {fmt.Sprintf("%.5f,%.5f", at.Lat, at.Lng)},
-		"language": {"th"},
+		"language": {langOf(ctx).Pick("th", "en")},
 		"region":   {"th"},
 		"key":      {g.APIKey},
 	}

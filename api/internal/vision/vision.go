@@ -21,6 +21,19 @@ const prompt = `ภาพนี้ถ่ายโดยผู้ใช้บน�
 passable ของแต่ละพาหนะให้ตอบ yes, slow หรือ no (รถเก๋งเสี่ยงที่ 15 ซม. ขึ้นไป มอเตอร์ไซค์ไม่ควรผ่านที่ 10 ซม. ขึ้นไป รถไฟฟ้าไม่กระทบน้ำบนถนน)
 description_th เป็นภาษาไทย 1-2 ประโยค บอกสิ่งที่เห็นและคำแนะนำ ถ้าภาพไม่ใช่ถนนหรือมองไม่เห็นน้ำ ให้ confidence ต่ำกว่า 0.3`
 
+// englishPrompt is appended for English requests so the description comes back
+// in English; the JSON key stays description_th.
+const englishPrompt = `
+
+Write description_th in English instead of Thai: 1-2 short, friendly sentences saying what you see and what the traveller should do.`
+
+func promptFor(l domain.Lang) string {
+	if l == domain.LangEN {
+		return prompt + englishPrompt
+	}
+	return prompt
+}
+
 var passEnum = []string{"yes", "slow", "no"}
 
 var schema = &genai.Schema{
@@ -37,15 +50,16 @@ var schema = &genai.Schema{
 	Required: []string{"depth_cm_min", "depth_cm_max", "confidence", "description_th", "passable"},
 }
 
-// Assess returns depth, confidence, Thai description and per-mode passability.
+// Assess returns depth, confidence, a description in lang (Thai or English) and per-mode passability.
 // Without Gemini, or when Gemini's answer is not usable, it returns the scenario
 // assessment of มิว's 18:52 photo and generatedBy "fallback".
-func Assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string) (domain.Report, string) {
+func Assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string, lang domain.Lang) (domain.Report, string) {
 	fallback := scenario.HeroAssessment()
+	fallback.DescriptionTH = scenario.Text(fallback.DescriptionTH, lang)
 	if !g.Available() {
 		return fallback, "fallback"
 	}
-	r, err := assess(ctx, g, photo, mimeType)
+	r, err := assess(ctx, g, photo, mimeType, lang)
 	if err != nil {
 		slog.Warn("gemini vision failed, using fallback", "err", err)
 		return fallback, "fallback"
@@ -53,12 +67,12 @@ func Assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string)
 	return r, "gemini"
 }
 
-func assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string) (domain.Report, error) {
+func assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string, lang domain.Lang) (domain.Report, error) {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 	zero := float32(0)
 	contents := []*genai.Content{genai.NewContentFromParts([]*genai.Part{
-		genai.NewPartFromBytes(photo, mimeType), genai.NewPartFromText(prompt),
+		genai.NewPartFromBytes(photo, mimeType), genai.NewPartFromText(promptFor(lang)),
 	}, genai.RoleUser)}
 	resp, err := g.Gen.GenerateContent(ctx, g.Model, contents, &genai.GenerateContentConfig{
 		Temperature: &zero, ResponseMIMEType: "application/json", ResponseSchema: schema,

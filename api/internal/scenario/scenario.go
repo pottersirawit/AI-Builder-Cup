@@ -175,11 +175,11 @@ func latPhraoLevel(t time.Time) float64 {
 func (Canals) Canals(_ context.Context, near domain.LatLng, t time.Time) ([]domain.CanalReading, error) {
 	lp := latPhraoLevel(t)
 	readings := []domain.CanalReading{
-		{StationID: "BMA-CANAL-02", NameTH: "คลองลาดพร้าว", Lat: 13.8185, Lng: 100.5935, LevelM: round2(lp), BankM: 1.8,
+		{StationID: "BMA-CANAL-02", NameTH: "คลองลาดพร้าว", NameEN: "Lat Phrao Canal", Lat: 13.8185, Lng: 100.5935, LevelM: round2(lp), BankM: 1.8,
 			RiseCM2h: math.Round((lp - latPhraoLevel(t.Add(-2*time.Hour))) * 100)},
-		{StationID: "BMA-CANAL-01", NameTH: "คลองแสนแสบ", Lat: 13.7470, Lng: 100.5640, LevelM: 0.85, BankM: 1.10, RiseCM2h: 5},
-		{StationID: "BMA-CANAL-03", NameTH: "คลองเปรมประชากร", Lat: 13.8900, Lng: 100.5800, LevelM: 0.60, BankM: 1.00},
-		{StationID: "BMA-CANAL-04", NameTH: "คลองประเวศบุรีรมย์", Lat: 13.6900, Lng: 100.6400, LevelM: 0.70, BankM: 1.05, RiseCM2h: 3},
+		{StationID: "BMA-CANAL-01", NameTH: "คลองแสนแสบ", NameEN: "Saen Saep Canal", Lat: 13.7470, Lng: 100.5640, LevelM: 0.85, BankM: 1.10, RiseCM2h: 5},
+		{StationID: "BMA-CANAL-03", NameTH: "คลองเปรมประชากร", NameEN: "Prem Prachakorn Canal", Lat: 13.8900, Lng: 100.5800, LevelM: 0.60, BankM: 1.00},
+		{StationID: "BMA-CANAL-04", NameTH: "คลองประเวศบุรีรมย์", NameEN: "Prawet Burirom Canal", Lat: 13.6900, Lng: 100.6400, LevelM: 0.70, BankM: 1.05, RiseCM2h: 3},
 	}
 	for i := range readings {
 		readings[i].Source = Source
@@ -315,4 +315,7 @@ var HomeProfile = struct {
 	FloodLevelM    float64
 	SafeParkingTH  string
 	SandbagPointTH string
-}{Home, HomeFloodLevelM, "ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม.", "สำนักงานเขตจตุจักร เปิดถึงเที่ยงคืน"}
+	SafeParkingEN  string
+	SandbagPointEN string
+}{Home, HomeFloodLevelM, "ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม.", "สำนักงานเขตจตุจักร เปิดถึงเที่ยงคืน",
+	"the Central Ladprao car park (1.2 km)", "Chatuchak District Office (open until midnight)"}

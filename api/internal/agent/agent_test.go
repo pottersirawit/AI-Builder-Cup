@@ -146,10 +146,12 @@ type scriptedGemini struct {
 	replies []*genai.GenerateContentResponse
 	err     error
 	seen    [][]*genai.Content
+	configs []*genai.GenerateContentConfig
 }
 
-func (f *scriptedGemini) GenerateContent(_ context.Context, _ string, contents []*genai.Content, _ *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+func (f *scriptedGemini) GenerateContent(_ context.Context, _ string, contents []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
 	f.seen = append(f.seen, contents)
+	f.configs = append(f.configs, cfg)
 	if f.err != nil {
 		return nil, f.err
 	}

@@ -44,15 +44,15 @@ type Payload struct {
 
 // jsonSchemaPayload matches the LLM output representation.
 type jsonSchemaPayload struct {
-	IsTrip          bool     `json:"is_trip"`
-	TitleTH         string   `json:"title_th"`
-	OriginText      string   `json:"origin_text"`
-	DestinationText string   `json:"destination_text"`
-	ArriveBy        *string  `json:"arrive_by"` // RFC 3339 string
-	DepartAt        *string  `json:"depart_at"` // RFC 3339 string
-	Mode            *string  `json:"mode"`
-	Confidence      float64  `json:"confidence"`
-	EvidenceTH      string   `json:"evidence_th"`
+	IsTrip          bool    `json:"is_trip"`
+	TitleTH         string  `json:"title_th"`
+	OriginText      string  `json:"origin_text"`
+	DestinationText string  `json:"destination_text"`
+	ArriveBy        *string `json:"arrive_by"` // RFC 3339 string
+	DepartAt        *string `json:"depart_at"` // RFC 3339 string
+	Mode            *string `json:"mode"`
+	Confidence      float64 `json:"confidence"`
+	EvidenceTH      string  `json:"evidence_th"`
 }
 
 const calendarPrompt = `คุณคือระบบสกัดข้อมูลการเดินทางจาก Google Calendar ในกรุงเทพฯ
@@ -62,6 +62,7 @@ const calendarPrompt = `คุณคือระบบสกัดข้อม�
 2. is_trip = false ถ้านัดประชุมออนไลน์ (เช่น Google Meet, Zoom), วันหยุด, หรือเตือนความจำส่วนตัวที่ไม่มีสถานที่
 3. วันที่และเวลาต้องแปลงเป็น RFC 3339 เวลาไทย (+07:00) โดยอ้างอิงจากเวลาปัจจุบันที่ระบุ
 4. mode ให้ระบุ car, transit (รถไฟฟ้า), หรือ moto หากมีระบุไว้ ไม่ระบุให้เป็น null
+ข้อความต้นฉบับอาจเป็นภาษาไทยหรือภาษาอังกฤษ สกัดได้เหมือนกัน และให้ title_th กับ evidence_th ใช้ภาษาเดียวกับต้นฉบับ
 ตอบเฉพาะ JSON ตามโครงสร้างที่กำหนดเท่านั้น`
 
 const gmailPrompt = `คุณคือระบบสกัดข้อมูลการเดินทางจากอีเมลยืนยัน (Gmail) เช่น ตั๋วคอนเสิร์ต, การจองร้านอาหาร, ตั๋วเครื่องบิน
@@ -71,6 +72,7 @@ const gmailPrompt = `คุณคือระบบสกัดข้อมู�
 2. is_trip = false สำหรับอีเมลโฆษณา, โปรโมชั่น, จดหมายข่าว, หรือใบเสร็จสั่งของออนไลน์ทั่วไป
 3. arrive_by คือเวลาที่ต้องไปถึงสถานที่ (เช่น เวลาประตูเปิด หรือเวลาเริ่มนัด) รูปแบบ RFC 3339 (+07:00)
 4. destination_text ระบุชื่อสถานที่จัดงานหรือชื่อร้าน
+ข้อความต้นฉบับอาจเป็นภาษาไทยหรือภาษาอังกฤษ สกัดได้เหมือนกัน และให้ title_th กับ evidence_th ใช้ภาษาเดียวกับต้นฉบับ
 ตอบเฉพาะ JSON ตามโครงสร้างที่กำหนดเท่านั้น`
 
 func responseSchema() *genai.Schema {

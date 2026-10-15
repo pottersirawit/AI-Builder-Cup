@@ -13,6 +13,7 @@ import (
 
 // Message is an advisory message delivered to a user via LINE or FCM.
 type Message struct {
+	Lang        domain.Lang      `json:"lang,omitempty"` // language of the fixed text around the headline and summary
 	UID         string           `json:"uid"`
 	TripID      string           `json:"trip_id"`
 	TripTitleTH string           `json:"trip_title_th"`
@@ -65,24 +66,25 @@ func (l *LogNotifier) Notify(_ context.Context, msg Message) error {
 // BuildLineFlexJSON creates a standard LINE Flex Message bubble JSON representation.
 func BuildLineFlexJSON(msg Message) map[string]any {
 	colorBadge := "#34D399" // emerald
-	badgeText := "เดินทางปลอดภัย"
+	l := msg.Lang
+	badgeText := l.Pick("เดินทางปลอดภัย", "Safe to travel")
 	switch msg.Verdict {
 	case decision.DontGo:
 		colorBadge = "#F43F5E" // rose
-		badgeText = "🚨 เสี่ยงสูงมาก ไม่ควรออก"
+		badgeText = l.Pick("🚨 เสี่ยงสูงมาก ไม่ควรออก", "🚨 Very high risk, do not go out")
 	case decision.SwitchMode:
 		colorBadge = "#F59E0B" // amber
-		badgeText = "⚠️ แนะนำเปลี่ยนวิธีเดินทาง"
+		badgeText = l.Pick("⚠️ แนะนำเปลี่ยนวิธีเดินทาง", "⚠️ Switch how you travel")
 	case decision.Wait:
 		colorBadge = "#F59E0B"
-		badgeText = "⏳ ควรรอฝนซา"
+		badgeText = l.Pick("⏳ ควรรอฝนซา", "⏳ Wait for the rain to ease")
 	case decision.LeaveNow:
-		badgeText = "✅ ควรออกเดินทางทันที"
+		badgeText = l.Pick("✅ ควรออกเดินทางทันที", "✅ Leave now")
 	}
 
-	leaveByStr := "ตอนนี้"
+	leaveByStr := l.Pick("ตอนนี้", "now")
 	if msg.LeaveBy != nil {
-		leaveByStr = msg.LeaveBy.Format("15:04 น.")
+		leaveByStr = msg.LeaveBy.Format(l.Pick("15:04 น.", "15:04"))
 	}
 
 	return map[string]any{
@@ -94,10 +96,10 @@ func BuildLineFlexJSON(msg Message) map[string]any {
 			"backgroundColor": "#091122",
 			"contents": []any{
 				map[string]any{
-					"type":  "text",
-					"text":  badgeText,
-					"color": colorBadge,
-					"size":  "sm",
+					"type":   "text",
+					"text":   badgeText,
+					"color":  colorBadge,
+					"size":   "sm",
 					"weight": "bold",
 				},
 				map[string]any{
@@ -124,22 +126,22 @@ func BuildLineFlexJSON(msg Message) map[string]any {
 					"wrap":  true,
 				},
 				map[string]any{
-					"type":   "box",
-					"layout": "vertical",
-					"margin": "lg",
+					"type":    "box",
+					"layout":  "vertical",
+					"margin":  "lg",
 					"spacing": "sm",
 					"contents": []any{
 						map[string]any{
-							"type":   "text",
-							"text":   fmt.Sprintf("ทริป: %s (%s)", msg.TripTitleTH, msg.Mode.NameTH()),
-							"color":  "#94A3B8",
-							"size":   "sm",
+							"type":  "text",
+							"text":  l.Pick(fmt.Sprintf("ทริป: %s (%s)", msg.TripTitleTH, msg.Mode.NameTH()), fmt.Sprintf("Trip: %s (%s)", msg.TripTitleTH, msg.Mode.Label(l))),
+							"color": "#94A3B8",
+							"size":  "sm",
 						},
 						map[string]any{
-							"type":   "text",
-							"text":   fmt.Sprintf("เวลาควรออก: %s (ใช้เวลาราว %d นาที)", leaveByStr, msg.EtaMin),
-							"color":  "#94A3B8",
-							"size":   "sm",
+							"type":  "text",
+							"text":  l.Pick(fmt.Sprintf("เวลาควรออก: %s (ใช้เวลาราว %d นาที)", leaveByStr, msg.EtaMin), fmt.Sprintf("Leave by: %s (about %d min)", leaveByStr, msg.EtaMin)),
+							"color": "#94A3B8",
+							"size":  "sm",
 						},
 					},
 				},

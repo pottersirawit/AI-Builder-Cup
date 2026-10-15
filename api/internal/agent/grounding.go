@@ -19,6 +19,8 @@ var (
 	clockTime = regexp.MustCompile(`(?:^|[^0-9])([01]?[0-9]|2[0-3]):([0-5][0-9])`)
 	// leaveBefore matches "ออกก่อน HH:MM", which can only mean the leave-by.
 	leaveBefore = regexp.MustCompile(`ออก(?:เดินทาง)?ก่อน\s*(?:เวลา\s*)?([01]?[0-9]|2[0-3]):([0-5][0-9])`)
+	// leaveBeforeEN is the English "leave by HH:MM" and "leave before HH:MM".
+	leaveBeforeEN = regexp.MustCompile(`(?i)\bleave\s+(?:by|before)\s+(?:about\s+|around\s+)?([01]?[0-9]|2[0-3]):([0-5][0-9])`)
 )
 
 // Grounding is what an answer's text may say about time: the HH:MM readings
@@ -79,7 +81,7 @@ func ToolTimes(s *planner.Session, depart time.Time, mode domain.Mode, core deci
 }
 
 // Ungrounded lists, once each, the HH:MM times in texts that no tool
-// returned, and any "ออกก่อน HH:MM" that is not the engine's leave-by.
+// returned, and any "ออกก่อน HH:MM" or "leave by HH:MM" that is not the engine's leave-by.
 func (g Grounding) Ungrounded(texts ...string) []string {
 	var out []string
 	add := func(t string) {
@@ -96,9 +98,11 @@ func (g Grounding) Ungrounded(texts ...string) []string {
 		if g.leaveBy == "" {
 			continue
 		}
-		for _, m := range leaveBefore.FindAllStringSubmatch(text, -1) {
-			if t := matchHHMM(m); t != g.leaveBy {
-				add(t)
+		for _, re := range []*regexp.Regexp{leaveBefore, leaveBeforeEN} {
+			for _, m := range re.FindAllStringSubmatch(text, -1) {
+				if t := matchHHMM(m); t != g.leaveBy {
+					add(t)
+				}
 			}
 		}
 	}

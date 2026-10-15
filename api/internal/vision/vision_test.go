@@ -3,11 +3,13 @@ package vision
 import (
 	"context"
 	"errors"
+	"strings"
 	"testing"
 
 	"google.golang.org/genai"
 
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
+	"github.com/pottersirawit/fontokmai/api/internal/domain"
 )
 
 type fakeGen struct {
@@ -39,14 +41,46 @@ func TestAssess(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			r, by := Assess(context.Background(), tt.g, []byte("jpeg"), "image/jpeg")
+			r, by := Assess(context.Background(), tt.g, []byte("jpeg"), "image/jpeg", domain.LangTH)
 			if by != tt.wantBy || r.DepthCMMax != tt.wantMax {
 				t.Fatalf("got %s %+v", by, r)
 			}
 		})
 	}
-	r, _ := Assess(context.Background(), nil, nil, "")
+	r, _ := Assess(context.Background(), nil, nil, "", domain.LangTH)
 	if r.DepthCMMin != 20 || r.Confidence != 0.84 || r.Passable.Moto != "no" || r.Passable.Car != "slow" {
 		t.Fatalf("fallback should be the hero assessment, got %+v", r)
+	}
+}
+
+type promptSpy struct{ prompt string }
+
+func (p *promptSpy) GenerateContent(_ context.Context, _ string, contents []*genai.Content, _ *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+	for _, part := range contents[0].Parts {
+		p.prompt += part.Text
+	}
+	return nil, errors.New("stop")
+}
+
+func TestPromptHasEnglishInstructionOnlyForEnglish(t *testing.T) {
+	for _, lang := range []domain.Lang{domain.LangTH, domain.LangEN} {
+		spy := &promptSpy{}
+		Assess(context.Background(), &agent.Gemini{Gen: spy}, []byte("jpeg"), "image/jpeg", lang)
+		if got := strings.Contains(spy.prompt, "in English instead of Thai"); got != (lang == domain.LangEN) {
+			t.Errorf("%s: English instruction present = %v", lang, got)
+		}
+		if !strings.HasPrefix(spy.prompt, prompt) {
+			t.Errorf("%s: Thai prompt must stay the base of the prompt", lang)
+		}
+		if lang == domain.LangTH && spy.prompt != prompt {
+			t.Errorf("Thai prompt changed: %q", spy.prompt)
+		}
+	}
+}
+
+func TestEnglishFallbackDescription(t *testing.T) {
+	r, by := Assess(context.Background(), nil, nil, "", domain.LangEN)
+	if by != "fallback" || domain.HasThai(r.DescriptionTH) || r.DescriptionTH == "" {
+		t.Fatalf("got %s %q", by, r.DescriptionTH)
 	}
 }

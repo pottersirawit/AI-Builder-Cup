@@ -7,6 +7,7 @@ import (
 
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/decision"
+	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/notify"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
@@ -18,17 +19,19 @@ type Evaluator struct {
 	Users    users.UserStore
 	Notifier notify.Notifier
 	Gemini   *agent.Gemini
+	// Lang is the language of the advisory text; zero is Thai.
+	Lang domain.Lang
 }
 
 // Result is the outcome of a proactive advisory check.
 type Result struct {
-	Notified     bool             `json:"notified"`
-	Verdict      decision.Verdict `json:"verdict"`
-	Risk         decision.Risk    `json:"risk"`
-	HeadlineTH   string           `json:"headline_th"`
-	SummaryTH    string           `json:"summary_th"`
-	LeaveBy      *time.Time       `json:"leave_by,omitempty"`
-	Reasoning    []planner.Call   `json:"reasoning,omitempty"`
+	Notified   bool             `json:"notified"`
+	Verdict    decision.Verdict `json:"verdict"`
+	Risk       decision.Risk    `json:"risk"`
+	HeadlineTH string           `json:"headline_th"`
+	SummaryTH  string           `json:"summary_th"`
+	LeaveBy    *time.Time       `json:"leave_by,omitempty"`
+	Reasoning  []planner.Call   `json:"reasoning,omitempty"`
 }
 
 // EvaluateTrip evaluates a trip at now, compares with cached state, and notifies if needed.
@@ -43,6 +46,7 @@ func (e *Evaluator) EvaluateTrip(ctx context.Context, prov planner.Providers, no
 		Origin:      &ut.Trip.Origin,
 		Destination: &ut.Trip.Destination,
 		Places:      ut.Places,
+		Lang:        e.Lang,
 	}
 
 	sess, err := e.Planner.Open(ctx, prov, now, tr)
@@ -102,6 +106,7 @@ func (e *Evaluator) EvaluateTrip(ctx context.Context, prov planner.Providers, no
 			Mode:        resp.Mode,
 			EtaMin:      etaMin,
 			SentAt:      now,
+			Lang:        e.Lang,
 		}
 		if err := e.Notifier.Notify(ctx, msg); err != nil {
 			return Result{}, fmt.Errorf("notify: %w", err)

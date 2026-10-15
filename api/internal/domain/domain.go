@@ -4,6 +4,7 @@ package domain
 
 import (
 	"context"
+	"strings"
 	"time"
 )
 
@@ -40,6 +41,22 @@ func (m Mode) NameTH() string {
 	}
 }
 
+// NameFor is the mode's label in l: "car", "BTS / MRT" or "motorbike" in
+// English, NameTH in Thai.
+func (m Mode) NameFor(l Lang) string {
+	if l != LangEN {
+		return m.NameTH()
+	}
+	switch m {
+	case ModeTransit:
+		return "BTS / MRT"
+	case ModeMoto:
+		return "motorbike"
+	default:
+		return "car"
+	}
+}
+
 type Place struct {
 	NameTH string  `json:"name_th"`
 	Lat    float64 `json:"lat"`
@@ -63,6 +80,37 @@ type SavedPlace struct {
 	LabelTH string `json:"label_th"`
 	Place
 	Keywords []string `json:"-"`
+}
+
+// LabelFor is the label to show in l. In English a Thai label becomes "Home",
+// "Work", or the place's first Latin keyword ("siam" -> "Siam"); a label the
+// user typed in Latin letters is theirs and stays.
+func (p SavedPlace) LabelFor(l Lang) string {
+	if l != LangEN || !HasThai(p.LabelTH) {
+		return p.LabelTH
+	}
+	switch p.Kind {
+	case KindHome:
+		return "Home"
+	case KindWork:
+		return "Work"
+	}
+	for _, kw := range p.Keywords {
+		if kw != "" && !HasThai(kw) {
+			return strings.ToUpper(kw[:1]) + kw[1:]
+		}
+	}
+	return p.LabelTH
+}
+
+// HasThai reports whether s contains a Thai letter.
+func HasThai(s string) bool {
+	for _, r := range s {
+		if r >= 0x0E00 && r <= 0x0E7F {
+			return true
+		}
+	}
+	return false
 }
 
 type Trip struct {
@@ -93,6 +141,7 @@ type RainSample struct {
 type CanalReading struct {
 	StationID string  `json:"station_id"`
 	NameTH    string  `json:"name_th"`
+	NameEN    string  `json:"-"` // English station name when the source has one
 	Lat       float64 `json:"lat"`
 	Lng       float64 `json:"lng"`
 	LevelM    float64 `json:"level_m"`

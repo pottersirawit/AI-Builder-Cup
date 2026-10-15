@@ -41,10 +41,10 @@ const (
 
 // Vehicle Clearance Profiles (CONTEXT.md): water depth in cm & wind threshold in km/h.
 const (
-	carSlowDepthCM            = 5.0  // sedan slows, water sprays the floor
-	carStallDepthCM           = 15.0 // sedan clearance
-	motoStallDepthCM          = 10.0
-	motoWindGustThresholdKMH  = 45.0 // gusts > 45 km/h make two-wheelers dangerous
+	carSlowDepthCM           = 5.0  // sedan slows, water sprays the floor
+	carStallDepthCM          = 15.0 // sedan clearance
+	motoStallDepthCM         = 10.0
+	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 )
 
 // Water drains from a flood spot linearly over drainWindow after the rain that
@@ -55,11 +55,14 @@ const (
 	step        = 5 * time.Minute
 )
 
+const unnamedReportSpot = "จุดที่มีรายงาน"
+
 // TravelFunc returns base door-to-door minutes for a mode departing at t,
 // before weather delays.
 type TravelFunc func(mode domain.Mode, departAt time.Time) int
 
 type Input struct {
+	Lang     domain.Lang // language of the narrative text; zero is Thai
 	Now      time.Time
 	DepartAt time.Time
 	ArriveBy time.Time // zero when the trip has no deadline
@@ -68,11 +71,11 @@ type Input struct {
 	DestinationTH string
 	RoadViaTH     []string // named roads on the car route, first one is where rain is reported
 
-	Rain    []domain.RainSample
-	Spots   []floodspot.Spot // flood spots on the road route
-	Reports []domain.Report  // community reports near the road route
-	WindGustKMH float64      // peak wind gust on route (e.g. from WeatherNext 3)
-	Travel  TravelFunc
+	Rain        []domain.RainSample
+	Spots       []floodspot.Spot // flood spots on the road route
+	Reports     []domain.Report  // community reports near the road route
+	WindGustKMH float64          // peak wind gust on route (e.g. from WeatherNext 3)
+	Travel      TravelFunc
 }
 
 // Eval is one mode departing at one time.
@@ -145,7 +148,7 @@ func Decide(in Input) Result {
 		v, _ := verdictFor(in, m, res.Evals)
 		res.ModeOptions = append(res.ModeOptions, ModeOption{
 			Mode: m, Verdict: v, EtaMin: res.Evals[m].Minutes, Risk: res.Evals[m].Risk,
-			NoteTH: modeNoteTH(in, res.Evals[m]),
+			NoteTH: modeNote(in, res.Evals[m]),
 		})
 	}
 	res.Verdict, res.WaitUntil = verdictFor(in, in.Mode, res.Evals)
@@ -154,7 +157,11 @@ func Decide(in Input) Result {
 	res.RainTimeline = timeline(in)
 	res.FloodSpots = floodSpots(in, res.Evals)
 	res.Confidence = confidence(in, res.Evals[in.Mode])
-	res.HeadlineTH, res.SummaryTH, res.Explanation = narrate(in, res)
+	if in.Lang == domain.LangEN {
+		res.HeadlineTH, res.SummaryTH, res.Explanation = narrateEN(in, res)
+	} else {
+		res.HeadlineTH, res.SummaryTH, res.Explanation = narrate(in, res)
+	}
 	return res
 }
 
@@ -281,7 +288,7 @@ func reportDepthCM(r domain.Report, t time.Time) float64 {
 }
 
 func nearestSpotName(spots []floodspot.Spot, r domain.Report) string {
-	best, name := math.Inf(1), "จุดที่มีรายงาน"
+	best, name := math.Inf(1), unnamedReportSpot
 	for _, s := range spots {
 		d := math.Hypot(s.Lat-r.Lat, s.Lng-r.Lng)
 		if d < best {
@@ -378,11 +385,22 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 		if d == 0 {
 			continue
 		}
-		out = append(out, FloodSpot{ID: "report-" + r.ID, NameTH: "รายงานผู้ใช้ " + r.CreatedAt.Format("15:04") + " ใกล้" + nearestSpotName(in.Spots, r),
+		out = append(out, FloodSpot{ID: "report-" + r.ID, NameTH: reportLabel(in, r),
 			Lat: r.Lat, Lng: r.Lng, ExpectedDepthCM: int(d), Risk: depthRisk(d)})
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].ExpectedDepthCM > out[j].ExpectedDepthCM })
 	return out
+}
+
+func reportLabel(in Input, r domain.Report) string {
+	near := nearestSpotName(in.Spots, r)
+	if in.Lang == domain.LangEN {
+		if near == unnamedReportSpot {
+			near = "a reported spot"
+		}
+		return "User report " + r.CreatedAt.Format("15:04") + " near " + near
+	}
+	return "รายงานผู้ใช้ " + r.CreatedAt.Format("15:04") + " ใกล้" + near
 }
 
 func depthRisk(d float64) Risk {

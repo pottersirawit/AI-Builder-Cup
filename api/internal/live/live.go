@@ -200,7 +200,7 @@ func (tw ThaiWater) Canals(ctx context.Context, near domain.LatLng, _ time.Time)
 		if geo.HaversineM(near, p) > 15000 {
 			continue
 		}
-		out = append(out, domain.CanalReading{StationID: d.Station.ID.String(), NameTH: d.Station.Name["th"], Lat: lat, Lng: lng,
+		out = append(out, domain.CanalReading{StationID: d.Station.ID.String(), NameTH: d.Station.Name["th"], NameEN: d.Station.Name["en"], Lat: lat, Lng: lng,
 			LevelM: level, BankM: bank, Source: "ThaiWater (HII)"})
 	}
 	if len(out) == 0 {

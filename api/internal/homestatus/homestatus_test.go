@@ -174,3 +174,68 @@ func TestEvaluateOutsideServiceArea(t *testing.T) {
 		t.Fatalf("got %+v", st)
 	}
 }
+
+func hasThai(s string) bool { return domain.HasThai(s) }
+
+func TestEvaluateEnglishHasNoThai(t *testing.T) {
+	udomSukEN := udomSuk
+	udomSukEN.NameEN = "Sukhumvit Rd (Udom Suk)"
+	bangNaCanals, _ := scenario.Canals{}.Canals(context.Background(), bangNa.Point(), at(18, 30))
+	chiangMai := domain.Place{NameTH: "Home", Lat: 18.79, Lng: 98.98}
+	tests := []struct {
+		name string
+		in   Input
+		want Level
+	}{
+		{"canal watch", scenarioInput(at(16, 10), 0), Watch},
+		{"canal normal", Input{Now: at(12, 0), Home: Home{Place: scenario.Home}, Canals: []domain.CanalReading{{NameTH: "คลองลาดพร้าว", NameEN: "Lat Phrao Canal", Lat: 13.8185, Lng: 100.5935, LevelM: 0.5, BankM: 1.8}}}, Normal},
+		{"canal watch with reports", scenarioInput(at(19, 40), 2), Watch},
+		{"canal danger with door ETA", scenarioInput(at(21, 40), 11), Danger},
+		{"canal danger past bank", scenarioInput(at(23, 0), 1), Danger},
+		{"no canal, out of area", Input{Now: at(18, 0), Home: Home{Place: chiangMai}, Rain: rainAt(at(18, 0), 30)}, Watch},
+		{"no canal, dry", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Canals: bangNaCanals, Rain: rainAt(at(18, 30), 0), Spots: []floodspot.Spot{udomSukEN}}, Normal},
+		{"no canal, deep water", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Canals: bangNaCanals, Rain: rainAt(at(18, 30), 52), Spots: []floodspot.Spot{udomSukEN}}, Danger},
+		{"no canal, spot without English name", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Rain: rainAt(at(18, 30), 20)}, Watch},
+		{"no canal, neighbours report", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Rain: rainAt(at(18, 30), 0), NearbyReports: 3}, Danger},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			th := Evaluate(tt.in)
+			tt.in.Lang = domain.LangEN
+			en := Evaluate(tt.in)
+			if en.Level != tt.want || en.Level != th.Level {
+				t.Fatalf("level en=%s th=%s want %s", en.Level, th.Level, tt.want)
+			}
+			fields := []string{en.HeadlineTH, en.SummaryTH, strings.Join(en.Sources, "|")}
+			for _, a := range en.Actions {
+				fields = append(fields, a.TextTH)
+			}
+			if en.Canal != nil {
+				fields = append(fields, en.Canal.NameTH)
+			}
+			for _, f := range fields {
+				if f == "" || hasThai(f) {
+					t.Errorf("English field is empty or has Thai: %q", f)
+				}
+			}
+			if len(en.Actions) != len(th.Actions) {
+				t.Errorf("action count differs: en %d th %d", len(en.Actions), len(th.Actions))
+			}
+		})
+	}
+}
+
+func TestEvaluateEnglishWording(t *testing.T) {
+	st := Evaluate(func() Input { in := scenarioInput(at(21, 40), 11); in.Lang = domain.LangEN; return in }())
+	if st.HeadlineTH != "Water will reach your door in 40 minutes" {
+		t.Errorf("headline = %q", st.HeadlineTH)
+	}
+	for _, s := range []string{"Lat Phrao Canal has reached its bank (1.8 / 1.8 m).", "Up 40 cm in 2 hours.", "Rain today: 68 mm.", "11 reports near home"} {
+		if !strings.Contains(st.SummaryTH, s) {
+			t.Errorf("summary %q should contain %q", st.SummaryTH, s)
+		}
+	}
+	if got := st.Actions[0].TextTH; got != "Move your car to the Central Ladprao car park (1.2 km). The road stays dry for another 25 minutes." {
+		t.Errorf("first action = %q", got)
+	}
+}

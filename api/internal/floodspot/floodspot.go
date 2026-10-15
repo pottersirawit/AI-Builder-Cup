@@ -90,3 +90,10 @@ func (s Spot) ShortNameTH() string {
 	}
 	return strings.TrimSpace(name[:cut])
 }
+
+// ShortNameEN turns "Ratchadaphisek Rd (Criminal Court - Soi Suea Yai)" into
+// "Ratchadaphisek Rd" for headlines.
+func (s Spot) ShortNameEN() string {
+	name, _, _ := strings.Cut(s.NameEN, " (")
+	return strings.TrimSpace(name)
+}

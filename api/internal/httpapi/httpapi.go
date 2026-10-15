@@ -26,6 +26,7 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/resolve"
+	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 	"github.com/pottersirawit/fontokmai/api/internal/vision"
 )
@@ -78,6 +79,7 @@ func (s *Server) Handler() http.Handler {
 type reqCtx struct {
 	now  time.Time
 	prov planner.Providers
+	lang domain.Lang
 }
 
 func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) http.HandlerFunc {
@@ -91,12 +93,20 @@ func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) h
 		if demo {
 			prov = s.Scenario
 		}
-		h(w, r, reqCtx{now: c.Now(), prov: prov})
+		h(w, r, reqCtx{now: c.Now(), prov: prov, lang: domain.LangFromRequest(r)})
 	}
 }
 
 func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	writeJSON(w, http.StatusOK, map[string]any{"trips": s.Planner.Trips(rc.now)})
+	trips := s.Planner.Trips(rc.now)
+	if rc.lang == domain.LangEN {
+		localized := make([]domain.Trip, len(trips))
+		for i, t := range trips {
+			localized[i] = scenario.LocalizeTrip(t, rc.lang)
+		}
+		trips = localized
+	}
+	writeJSON(w, http.StatusOK, map[string]any{"trips": trips})
 }
 
 // places lists the saved places a question can name, and which one the user
@@ -110,6 +120,13 @@ func (s *Server) places(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	if places == nil {
 		places = []domain.SavedPlace{}
 	}
+	if rc.lang == domain.LangEN {
+		places = append([]domain.SavedPlace(nil), places...)
+		for i := range places {
+			places[i].LabelTH = places[i].LabelFor(rc.lang)
+			places[i].Place = scenario.LocalizePlace(places[i].Place, rc.lang)
+		}
+	}
 	writeJSON(w, http.StatusOK, map[string]any{"places": places, "current_place_id": current})
 }
 
@@ -119,7 +136,7 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
-	tripReq, err := req.TripRequest()
+	tripReq, err := req.TripRequestFor(rc.lang)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
@@ -135,7 +152,7 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	}
 	sources := []string{rc.prov.Weather.Name(), rc.prov.Routes.Name(), rc.prov.Canals.Name(), "BMA flood spots"}
 	if tripReq.Origin != nil {
-		sources = append([]string{"GPS ตำแหน่งปัจจุบัน"}, sources...)
+		sources = append([]string{rc.lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location")}, sources...)
 	}
 	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, sources)
 	var needs *agent.NeedsPlace
@@ -191,7 +208,7 @@ func (s *Server) createReport(w http.ResponseWriter, r *http.Request, rc reqCtx)
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	assessment, by := vision.Assess(r.Context(), s.Gemini, photo, mime)
+	assessment, by := vision.Assess(r.Context(), s.Gemini, photo, mime, rc.lang)
 	assessment.Lat, assessment.Lng, assessment.CreatedAt, assessment.GeneratedBy = lat, lng, rc.now, by
 	saved, err := rc.prov.Reports.Add(r.Context(), assessment)
 	if err != nil {
@@ -232,6 +249,9 @@ func (s *Server) listReports(w http.ResponseWriter, r *http.Request, rc reqCtx) 
 	}
 	if reps == nil {
 		reps = []domain.Report{}
+	}
+	for i := range reps {
+		reps[i] = scenario.LocalizeReport(reps[i], rc.lang)
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"reports": reps})
 }
@@ -281,7 +301,7 @@ func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	if given {
 		place := domain.Place{NameTH: r.URL.Query().Get("name_th"), Lat: at.Lat, Lng: at.Lng}
 		if place.NameTH == "" {
-			place.NameTH = "บ้าน"
+			place.NameTH = rc.lang.Pick("บ้าน", "Home")
 		}
 		if geo.HaversineM(at, s.Home.Place.Point()) > demoHomeM {
 			home = homestatus.Home{}
@@ -304,10 +324,12 @@ func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	writeJSON(w, http.StatusOK, homestatus.Evaluate(homestatus.Input{
-		Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: s.Planner.Spots, NearbyReports: len(nearby),
+	status := homestatus.Evaluate(homestatus.Input{
+		Lang: rc.lang, Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: s.Planner.Spots, NearbyReports: len(nearby),
 		CanalSource: rc.prov.Canals.Name(), WeatherSource: rc.prov.Weather.Name(),
-	}))
+	})
+	status.Place = scenario.LocalizePlace(status.Place, rc.lang)
+	writeJSON(w, http.StatusOK, status)
 }
 
 func (s *Server) searchPlaces(w http.ResponseWriter, r *http.Request) {
@@ -316,7 +338,7 @@ func (s *Server) searchPlaces(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, "q needs at least 2 characters")
 		return
 	}
-	found, err := s.Geocoder.Search(r.Context(), q)
+	found, err := s.Geocoder.Search(geocode.WithLang(r.Context(), domain.LangFromRequest(r)), q)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
 		return
@@ -336,7 +358,7 @@ func (s *Server) reversePlace(w http.ResponseWriter, r *http.Request) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	addr, err := s.Geocoder.Reverse(r.Context(), at)
+	addr, err := s.Geocoder.Reverse(geocode.WithLang(r.Context(), domain.LangFromRequest(r)), at)
 	if err != nil {
 		writeError(w, http.StatusBadGateway, err.Error())
 		return
@@ -355,6 +377,7 @@ func writeJSON(w http.ResponseWriter, status int, v any) {
 func writeError(w http.ResponseWriter, status int, msg string) {
 	writeJSON(w, status, map[string]string{"error": msg})
 }
+
 type IngestRequest struct {
 	UID       string              `json:"uid"`        // user ID for server-side state
 	Source    string              `json:"source"`     // calendar | gmail

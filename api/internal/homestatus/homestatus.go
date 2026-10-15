@@ -28,6 +28,8 @@ type Home struct {
 	FloodLevelM    float64 // canal stage at which water reaches the door
 	SafeParkingTH  string
 	SandbagPointTH string
+	SafeParkingEN  string
+	SandbagPointEN string
 }
 
 // CanalRadiusM and SpotRadiusM are how far a canal station or a BMA flood
@@ -39,6 +41,7 @@ const (
 )
 
 type Input struct {
+	Lang domain.Lang // language of the user-facing text; the zero value is Thai
 	Now  time.Time
 	Home Home
 	// Canals are stage readings in any order; the nearest within CanalRadiusM is used.
@@ -64,6 +67,7 @@ type Canal struct {
 type Spot struct {
 	ID                   string  `json:"id"`
 	NameTH               string  `json:"name_th"`
+	NameEN               string  `json:"-"`
 	Lat                  float64 `json:"lat"`
 	Lng                  float64 `json:"lng"`
 	DistanceM            int     `json:"distance_m"`
@@ -103,7 +107,7 @@ func Evaluate(in Input) Status {
 		InServiceArea: geo.InServiceArea(home),
 		RainTodayMM:   math.Round(rainTotalMM(in.Rain, in.Now)),
 		ReportsNearby: in.NearbyReports,
-		FloodSpots:    nearbySpots(in.Spots, home, peak),
+		FloodSpots:    nearbySpots(in.Spots, home, peak, in.Lang),
 	}
 	canal := nearestCanal(in.Canals, home)
 	if canal != nil {
@@ -118,16 +122,29 @@ func Evaluate(in Input) Status {
 	if len(st.FloodSpots) > 0 {
 		st.Sources = append(st.Sources, "BMA flood spots")
 	}
-	st.Sources = append(st.Sources, "รายงานผู้ใช้")
+	st.Sources = append(st.Sources, in.Lang.Pick("รายงานผู้ใช้", "Community reports"))
 	if in.NearbyReports > 0 && st.Level != Normal {
-		st.SummaryTH += fmt.Sprintf(" รายงานผู้ใช้ %d คนแถวบ้านในชั่วโมงที่ผ่านมา", in.NearbyReports)
+		st.SummaryTH += in.Lang.Pick(fmt.Sprintf(" รายงานผู้ใช้ %d คนแถวบ้านในชั่วโมงที่ผ่านมา", in.NearbyReports),
+			fmt.Sprintf(" %d %s near home in the last hour.", in.NearbyReports, plural(in.NearbyReports, "report", "reports")))
 	}
 	return st
 }
 
+func plural(n int, one, many string) string {
+	if n == 1 {
+		return one
+	}
+	return many
+}
+
 func evaluateCanal(st *Status, in Input, c domain.CanalReading) {
 	margin := math.Round((c.BankM-c.LevelM)*100) / 100
-	st.Canal = &Canal{NameTH: c.NameTH, LevelM: c.LevelM, BankM: c.BankM, RiseCM2h: c.RiseCM2h}
+	l := in.Lang
+	name := c.NameTH
+	if l == domain.LangEN && c.NameEN != "" {
+		name = c.NameEN
+	}
+	st.Canal = &Canal{NameTH: name, LevelM: c.LevelM, BankM: c.BankM, RiseCM2h: c.RiseCM2h}
 	switch {
 	case margin <= 0.1 || (margin <= 0.2 && c.RiseCM2h >= 30):
 		st.Level = Danger
@@ -144,42 +161,47 @@ func evaluateCanal(st *Status, in Input, c domain.CanalReading) {
 
 	rise := ""
 	if c.RiseCM2h >= 10 {
-		rise = fmt.Sprintf(" ขึ้น %.0f ซม. ใน 2 ชั่วโมง", c.RiseCM2h)
+		rise = l.Pick(fmt.Sprintf(" ขึ้น %.0f ซม. ใน 2 ชั่วโมง", c.RiseCM2h), fmt.Sprintf(" Up %.0f cm in 2 hours.", c.RiseCM2h))
 	}
 	switch st.Level {
 	case Danger:
-		st.HeadlineTH = fmt.Sprintf("%sล้นตลิ่งแล้ว", c.NameTH)
+		st.HeadlineTH = l.Pick(fmt.Sprintf("%sล้นตลิ่งแล้ว", name), fmt.Sprintf("%s has overflowed", name))
 		if st.MinutesToDoorstep != nil {
-			st.HeadlineTH = fmt.Sprintf("น้ำจะถึงหน้าบ้านใน %d นาที", *st.MinutesToDoorstep)
+			st.HeadlineTH = l.Pick(fmt.Sprintf("น้ำจะถึงหน้าบ้านใน %d นาที", *st.MinutesToDoorstep), fmt.Sprintf("Water will reach your door in %d minutes", *st.MinutesToDoorstep))
 		}
-		st.SummaryTH = fmt.Sprintf("%sขึ้นถึงตลิ่งแล้ว (%.1f / %.1f ม.)%s ฝนสะสมวันนี้ %.0f มม.", c.NameTH, c.LevelM, c.BankM, rise, st.RainTodayMM)
+		st.SummaryTH = l.Pick(fmt.Sprintf("%sขึ้นถึงตลิ่งแล้ว (%.1f / %.1f ม.)%s ฝนสะสมวันนี้ %.0f มม.", name, c.LevelM, c.BankM, rise, st.RainTodayMM),
+			fmt.Sprintf("%s has reached its bank (%.1f / %.1f m).%s Rain today: %.0f mm.", name, c.LevelM, c.BankM, rise, st.RainTodayMM))
 		dry := 20
 		if st.MinutesToDoorstep != nil {
 			dry = max(5, *st.MinutesToDoorstep-15)
 		}
 		st.Actions = []Action{
-			{1, fmt.Sprintf("ย้ายรถไปจอดที่%s ถนนยังแห้งอีก %d นาที", in.Home.parkingTH(), dry)},
-			{2, "ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม."},
-			{3, "เตรียมกระสอบทรายหน้าประตู จุดแจก: " + in.Home.sandbagTH()},
+			{1, l.Pick(fmt.Sprintf("ย้ายรถไปจอดที่%s ถนนยังแห้งอีก %d นาที", in.Home.parkingTH(), dry),
+				fmt.Sprintf("Move your car to %s. The road stays dry for another %d minutes.", in.Home.parking(l), dry))},
+			{2, l.Pick("ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม.", "Lift power strips and ground-floor items above 50 cm.")},
+			{3, l.Pick("เตรียมกระสอบทรายหน้าประตู จุดแจก: "+in.Home.sandbagTH(), "Set sandbags at the door. Pick-up point: "+in.Home.sandbag(l))},
 		}
 	case Watch:
-		st.HeadlineTH = "คืนนี้เสี่ยงน้ำท่วม: ปานกลาง"
-		st.SummaryTH = fmt.Sprintf("%s %.1f ม. ต่ำกว่าตลิ่ง %.1f ม.%s ฝนสะสมวันนี้ %.0f มม.", c.NameTH, c.LevelM, margin, rise, st.RainTodayMM)
+		st.HeadlineTH = l.Pick("คืนนี้เสี่ยงน้ำท่วม: ปานกลาง", "Moderate flood risk tonight")
+		st.SummaryTH = l.Pick(fmt.Sprintf("%s %.1f ม. ต่ำกว่าตลิ่ง %.1f ม.%s ฝนสะสมวันนี้ %.0f มม.", name, c.LevelM, margin, rise, st.RainTodayMM),
+			fmt.Sprintf("%s is at %.1f m, %.1f m below its bank.%s Rain today: %.0f mm.", name, c.LevelM, margin, rise, st.RainTodayMM))
 		st.Actions = []Action{
-			{1, "ชาร์จโทรศัพท์และพาวเวอร์แบงก์ให้เต็ม"},
-			{2, "ถ้าฝนตกต่อเกิน 1 ชั่วโมง ย้ายรถไปที่สูงก่อน"},
-			{3, "ยกของที่เสียหายง่ายขึ้นจากพื้นชั้นล่าง"},
+			{1, l.Pick("ชาร์จโทรศัพท์และพาวเวอร์แบงก์ให้เต็ม", "Charge your phone and power bank.")},
+			{2, l.Pick("ถ้าฝนตกต่อเกิน 1 ชั่วโมง ย้ายรถไปที่สูงก่อน", "If the rain lasts over an hour, move your car to higher ground.")},
+			{3, l.Pick("ยกของที่เสียหายง่ายขึ้นจากพื้นชั้นล่าง", "Lift fragile items off the ground floor.")},
 		}
 	default:
-		st.HeadlineTH = "บ้านปลอดภัย ระดับคลองปกติ"
-		st.SummaryTH = fmt.Sprintf("%s %.1f ม. ต่ำกว่าตลิ่ง %.1f ม.", c.NameTH, c.LevelM, margin)
-		st.Actions = []Action{{1, "ยังไม่ต้องทำอะไร ฝนตกไหมจะเตือนเมื่อคลองขึ้นเร็ว"}}
+		st.HeadlineTH = l.Pick("บ้านปลอดภัย ระดับคลองปกติ", "Home is safe, canal level is normal")
+		st.SummaryTH = l.Pick(fmt.Sprintf("%s %.1f ม. ต่ำกว่าตลิ่ง %.1f ม.", name, c.LevelM, margin),
+			fmt.Sprintf("%s is at %.1f m, %.1f m below its bank.", name, c.LevelM, margin))
+		st.Actions = []Action{{1, l.Pick("ยังไม่ต้องทำอะไร ฝนตกไหมจะเตือนเมื่อคลองขึ้นเร็ว", "Nothing to do yet. Fon Tok Mai will alert you if the canal rises fast.")}}
 	}
 }
 
 // evaluateRain is the honest fallback without a canal station: street water
 // from rain at the nearby BMA flood spots, and what neighbours report.
 func evaluateRain(st *Status, in Input, peak float64) {
+	l := in.Lang
 	deepest := 0
 	for _, s := range st.FloodSpots {
 		deepest = max(deepest, s.ExpectedDepthCM)
@@ -196,51 +218,79 @@ func evaluateRain(st *Status, in Input, peak float64) {
 	var parts []string
 	switch {
 	case !st.InServiceArea:
-		parts = append(parts, "อยู่นอกพื้นที่ที่แอปรองรับ ประเมินจากฝนอย่างเดียว ไม่มีข้อมูลคลองและจุดน้ำท่วม")
+		parts = append(parts, l.Pick("อยู่นอกพื้นที่ที่แอปรองรับ ประเมินจากฝนอย่างเดียว ไม่มีข้อมูลคลองและจุดน้ำท่วม",
+			"This is outside the area the app covers. The estimate uses rain only, with no canal or flood spot data."))
 	case len(st.FloodSpots) > 0:
-		parts = append(parts, fmt.Sprintf("ไม่มีสถานีวัดระดับคลองใกล้บ้าน ประเมินจากฝนและจุดน้ำท่วม กทม. %d จุดในรัศมี 2 กม.", len(st.FloodSpots)))
+		parts = append(parts, l.Pick(fmt.Sprintf("ไม่มีสถานีวัดระดับคลองใกล้บ้าน ประเมินจากฝนและจุดน้ำท่วม กทม. %d จุดในรัศมี 2 กม.", len(st.FloodSpots)),
+			fmt.Sprintf("No canal gauge near home. The estimate uses rain and %d BMA flood %s within 2 km.", len(st.FloodSpots), plural(len(st.FloodSpots), "spot", "spots"))))
 	default:
-		parts = append(parts, "ไม่มีสถานีวัดระดับคลองใกล้บ้านและไม่มีจุดน้ำท่วมซ้ำซากในรัศมี 2 กม. ประเมินจากฝนอย่างเดียว")
+		parts = append(parts, l.Pick("ไม่มีสถานีวัดระดับคลองใกล้บ้านและไม่มีจุดน้ำท่วมซ้ำซากในรัศมี 2 กม. ประเมินจากฝนอย่างเดียว",
+			"No canal gauge or recurring flood spot within 2 km of home. The estimate uses rain only."))
 	}
-	parts = append(parts, fmt.Sprintf("ฝนสะสมวันนี้ %.0f มม.", st.RainTodayMM))
+	parts = append(parts, l.Pick(fmt.Sprintf("ฝนสะสมวันนี้ %.0f มม.", st.RainTodayMM), fmt.Sprintf("Rain today: %.0f mm.", st.RainTodayMM)))
 	if peak >= 1 {
-		parts = append(parts, fmt.Sprintf("ฝนหนักสุด %.0f มม./ชม. ใน 2 ชั่วโมงนี้", peak))
+		parts = append(parts, l.Pick(fmt.Sprintf("ฝนหนักสุด %.0f มม./ชม. ใน 2 ชั่วโมงนี้", peak), fmt.Sprintf("Heaviest rain %.0f mm/h in the next 2 hours.", peak)))
 	}
 	worst := ""
 	for _, s := range st.FloodSpots {
 		if s.ExpectedDepthCM == deepest && deepest > 0 {
-			worst = floodspot.Spot{NameTH: s.NameTH}.ShortNameTH()
-			parts = append(parts, fmt.Sprintf("%s อาจมีน้ำขัง %d ซม.", worst, deepest))
+			if l == domain.LangEN && s.NameEN != "" {
+				worst = floodspot.Spot{NameEN: s.NameEN}.ShortNameEN()
+				parts = append(parts, fmt.Sprintf("Water may pool on %s, up to %d cm.", worst, deepest))
+			} else {
+				worst = floodspot.Spot{NameTH: s.NameTH}.ShortNameTH()
+				parts = append(parts, l.Pick(fmt.Sprintf("%s อาจมีน้ำขัง %d ซม.", worst, deepest), fmt.Sprintf("Water may pool on %s, up to %d cm.", worst, deepest)))
+			}
 			break
 		}
 	}
 	st.SummaryTH = strings.Join(parts, " ")
 
-	avoid := "ถนนที่น้ำขังบ่อยแถวบ้าน"
+	avoid := l.Pick("ถนนที่น้ำขังบ่อยแถวบ้าน", "streets near home that often flood")
 	if worst != "" {
-		avoid = "ถนน" + worst
+		avoid = l.Pick("ถนน"+worst, worst)
 	}
 	switch st.Level {
 	case Danger:
-		st.HeadlineTH = "ถนนแถวบ้านน้ำท่วม"
+		st.HeadlineTH = l.Pick("ถนนแถวบ้านน้ำท่วม", "Streets near home are flooded")
 		if deepest > 0 {
-			st.HeadlineTH = fmt.Sprintf("น้ำท่วมถนนแถวบ้านได้ถึง %d ซม.", deepest)
+			st.HeadlineTH = l.Pick(fmt.Sprintf("น้ำท่วมถนนแถวบ้านได้ถึง %d ซม.", deepest), fmt.Sprintf("Streets near home may flood up to %d cm", deepest))
 		}
 		st.Actions = []Action{
-			{1, "ย้ายรถไปจอดที่" + in.Home.parkingTH() + " ก่อนน้ำขึ้น"},
-			{2, "เลี่ยง" + avoid + " ถ้าต้องออกไปข้างนอก"},
-			{3, "ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม."},
+			{1, l.Pick("ย้ายรถไปจอดที่"+in.Home.parkingTH()+" ก่อนน้ำขึ้น", "Move your car to "+in.Home.parking(l)+" before the water rises.")},
+			{2, l.Pick("เลี่ยง"+avoid+" ถ้าต้องออกไปข้างนอก", "Avoid "+avoid+" if you have to go out.")},
+			{3, l.Pick("ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม.", "Lift power strips and ground-floor items above 50 cm.")},
 		}
 	case Watch:
-		st.HeadlineTH = "เฝ้าระวังน้ำขังแถวบ้าน"
+		st.HeadlineTH = l.Pick("เฝ้าระวังน้ำขังแถวบ้าน", "Watch for pooling water near home")
 		st.Actions = []Action{
-			{1, "ชาร์จโทรศัพท์และพาวเวอร์แบงก์ให้เต็ม"},
-			{2, "ถ้าฝนตกต่อเกิน 1 ชั่วโมง ย้ายรถไปที่สูงและเลี่ยง" + avoid},
+			{1, l.Pick("ชาร์จโทรศัพท์และพาวเวอร์แบงก์ให้เต็ม", "Charge your phone and power bank.")},
+			{2, l.Pick("ถ้าฝนตกต่อเกิน 1 ชั่วโมง ย้ายรถไปที่สูงและเลี่ยง"+avoid, "If the rain lasts over an hour, move your car to higher ground and avoid "+avoid+".")},
 		}
 	default:
-		st.HeadlineTH = "แถวบ้านยังไม่มีน้ำท่วม"
-		st.Actions = []Action{{1, "ยังไม่ต้องทำอะไร ฝนตกไหมจะเตือนเมื่อฝนหนักหรือมีน้ำขังแถวบ้าน"}}
+		st.HeadlineTH = l.Pick("แถวบ้านยังไม่มีน้ำท่วม", "No flooding near home")
+		st.Actions = []Action{{1, l.Pick("ยังไม่ต้องทำอะไร ฝนตกไหมจะเตือนเมื่อฝนหนักหรือมีน้ำขังแถวบ้าน", "Nothing to do yet. Fon Tok Mai will alert you to heavy rain or pooling water near home.")}}
 	}
+}
+
+func (h Home) parking(l domain.Lang) string {
+	if l == domain.LangEN {
+		if h.SafeParkingEN != "" {
+			return h.SafeParkingEN
+		}
+		return "a car park or high ground near home"
+	}
+	return h.parkingTH()
+}
+
+func (h Home) sandbag(l domain.Lang) string {
+	if l == domain.LangEN {
+		if h.SandbagPointEN != "" {
+			return h.SandbagPointEN
+		}
+		return "your district office"
+	}
+	return h.sandbagTH()
 }
 
 func (h Home) parkingTH() string {
@@ -268,14 +318,18 @@ func nearestCanal(canals []domain.CanalReading, home domain.LatLng) *domain.Cana
 	return best
 }
 
-func nearbySpots(spots []floodspot.Spot, home domain.LatLng, peakMMPerHr float64) []Spot {
+func nearbySpots(spots []floodspot.Spot, home domain.LatLng, peakMMPerHr float64, l domain.Lang) []Spot {
 	out := []Spot{}
 	for _, s := range spots {
 		d := geo.HaversineM(home, s.Point())
 		if d > SpotRadiusM {
 			continue
 		}
-		out = append(out, Spot{ID: s.ID, NameTH: s.NameTH, Lat: s.Lat, Lng: s.Lng, DistanceM: int(math.Round(d)),
+		name := s.NameTH
+		if l == domain.LangEN && s.NameEN != "" {
+			name = s.NameEN
+		}
+		out = append(out, Spot{ID: s.ID, NameTH: name, NameEN: s.NameEN, Lat: s.Lat, Lng: s.Lng, DistanceM: int(math.Round(d)),
 			ExpectedDepthCM: int(math.Round(floodspot.InstantDepthCM(s, peakMMPerHr))), HistoricalMaxDepthCM: int(math.Round(s.MaxDepthCM))})
 	}
 	sort.Slice(out, func(i, j int) bool { return out[i].DistanceM < out[j].DistanceM })

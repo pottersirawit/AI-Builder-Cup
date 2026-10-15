@@ -46,6 +46,18 @@ type Geocoder interface {
 	Reverse(ctx context.Context, at domain.LatLng) (Address, error)
 }
 
+type langKey struct{}
+
+// WithLang asks a Geocoder to answer in lang. Thai is the default.
+func WithLang(ctx context.Context, l domain.Lang) context.Context {
+	return context.WithValue(ctx, langKey{}, l)
+}
+
+func langOf(ctx context.Context) domain.Lang {
+	l, _ := ctx.Value(langKey{}).(domain.Lang)
+	return l
+}
+
 var ErrNotFound = errors.New("no place found")
 
 // maxResults caps a search; the app shows one screen of choices.
@@ -135,7 +147,7 @@ func score(l Landmark, q string, words []string) int {
 	return 0
 }
 
-func (l Local) Search(_ context.Context, q string) ([]Place, error) {
+func (l Local) Search(ctx context.Context, q string) ([]Place, error) {
 	nq := norm(q)
 	if nq == "" {
 		return []Place{}, nil
@@ -169,7 +181,11 @@ func (l Local) Search(_ context.Context, q string) ([]Place, error) {
 			continue
 		}
 		seen[h.l.NameTH] = true
-		out = append(out, Place{NameTH: h.l.NameTH, NameEN: h.l.NameEN, AddressTH: h.l.AddressTH, Lat: h.l.Lat, Lng: h.l.Lng, Source: "local"})
+		name := h.l.NameTH
+		if langOf(ctx) == domain.LangEN && h.l.NameEN != "" {
+			name = h.l.NameEN
+		}
+		out = append(out, Place{NameTH: name, NameEN: h.l.NameEN, AddressTH: h.l.AddressTH, Lat: h.l.Lat, Lng: h.l.Lng, Source: "local"})
 		if len(out) == maxResults {
 			break
 		}
@@ -183,7 +199,7 @@ const nearM = 150
 
 // Reverse names a point after the nearest landmark (districts are too coarse
 // to name a doorstep) and gives that landmark's address.
-func (l Local) Reverse(_ context.Context, at domain.LatLng) (Address, error) {
+func (l Local) Reverse(ctx context.Context, at domain.LatLng) (Address, error) {
 	best, bestD := -1, math.Inf(1)
 	for i, lm := range l.Landmarks {
 		if lm.Category == "district" {
@@ -198,7 +214,12 @@ func (l Local) Reverse(_ context.Context, at domain.LatLng) (Address, error) {
 	}
 	lm, dist := l.Landmarks[best], int(math.Round(bestD))
 	name := lm.NameTH
-	if dist > nearM {
+	if langOf(ctx) == domain.LangEN && lm.NameEN != "" {
+		name = lm.NameEN
+		if dist > nearM {
+			name = "Near " + lm.NameEN
+		}
+	} else if dist > nearM {
 		name = "ใกล้" + lm.NameTH
 	}
 	return Address{NameTH: name, AddressTH: lm.AddressTH, Lat: at.Lat, Lng: at.Lng,

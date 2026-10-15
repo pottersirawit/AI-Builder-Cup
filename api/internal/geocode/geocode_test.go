@@ -203,3 +203,21 @@ func TestFallbackUsesLocalWhenGoogleFailsOrFindsNothing(t *testing.T) {
 		}
 	}
 }
+
+func TestLocalEnglish(t *testing.T) {
+	l := Local{Landmarks: landmarks(t)}
+	ctx := WithLang(context.Background(), domain.LangEN)
+	found, _ := l.Search(ctx, "พารากอน")
+	if len(found) == 0 || found[0].NameTH != "Siam Paragon" {
+		t.Fatalf("search = %+v", found)
+	}
+	th, _ := l.Search(context.Background(), "พารากอน")
+	if th[0].NameTH != "สยามพารากอน" {
+		t.Fatalf("Thai search changed: %+v", th[0])
+	}
+	// far from any landmark the name says "Near ..."
+	far, err := l.Reverse(ctx, domain.LatLng{Lat: 13.7441, Lng: 100.5500})
+	if err != nil || domain.HasThai(far.NameTH) || !strings.HasPrefix(far.NameTH, "Near ") {
+		t.Fatalf("reverse = %+v %v", far, err)
+	}
+}

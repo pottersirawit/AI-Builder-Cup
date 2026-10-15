@@ -48,23 +48,37 @@ var (
 		domain.KindHome: {"บ้าน", "home"},
 		domain.KindWork: {"ที่ทำงาน", "ทำงาน", "ออฟฟิศ", "office", "work"},
 	}
+	kindLabelsEN = map[string]string{domain.KindHome: "Home", domain.KindWork: "Work"}
 )
+
+func kindLabelFor(kind string, lang domain.Lang) string {
+	if lang == domain.LangEN {
+		return kindLabelsEN[kind]
+	}
+	return kindLabels[kind]
+}
 
 func validPoint(p domain.Place) bool {
 	return (p.Lat != 0 || p.Lng != 0) && p.Lat >= -90 && p.Lat <= 90 && p.Lng >= -180 && p.Lng <= 180
 }
 
-// TripRequest validates the request's places and gives each saved place the
+// TripRequest is TripRequestFor in Thai.
+func (r Request) TripRequest() (planner.TripRequest, error) {
+	return r.TripRequestFor(domain.LangTH)
+}
+
+// TripRequestFor validates the request's places and gives each saved place the
 // words a question can name it by: its label, its name (without the
 // "(district)" suffix) and, for home and work, the usual words for them.
-func (r Request) TripRequest() (planner.TripRequest, error) {
-	tr := planner.TripRequest{TripID: r.TripID}
+// Default labels are written in lang.
+func (r Request) TripRequestFor(lang domain.Lang) (planner.TripRequest, error) {
+	tr := planner.TripRequest{TripID: r.TripID, Lang: lang}
 	for _, end := range []struct {
 		p    *domain.Place
 		dst  **domain.Place
 		name string
 		def  string
-	}{{r.Origin, &tr.Origin, "origin", "ตำแหน่งปัจจุบัน"}, {r.Destination, &tr.Destination, "destination", "ปลายทาง"}} {
+	}{{r.Origin, &tr.Origin, "origin", lang.Pick("ตำแหน่งปัจจุบัน", "Current location")}, {r.Destination, &tr.Destination, "destination", lang.Pick("ปลายทาง", "Destination")}} {
 		if end.p == nil {
 			continue
 		}
@@ -93,7 +107,7 @@ func (r Request) TripRequest() (planner.TripRequest, error) {
 			return tr, fmt.Errorf("%w: each place needs id, lat and lng", ErrBadRequest)
 		}
 		if p.LabelTH == "" {
-			p.LabelTH = kindLabels[p.Kind]
+			p.LabelTH = kindLabelFor(p.Kind, lang)
 		}
 		if p.LabelTH == "" {
 			p.LabelTH = p.NameTH
@@ -170,7 +184,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 					mode = s.Trip.Mode
 				}
 			case intent.PlaceKind != "":
-				return Response{}, &NeedsPlace{QueryTH: kindLabels[intent.PlaceKind], Kind: intent.PlaceKind}
+				return Response{}, &NeedsPlace{QueryTH: kindLabelFor(intent.PlaceKind, s.Lang), Kind: intent.PlaceKind}
 			case intent.PlaceQuery != "":
 				return Response{}, &NeedsPlace{QueryTH: intent.PlaceQuery}
 			}
@@ -185,7 +199,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		if by == "fallback" {
 			tool = "parse_question_fallback"
 		}
-		preface = append(preface, planner.Call{Tool: tool, SummaryTH: intent.SummaryTH()})
+		preface = append(preface, planner.Call{Tool: tool, SummaryTH: intent.Summary(s.Lang)})
 	}
 	if depart.Before(s.Now) {
 		depart = s.Now
@@ -255,6 +269,19 @@ const systemPrompt = `คุณคือ "ฝนตกไหม" ผู้ช่
  "explanation":{"reason_why_th":"...","factors_th":["..."],"route_advice_th":"...","avoid_spots_th":["..."]},
  "reasoning":[{"tool":"ชื่อเครื่องมือที่เรียก","summary_th":"สิ่งที่ได้จากเครื่องมือนั้นใน 1 ประโยค"}]}`
 
+// englishPrompt is appended to the system prompt for English readers.
+const englishPrompt = `
+
+LANGUAGE: the user reads English. Write every text field (headline_th, summary_th, explanation.reason_why_th, explanation.factors_th, explanation.route_advice_th and reasoning[].summary_th) in short, friendly English instead of Thai. Keep the JSON keys and schema exactly as above, including the _th suffixes, and keep every rule above: headline_th at most 30 characters (for example "Leave by 16:45"), times as HH:MM, never contradict evaluate_departure. Tool results may be in Thai; translate what you use. Names of places and roads from the data may stay as they are.`
+
+// systemPromptFor is the system prompt in lang; the Thai one is unchanged.
+func systemPromptFor(lang domain.Lang) string {
+	if lang == domain.LangEN {
+		return systemPrompt + englishPrompt
+	}
+	return systemPrompt
+}
+
 func toolDeclarations() []*genai.Tool {
 	var decls []*genai.FunctionDeclaration
 	for _, t := range planner.Tools {
@@ -296,7 +323,7 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
 	defer cancel()
 	cfg := &genai.GenerateContentConfig{
-		SystemInstruction: genai.NewContentFromText(systemPrompt, genai.RoleUser),
+		SystemInstruction: genai.NewContentFromText(systemPromptFor(s.Lang), genai.RoleUser),
 		Tools:             toolDeclarations(),
 		Temperature:       temperature(0.2),
 	}
@@ -304,6 +331,9 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 		s.Now.Format(time.RFC3339), s.Trip.ID, s.Trip.TitleTH, s.Trip.Origin.NameTH, s.Trip.Destination.NameTH, depart.Format("15:04"), mode, formatRiskSummary(baseline, depart, mode))
 	if question != "" {
 		user += fmt.Sprintf("\nคำถามของผู้ใช้: %q", question)
+	}
+	if s.Lang == domain.LangEN {
+		user += "\nAnswer in English."
 	}
 	contents := []*genai.Content{genai.NewContentFromText(user, genai.RoleUser)}
 	for turn := 0; turn < maxAgentTurns; turn++ {
@@ -383,7 +413,7 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 	}
 	if len(invented) > 0 {
 		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailTool,
-			SummaryTH: "เวลา " + strings.Join(invented, ", ") + " ไม่ตรงกับข้อมูล จึงใช้ข้อความจากระบบคำนวณแทน"})
+			SummaryTH: guardrailSummary(s.Lang, invented)})
 	}
 }
 
@@ -419,4 +449,12 @@ func groundTimes(resp *Response, baseline decision.Result, s *planner.Session) [
 		slog.Warn("gemini quoted times not in tool data, using engine text", "times", invented)
 	}
 	return invented
+}
+
+func guardrailSummary(lang domain.Lang, times []string) string {
+	list := strings.Join(times, ", ")
+	if lang == domain.LangEN {
+		return "The time " + list + " does not match the data, so the calculation engine's text was used instead"
+	}
+	return "เวลา " + list + " ไม่ตรงกับข้อมูล จึงใช้ข้อความจากระบบคำนวณแทน"
 }

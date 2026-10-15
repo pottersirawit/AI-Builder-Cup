@@ -16,8 +16,8 @@ import (
 )
 
 var (
-	ErrNotATrip       = errors.New("payload is not a trip")
-	ErrMissingOrigin  = errors.New("origin location required to plan trip")
+	ErrNotATrip      = errors.New("payload is not a trip")
+	ErrMissingOrigin = errors.New("origin location required to plan trip")
 )
 
 // NeedsPlace signals that the destination could not be matched or geocoded automatically.
@@ -38,9 +38,22 @@ var defaultBangkokOrigin = domain.Place{
 	Lng:    100.5341,
 }
 
-// Trip resolves an extracted payload into a runnable domain.Trip.
+// Trip is TripFor in Thai.
 func Trip(
 	ctx context.Context,
+	p extract.Payload,
+	currentOrigin *domain.Place,
+	savedPlaces []domain.SavedPlace,
+	geo geocode.Geocoder,
+) (domain.Trip, *NeedsPlace, error) {
+	return TripFor(ctx, domain.LangTH, p, currentOrigin, savedPlaces, geo)
+}
+
+// TripFor resolves an extracted payload into a runnable domain.Trip, writing
+// the titles and prompts it makes up in lang.
+func TripFor(
+	ctx context.Context,
+	lang domain.Lang,
 	p extract.Payload,
 	currentOrigin *domain.Place,
 	savedPlaces []domain.SavedPlace,
@@ -55,7 +68,7 @@ func Trip(
 		destText = strings.TrimSpace(p.TitleTH)
 	}
 	if destText == "" {
-		return domain.Trip{}, &NeedsPlace{QueryTH: "ระบุสถานที่"}, nil
+		return domain.Trip{}, &NeedsPlace{QueryTH: lang.Pick("ระบุสถานที่", "Choose a place")}, nil
 	}
 
 	// 1. Try matching against user's saved places
@@ -103,6 +116,7 @@ func Trip(
 
 	// 3. Determine Origin
 	origin := defaultBangkokOrigin
+	origin.NameTH = lang.Pick(origin.NameTH, "Current location")
 	if currentOrigin != nil {
 		origin = *currentOrigin
 	} else {
@@ -123,7 +137,7 @@ func Trip(
 	tripID := generateTripID(p.Source, p.SourceRef, origin, *destPlace)
 	title := p.TitleTH
 	if title == "" {
-		title = "ไป" + destPlace.NameTH
+		title = lang.Pick("ไป", "Go to ") + destPlace.NameTH
 	}
 
 	trip := domain.Trip{

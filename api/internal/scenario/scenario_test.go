@@ -155,3 +155,28 @@ func TestWhereabouts(t *testing.T) {
 		}
 	}
 }
+
+func TestEnglishText(t *testing.T) {
+	for _, p := range Places {
+		if en := LocalizePlace(p.Place, domain.LangEN); domain.HasThai(en.NameTH) {
+			t.Errorf("place %q has no English name", p.NameTH)
+		}
+		if domain.HasThai(Text(p.LabelTH, domain.LangEN)) {
+			t.Errorf("label %q has no English text", p.LabelTH)
+		}
+	}
+	for _, tr := range Trips(time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok)) {
+		en := LocalizeTrip(tr, domain.LangEN)
+		if domain.HasThai(en.TitleTH) || domain.HasThai(en.Origin.NameTH) || domain.HasThai(en.Destination.NameTH) {
+			t.Errorf("trip %+v has Thai text", en)
+		}
+	}
+	for _, r := range append(SeedReports(), HeroAssessment()) {
+		if domain.HasThai(LocalizeReport(r, domain.LangEN).DescriptionTH) {
+			t.Errorf("description %q has no English text", r.DescriptionTH)
+		}
+	}
+	if Text("บ้าน", domain.LangTH) != "บ้าน" || Text("ที่ใครไม่รู้", domain.LangEN) != "ที่ใครไม่รู้" {
+		t.Error("Thai and unknown text must pass through unchanged")
+	}
+}
