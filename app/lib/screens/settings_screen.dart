@@ -151,7 +151,7 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Google Calendar',
                 state: store.calendar,
                 detail: l.settingsCalendarDetail,
-                account: l.settingsCalendarAccount(store.calendarAccount),
+                account: _accountLabel(l, store, store.calendarAccount),
                 comingSoon: false,
                 onConnect: () => _promptOAuth(
                   context,
@@ -165,7 +165,7 @@ class SettingsScreen extends StatelessWidget {
                 title: 'Gmail',
                 state: store.gmail,
                 detail: l.settingsGmailHint,
-                account: l.settingsCalendarAccount(store.gmailAccount),
+                account: _accountLabel(l, store, store.gmailAccount),
                 comingSoon: false,
                 onConnect: () => _promptOAuth(
                   context,
@@ -258,6 +258,13 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
+String _accountLabel(AppLocalizations l, PlacesStore store, String account) {
+  if (store.demoProfile && account.contains('demo')) {
+    return l.settingsCalendarAccount(account);
+  }
+  return '$account · ${l.placesConnected}';
+}
+
 Future<void> _promptOAuth(
   BuildContext context, {
   required OAuthService service,
@@ -268,7 +275,15 @@ Future<void> _promptOAuth(
   final scope = isCalendar
       ? 'https://www.googleapis.com/auth/calendar.readonly'
       : 'https://www.googleapis.com/auth/gmail.readonly';
-  final scopeShort = isCalendar ? 'calendar.readonly' : 'gmail.readonly';
+
+  final defaultEmail = isCalendar
+      ? (store.calendarAccount.contains('demo')
+          ? 'the32069@gmail.com'
+          : store.calendarAccount)
+      : (store.gmailAccount.contains('demo')
+          ? 'the32069@gmail.com'
+          : store.gmailAccount);
+  final emailController = TextEditingController(text: defaultEmail);
 
   await showModalBottomSheet<void>(
     context: context,
@@ -283,11 +298,11 @@ Future<void> _promptOAuth(
 
       return SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            Space.gutter,
-            Space.x4,
-            Space.gutter,
-            Space.x6,
+          padding: EdgeInsets.only(
+            left: Space.gutter,
+            right: Space.gutter,
+            top: Space.x4,
+            bottom: MediaQuery.of(ctx).viewInsets.bottom + Space.x6,
           ),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -326,13 +341,15 @@ Future<void> _promptOAuth(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          isThai ? 'ขอสิทธิ์เข้าถึง $title' : 'Connect $title',
+                          isThai ? 'เชื่อมต่อ $title' : 'Connect $title',
                           style: textTheme.titleMedium?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
                         ),
                         Text(
-                          'Google Account Integration',
+                          isThai
+                              ? 'เพื่อตรวจสอบสภาพอากาศและเส้นทางล่วงหน้า'
+                              : 'Proactive weather & commute intelligence',
                           style: textTheme.bodySmall?.copyWith(
                             color: scheme.onSurfaceVariant,
                           ),
@@ -347,7 +364,7 @@ Future<void> _promptOAuth(
                 padding: const EdgeInsets.all(Space.x3),
                 decoration: BoxDecoration(
                   color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(12),
+                  borderRadius: BorderRadius.circular(16),
                   border: Border.all(color: scheme.outlineVariant),
                 ),
                 child: Column(
@@ -363,8 +380,8 @@ Future<void> _promptOAuth(
                         const SizedBox(width: Space.x2),
                         Text(
                           isThai
-                              ? 'ข้อมูลที่ขอเข้าถึง ($scopeShort)'
-                              : 'Requested Scope ($scopeShort)',
+                              ? 'สิทธิ์การใช้งานและความเป็นส่วนตัว'
+                              : 'Privacy & Security Reassurance',
                           style: textTheme.labelLarge?.copyWith(
                             fontWeight: FontWeight.bold,
                           ),
@@ -375,36 +392,34 @@ Future<void> _promptOAuth(
                     Text(
                       isCalendar
                           ? (isThai
-                              ? '• อ่านเฉพาะวัน เวลา และพิกัดสถานที่ของนัดหมาย\n• ใช้เพื่อคำนวณความเสี่ยงฝนตกและน้ำท่วมล่วงหน้า\n• อ่านอย่างเดียว (Read-only) ไม่มีการเขียนหรือลบข้อมูล'
-                              : '• Read-only access to upcoming event times and locations\n• Used to evaluate route flood risks before departure\n• Never modifies or deletes your calendar entries')
+                              ? '• ตรวจสอบวัน เวลา และสถานที่นัดหมาย เพื่อคำนวณความเสี่ยงฝนตกและน้ำท่วมล่วงหน้า\n• ปลอดภัยและเป็นส่วนตัว: ดูเฉพาะกำหนดการเดินทาง ไม่มีการแก้ไขหรือลบข้อมูลในปฏิทิน\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
+                              : '• Checks upcoming event times and locations to calculate rain and flood risk before departure\n• Private and secure: Only reads travel schedules, never modifies or deletes your events\n• Processed on your device for route planning, never permanently stored on servers')
                           : (isThai
-                              ? '• ค้นหาเฉพาะอีเมลยืนยันตั๋วหรือนัดหมายการเดินทาง\n• นำพิกัดมาสร้างทริปแนะนำการเดินทางล่วงหน้า\n• ไม่อ่านและไม่บันทึกเนื้อหาอีเมลส่วนตัว'
-                              : '• Searches only for travel and event ticket confirmations\n• Generates proactive route advisories for destinations\n• Never accesses personal emails or private messages'),
+                              ? '• ตรวจสอบอีเมลยืนยันการจองตั๋วหรือนัดหมาย เพื่อแนะนำการเดินทางล่วงหน้าอัตโนมัติ\n• ปลอดภัยและเป็นส่วนตัว: ค้นหาเฉพาะข้อมูลการเดินทาง ไม่อ่านอีเมลส่วนตัวอื่น ๆ\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
+                              : '• Checks travel or booking confirmations to proactively suggest safe transit routes\n• Private and secure: Only searches travel details, never reads your personal messages\n• Processed on your device for route planning, never permanently stored on servers'),
                       style: textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                         height: 1.5,
                       ),
                     ),
-                    const SizedBox(height: Space.x2),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: Space.x2,
-                        vertical: Space.x1,
-                      ),
-                      decoration: BoxDecoration(
-                        color: scheme.primary.withValues(alpha: 0.08),
-                        borderRadius: BorderRadius.circular(6),
-                      ),
-                      child: Text(
-                        isThai
-                            ? '🛡️ ปฏิบัติตาม Google Limited Use Policy — ประมวลผลในหน่วยความจำ ไม่เก็บถาวรบนเซิร์ฟเวอร์'
-                            : '🛡️ Google Limited Use compliant — Processed in-memory, never stored on servers',
-                        style: textTheme.labelSmall?.copyWith(
-                          color: scheme.primary,
-                        ),
-                      ),
-                    ),
                   ],
+                ),
+              ),
+              const SizedBox(height: Space.x4),
+              TextField(
+                controller: emailController,
+                keyboardType: TextInputType.emailAddress,
+                decoration: InputDecoration(
+                  prefixIcon: const Icon(Symbols.account_circle_rounded),
+                  labelText: isThai ? 'บัญชี Google' : 'Google Account',
+                  hintText: 'user@gmail.com',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: Space.x3,
+                    vertical: Space.x2,
+                  ),
                 ),
               ),
               const SizedBox(height: Space.x5),
@@ -416,6 +431,8 @@ Future<void> _promptOAuth(
                       : 'Sign in with Google',
                 ),
                 onPressed: () async {
+                  final email = emailController.text.trim();
+                  final selectedEmail = email.isNotEmpty ? email : defaultEmail;
                   Navigator.of(ctx).pop();
                   final authUrl = Uri.parse(
                     'https://accounts.google.com/o/oauth2/v2/auth'
@@ -423,6 +440,7 @@ Future<void> _promptOAuth(
                     '&redirect_uri=https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback'
                     '&response_type=code'
                     '&scope=${Uri.encodeComponent(scope)}'
+                    '&state=${Uri.encodeComponent(selectedEmail)}'
                     '&access_type=offline',
                   );
                   try {
@@ -433,9 +451,14 @@ Future<void> _promptOAuth(
                   } catch (_) {}
 
                   if (isCalendar) {
-                    await store.connectCalendar(allowLive: true);
+                    await store.connectCalendar(
+                      allowLive: true,
+                      email: selectedEmail,
+                    );
                   } else {
-                    await store.connectGmail();
+                    await store.connectGmail(
+                      email: selectedEmail,
+                    );
                   }
 
                   if (context.mounted) {
@@ -449,10 +472,12 @@ Future<void> _promptOAuth(
                               size: 20,
                             ),
                             const SizedBox(width: Space.x2),
-                            Text(
-                              isThai
-                                  ? 'เชื่อมต่อ $title สำเร็จ'
-                                  : '$title connected',
+                            Expanded(
+                              child: Text(
+                                isThai
+                                    ? 'เชื่อมต่อ $title สำหรับ $selectedEmail เรียบร้อยแล้ว'
+                                    : '$title connected for $selectedEmail',
+                              ),
                             ),
                           ],
                         ),

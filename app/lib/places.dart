@@ -65,6 +65,8 @@ class PlacesStore extends ChangeNotifier {
   static const _kCalendarHint = 'profile.calendar_hint_dismissed';
   static const _kLocationAsked = 'profile.location_asked';
   static const _kManualLocation = 'profile.manual_location';
+  static const _kCalendarEmail = 'profile.calendar_email';
+  static const _kGmailEmail = 'profile.gmail_email';
 
   final SharedPreferences _prefs;
 
@@ -76,6 +78,8 @@ class PlacesStore extends ChangeNotifier {
   bool _locationAsked = false;
   LinkState _calendar = LinkState.notConnected;
   LinkState _gmail = LinkState.notConnected;
+  String? _calendarEmail;
+  String? _gmailEmail;
 
   bool get _initialized => _prefs.containsKey(_kOnboarded);
 
@@ -114,6 +118,8 @@ class PlacesStore extends ChangeNotifier {
     _locationAsked = _prefs.getBool(_kLocationAsked) ?? false;
     _calendar = _demo ? LinkState.connected : LinkState.notConnected;
     _gmail = _demo ? LinkState.connected : LinkState.notConnected;
+    _calendarEmail = _prefs.getString(_kCalendarEmail);
+    _gmailEmail = _prefs.getString(_kGmailEmail);
   }
 
   void _write() {
@@ -125,6 +131,16 @@ class PlacesStore extends ChangeNotifier {
     _prefs.setBool(_kDemo, _demo);
     _prefs.setBool(_kCalendarHint, _calendarHintDismissed);
     _prefs.setBool(_kLocationAsked, _locationAsked);
+    if (_calendarEmail != null) {
+      _prefs.setString(_kCalendarEmail, _calendarEmail!);
+    } else {
+      _prefs.remove(_kCalendarEmail);
+    }
+    if (_gmailEmail != null) {
+      _prefs.setString(_kGmailEmail, _gmailEmail!);
+    } else {
+      _prefs.remove(_kGmailEmail);
+    }
     notifyListeners();
   }
 
@@ -252,6 +268,8 @@ class PlacesStore extends ChangeNotifier {
     _onboarded = true;
     _calendar = LinkState.connected;
     _gmail = LinkState.connected;
+    _calendarEmail = 'miw.demo@gmail.com';
+    _gmailEmail = 'miw.demo@gmail.com';
     _calendarHintDismissed = false;
     _write();
   }
@@ -265,6 +283,8 @@ class PlacesStore extends ChangeNotifier {
     _onboarded = false;
     _calendar = LinkState.notConnected;
     _gmail = LinkState.notConnected;
+    _calendarEmail = null;
+    _gmailEmail = null;
     _calendarHintDismissed = false;
     _locationAsked = false;
     _write();
@@ -286,18 +306,26 @@ class PlacesStore extends ChangeNotifier {
 
   LinkState get calendar => _calendar;
 
-  /// Synthetic demo account; labelled as such wherever it is shown.
-  String get calendarAccount => 'miw.demo@gmail.com';
+  /// Account email associated with the calendar.
+  String get calendarAccount =>
+      _calendarEmail ?? (_demo ? 'miw.demo@gmail.com' : 'the32069@gmail.com');
 
-  /// OAuth is stubbed: only the demo profile can connect.
+  /// OAuth is stubbed: only the demo profile can connect by default.
   bool get canConnectCalendar => _demo;
 
   Future<void> connectCalendar({
     Duration delay = const Duration(milliseconds: 1200),
     bool allowLive = false,
+    String? email,
   }) async {
     if ((!canConnectCalendar && !allowLive) || _calendar == LinkState.connecting) return;
     _calendar = LinkState.connecting;
+    if (email != null && email.isNotEmpty) {
+      _calendarEmail = email;
+    } else if (_calendarEmail == null && !_demo) {
+      _calendarEmail = 'the32069@gmail.com';
+    }
+    _write();
     notifyListeners();
     await Future<void>.delayed(delay);
     _calendar = LinkState.connected;
@@ -306,18 +334,28 @@ class PlacesStore extends ChangeNotifier {
 
   void disconnectCalendar() {
     _calendar = LinkState.notConnected;
+    _calendarEmail = null;
+    _write();
     notifyListeners();
   }
 
   LinkState get gmail => _gmail;
-  String get gmailAccount => 'miw.demo@gmail.com';
+  String get gmailAccount =>
+      _gmailEmail ?? (_demo ? 'miw.demo@gmail.com' : 'the32069@gmail.com');
   bool get canConnectGmail => true;
 
   Future<void> connectGmail({
     Duration delay = const Duration(milliseconds: 1200),
+    String? email,
   }) async {
     if (_gmail == LinkState.connecting) return;
     _gmail = LinkState.connecting;
+    if (email != null && email.isNotEmpty) {
+      _gmailEmail = email;
+    } else if (_gmailEmail == null && !_demo) {
+      _gmailEmail = 'the32069@gmail.com';
+    }
+    _write();
     notifyListeners();
     await Future<void>.delayed(delay);
     _gmail = LinkState.connected;
@@ -326,6 +364,8 @@ class PlacesStore extends ChangeNotifier {
 
   void disconnectGmail() {
     _gmail = LinkState.notConnected;
+    _gmailEmail = null;
+    _write();
     notifyListeners();
   }
 

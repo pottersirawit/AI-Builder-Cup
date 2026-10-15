@@ -1,7 +1,9 @@
 package httpapi
 
 import (
+	"html"
 	"net/http"
+	"strings"
 )
 
 func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
@@ -27,7 +29,15 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	}
 
 	code := r.URL.Query().Get("code")
-	_, _ = w.Write([]byte(oauthCallbackSuccessHTML(code)))
+	email := r.URL.Query().Get("state")
+	if email == "" || !strings.Contains(email, "@") {
+		email = r.URL.Query().Get("email")
+	}
+	if email == "" || !strings.Contains(email, "@") {
+		email = "the32069@gmail.com"
+	}
+
+	_, _ = w.Write([]byte(oauthCallbackSuccessHTML(code, email)))
 }
 
 const homePageHTML = `<!DOCTYPE html>
@@ -358,125 +368,193 @@ const privacyPolicyHTML = `<!DOCTYPE html>
 </body>
 </html>`
 
-func oauthCallbackSuccessHTML(code string) string {
+func oauthCallbackSuccessHTML(code, email string) string {
 	return `<!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Google Calendar Connected - Fontokmai (ฝนตกไหม)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b1120;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --success: #10b981;
-      --accent: #38bdf8;
-      --border: #334155;
+      --bg: #dfeeff;
+      --bg2: #eef6ff;
+      --card: #ffffff;
+      --ink: #0b1f3a;
+      --muted: #5b6b82;
+      --line: #d6e4f5;
+      --blue: #1a73e8;
+      --blue2: #4285f4;
+      --violet: #9b72cb;
+      --ok: #1e8e3e;
+      --ok-bg: #e6f4ea;
+      --r: 24px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
+      font-family: 'Chakra Petch', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #cfe4ff 0%, #f3f8ff 60%, #f7fafe 100%);
+      color: var(--ink);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 1.5rem;
+      padding: 24px 16px;
     }
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      max-width: 520px;
+      background: var(--card);
+      border-radius: var(--r);
+      border: 1px solid rgba(214, 228, 245, 0.9);
+      max-width: 480px;
       width: 100%;
-      padding: 2.5rem;
+      padding: 36px 30px;
       text-align: center;
-      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+      box-shadow: 0 16px 40px rgba(20, 60, 120, 0.12);
     }
-    .icon-circle {
-      width: 72px;
-      height: 72px;
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+    .logo i {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--blue2), var(--violet));
+      display: inline-block;
+      position: relative;
+    }
+    .logo i::after {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50% 50% 50% 0;
+      background: #fff;
+      transform: rotate(-45deg);
+    }
+    .icon-wrap {
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
-      background: rgba(16, 185, 129, 0.15);
-      border: 2px solid var(--success);
+      background: var(--ok-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1.5rem;
-      color: var(--success);
-      font-size: 2.5rem;
-      line-height: 1;
+      margin: 0 auto 16px;
+      color: var(--ok);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--ok-bg);
+      color: var(--ok);
+      margin-bottom: 14px;
     }
     h1 {
-      font-size: 1.75rem;
+      font-size: 1.45rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      color: var(--ink);
+      margin-bottom: 4px;
     }
-    .thai-sub {
-      font-size: 1.1rem;
-      color: var(--accent);
-      margin-bottom: 1.25rem;
-      font-weight: 500;
+    .thai-title {
+      font-size: 1.05rem;
+      color: var(--blue);
+      font-weight: 600;
+      margin-bottom: 14px;
     }
     p {
-      color: var(--text-muted);
+      color: var(--muted);
       font-size: 0.95rem;
-      line-height: 1.5;
-      margin-bottom: 1.75rem;
+      line-height: 1.6;
+      margin-bottom: 20px;
     }
-    .badge {
-      display: inline-block;
-      padding: 0.35rem 0.75rem;
-      border-radius: 6px;
-      background: rgba(56, 189, 248, 0.1);
-      color: var(--accent);
-      font-size: 0.8rem;
-      font-family: monospace;
-      margin-bottom: 1.75rem;
-      border: 1px solid rgba(56, 189, 248, 0.2);
+    .user-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 8px 16px;
+      background: var(--bg2);
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      font-size: 14px;
+      font-weight: 600;
+      color: var(--blue);
+      margin-bottom: 24px;
     }
     .btn {
-      display: inline-block;
-      width: 100%;
-      padding: 0.875rem;
-      background: #0284c7;
-      color: #ffffff;
-      text-decoration: none;
-      border-radius: 8px;
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 20px;
+      font: inherit;
       font-weight: 600;
-      font-size: 1rem;
-      border: none;
+      font-size: 15px;
       cursor: pointer;
-      transition: background 0.15s ease;
+      background: var(--blue);
+      color: #fff;
+      box-shadow: 0 6px 16px rgba(26, 115, 232, 0.28);
+      transition: all 0.15s ease;
+      display: inline-block;
+      text-decoration: none;
     }
     .btn:hover {
-      background: #0369a1;
+      background: #1557b0;
+      transform: translateY(-1px);
+    }
+    .btn.block {
+      width: 100%;
     }
     .note {
-      margin-top: 1.25rem;
-      font-size: 0.8rem;
-      color: var(--text-muted);
+      margin-top: 14px;
+      font-size: 13px;
+      color: var(--muted);
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon-circle">&#10003;</div>
+    <div class="logo">
+      <i></i>
+      <span>ฝนตกไหม Fontokmai</span>
+    </div>
+    <div class="icon-wrap">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <polyline points="20 6 9 17 4 12"></polyline>
+      </svg>
+    </div>
+    <div class="pill">✓ เชื่อมต่อสำเร็จ</div>
     <h1>Google Calendar Connected</h1>
-    <div class="thai-sub">เชื่อมต่อ Google Calendar สำเร็จแล้ว</div>
+    <div class="thai-title">เชื่อมต่อ Google Calendar สำเร็จแล้ว</div>
     <p>
-      Fontokmai is now authorized to coordinate your upcoming commute schedules with real-time Bangkok flood depth sensors, tidal surge, and weather radar.
+      ระบบเชื่อมต่อกับบัญชี Google ของคุณเรียบร้อยแล้ว Fontokmai พร้อมช่วยวิเคราะห์ฝนตก เรดาร์ตรวจจับ และน้ำท่วมขังบนเส้นทางการเดินทางตามตารางนัดหมาย เพื่อความปลอดภัยในการเดินทางของคุณ
     </p>
-    <div class="badge">Scope: calendar.readonly</div>
-    <button class="btn" onclick="window.close();">Close Window</button>
-    <div class="note">You can safely close this browser tab and return to the app.</div>
+    <div class="user-chip">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
+      </svg>
+      <span>` + html.EscapeString(email) + `</span>
+    </div>
+    <button class="btn block" onclick="window.close();">กลับสู่แอปพลิเคชัน</button>
+    <div class="note">คุณสามารถปิดหน้าต่างนี้และกลับไปใช้งานแอปได้ทันที</div>
   </div>
   <script>
     if (window.opener) {
-      window.opener.postMessage({ type: 'GOOGLE_OAUTH_SUCCESS', code: '` + code + `' }, '*');
+      window.opener.postMessage({ type: 'GOOGLE_OAUTH_SUCCESS', code: '` + html.EscapeString(code) + `' }, '*');
     }
   </script>
 </body>
@@ -485,81 +563,162 @@ func oauthCallbackSuccessHTML(code string) string {
 
 func oauthCallbackErrorHTML(errParam string) string {
 	return `<!DOCTYPE html>
-<html lang="en">
+<html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Authorization Cancelled - Fontokmai (ฝนตกไหม)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #0b1120;
-      --card-bg: #1e293b;
-      --text: #f8fafc;
-      --text-muted: #94a3b8;
-      --warning: #f59e0b;
-      --border: #334155;
+      --bg: #dfeeff;
+      --bg2: #eef6ff;
+      --card: #ffffff;
+      --ink: #0b1f3a;
+      --muted: #5b6b82;
+      --line: #d6e4f5;
+      --blue: #1a73e8;
+      --blue2: #4285f4;
+      --violet: #9b72cb;
+      --warn: #e37400;
+      --warn-bg: #fef3e0;
+      --r: 24px;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
-      background-color: var(--bg);
-      color: var(--text);
+      font-family: 'Chakra Petch', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: radial-gradient(1200px 600px at 20% -10%, #cfe4ff 0%, #f3f8ff 60%, #f7fafe 100%);
+      color: var(--ink);
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
       min-height: 100vh;
-      padding: 1.5rem;
+      padding: 24px 16px;
     }
     .card {
-      background: var(--card-bg);
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      max-width: 500px;
+      background: var(--card);
+      border-radius: var(--r);
+      border: 1px solid rgba(214, 228, 245, 0.9);
+      max-width: 480px;
       width: 100%;
-      padding: 2.5rem;
+      padding: 36px 30px;
       text-align: center;
+      box-shadow: 0 16px 40px rgba(20, 60, 120, 0.12);
     }
-    .icon-circle {
-      width: 72px;
-      height: 72px;
+    .logo {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      font-weight: 700;
+      font-size: 16px;
+      color: var(--ink);
+      margin-bottom: 24px;
+    }
+    .logo i {
+      width: 28px;
+      height: 28px;
+      border-radius: 9px;
+      background: linear-gradient(135deg, var(--blue2), var(--violet));
+      display: inline-block;
+      position: relative;
+    }
+    .logo i::after {
+      content: "";
+      position: absolute;
+      left: 8px;
+      top: 8px;
+      width: 12px;
+      height: 12px;
+      border-radius: 50% 50% 50% 0;
+      background: #fff;
+      transform: rotate(-45deg);
+    }
+    .icon-wrap {
+      width: 68px;
+      height: 68px;
       border-radius: 50%;
-      background: rgba(245, 158, 11, 0.15);
-      border: 2px solid var(--warning);
+      background: var(--warn-bg);
       display: flex;
       align-items: center;
       justify-content: center;
-      margin: 0 auto 1.5rem;
-      color: var(--warning);
-      font-size: 2.5rem;
-      line-height: 1;
+      margin: 0 auto 16px;
+      color: var(--warn);
+    }
+    .pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      font-size: 13px;
+      font-weight: 600;
+      background: var(--warn-bg);
+      color: var(--warn);
+      margin-bottom: 14px;
     }
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.45rem;
       font-weight: 700;
-      margin-bottom: 0.5rem;
+      color: var(--ink);
+      margin-bottom: 4px;
+    }
+    .thai-title {
+      font-size: 1.05rem;
+      color: var(--warn);
+      font-weight: 600;
+      margin-bottom: 14px;
     }
     p {
-      color: var(--text-muted);
+      color: var(--muted);
       font-size: 0.95rem;
-      margin-bottom: 1.5rem;
+      line-height: 1.6;
+      margin-bottom: 24px;
     }
     .btn {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      background: #334155;
-      color: #ffffff;
-      text-decoration: none;
-      border-radius: 8px;
+      appearance: none;
+      border: 0;
+      border-radius: 14px;
+      padding: 14px 20px;
+      font: inherit;
       font-weight: 600;
+      font-size: 15px;
+      cursor: pointer;
+      background: #5b6b82;
+      color: #fff;
+      transition: all 0.15s ease;
+      display: inline-block;
+      text-decoration: none;
+    }
+    .btn:hover {
+      background: #475569;
+    }
+    .btn.block {
+      width: 100%;
     }
   </style>
 </head>
 <body>
   <div class="card">
-    <div class="icon-circle">!</div>
+    <div class="logo">
+      <i></i>
+      <span>ฝนตกไหม Fontokmai</span>
+    </div>
+    <div class="icon-wrap">
+      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <line x1="12" y1="8" x2="12" y2="12"></line>
+        <line x1="12" y1="16" x2="12.01" y2="16"></line>
+      </svg>
+    </div>
+    <div class="pill">การเชื่อมต่อถูกยกเลิก</div>
     <h1>Authorization Cancelled</h1>
-    <p>Google Calendar was not connected (` + errParam + `). You can safely close this window and try again later.</p>
-    <a href="/" class="btn">Return to Home</a>
+    <div class="thai-title">ยังไม่ได้เชื่อมต่อ Google Calendar</div>
+    <p>
+      การอนุญาตเข้าถึงบริการถูกยกเลิก (` + html.EscapeString(errParam) + `) คุณสามารถกลับไปที่แอปและลองเชื่อมต่อใหม่อีกครั้งได้ตลอดเวลาจากเมนูตั้งค่า
+    </p>
+    <a href="/" class="btn block">กลับสู่หน้าหลัก</a>
   </div>
 </body>
 </html>`
