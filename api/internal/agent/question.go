@@ -326,6 +326,9 @@ func parseFallback(q string, now time.Time, places []domain.SavedPlace) Intent {
 	return in
 }
 
+// parseQuestionTimeout bounds the Gemini question parser; past it the regex parser answers.
+const parseQuestionTimeout = 8 * time.Second
+
 // ParseQuestion asks Gemini for structured intent (time, mode and destination
 // among the saved places) and falls back to the regex and keyword matching.
 func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip domain.Trip, places []domain.SavedPlace) (Intent, string) {
@@ -356,7 +359,9 @@ func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip
 		"และ id ของสถานที่ปลายทางถ้าคำถามระบุว่าจะไปที่ไหน (สถานที่ที่ใกล้ที่สุดในรายการ เช่น สุขุมวิท 55 = thonglor) ห้ามใส่ต้นทาง\n"+
 		"คำถามอาจเป็นภาษาอังกฤษ ให้ตีความแบบเดียวกัน (เช่น 5pm = 17:00, in 30 minutes = เวลาปัจจุบัน + 30 นาที, now = เวลาปัจจุบัน, go home = สถานที่ประเภทบ้าน, train/BTS/MRT = transit, motorbike = moto, car = car)",
 		now.Format("15:04"), trip.TitleTH, trip.Origin.NameTH, trip.Destination.NameTH, deadline, trip.Mode, strings.Join(saved, ", "), q)
-	resp, err := g.Gen.GenerateContent(ctx, g.Model, []*genai.Content{genai.NewContentFromText(prompt, genai.RoleUser)}, cfg)
+	ctx, cancel := context.WithTimeout(ctx, parseQuestionTimeout)
+	defer cancel()
+	resp, _, err := g.Generate(ctx, []*genai.Content{genai.NewContentFromText(prompt, genai.RoleUser)}, cfg)
 	if err != nil {
 		return parseFallback(q, now, places), "fallback"
 	}

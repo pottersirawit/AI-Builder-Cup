@@ -20,7 +20,7 @@ func noThai(t *testing.T, what, s string) {
 }
 
 func TestEnglishNarrationPerVerdict(t *testing.T) {
-	ratchadaReport := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25}
+	ratchadaReport := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84}
 	var rain []domain.RainSample
 	for h := 12; h < 23; h++ {
 		rain = append(rain, domain.RainSample{Time: at(h, 0), MMPerHr: 12})
@@ -45,7 +45,7 @@ func TestEnglishNarrationPerVerdict(t *testing.T) {
 			[]string{"150 min past 18:30"}},
 		{"switch_mode on a motorbike", hero(at(16, 10), at(17, 15), domain.ModeMoto), SwitchMode, "Take BTS / MRT instead",
 			[]string{"by motorbike", "BTS / MRT stays clear of the water"}},
-		{"switch_mode for a flood report", hero(at(18, 52), at(18, 52), domain.ModeCar, ratchadaReport), SwitchMode, "Take BTS / MRT instead",
+		{"switch_mode for a flood report", hero(at(18, 52), at(18, 52), domain.ModeCar, withRatchadaSeeds(ratchadaReport)...), SwitchMode, "Take BTS / MRT instead",
 			[]string{"flooding of about"}},
 		{"wait", hero(at(19, 30), at(19, 30), domain.ModeCar), Wait, "Wait until 20:00", []string{"Leaving at 20:00"}},
 		{"dont_go", dontGo, DontGo, "Don't leave yet", []string{"Every option is still risky"}},
@@ -88,7 +88,7 @@ func TestEnglishNarrationPerVerdict(t *testing.T) {
 
 func TestEnglishReportLabel(t *testing.T) {
 	in := heroInput(t, at(18, 52), at(18, 52), domain.ModeCar,
-		domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25})
+		domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84})
 	in.Lang = domain.LangEN
 	found := false
 	for _, s := range Decide(in).FloodSpots {

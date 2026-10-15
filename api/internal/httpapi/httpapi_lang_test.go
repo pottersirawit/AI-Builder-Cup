@@ -57,7 +57,7 @@ func TestCreateReportAndListInEnglish(t *testing.T) {
 
 	_, list := doEN(t, h, "GET", "/v1/reports?lat=13.8130&lng=100.5760&radius_m=300", "2026-09-29T18:55:00+07:00", nil, "")
 	reps := list["reports"].([]any)
-	if len(reps) != 3 {
+	if len(reps) != 2 {
 		t.Fatalf("got %d reports", len(reps))
 	}
 	for _, r := range reps {

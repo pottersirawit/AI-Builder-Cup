@@ -185,11 +185,18 @@ func TestDecideWithGeminiAgent(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.GeneratedBy != "gemini" || resp.HeadlineTH != "ออกก่อน 16:45 นะ" || resp.Confidence != 0.8 || resp.LeaveBy.Format("15:04") != "16:45" {
-		t.Fatalf("got %+v, want LeaveBy 16:45 strictly preserved from core", resp)
+	core, err := session(t, at(16, 10)).Baseline(at(16, 10), domain.ModeCar)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if len(resp.Reasoning) != 3 || resp.Reasoning[1].Tool != "get_rain_along_route" || resp.Reasoning[1].SummaryTH != "ฝนถึงพระราม 4 ราว 17:30" {
-		t.Fatalf("reasoning = %+v", resp.Reasoning)
+	if resp.GeneratedBy != "gemini" || resp.HeadlineTH != "ออกก่อน 16:45 นะ" || resp.Confidence != core.Confidence || resp.LeaveBy.Format("15:04") != "16:45" {
+		t.Fatalf("got %+v, want LeaveBy 16:45 and the engine's confidence", resp)
+	}
+	if resp.Model != "test" {
+		t.Errorf("model = %q", resp.Model)
+	}
+	if len(resp.Reasoning) != 3 || resp.Reasoning[1].Tool != "get_rain_along_route" || resp.Reasoning[1].SummaryTH == "ฝนถึงพระราม 4 ราว 17:30" {
+		t.Fatalf("the trace keeps what the tool returned, not Gemini's retelling: %+v", resp.Reasoning)
 	}
 	if !strings.Contains(resp.Reasoning[2].SummaryTH, "ความเสี่ยงต่ำ") {
 		t.Fatalf("tools without agent text keep the tool summary, got %q", resp.Reasoning[2].SummaryTH)
@@ -258,8 +265,8 @@ func TestGeminiAgentInventedTimesFallBackToEngineText(t *testing.T) {
 	if resp.Explanation.ReasonWhyTH != core.Explanation.ReasonWhyTH {
 		t.Errorf("reason_why_th with an invented time must fall back, got %q", resp.Explanation.ReasonWhyTH)
 	}
-	if resp.Explanation.RouteAdviceTH != "ใช้ทางด่วนยกระดับ" {
-		t.Errorf("grounded fields keep Gemini's text, got %q", resp.Explanation.RouteAdviceTH)
+	if resp.Explanation.RouteAdviceTH != core.Explanation.RouteAdviceTH {
+		t.Errorf("route advice is always the engine's, got %q", resp.Explanation.RouteAdviceTH)
 	}
 	if resp.GeneratedBy != "gemini" {
 		t.Errorf("generated_by = %s", resp.GeneratedBy)
@@ -292,27 +299,38 @@ func TestGeminiAgentGroundedTimesPassThrough(t *testing.T) {
 }
 
 func TestGeminiAgentExplanation(t *testing.T) {
+	// 19 cm is what the flood tool returns for the car at 18:00; 25 cm is not.
 	geminiReply := `{"verdict":"switch_mode","headline_th":"เปลี่ยนไปนั่งรถไฟฟ้าดีกว่า","summary_th":"รัชดาน้ำท่วม","confidence":0.85,
-"explanation":{"reason_why_th":"น้ำท่วมสูง 25 ซม. เกินระยะพ้นน้ำ","factors_th":["น้ำท่วม 25 ซม."],"route_advice_th":"เลี่ยงถนนรัชดาภิเษก","avoid_spots_th":["แยกรัชดา-ลาดพร้าว"]}}`
+"explanation":{"reason_why_th":"น้ำท่วมสูง 19 ซม. เกินระยะพ้นน้ำ","factors_th":["น้ำท่วม 25 ซม."],"route_advice_th":"เลี่ยงถนนรัชดาภิเษก ขึ้นทางด่วนยกระดับ","avoid_spots_th":["แยกรัชดา-ลาดพร้าว"]}}`
 	gen := &scriptedGemini{replies: []*genai.GenerateContentResponse{
 		reply(call("get_flood_spots_on_route", nil)),
 		reply(&genai.Part{Text: geminiReply}),
 	}}
-	resp, err := Decide(context.Background(), &Gemini{Gen: gen, Model: "test"}, session(t, at(16, 10)), Request{DepartAt: "18:00", Mode: "car"}, nil)
+	s := session(t, at(16, 10))
+	core, err := s.Baseline(at(18, 0), domain.ModeCar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := Decide(context.Background(), &Gemini{Gen: gen, Model: "test"}, s, Request{DepartAt: "18:00", Mode: "car"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
 	if resp.GeneratedBy != "gemini" {
 		t.Fatalf("expected generated_by gemini, got %s", resp.GeneratedBy)
 	}
-	if resp.Explanation.ReasonWhyTH != "น้ำท่วมสูง 25 ซม. เกินระยะพ้นน้ำ" {
-		t.Errorf("unexpected ReasonWhyTH: %q", resp.Explanation.ReasonWhyTH)
+	e := resp.Explanation
+	if e.ReasonWhyTH != "น้ำท่วมสูง 19 ซม. เกินระยะพ้นน้ำ" {
+		t.Errorf("grounded reason is kept, got %q", e.ReasonWhyTH)
 	}
-	if resp.Explanation.RouteAdviceTH != "เลี่ยงถนนรัชดาภิเษก" {
-		t.Errorf("unexpected RouteAdviceTH: %q", resp.Explanation.RouteAdviceTH)
+	if strings.Join(e.FactorsTH, "|") != strings.Join(core.Explanation.FactorsTH, "|") {
+		t.Errorf("factors with an ungrounded 25 cm fall back, got %v", e.FactorsTH)
 	}
-	if len(resp.Explanation.AvoidSpotsTH) != 1 || resp.Explanation.AvoidSpotsTH[0] != "แยกรัชดา-ลาดพร้าว" {
-		t.Errorf("unexpected AvoidSpotsTH: %v", resp.Explanation.AvoidSpotsTH)
+	if e.RouteAdviceTH != core.Explanation.RouteAdviceTH || strings.Join(e.AvoidSpotsTH, "|") != strings.Join(core.Explanation.AvoidSpotsTH, "|") {
+		t.Errorf("route advice and avoid spots are the engine's, got %q / %v", e.RouteAdviceTH, e.AvoidSpotsTH)
+	}
+	last := resp.Reasoning[len(resp.Reasoning)-1]
+	if last.Tool != GuardrailNumbersTool || !strings.Contains(last.SummaryTH, "25") {
+		t.Errorf("numbers guard step = %+v", last)
 	}
 }
 

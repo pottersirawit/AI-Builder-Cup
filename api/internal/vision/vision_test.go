@@ -24,8 +24,10 @@ func (f fakeGen) GenerateContent(context.Context, string, []*genai.Content, *gen
 	return &genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Parts: []*genai.Part{{Text: f.text}}}}}}, nil
 }
 
+func gem(text string) *agent.Gemini { return &agent.Gemini{Gen: fakeGen{text: text}} }
+
 func TestAssess(t *testing.T) {
-	good := `{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.7,"description_th":"น้ำถึงครึ่งล้อ","passable":{"car":"no","transit":"yes","moto":"no"}}`
+	good := `{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.7,"is_flood_scene":true,"looks_like_screenshot":false,"description_th":"น้ำถึงครึ่งล้อ","passable":{"car":"no","transit":"yes","moto":"no"}}`
 	tests := []struct {
 		name    string
 		g       *agent.Gemini
@@ -35,6 +37,10 @@ func TestAssess(t *testing.T) {
 		{"no gemini: hero fallback", nil, "fallback", 25},
 		{"gemini answer", &agent.Gemini{Gen: fakeGen{text: good}}, "gemini", 40},
 		{"gemini error", &agent.Gemini{Gen: fakeGen{err: errors.New("503")}}, "fallback", 25},
+		{"not a flood scene", gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":false,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
+		{"screenshot", gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":true,"looks_like_screenshot":true,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
+		{"low confidence", gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.4,"is_flood_scene":true,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
+		{"depth above 150 cm is implausible", gem(`{"depth_cm_min":100,"depth_cm_max":200,"confidence":0.9,"is_flood_scene":true,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "fallback", 25},
 		{"implausible depth", &agent.Gemini{Gen: fakeGen{text: `{"depth_cm_min":50,"depth_cm_max":10,"confidence":0.5,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`}}, "fallback", 25},
 		{"bad passable", &agent.Gemini{Gen: fakeGen{text: `{"depth_cm_min":5,"depth_cm_max":10,"confidence":0.5,"description_th":"x","passable":{"car":"maybe","transit":"yes","moto":"no"}}`}}, "fallback", 25},
 		{"not JSON", &agent.Gemini{Gen: fakeGen{text: "ไม่ทราบ"}}, "fallback", 25},
@@ -82,5 +88,18 @@ func TestEnglishFallbackDescription(t *testing.T) {
 	r, by := Assess(context.Background(), nil, nil, "", domain.LangEN)
 	if by != "fallback" || domain.HasThai(r.DescriptionTH) || r.DescriptionTH == "" {
 		t.Fatalf("got %s %q", by, r.DescriptionTH)
+	}
+}
+
+func TestRejectedPhotoExplainsAndIsNotEvidence(t *testing.T) {
+	g := gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":false,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`)
+	for _, lang := range []domain.Lang{domain.LangTH, domain.LangEN} {
+		r, by := Assess(context.Background(), g, []byte("jpeg"), "image/jpeg", lang)
+		if IsEvidence(by) || r.DepthCMMax != 0 || r.DescriptionTH == "" || domain.HasThai(r.DescriptionTH) != (lang == domain.LangTH) {
+			t.Errorf("%s: got %s %+v", lang, by, r)
+		}
+	}
+	if IsEvidence("fallback") || !IsEvidence("gemini") {
+		t.Error("only gemini assessments are evidence")
 	}
 }

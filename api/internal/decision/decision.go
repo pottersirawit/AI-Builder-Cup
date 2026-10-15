@@ -10,6 +10,7 @@ import (
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
+	"github.com/pottersirawit/fontokmai/api/internal/geo"
 )
 
 type Verdict string
@@ -240,7 +241,7 @@ func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float6
 			}
 		}
 		for _, r := range in.Reports {
-			if d := reportDepthCM(r, t); d > depth {
+			if d := reportDepthCM(r, in.Reports, t); d > depth {
 				depth, deepest = d, nearestSpotName(in.Spots, r)
 			}
 		}
@@ -280,11 +281,47 @@ func SpotDepthCM(s floodspot.Spot, samples []domain.RainSample, t time.Time) flo
 	return depth
 }
 
-func reportDepthCM(r domain.Report, t time.Time) float64 {
-	if t.Before(r.CreatedAt) || t.Sub(r.CreatedAt) >= reportTTL {
+// Report weighting: a lone photo is cheap to fake, so a report only counts at
+// its full depth once another usable report nearby backs it up.
+const (
+	minReportConfidence   = 0.5
+	soloReportCapCM       = 15.0
+	corroborationRadiusM  = 300.0
+	corroborationWindow   = 30 * time.Minute
+	corroboratingReportsN = 2 // usable reports in the cluster, the report itself included
+)
+
+// UsableReport is false for the fallback hero assessment and for low-confidence
+// photos; those never reach the engine.
+func UsableReport(r domain.Report) bool {
+	return r.GeneratedBy != "fallback" && r.Confidence >= minReportConfidence
+}
+
+// reportCorroborated reports whether enough usable reports already existing at t
+// sit within corroborationRadiusM and corroborationWindow of r.
+func reportCorroborated(r domain.Report, all []domain.Report, t time.Time) bool {
+	n := 0
+	for _, o := range all {
+		if !UsableReport(o) || o.CreatedAt.After(t) {
+			continue
+		}
+		if o.CreatedAt.Sub(r.CreatedAt).Abs() <= corroborationWindow && geo.HaversineM(r.Point(), o.Point()) <= corroborationRadiusM {
+			n++
+		}
+	}
+	return n >= corroboratingReportsN
+}
+
+// reportDepthCM is the street water a report contributes at t: the full
+// DepthCMMax when corroborated, otherwise confidence-weighted and capped.
+func reportDepthCM(r domain.Report, all []domain.Report, t time.Time) float64 {
+	if t.Before(r.CreatedAt) || t.Sub(r.CreatedAt) >= reportTTL || !UsableReport(r) {
 		return 0
 	}
-	return float64(r.DepthCMMax)
+	if reportCorroborated(r, all, t) {
+		return float64(r.DepthCMMax)
+	}
+	return math.Min(float64(r.DepthCMMax)*r.Confidence, soloReportCapCM)
 }
 
 func nearestSpotName(spots []floodspot.Spot, r domain.Report) string {
@@ -380,7 +417,7 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 	for _, r := range in.Reports {
 		d := 0.0
 		for t := window.Depart; t.Before(window.Arrive); t = t.Add(step) {
-			d = math.Max(d, reportDepthCM(r, t))
+			d = math.Max(d, reportDepthCM(r, in.Reports, t))
 		}
 		if d == 0 {
 			continue

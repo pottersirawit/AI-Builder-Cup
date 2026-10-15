@@ -17,6 +17,7 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/advise"
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/clock"
+	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/extract"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
@@ -32,6 +33,9 @@ import (
 )
 
 type Server struct {
+	// ReportLimits bounds photo uploads; zero fields take the defaults.
+	ReportLimits ReportLimits
+	reportRL     uploadLimiter
 	// DemoMode replays the scenario when no X-Demo-Clock header is sent.
 	DemoMode bool
 	Planner  *planner.Planner
@@ -50,6 +54,11 @@ type Server struct {
 	UserStore users.UserStore
 	Evaluator *advise.Evaluator
 	Scheduler jobs.Scheduler
+	// Internal guards /internal/* and /v1/ingest; Limits caps the cost of the
+	// public Gemini-backed endpoints. IngestOpen leaves /v1/ingest unauthenticated.
+	Internal   InternalAuth
+	IngestOpen bool
+	Limits     Limits
 }
 
 func (s *Server) Handler() http.Handler {
@@ -63,15 +72,19 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/health", healthHandler)
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
 	mux.HandleFunc("GET /v1/places", s.withClock(s.places))
-	mux.HandleFunc("POST /v1/decide", s.withClock(s.decide))
+	mux.Handle("POST /v1/decide", s.Limits.rateLimit("decide", s.Limits.decideRPM(), s.Limits.limitBody(s.withClock(s.decide))))
 	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
 	mux.HandleFunc("GET /v1/reports", s.withClock(s.listReports))
 	mux.HandleFunc("GET /v1/home-status", s.withClock(s.homeStatus))
-	mux.HandleFunc("GET /v1/places/search", s.searchPlaces)
-	mux.HandleFunc("GET /v1/places/reverse", s.reversePlace)
-	mux.HandleFunc("POST /v1/ingest", s.withClock(s.ingest))
-	mux.HandleFunc("POST /internal/pubsub/raw", s.withClock(s.handlePubSubRaw))
-	mux.HandleFunc("POST /internal/tasks/check", s.withClock(s.handleTaskCheck))
+	mux.Handle("GET /v1/places/search", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.searchPlaces)))
+	mux.Handle("GET /v1/places/reverse", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.reversePlace)))
+	ingest := s.Limits.limitBody(s.withClock(s.ingest))
+	if !s.IngestOpen {
+		ingest = s.Internal.require(ingest)
+	}
+	mux.Handle("POST /v1/ingest", ingest)
+	mux.Handle("POST /internal/pubsub/raw", s.Internal.require(s.Limits.limitBody(s.withClock(s.handlePubSubRaw))))
+	mux.Handle("POST /internal/tasks/check", s.Internal.require(s.Limits.limitBody(s.withClock(s.handleTaskCheck))))
 	return cors(logRequests(mux))
 }
 
@@ -136,6 +149,10 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, "invalid JSON body: "+err.Error())
 		return
 	}
+	if utf8.RuneCountInString(req.QuestionTH) > s.Limits.maxQuestion() {
+		writeError(w, http.StatusBadRequest, "question_th is too long")
+		return
+	}
 	tripReq, err := req.TripRequestFor(rc.lang)
 	if err != nil {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -176,7 +193,18 @@ type reportResponse struct {
 }
 
 func (s *Server) createReport(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	if err := r.ParseMultipartForm(12 << 20); err != nil {
+	lim := s.ReportLimits.withDefaults()
+	if !s.reportRL.allow(clientIP(r), time.Now(), lim.Uploads, lim.Window) {
+		writeError(w, http.StatusTooManyRequests, "too many photo uploads, try again later")
+		return
+	}
+	r.Body = http.MaxBytesReader(w, r.Body, lim.MaxUploadBytes+(1<<20))
+	if err := r.ParseMultipartForm(8 << 20); err != nil {
+		var tooBig *http.MaxBytesError
+		if errors.As(err, &tooBig) {
+			writeError(w, http.StatusRequestEntityTooLarge, "photo too large")
+			return
+		}
 		writeError(w, http.StatusBadRequest, "want multipart/form-data with photo, lat, lng: "+err.Error())
 		return
 	}
@@ -192,9 +220,17 @@ func (s *Server) createReport(w http.ResponseWriter, r *http.Request, rc reqCtx)
 		return
 	}
 	defer file.Close()
-	photo, err := io.ReadAll(io.LimitReader(file, 10<<20))
+	photo, err := io.ReadAll(io.LimitReader(file, lim.MaxUploadBytes+1))
 	if err != nil {
 		writeError(w, http.StatusBadRequest, "cannot read photo")
+		return
+	}
+	if int64(len(photo)) > lim.MaxUploadBytes {
+		writeError(w, http.StatusRequestEntityTooLarge, "photo too large")
+		return
+	}
+	if err := checkDimensions(photo, lim.MaxDimension); err != nil {
+		writeError(w, http.StatusRequestEntityTooLarge, "photo dimensions too large")
 		return
 	}
 	mime := header.Header.Get("Content-Type")
@@ -210,15 +246,26 @@ func (s *Server) createReport(w http.ResponseWriter, r *http.Request, rc reqCtx)
 	}
 	assessment, by := vision.Assess(r.Context(), s.Gemini, photo, mime, rc.lang)
 	assessment.Lat, assessment.Lng, assessment.CreatedAt, assessment.GeneratedBy = lat, lng, rc.now, by
-	saved, err := rc.prov.Reports.Add(r.Context(), assessment)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
+	// Only a real Gemini reading of a flood photo is evidence; the fallback
+	// and rejected assessments go back to the caller but are never stored.
+	saved := assessment
+	if vision.IsEvidence(by) {
+		saved, err = rc.prov.Reports.Add(r.Context(), assessment)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+	}
+	corroborating := 0
+	for _, e := range earlier {
+		if decision.UsableReport(e) {
+			corroborating++
+		}
 	}
 	writeJSON(w, http.StatusCreated, reportResponse{
 		Report:               saved,
 		NotifiedUsers:        reports.NotifiedUsers(s.Users, point),
-		CorroboratingReports: len(earlier),
+		CorroboratingReports: corroborating,
 	})
 }
 
@@ -247,9 +294,13 @@ func (s *Server) listReports(w http.ResponseWriter, r *http.Request, rc reqCtx) 
 		writeError(w, http.StatusInternalServerError, err.Error())
 		return
 	}
-	if reps == nil {
-		reps = []domain.Report{}
+	usable := []domain.Report{}
+	for _, rep := range reps {
+		if decision.UsableReport(rep) {
+			usable = append(usable, rep)
+		}
 	}
+	reps = usable
 	for i := range reps {
 		reps[i] = scenario.LocalizeReport(reps[i], rc.lang)
 	}
