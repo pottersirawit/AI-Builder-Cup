@@ -27,7 +27,9 @@ import (
 
 func newServer(t *testing.T) http.Handler { return newServerMode(t, true) }
 
-func newServerMode(t *testing.T, demo bool) http.Handler {
+func newServerMode(t *testing.T, demo bool) http.Handler { return newTestServer(t, demo).Handler() }
+
+func newTestServer(t *testing.T, demo bool) *Server {
 	t.Helper()
 	_, file, _, _ := runtime.Caller(0)
 	spots, err := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
@@ -60,7 +62,7 @@ func newServerMode(t *testing.T, demo bool) http.Handler {
 		Evaluator: eval,
 		Scheduler: scheduler,
 	}
-	return s.Handler()
+	return s
 }
 
 func do(t *testing.T, h http.Handler, method, path, demoClock string, body *bytes.Buffer, contentType string) (int, map[string]any) {
@@ -237,7 +239,7 @@ func TestCreateReportHero(t *testing.T) {
 	if status != 201 {
 		t.Fatalf("status %d %v", status, out)
 	}
-	want := map[string]any{"id": "r1", "depth_cm_min": 20.0, "depth_cm_max": 25.0, "confidence": 0.84, "notified_users": 27.0, "corroborating_reports": 2.0, "generated_by": "fallback"}
+	want := map[string]any{"id": "", "depth_cm_min": 20.0, "depth_cm_max": 25.0, "confidence": 0.84, "notified_users": 27.0, "corroborating_reports": 2.0, "generated_by": "fallback"}
 	for k, v := range want {
 		if out[k] != v {
 			t.Errorf("%s = %v, want %v", k, out[k], v)
@@ -250,10 +252,11 @@ func TestCreateReportHero(t *testing.T) {
 		t.Errorf("description = %v", out["description_th"])
 	}
 
-	// The new report now shows up for others and pushes car drivers to the train.
+	// The fallback assessment is shown to the poster but is not evidence: it is
+	// not stored, and the two seeded Ratchada reports still push drivers to the train.
 	_, list := do(t, h, "GET", "/v1/reports?lat=13.8130&lng=100.5760&radius_m=300", "2026-09-29T18:55:00+07:00", nil, "")
-	if n := len(list["reports"].([]any)); n != 3 {
-		t.Fatalf("got %d reports after posting", n)
+	if n := len(list["reports"].([]any)); n != 2 {
+		t.Fatalf("got %d reports after posting a fallback assessment, want the 2 seeded", n)
 	}
 	_, dec := do(t, h, "POST", "/v1/decide", "2026-09-29T18:55:00+07:00", bytes.NewBufferString(`{"mode":"car"}`), "application/json")
 	if dec["verdict"] != "switch_mode" {

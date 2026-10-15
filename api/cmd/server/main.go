@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"os/signal"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -88,17 +89,25 @@ func main() {
 	scheduler := jobs.NewInlineScheduler(evaluator, scen)
 
 	srv := &httpapi.Server{
-		DemoMode:  demo,
-		Planner:   plannerInst,
-		Scenario:  scen,
-		Live:      liveProv,
-		Gemini:    gemini,
-		Users:     scenario.MockUsers(),
-		Home:      homestatus.Home(scenario.HomeProfile),
-		Geocoder:  geocoder,
-		UserStore: userStore,
-		Evaluator: evaluator,
-		Scheduler: scheduler,
+		DemoMode:   demo,
+		Planner:    plannerInst,
+		Scenario:   scen,
+		Live:       liveProv,
+		Gemini:     gemini,
+		Users:      scenario.MockUsers(),
+		Home:       homestatus.Home(scenario.HomeProfile),
+		Geocoder:   geocoder,
+		UserStore:  userStore,
+		Evaluator:  evaluator,
+		Scheduler:  scheduler,
+		Internal:   internalAuthFromEnv(),
+		IngestOpen: os.Getenv("INGEST_OPEN") == "1",
+		Limits: httpapi.Limits{
+			DecideRPM:        envInt("RATE_DECIDE_PER_MIN", 0),
+			PlacesRPM:        envInt("RATE_PLACES_PER_MIN", 0),
+			MaxBodyBytes:     int64(envInt("MAX_BODY_BYTES", 0)),
+			MaxQuestionRunes: envInt("MAX_QUESTION_RUNES", 0),
+		},
 	}
 
 	addr := ":" + env("PORT", "8080")
@@ -159,6 +168,28 @@ func findData(name string) string {
 func fileExists(p string) bool {
 	_, err := os.Stat(p)
 	return err == nil
+}
+
+// internalAuthFromEnv guards /internal/* and /v1/ingest: INTERNAL_TOKEN (shared
+// secret header X-Internal-Token) and/or TASKS_INVOKER_SA plus the optional
+// comma-separated INTERNAL_ALLOWED_SA (OIDC token emails from Cloud Tasks and
+// Pub/Sub push). INTERNAL_AUDIENCE pins the OIDC audience.
+func internalAuthFromEnv() httpapi.InternalAuth {
+	auth := httpapi.InternalAuth{Token: os.Getenv("INTERNAL_TOKEN"), Audience: os.Getenv("INTERNAL_AUDIENCE")}
+	for _, v := range append([]string{os.Getenv("TASKS_INVOKER_SA")}, strings.Split(os.Getenv("INTERNAL_ALLOWED_SA"), ",")...) {
+		if v = strings.TrimSpace(v); v != "" {
+			auth.AllowedSAs = append(auth.AllowedSAs, v)
+		}
+	}
+	return auth
+}
+
+// envInt reads a positive integer; anything else gives def (0 means "use the default").
+func envInt(key string, def int) int {
+	if n, err := strconv.Atoi(strings.TrimSpace(os.Getenv(key))); err == nil && n > 0 {
+		return n
+	}
+	return def
 }
 
 func env(key, def string) string {

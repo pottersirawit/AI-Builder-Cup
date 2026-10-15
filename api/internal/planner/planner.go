@@ -12,6 +12,7 @@ import (
 	"math"
 	"strings"
 	"time"
+	"unicode"
 
 	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
@@ -61,6 +62,31 @@ func AppTrip(origin, dest domain.Place, titleTH string) domain.Trip {
 	sum := sha1.Sum([]byte(key))
 	return domain.Trip{ID: AppPrefix + hex.EncodeToString(sum[:])[:10], TitleTH: titleTH, Source: "app",
 		Origin: origin, Destination: dest, Mode: domain.ModeCar}
+}
+
+// maxTitleRunes caps a trip title that may come from untrusted calendar or email text.
+const maxTitleRunes = 80
+
+// SanitizeTitle makes a title safe to show to the model and the user: control
+// characters and angle brackets are dropped, whitespace is collapsed and the
+// length is capped. Ordinary titles pass through unchanged.
+func SanitizeTitle(s string) string {
+	var b strings.Builder
+	for _, r := range s {
+		switch {
+		case r == '<' || r == '>':
+		case unicode.IsSpace(r):
+			b.WriteRune(' ')
+		case unicode.IsControl(r):
+		default:
+			b.WriteRune(r)
+		}
+	}
+	out := strings.Join(strings.Fields(b.String()), " ")
+	if rs := []rune(out); len(rs) > maxTitleRunes {
+		out = string(rs[:maxTitleRunes])
+	}
+	return out
 }
 
 // tripWindow is how close an upcoming trip must be for a typed destination to
@@ -468,6 +494,7 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 	switch name {
 	case "get_trip":
 		t := s.Trip
+		t.TitleTH = SanitizeTitle(t.TitleTH)
 		summary := fmt.Sprintf("นัด%s ต้องถึง%sก่อน %s (%s)", t.TitleTH, t.Destination.NameTH, hhmm(t.ArriveBy), sourceTH(t.Source))
 		if t.ArriveBy.IsZero() {
 			summary = fmt.Sprintf("%s จาก%s ไม่มีเวลานัด (%s)", t.TitleTH, t.Origin.NameTH, sourceTH(t.Source))

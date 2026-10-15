@@ -2887,6 +2887,18 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ประเมินความเสี่ยง'**
   String get verdictToolEvaluate;
+
+  /// No description provided for @reportSampleResult.
+  ///
+  /// In th, this message translates to:
+  /// **'ผลประเมินตัวอย่าง ยังไม่ได้วิเคราะห์ภาพด้วย AI'**
+  String get reportSampleResult;
+
+  /// No description provided for @reportRejectedTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ใช้ภาพนี้ไม่ได้'**
+  String get reportRejectedTitle;
 }
 
 class _AppLocalizationsDelegate

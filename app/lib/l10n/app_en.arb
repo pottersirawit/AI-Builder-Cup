@@ -1022,5 +1022,7 @@
   "verdictToolFloodSpots": "Checked flood spots",
   "verdictToolCanals": "Checked canal levels",
   "verdictToolReports": "Read community reports",
-  "verdictToolEvaluate": "Weighed the risk"
+  "verdictToolEvaluate": "Weighed the risk",
+  "reportSampleResult": "Sample result. The photo was not analysed by AI",
+  "reportRejectedTitle": "We couldn't use this photo"
 }

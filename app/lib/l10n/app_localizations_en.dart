@@ -1674,4 +1674,11 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verdictToolEvaluate => 'Weighed the risk';
+
+  @override
+  String get reportSampleResult =>
+      'Sample result. The photo was not analysed by AI';
+
+  @override
+  String get reportRejectedTitle => 'We couldn\'t use this photo';
 }

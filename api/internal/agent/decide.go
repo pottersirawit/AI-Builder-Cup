@@ -141,6 +141,10 @@ type Response struct {
 	// Explanation details why the mode/time was chosen, factors evaluated,
 	// and flood-avoidance route optimization advice.
 	Explanation decision.Explanation `json:"explanation"`
+	// Model is the Gemini model that answered; empty on the deterministic fallback.
+	Model string `json:"model,omitempty"`
+	// LatencyMS is how long the whole Decide call took.
+	LatencyMS int `json:"latency_ms"`
 }
 
 var ErrBadRequest = errors.New("bad request")
@@ -150,11 +154,22 @@ var fallbackTools = []string{"get_trip", "get_route", "get_rain_along_route", "g
 
 const maxAgentTurns = 8
 
+// agentBudget is the total time the Gemini agent loop gets before the
+// deterministic fallback answers instead.
+const agentBudget = 25 * time.Second
+
 // Decide answers one /v1/decide request. With Gemini it lets the agent call
 // tools, decide and write the Thai explanation; without Gemini (or on any
 // Gemini error) the same tools run in a fixed order and the deterministic
 // engine writes the text. Numbers always come from the deterministic engine.
 func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sources []string) (Response, error) {
+	start := time.Now()
+	resp, err := decide(ctx, g, s, req, sources)
+	resp.LatencyMS = int(time.Since(start).Milliseconds())
+	return resp, err
+}
+
+func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sources []string) (Response, error) {
 	depart, mode := s.Now, s.Trip.Mode
 	if req.DepartAt != "" {
 		t, err := planner.ParseTime(req.DepartAt, s.Now)
@@ -224,6 +239,7 @@ func Decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		out, err := runAgent(ctx, g, s, depart, mode, req.QuestionTH, baseline)
 		if err == nil {
 			applyAgent(&resp, out, baseline, s)
+			resp.Model = out.model
 			resp.Reasoning = append(preface, resp.Reasoning...)
 			return resp, nil
 		}
@@ -250,29 +266,29 @@ type agentOutput struct {
 		Tool      string `json:"tool"`
 		SummaryTH string `json:"summary_th"`
 	} `json:"reasoning"`
+	model string // the model that answered, set by runAgent
 }
 
 const systemPrompt = `คุณคือ "ฝนตกไหม" ผู้ช่วยตัดสินใจเดินทางในกรุงเทพฯ ช่วงฝนตกและน้ำท่วม
-หน้าที่: ตอบคำถามเดียวว่า "ควรออกเดินทางตอนไหน ด้วยอะไร" สำหรับทริปนี้ พร้อมอธิบายเหตุผล ปัจจัยที่พิจารณา และคำแนะนำปรับเส้นทางเลี่ยงน้ำท่วม ด้วยภาษาไทยที่สั้น ชัด เหมือนเพื่อนบอก
+หน้าที่: ตอบคำถามเดียวว่า "ควรออกเดินทางตอนไหน ด้วยอะไร" สำหรับทริปนี้ พร้อมอธิบายเหตุผลและปัจจัยที่พิจารณา ด้วยภาษาไทยที่สั้น ชัด เหมือนเพื่อนบอก
 กติกา:
 1. ต้องเรียกเครื่องมือเพื่อดูข้อมูลจริงก่อนตัดสินใจ อย่างน้อย get_trip, get_rain_along_route, get_flood_spots_on_route และ evaluate_departure ของวิธีเดินทางที่ผู้ใช้เลือก ใช้ get_route, get_community_reports, get_canal_levels เมื่อช่วยให้คำตอบดีขึ้น
 2. ห้ามขัดกับผลของ evaluate_departure: ถ้าความเสี่ยงสูง ห้ามบอกให้ออกด้วยวิธีนั้น ความสูงใต้ท้องรถ: รถเก๋งเสี่ยงที่น้ำ 15 ซม. มอเตอร์ไซค์ 10 ซม. หรือฝนหนัก รถไฟฟ้าไม่กระทบน้ำบนถนน
 3. verdict เลือกหนึ่งใน leave_now, wait, switch_mode, dont_go
-4. ระบุเวลาเป็นตัวเลข HH:MM บอกเหตุผลจากข้อมูล ไม่ใช่ข้อความสำเร็จรูป
+4. ระบุเวลาเป็นตัวเลข HH:MM บอกเหตุผลจากข้อมูล ไม่ใช่ข้อความสำเร็จรูป ตัวเลขที่มีหน่วย (ซม. มม./ชม. นาที กม./ชม.) ต้องมาจากผลของเครื่องมือเท่านั้น ห้ามเดาหรือปัดเอง และห้ามเอ่ยชื่อถนนหรือทางด่วนที่ไม่อยู่ในผลของเครื่องมือ
 5. ใน explanation:
    - reason_why_th: อธิบายเหตุผลชัดเจนว่าทำไมถึงแนะนำวิธีนี้และเวลานี้ (เช่น แนะนำออกก่อน 16:45 หรือเปลี่ยนเป็น BTS เพราะน้ำบนถนนรัชดาฯ สูง 25 ซม. เกินระยะพ้นน้ำรถเก๋ง)
    - factors_th: ระบุรายการปัจจัยที่นำมาพิจารณาเป็นข้อๆ (ปริมาณ/เวลาฝนตก, ความสูงน้ำท่วมขังเทียบกับความสูงใต้ท้องรถ, ความเร็วลม, กำหนดเวลานัดหมาย, รายงานน้ำท่วมจริง)
-   - route_advice_th: ให้คำแนะนำเส้นทางเพื่อเลี่ยงน้ำท่วม (เช่น แนะนำเลี่ยงถนนที่มีน้ำท่วมขัง โดยใช้ทางด่วนยกระดับ หรือจอดรถแล้วต่อรถไฟฟ้า)
-   - avoid_spots_th: ระบุรายชื่อจุดเสี่ยงหรือถนนที่ควรเลี่ยง (เช่น ["แยกรัชดาภิเษก-ลาดพร้าว"]) หากไม่มีให้เป็น array ว่าง
+   - route_advice_th และ avoid_spots_th: ระบบเขียนให้เอง ใส่ "" และ [] ได้เลย
 เมื่อพร้อมตอบ ให้ตอบเป็น JSON อย่างเดียว ไม่มีข้อความอื่น:
 {"verdict":"...","headline_th":"ไม่เกิน 30 ตัวอักษร เช่น ออกก่อน 16:45","summary_th":"1-2 ประโยค","leave_by":"HH:MM หรือว่าง","confidence":0.0-1.0,
- "explanation":{"reason_why_th":"...","factors_th":["..."],"route_advice_th":"...","avoid_spots_th":["..."]},
+ "explanation":{"reason_why_th":"...","factors_th":["..."],"route_advice_th":"","avoid_spots_th":[]},
  "reasoning":[{"tool":"ชื่อเครื่องมือที่เรียก","summary_th":"สิ่งที่ได้จากเครื่องมือนั้นใน 1 ประโยค"}]}`
 
 // englishPrompt is appended to the system prompt for English readers.
 const englishPrompt = `
 
-LANGUAGE: the user reads English. Write every text field (headline_th, summary_th, explanation.reason_why_th, explanation.factors_th, explanation.route_advice_th and reasoning[].summary_th) in short, friendly English instead of Thai. Keep the JSON keys and schema exactly as above, including the _th suffixes, and keep every rule above: headline_th at most 30 characters (for example "Leave by 16:45"), times as HH:MM, never contradict evaluate_departure. Tool results may be in Thai; translate what you use. Names of places and roads from the data may stay as they are.`
+LANGUAGE: the user reads English. Write every text field (headline_th, summary_th, explanation.reason_why_th, explanation.factors_th and reasoning[].summary_th) in short, friendly English instead of Thai. Leave route_advice_th and avoid_spots_th empty (the system writes them). Keep the JSON keys and schema exactly as above, including the _th suffixes, and keep every rule above: headline_th at most 30 characters (for example "Leave by 16:45"), times as HH:MM, never contradict evaluate_departure. Tool results may be in Thai; translate what you use. Names of places and roads from the data may stay as they are.`
 
 // systemPromptFor is the system prompt in lang; the Thai one is unchanged.
 func systemPromptFor(lang domain.Lang) string {
@@ -320,7 +336,7 @@ func formatRiskSummary(b decision.Result, depart time.Time, mode domain.Mode) st
 }
 
 func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Time, mode domain.Mode, question string, baseline decision.Result) (agentOutput, error) {
-	ctx, cancel := context.WithTimeout(ctx, 45*time.Second)
+	ctx, cancel := context.WithTimeout(ctx, agentBudget)
 	defer cancel()
 	cfg := &genai.GenerateContentConfig{
 		SystemInstruction: genai.NewContentFromText(systemPromptFor(s.Lang), genai.RoleUser),
@@ -337,10 +353,11 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 	}
 	contents := []*genai.Content{genai.NewContentFromText(user, genai.RoleUser)}
 	for turn := 0; turn < maxAgentTurns; turn++ {
-		resp, err := g.Gen.GenerateContent(ctx, g.Model, contents, cfg)
+		resp, model, err := g.Generate(ctx, contents, cfg)
 		if err != nil {
 			return agentOutput{}, err
 		}
+		g = g.only(model)
 		if len(resp.Candidates) == 0 || resp.Candidates[0].Content == nil {
 			return agentOutput{}, errors.New("empty Gemini response")
 		}
@@ -353,6 +370,7 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 			if len(s.Calls()) == 0 {
 				return agentOutput{}, errors.New("agent answered without calling any tool")
 			}
+			out.model = model
 			return out, nil
 		}
 		contents = append(contents, resp.Candidates[0].Content)
@@ -368,87 +386,123 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 	return agentOutput{}, errors.New("agent did not finish within the turn limit")
 }
 
-// applyAgent takes the agent's verdict and Thai text, guarded by the
-// deterministic engine: the agent may not send someone into high-risk water,
-// numerical leave_by is strictly preserved from the deterministic core, and
-// text quoting a time the tools never returned is replaced by the engine's.
+// applyAgent takes Gemini's Thai text, guarded by the deterministic engine.
+// The verdict, confidence, leave-by, route advice and avoid spots are always
+// the engine's. Gemini's headline, summary, reason and factors are kept only
+// when it proposed the engine's own verdict and the text passes the grounding
+// checks (times, numbers with units, verdict-consistent wording). The trace
+// keeps what the tools actually returned, not Gemini's retelling of it.
 func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *planner.Session) {
 	resp.GeneratedBy = "gemini"
-	v := decision.Verdict(out.Verdict)
-	unsafe := v == decision.LeaveNow && baseline.Evals[resp.Mode].Risk == decision.RiskHigh
-	if v.Valid() && !unsafe && out.HeadlineTH != "" && out.SummaryTH != "" {
-		resp.Verdict, resp.HeadlineTH, resp.SummaryTH = v, out.HeadlineTH, out.SummaryTH
-		// Guardrail: leave_by comes strictly from the deterministic core, never hallucinated by LLM.
-		resp.LeaveBy = baseline.LeaveBy
-		if out.Confidence > 0 && out.Confidence <= 1 {
-			resp.Confidence = out.Confidence
+	var steps []planner.Call
+	kept := false // Gemini's text is in resp
+	if decision.Verdict(out.Verdict) != baseline.Verdict {
+		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool,
+			SummaryTH: verdictGuardSummary(s.Lang, out.Verdict, baseline.Verdict)})
+	} else {
+		if out.HeadlineTH != "" && out.SummaryTH != "" {
+			resp.HeadlineTH, resp.SummaryTH = out.HeadlineTH, out.SummaryTH
+			kept = true
+		}
+		if e := out.Explanation; e != nil {
+			if e.ReasonWhyTH != "" {
+				resp.Explanation.ReasonWhyTH = e.ReasonWhyTH
+			}
+			if len(e.FactorsTH) > 0 {
+				resp.Explanation.FactorsTH = e.FactorsTH
+			}
 		}
 	}
-	if out.Explanation != nil {
-		if out.Explanation.ReasonWhyTH != "" {
-			resp.Explanation.ReasonWhyTH = out.Explanation.ReasonWhyTH
-		}
-		if len(out.Explanation.FactorsTH) > 0 {
-			resp.Explanation.FactorsTH = out.Explanation.FactorsTH
-		}
-		if out.Explanation.RouteAdviceTH != "" {
-			resp.Explanation.RouteAdviceTH = out.Explanation.RouteAdviceTH
-		}
-		if len(out.Explanation.AvoidSpotsTH) > 0 {
-			resp.Explanation.AvoidSpotsTH = out.Explanation.AvoidSpotsTH
-		}
+	if kept && baseline.Verdict != decision.LeaveNow && Contradicts(resp.HeadlineTH+" "+resp.SummaryTH+" "+resp.Explanation.ReasonWhyTH) {
+		resp.HeadlineTH, resp.SummaryTH, resp.Explanation = baseline.HeadlineTH, baseline.SummaryTH, baseline.Explanation
+		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool, SummaryTH: contradictionSummary(s.Lang)})
 	}
-	invented := groundTimes(resp, baseline, s)
-	explained := map[string][]string{}
-	for _, r := range out.Reasoning {
-		if r.SummaryTH != "" {
-			explained[r.Tool] = append(explained[r.Tool], r.SummaryTH)
-		}
-	}
+	invented, numbers := groundText(resp, baseline, s)
+
+	seen := map[string]bool{}
 	for _, c := range s.Calls() {
-		if texts := explained[c.Tool]; len(texts) > 0 {
-			c.SummaryTH, explained[c.Tool] = texts[0], texts[1:]
+		key := c.Tool + "\x00" + c.SummaryTH + "\x00" + fmt.Sprint(c.Args)
+		if !seen[key] {
+			seen[key] = true
+			resp.Reasoning = append(resp.Reasoning, c)
 		}
-		resp.Reasoning = append(resp.Reasoning, c)
 	}
 	if len(invented) > 0 {
 		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailTool,
 			SummaryTH: guardrailSummary(s.Lang, invented)})
 	}
+	if len(numbers) > 0 {
+		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailNumbersTool,
+			SummaryTH: numbersGuardSummary(s.Lang, numbers)})
+	}
+	resp.Reasoning = append(resp.Reasoning, steps...)
 }
 
-// groundTimes puts back the engine's text wherever Gemini quoted an HH:MM
-// the data does not support, and lists those times. The headline and summary go back
-// with the verdict and confidence they were written for.
-func groundTimes(resp *Response, baseline decision.Result, s *planner.Session) []string {
+// groundText runs the time and number checks on the text applyAgent kept,
+// puts the engine's text back for each field that fails, and returns the
+// invented times and the ungrounded numbers it found.
+func groundText(resp *Response, baseline decision.Result, s *planner.Session) (times, numbers []string) {
 	g := NewGrounding(*resp, baseline, ToolTimes(s, resp.DepartAt, resp.Mode, baseline)...)
-	var invented []string
-	check := func(texts ...string) bool {
-		bad := g.Ungrounded(texts...)
-		for _, t := range bad {
-			if !slices.Contains(invented, t) {
-				invented = append(invented, t)
+	facts := []string{baseline.HeadlineTH, baseline.SummaryTH, baseline.Explanation.ReasonWhyTH, baseline.Explanation.RouteAdviceTH}
+	facts = append(facts, baseline.Explanation.FactorsTH...)
+	for _, c := range s.Calls() {
+		facts = append(facts, c.SummaryTH)
+	}
+	g.AddFacts(facts...)
+	e, base := &resp.Explanation, baseline.Explanation
+	// bad is true when texts quote an ungrounded time or number.
+	bad := func(texts ...string) bool {
+		t, n := g.Ungrounded(texts...), g.UngroundedNumbers(texts...)
+		for _, x := range t {
+			if !slices.Contains(times, x) {
+				times = append(times, x)
 			}
 		}
-		return len(bad) > 0
+		for _, x := range n {
+			if !slices.Contains(numbers, x) {
+				numbers = append(numbers, x)
+			}
+		}
+		return len(t)+len(n) > 0
 	}
-	if check(resp.HeadlineTH, resp.SummaryTH) {
-		resp.Verdict, resp.HeadlineTH, resp.SummaryTH, resp.Confidence = baseline.Verdict, baseline.HeadlineTH, baseline.SummaryTH, baseline.Confidence
+	if bad(resp.HeadlineTH, resp.SummaryTH) {
+		resp.HeadlineTH, resp.SummaryTH = baseline.HeadlineTH, baseline.SummaryTH
 	}
-	e, base := &resp.Explanation, baseline.Explanation
-	if check(e.ReasonWhyTH) {
+	if bad(e.ReasonWhyTH) {
 		e.ReasonWhyTH = base.ReasonWhyTH
 	}
-	if check(e.FactorsTH...) {
+	if bad(e.FactorsTH...) {
 		e.FactorsTH = base.FactorsTH
 	}
-	if check(e.RouteAdviceTH) {
-		e.RouteAdviceTH = base.RouteAdviceTH
+	if len(times) > 0 {
+		slog.Warn("gemini quoted times not in tool data, using engine text", "times", times)
 	}
-	if len(invented) > 0 {
-		slog.Warn("gemini quoted times not in tool data, using engine text", "times", invented)
+	if len(numbers) > 0 {
+		slog.Warn("gemini quoted numbers not in tool data, using engine text", "numbers", numbers)
 	}
-	return invented
+	return times, numbers
+}
+
+func verdictGuardSummary(lang domain.Lang, proposed string, engine decision.Verdict) string {
+	if lang == domain.LangEN {
+		return fmt.Sprintf("The model proposed %q but the calculation engine's verdict is %q, so the engine's verdict and text were used", proposed, engine)
+	}
+	return fmt.Sprintf("โมเดลเสนอ %q แต่ระบบคำนวณได้ %q จึงใช้ผลและข้อความจากระบบคำนวณ", proposed, engine)
+}
+
+func contradictionSummary(lang domain.Lang) string {
+	if lang == domain.LangEN {
+		return "The model's text said to leave now against the engine's verdict, so the engine's text was used instead"
+	}
+	return "ข้อความจากโมเดลบอกให้ออกได้เลยทั้งที่ผลคำนวณไม่ใช่ จึงใช้ข้อความจากระบบคำนวณแทน"
+}
+
+func numbersGuardSummary(lang domain.Lang, numbers []string) string {
+	list := strings.Join(numbers, ", ")
+	if lang == domain.LangEN {
+		return "The figures " + list + " do not match the data, so the calculation engine's text was used instead"
+	}
+	return "ตัวเลข " + list + " ไม่ตรงกับข้อมูล จึงใช้ข้อความจากระบบคำนวณแทน"
 }
 
 func guardrailSummary(lang domain.Lang, times []string) string {

@@ -37,6 +37,12 @@ func heroInput(t *testing.T, now, depart time.Time, mode domain.Mode, reports ..
 	}
 }
 
+// withRatchadaSeeds backs r with the two scenario reports on Ratchada, which is
+// what makes a photo count at its full depth.
+func withRatchadaSeeds(r domain.Report) []domain.Report {
+	return append(scenario.SeedReports()[:2:2], r)
+}
+
 func TestHeroRouteCrossesTheExpectedFloodSpots(t *testing.T) {
 	in := heroInput(t, at(16, 10), at(16, 10), domain.ModeCar)
 	got := map[string]bool{}
@@ -51,7 +57,7 @@ func TestHeroRouteCrossesTheExpectedFloodSpots(t *testing.T) {
 }
 
 func TestDecideHeroBeats(t *testing.T) {
-	ratchadaReport := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25}
+	ratchadaReport := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84}
 	tests := []struct {
 		name         string
 		now, depart  time.Time
@@ -93,7 +99,7 @@ func TestDecideHeroBeats(t *testing.T) {
 			wantInText: []string{"เลยนัด 18:30 ไป 150 นาที"},
 		},
 		{
-			name: "18:52 photo report confirms 25 cm on Ratchada", now: at(18, 52), depart: at(18, 52), mode: domain.ModeCar, reports: []domain.Report{ratchadaReport},
+			name: "18:52 photo report confirms 25 cm on Ratchada", now: at(18, 52), depart: at(18, 52), mode: domain.ModeCar, reports: withRatchadaSeeds(ratchadaReport),
 			wantVerdict: SwitchMode, wantInText: []string{"รัชดาภิเษก"},
 		},
 	}
@@ -142,8 +148,8 @@ func TestDecideHeroDetails(t *testing.T) {
 		}
 	}
 
-	report := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMax: 25}
-	res = Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, report))
+	report := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMax: 25, Confidence: 0.84}
+	res = Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, withRatchadaSeeds(report)...))
 	if res.FloodSpots[0].ID != "report-r1" || res.FloodSpots[0].ExpectedDepthCM != 25 || res.FloodSpots[0].Risk != RiskHigh {
 		t.Errorf("deepest spot should be the photo report, got %+v", res.FloodSpots[0])
 	}
@@ -264,9 +270,9 @@ func TestDecideExplanation(t *testing.T) {
 	// 2. High flood depth scenario on Ratchada: should advise switching mode and avoiding Ratchada
 	ratchadaReport := domain.Report{
 		ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng,
-		CreatedAt: at(18, 52), DepthCMMax: 25,
+		CreatedAt: at(18, 52), DepthCMMax: 25, Confidence: 0.84,
 	}
-	resFlooded := Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, ratchadaReport))
+	resFlooded := Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, withRatchadaSeeds(ratchadaReport)...))
 	if !strings.Contains(resFlooded.Explanation.ReasonWhyTH, "รถไฟฟ้า") && !strings.Contains(resFlooded.Explanation.ReasonWhyTH, "น้ำท่วม") {
 		t.Errorf("ReasonWhyTH should mention transit or flood, got %q", resFlooded.Explanation.ReasonWhyTH)
 	}
@@ -275,5 +281,36 @@ func TestDecideExplanation(t *testing.T) {
 	}
 	if !strings.Contains(resFlooded.Explanation.RouteAdviceTH, "รัชดา") {
 		t.Errorf("RouteAdviceTH should mention avoiding Ratchada, got %q", resFlooded.Explanation.RouteAdviceTH)
+	}
+}
+
+func TestReportDepthWeighting(t *testing.T) {
+	p := scenario.HeroReportPoint
+	mk := func(id string, mm int, by string, conf float64, depthMax int) domain.Report {
+		return domain.Report{ID: id, Lat: p.Lat, Lng: p.Lng, CreatedAt: at(18, mm), DepthCMMin: depthMax - 5, DepthCMMax: depthMax, Confidence: conf, GeneratedBy: by}
+	}
+	now := at(19, 0)
+	tests := []struct {
+		name string
+		r    domain.Report
+		all  []domain.Report
+		want float64
+	}{
+		{"fallback hero assessment is ignored", mk("a", 50, "fallback", 0.84, 25), nil, 0},
+		{"fallback never corroborates", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), mk("b", 51, "fallback", 0.9, 40)}, 15},
+		{"low confidence is ignored", mk("a", 50, "gemini", 0.4, 40), nil, 0},
+		{"solo report is confidence weighted", mk("a", 50, "gemini", 0.5, 20), nil, 10},
+		{"solo report is capped at 15 cm", mk("a", 50, "gemini", 0.9, 100), nil, 15},
+		{"low confidence report does not corroborate", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), mk("b", 51, "gemini", 0.3, 40)}, 15},
+		{"two usable reports give the full depth", mk("a", 50, "gemini", 0.6, 40), []domain.Report{mk("a", 50, "gemini", 0.6, 40), mk("b", 51, "", 0.7, 30)}, 40},
+		{"corroborator outside the window does not count", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), {ID: "b", Lat: p.Lat, Lng: p.Lng, CreatedAt: at(17, 0), Confidence: 0.9}}, 15},
+		{"corroborator too far away does not count", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), {ID: "b", Lat: p.Lat + 0.01, Lng: p.Lng, CreatedAt: at(18, 51), Confidence: 0.9}}, 15},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := reportDepthCM(tt.r, tt.all, now); got != tt.want {
+				t.Fatalf("got %v, want %v", got, tt.want)
+			}
+		})
 	}
 }
