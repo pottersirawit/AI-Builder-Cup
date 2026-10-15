@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fontokmai (ฝนตกไหม) - Bangkok Weather & Flood Commute Resilience</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0 1.5rem;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 3rem 0;
+    }
+    header {
+      text-align: center;
+      margin-bottom: 3.5rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.25rem 0.75rem;
+      border-radius: 9999px;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      font-size: 0.875rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+    h1 {
+      font-size: 2.75rem;
+      font-weight: 800;
+      letter-spacing: -0.025em;
+      margin-bottom: 0.75rem;
+      background: linear-gradient(to right, #ffffff, #94a3b8);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+    .tagline {
+      font-size: 1.25rem;
+      color: var(--text-muted);
+      max-width: 650px;
+      margin: 0 auto;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 3rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.75rem;
+    }
+    .card h3 {
+      font-size: 1.25rem;
+      margin-bottom: 0.5rem;
+      color: #ffffff;
+    }
+    .card p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+    }
+    .features-list {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 2rem;
+      margin-bottom: 3rem;
+    }
+    .features-list h2 {
+      font-size: 1.5rem;
+      margin-bottom: 1rem;
+    }
+    ul {
+      list-style-position: inside;
+      color: var(--text-muted);
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      margin: 0 0.75rem;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <span class="badge">Bangkok Urban Mobility Intelligence</span>
+      <h1>Fontokmai (ฝนตกไหม)</h1>
+      <p class="tagline">An intelligent AI commute & flood resilience platform protecting Bangkok commuters with live sensor telemetry and proactive route intelligence.</p>
+    </header>
+
+    <div class="grid">
+      <div class="card">
+        <h3>251 BMA Road Sensors</h3>
+        <p>Real-time depth telemetry across Bangkok flood spots filtered dynamically along user travel polylines.</p>
+      </div>
+      <div class="card">
+        <h3>Marine Tidal Forecasting</h3>
+        <p>Live Chao Phraya estuary surge telemetry to compute backwater drainage impedance risks in low-lying canals.</p>
+      </div>
+      <div class="card">
+        <h3>WeatherNext 3 Radar</h3>
+        <p>Precipitation, wind gust, and radar-backed weather predictions cached with high-throughput architecture.</p>
+      </div>
+    </div>
+
+    <div class="features-list">
+      <h2>Google Calendar & Proactive Advisory</h2>
+      <p style="margin-bottom: 1rem; color: var(--text-muted);">
+        Fontokmai integrates with Google Calendar to read upcoming event schedules and locations. By synchronizing anticipated travel times with incoming weather fronts and road inundation sensors, the AI calculates safe departure windows before flash floods trap commuters in traffic.
+      </p>
+      <ul>
+        <li><strong>Privacy-First:</strong> Read-only calendar access, ephemeral in-memory processing.</li>
+        <li><strong>Multimodal Ingestion:</strong> Evaluates route alternatives when primary corridors flood.</li>
+        <li><strong>Emergency Hotlines:</strong> 1-tap direct access to 1784 DDPM, 1669 EMS, and 1586 DOH.</li>
+      </ul>
+    </div>
+
+    <footer>
+      <p>&copy; 2026 Fontokmai (ฝนตกไหม). All rights reserved.</p>
+      <p style="margin-top: 0.75rem;">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy Policy</a>
+        <a href="https://github.com/pottersirawit/AI-Builder-Cup" target="_blank" rel="noopener">GitHub Repository</a>
+        <a href="mailto:the32069@gmail.com">Contact Developer</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>
