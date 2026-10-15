@@ -205,6 +205,10 @@ type TripRequest struct {
 	Places []domain.SavedPlace
 	// Lang is the language of the trip titles and decision text; zero is Thai.
 	Lang domain.Lang
+	// Trip, when set, is the exact trip passed by the client or resolved from user storage.
+	Trip *domain.Trip
+	// Email of the authenticated user.
+	Email string
 }
 
 func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time, tripID string) (*Session, error) {
@@ -223,6 +227,18 @@ func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req T
 
 func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
 	s := &Session{Lang: req.Lang, ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}, places: req.Places, origin: req.Origin}
+
+	if req.Trip != nil {
+		s.Trip = *req.Trip
+		if s.Trip.Origin.Lat == 0 && s.Trip.Origin.Lng == 0 && req.Origin != nil {
+			s.Trip.Origin = *req.Origin
+		}
+		if s.Trip.Destination.Lat == 0 && s.Trip.Destination.Lng == 0 && req.Destination != nil {
+			s.Trip.Destination = *req.Destination
+		}
+		return s, nil
+	}
+
 	switch {
 	case req.Destination != nil && req.Origin == nil:
 		return nil, fmt.Errorf("%w: destination needs an origin", ErrBadTrip)

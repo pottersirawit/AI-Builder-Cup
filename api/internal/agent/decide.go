@@ -29,6 +29,10 @@ type Request struct {
 	// Places are the user's saved places; questions resolve against them
 	// instead of the demo user's. An empty list means none saved.
 	Places []domain.SavedPlace `json:"places"`
+	// Trip is an explicit trip passed from the client (e.g. from synced Calendar or Gmail).
+	Trip *domain.Trip `json:"trip,omitempty"`
+	// Email is the user email identifier for stored trips and credentials.
+	Email string `json:"email,omitempty"`
 }
 
 // NeedsPlace is the answer to a question that names somewhere the server
@@ -72,7 +76,7 @@ func (r Request) TripRequest() (planner.TripRequest, error) {
 // "(district)" suffix) and, for home and work, the usual words for them.
 // Default labels are written in lang.
 func (r Request) TripRequestFor(lang domain.Lang) (planner.TripRequest, error) {
-	tr := planner.TripRequest{TripID: r.TripID, Lang: lang}
+	tr := planner.TripRequest{TripID: r.TripID, Lang: lang, Trip: r.Trip, Email: r.Email}
 	for _, end := range []struct {
 		p    *domain.Place
 		dst  **domain.Place

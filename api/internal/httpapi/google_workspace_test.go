@@ -1,10 +1,12 @@
 package httpapi
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"testing"
 	"time"
 
@@ -149,5 +151,46 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 
 	if wSync.Code != http.StatusOK {
 		t.Fatalf("GET /v1/trips/sync returned status %d, want 200", wSync.Code)
+	}
+
+	// 4. Decide on this custom trip via trip_id and email
+	decReqBody, _ := json.Marshal(map[string]any{
+		"trip_id": "cal-custom-1",
+		"email":   testEmail,
+	})
+	rDec := httptest.NewRequest("POST", "/v1/decide", bytes.NewReader(decReqBody))
+	wDec := httptest.NewRecorder()
+	h.ServeHTTP(wDec, rDec)
+	if wDec.Code != http.StatusOK {
+		t.Fatalf("POST /v1/decide returned status %d, want 200: %s", wDec.Code, wDec.Body.String())
+	}
+
+	var decRes struct {
+		Verdict   string      `json:"verdict"`
+		Trip      domain.Trip `json:"trip"`
+		Reasoning []struct {
+			Tool      string `json:"tool"`
+			SummaryTH string `json:"summary_th"`
+		} `json:"reasoning"`
+	}
+	if err := json.NewDecoder(wDec.Body).Decode(&decRes); err != nil {
+		t.Fatalf("decode decide response failed: %v", err)
+	}
+	if decRes.Trip.ID != "cal-custom-1" || decRes.Trip.TitleTH != "นัดหมายพิเศษจาก Calendar" {
+		t.Errorf("decide returned trip %+v, want cal-custom-1 with custom title", decRes.Trip)
+	}
+	if len(decRes.Reasoning) == 0 || !strings.Contains(decRes.Reasoning[0].SummaryTH, "นัดหมายพิเศษจาก Calendar") {
+		t.Errorf("expected reasoning trace to mention custom trip title, got: %+v", decRes.Reasoning)
+	}
+
+	// 5. Decide with trip passed directly in request body
+	directReqBody, _ := json.Marshal(map[string]any{
+		"trip": customTrip,
+	})
+	rDirect := httptest.NewRequest("POST", "/v1/decide", bytes.NewReader(directReqBody))
+	wDirect := httptest.NewRecorder()
+	h.ServeHTTP(wDirect, rDirect)
+	if wDirect.Code != http.StatusOK {
+		t.Fatalf("POST /v1/decide direct returned status %d, want 200: %s", wDirect.Code, wDirect.Body.String())
 	}
 }

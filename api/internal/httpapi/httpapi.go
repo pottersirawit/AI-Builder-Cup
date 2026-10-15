@@ -224,6 +224,24 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if tripReq.Trip != nil && s.UserStore != nil {
+		email := req.Email
+		if email == "" {
+			email = r.URL.Query().Get("email")
+		}
+		if email == "" {
+			email = "the32069@gmail.com"
+		}
+		_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+			UID:       email,
+			Trip:      *tripReq.Trip,
+			UpdatedAt: time.Now(),
+		})
+	} else if tripReq.Trip == nil && tripReq.TripID != "" && s.UserStore != nil {
+		if ut, err := s.UserStore.FindTripByID(r.Context(), tripReq.TripID); err == nil {
+			tripReq.Trip = &ut.Trip
+		}
+	}
 	sess, err := s.Planner.Open(r.Context(), rc.prov, rc.now, tripReq)
 	if errors.Is(err, planner.ErrBadTrip) {
 		writeError(w, http.StatusBadRequest, err.Error())

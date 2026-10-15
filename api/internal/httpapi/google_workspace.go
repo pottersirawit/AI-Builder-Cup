@@ -146,10 +146,15 @@ type googleCalendarItem struct {
 
 // FetchGoogleCalendarEvents queries upcoming events from Google Calendar API.
 func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time.Time) ([]googleCalendarItem, error) {
-	timeMin := now.Add(-2 * time.Hour).UTC().Format(time.RFC3339)
-	timeMax := now.AddDate(0, 0, 14).UTC().Format(time.RFC3339)
+	tMin := now.Add(-24 * time.Hour)
+	realNow := time.Now()
+	if realNow.Before(tMin) || realNow.After(now.AddDate(0, 0, 14)) {
+		tMin = realNow.Add(-24 * time.Hour)
+	}
+	timeMin := tMin.UTC().Format(time.RFC3339)
+	timeMax := tMin.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
 
-	u := fmt.Sprintf("%s?timeMin=%s&timeMax=%s&singleEvents=true&orderBy=startTime&maxResults=20",
+	u := fmt.Sprintf("%s?timeMin=%s&timeMax=%s&singleEvents=true&orderBy=startTime&maxResults=25",
 		googleCalendarEventsURL, url.QueryEscape(timeMin), url.QueryEscape(timeMax))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
@@ -295,10 +300,14 @@ func ConvertCalendarEventToTrip(ctx context.Context, item googleCalendarItem, ge
 	}
 
 	// 2. Try geocoding if not matched in saved places
-	if geo != nil && destPlace.Lat == 13.7462 && destPlace.Lng == 100.5348 && item.Location != "" {
-		if candidates, err := geo.Search(ctx, item.Location); err == nil && len(candidates) > 0 {
+	if geo != nil && destPlace.Lat == 13.7462 && destPlace.Lng == 100.5348 {
+		searchQuery := item.Location
+		if searchQuery == "" {
+			searchQuery = title
+		}
+		if candidates, err := geo.Search(ctx, searchQuery); err == nil && len(candidates) > 0 {
 			destPlace = domain.Place{
-				NameTH: item.Location,
+				NameTH: searchQuery,
 				Lat:    candidates[0].Lat,
 				Lng:    candidates[0].Lng,
 			}

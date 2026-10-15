@@ -115,6 +115,17 @@ class Trip {
   /// The event's location as written, when the server could not place it.
   final String? locationTextTh;
   bool get unresolved => locationTextTh != null;
+
+  Json toJson() => {
+    'id': id,
+    'title_th': titleTh,
+    'source': source,
+    'origin': origin.toJson(),
+    'destination': destination.toJson(),
+    if (arriveBy != null) 'arrive_by': arriveBy!.toIso8601String(),
+    'mode': mode.wire,
+    if (locationTextTh != null) 'location_text_th': locationTextTh,
+  };
 }
 
 class RainPoint {
@@ -366,6 +377,8 @@ class DecideRequest {
     this.origin,
     this.destination,
     this.places = const [],
+    this.trip,
+    this.email,
   });
   final String? tripId;
 
@@ -376,12 +389,16 @@ class DecideRequest {
   final Place? origin;
   final Place? destination;
   final List<SavedPlace> places;
+  final Trip? trip;
+  final String? email;
 
   DecideRequest copyWith({
     String? departAt,
     TravelMode? mode,
     Place? destination,
     List<SavedPlace>? places,
+    Trip? trip,
+    String? email,
   }) => DecideRequest(
     tripId: tripId,
     departAt: departAt ?? this.departAt,
@@ -390,6 +407,8 @@ class DecideRequest {
     origin: origin,
     destination: destination ?? this.destination,
     places: places ?? this.places,
+    trip: trip ?? this.trip,
+    email: email ?? this.email,
   );
 
   Json toJson() => {
@@ -400,6 +419,8 @@ class DecideRequest {
     if (origin != null) 'origin': origin!.toJson(),
     if (destination != null) 'destination': destination!.toJson(),
     if (places.isNotEmpty) 'places': [for (final p in places) p.toWire()],
+    if (trip != null) 'trip': trip!.toJson(),
+    if (email != null) 'email': email,
   };
 }
 

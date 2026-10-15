@@ -70,6 +70,9 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     unawaited(_refreshLocation());
     try {
+      if (_trips.isEmpty && store.cachedTrips.isNotEmpty) {
+        _trips = store.cachedTrips;
+      }
       final homeF = home == null
           ? null
           : api.homeStatus(home: store.demoProfile ? null : home);
@@ -87,7 +90,14 @@ class _HomeScreenState extends State<HomeScreen> {
       state
         ..markSample((tripsR?.isSample ?? false) || (homeR?.isSample ?? false))
         ..homeLevel = homeR?.data.level ?? HomeLevel.normal;
-      final trips = tripsR?.data ?? const <Trip>[];
+      final trips = (tripsR?.data != null && tripsR!.data.isNotEmpty)
+          ? tripsR.data
+          : (isWorkspaceConnected && store.cachedTrips.isNotEmpty
+              ? store.cachedTrips
+              : (tripsR?.data ?? const <Trip>[]));
+      if (tripsR?.data != null && tripsR!.data.isNotEmpty) {
+        store.setCachedTrips(tripsR.data);
+      }
       final now = state.now();
       final resolved = trips.where((t) => !t.unresolved).toList();
       final headsHomeToday =
@@ -156,11 +166,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Server trips go by id; the app's own trips send their endpoints.
-  DecideRequest _requestFor(Trip t) =>
-      t.source == 'routine' || t.source == 'app'
-      ? DecideRequest(origin: t.origin, destination: t.destination)
-      : DecideRequest(tripId: t.id);
+  /// Sends full trip details with endpoints and identity for precise planning.
+  DecideRequest _requestFor(Trip t) {
+    final store = AppScope.readPlaces(context);
+    final email = store.calendar == LinkState.connected
+        ? store.calendarAccount
+        : (store.gmail == LinkState.connected ? store.gmailAccount : null);
+    return DecideRequest(
+      tripId: t.id,
+      origin: t.origin,
+      destination: t.destination,
+      trip: t,
+      email: email,
+    );
+  }
 
   void _push(Widget screen) => Navigator.of(
     context,
