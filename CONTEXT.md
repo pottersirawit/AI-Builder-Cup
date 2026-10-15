@@ -31,6 +31,7 @@ This document defines the ubiquitous domain language for the Bangkok Weather Res
 
 ## 3. Architecture & Seams
 
-- **Gateway Seam (`gateway/`)**: High-concurrency Go service responsible for LINE Messaging API webhooks, HMAC-SHA256 signature verification, user profile caching, and serving the LINE LIFF Web App.
-- **Engine Seam (`engine/`)**: Python FastAPI service handling spatial indexing (Haversine/Shapely), ThaiWater/BMA radar polling, and Gemini 1.5 multimodal reasoning.
-- **LIFF Experience (`gateway/static/liff/`)**: Mobile Web App adhering strictly to **Theme 1: Apple Spatial Weather** (frosted glassmorphism, dynamic sky backdrop, tactile vehicle toggles, interactive hourly scrubber).
+- **Core API (`api/`)**: High-performance Go service deployed on Cloud Run handling HTTP API endpoints, Gemini 2.5 Flash agent reasoning (`agent/`), mathematical risk assessment (`decision/`), geocoding (`geocode/`), and telemetry aggregation (`live/`).
+- **Mobile Experience (`app/`)**: Cross-platform Flutter client implementing Contract v1 (departure boards, interactive hourly scrubber, flood camera reporting, demo clock).
+- **AI Agent Seam**: Gemini 2.5 Flash operates via function-calling tools (`get_trip`, `get_route`, `get_rain_along_route`, `get_flood_spots_on_route`, `evaluate_departure`) with mathematical guardrails ensuring numerical veracity.
+- **GIS / Weather Cache**: BigQuery WeatherNext 3 (`ai-cup-511208:weathernext_3`) cached at 6-hour model run intervals for sub-millisecond local spatial interpolation.

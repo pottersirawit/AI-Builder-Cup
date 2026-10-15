@@ -1,0 +1,10 @@
+{
+  "level": "watch",
+  "headline_th": "คืนนี้เสี่ยงน้ำท่วม: ปานกลาง",
+  "canal": {"name_th": "คลองลาดพร้าว", "level_m": 1.4, "bank_m": 1.8, "rise_cm_2h": 10},
+  "actions": [
+    {"order": 1, "text_th": "ถ้ากลับบ้านค่ำ จอดรถไว้ที่สูงก่อนสองทุ่ม"},
+    {"order": 2, "text_th": "เตรียมยกของชั้นล่างไว้ล่วงหน้า"}
+  ],
+  "sources": ["ThaiWater (HII)", "Google Weather API", "รายงานจากผู้ใช้ 3 คนใน 20 นาที"]
+}

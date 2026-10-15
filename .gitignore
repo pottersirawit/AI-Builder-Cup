@@ -5,6 +5,7 @@
 *.key
 *credentials*.json
 google_credentials.json
+service-account.json
 
 # Virtual environment
 venv/

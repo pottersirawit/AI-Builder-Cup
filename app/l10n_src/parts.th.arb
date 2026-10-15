@@ -1,0 +1,248 @@
+{
+  "partsQuestion": "คำถาม: “{question}”",
+  "@partsQuestion": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "partsArriveBy": "ถึงก่อน {time}",
+  "@partsArriveBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsChecking": "กำลังตรวจเวลานี้…",
+  "partsPreviewEstimate": "ประเมินจากฝนบนเส้นทาง ปล่อยนิ้วเพื่อยืนยัน",
+  "partsTakesMin": "ใช้เวลา {minutes} นาที",
+  "@partsTakesMin": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "partsSegLeave": "ออก",
+  "partsSegArrive": "ถึง",
+  "partsSegMode": "โหมด",
+  "partsSegConfidence": "มั่นใจ",
+  "partsNow": "ตอนนี้",
+  "partsDragHint": "ลากหมุดเพื่อลองเวลาออก",
+  "partsLeaveNow": "ออกตอนนี้",
+  "partsOutOfArea": "นอกพื้นที่ที่รองรับ",
+  "partsRainToday": "ฝนวันนี้",
+  "partsMm": "{mm} มม.",
+  "@partsMm": {
+    "placeholders": {
+      "mm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsFloodSpots": "จุดเสี่ยง 2 กม.",
+  "partsReports": "รายงาน 500 ม.",
+  "partsCanalLevel": "ระดับคลอง",
+  "partsCanalLevelValue": "{level}/{bank} ม.",
+  "@partsCanalLevelValue": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "partsCanalRise": "ขึ้นใน 2 ชม.",
+  "partsCm": "{cm} ซม.",
+  "@partsCm": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsToBank": "ถึงตลิ่ง",
+  "partsAtBank": "ถึงแล้ว",
+  "partsCmLeft": "อีก {cm} ซม.",
+  "@partsCmLeft": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsNoCanalStation": "ไม่มีสถานีวัดระดับคลองใกล้บ้าน",
+  "partsOutsideBangkok": "บ้านอยู่นอกกรุงเทพฯ ข้อมูลระดับคลองและจุดน้ำท่วมยังไม่ครอบคลุม แอปเตือนได้เฉพาะฝน",
+  "partsDemoClockSemantic": "เวลาสาธิต {time} แตะเพื่อเปลี่ยน",
+  "@partsDemoClockSemantic": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsRealTime": "เวลาจริง",
+  "partsDemoTime": "เวลาสาธิต",
+  "partsDemoReplay": "เล่นซ้ำพายุ อังคาร 29 ก.ย. 2026 · ส่งเป็น X-Demo-Clock",
+  "partsRealTimeNoHeader": "เวลาจริง (ไม่ส่ง header)",
+  "partsPreset1610": "ก่อนเลิกงาน ฝนยังไม่มา",
+  "partsPreset1852": "พายุบนรัชดา น้ำรอระบาย",
+  "partsPreset2140": "โหมดน้ำท่วมที่บ้าน",
+  "partsPresetDevice": "ใช้นาฬิกาเครื่อง",
+  "partsKindLabel": "{kind, select, home{บ้าน} work{ที่ทำงาน} other{สถานที่}}",
+  "@partsKindLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsFirst": "ต้องรู้ก่อนตอบ",
+  "partsNeedsWhere": "ยังไม่รู้ว่า{place}อยู่ไหน",
+  "@partsNeedsWhere": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsSaveOnce": "บันทึกไว้ครั้งเดียว แล้วแอปจะตอบคำถามนี้ต่อทันที",
+  "partsUseMyLocation": "ใช้ตำแหน่งตอนนี้",
+  "partsSearch": "ค้นหา",
+  "partsWhichPlace": "หมายถึงที่ไหน",
+  "partsNotFound": "หา “{query}” ไม่เจอ ลองค้นด้วยชื่ออื่น",
+  "@partsNotFound": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSimilar": "เจอหลายที่ที่ชื่อคล้าย “{query}”",
+  "@partsSimilar": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSearchFor": "ค้นหา “{query}”",
+  "@partsSearchFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNoneOfThese": "ไม่ใช่ทั้งหมด · ค้นหาเอง",
+  "marksSourceSemantic": "แหล่งข้อมูล: {text}",
+  "@marksSourceSemantic": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "marksSample": "ข้อมูลตัวอย่าง",
+  "marksSampleSemantic": "ข้อมูลตัวอย่าง เชื่อมต่อเซิร์ฟเวอร์ไม่ได้",
+  "marksDemo": "เดโม",
+  "marksDemoSemantic": "โปรไฟล์เดโม ข้อมูลจำลอง",
+  "marksConfidence": "มั่นใจ",
+  "marksConfidenceSemantic": "ความมั่นใจ {percent}",
+  "@marksConfidenceSemantic": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "marksGeneratedByAi": "AI วิเคราะห์ให้",
+  "marksGeneratedByFallback": "ใช้การคำนวณสำรอง · AI ไม่ตอบในรอบนี้",
+  "rainBandLeave": "ออก {time}",
+  "@rainBandLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "rainBandSlider": "เวลาออกเดินทาง ลากเพื่อลองเวลาอื่น",
+  "galleryTitle": "ระบบดีไซน์",
+  "gallerySubtitle": "ฝนตกไหม · โทเคนและคอมโพเนนต์",
+  "galleryClear": "ฟ้าใส",
+  "galleryStorm": "พายุ",
+  "galleryFlood": "น้ำท่วม",
+  "gallerySkySwatches": "พื้นท้องฟ้า",
+  "galleryPassPerSky": "พาสในแต่ละท้องฟ้า",
+  "galleryColors": "สี",
+  "galleryType": "ตัวอักษร · Chakra Petch",
+  "gallerySpace": "ระยะ · รัศมี · เงา",
+  "galleryMotion": "การเคลื่อนไหว",
+  "galleryRainBand": "RainBand · ลากได้",
+  "galleryRerank": "จัดอันดับใหม่",
+  "galleryPlaces": "สถานที่ · Notice · ConnectRow",
+  "galleryNoticeWork": "ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น",
+  "galleryNoticeOff": "ปิดการแจ้งเตือนอยู่ แอปเตือนก่อนออกไม่ได้",
+  "galleryOpenSettings": "เปิดการตั้งค่า",
+  "galleryNoticeCalendar": "เชื่อม Calendar เพื่อให้แอปเห็นนัด",
+  "galleryCalendarDetail": "เฉพาะนัดที่มีสถานที่",
+  "galleryCalendarAccount": "miw.demo@gmail.com · บัญชีจำลอง",
+  "galleryRiskChips": "RiskChip · ConfidenceMeter · SourceLabel",
+  "galleryNotifTitle": "ออกก่อน 16:45 · กินข้าวเย็นกับที่บ้าน",
+  "galleryNotifBody": "ฝนถึงพระราม 4 ประมาณ 17:30 ถ้าออกตอนนี้ถึงบ้านก่อนฝน",
+  "galleryStateLoading": "สถานะ: กำลังโหลด",
+  "galleryStateError": "สถานะ: ผิดพลาด",
+  "galleryStateEmpty": "สถานะ: ว่าง",
+  "galleryErrorTitle": "โหลดทริปไม่ได้",
+  "galleryErrorMessage": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
+  "galleryEmptyTitle": "วันนี้ยังไม่มีทริป",
+  "galleryEmptyMessage": "พิมพ์ถามได้เลย เช่น “ห้าโมงไปสยาม”",
+  "galleryConnectCalendar": "เชื่อม Calendar",
+  "galleryRowTransitSub": "ศาลาแดง → ลาดพร้าว ไม่ต้องพกร่ม",
+  "galleryRowCarSub": "ถึงก่อนฝน ทันนัด 18:30",
+  "galleryRowMotoSub": "ทันพอดี ช้ากว่านี้จะโดนฝน",
+  "galleryRowTitle": "{mode} · {minutes} นาที",
+  "@galleryRowTitle": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "galleryHeadClear": "ออกก่อน 16:45",
+  "galleryHeadStorm": "อย่าเพิ่งออก",
+  "galleryHeadFlood": "น้ำจะถึงหน้าบ้านใน 40 นาที",
+  "galleryColorPass": "พาส",
+  "galleryColorRain": "ฝน (ไม่มี → หนัก)",
+  "galleryColorRisk": "ความเสี่ยง",
+  "galleryTypeVerdict": "คำตัดสิน",
+  "galleryTypeSampleLong": "ฝนถึงพระราม 4 ราว 17:30 น้ำขัง 25 ซม.",
+  "galleryTypeTabular": "ตัวเลขเท่ากัน (Petch Tabular) เทียบตัวเลขปกติ",
+  "galleryMotionTap": "สถานะปุ่มและการเลือก",
+  "galleryMotionFlap": "คำตัดสินพลิกตัวอักษร",
+  "galleryMotionRerank": "กระดานเลื่อนอันดับ",
+  "galleryMotionEnter": "แจ้งเตือนเลื่อนลง",
+  "galleryMotionSky": "สีท้องฟ้าเปลี่ยนสถานะ",
+  "galleryMotionCurves": "เส้นโค้ง: standard (0.2, 0, 0, 1) · emphasized decelerate (0.05, 0.7, 0.1, 1)",
+  "galleryMotionReduced": "ลดการเคลื่อนไหวเปิดอยู่: ทุกระยะเวลาเป็น 0",
+  "galleryFlipDemo": "ออก 16:45 ได้",
+  "galleryFlip": "พลิก",
+  "galleryModeStatus": "{minutes} น. · {status}",
+  "@galleryModeStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  }
+}

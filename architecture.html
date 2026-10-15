@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ฝนตกไหม เบื้องหลังจอ</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root{--bg:#f3f8ff;--card:#fff;--ink:#0b1f3a;--muted:#5b6b82;--line:#d6e4f5;--blue:#1a73e8;--blue2:#4285f4;--violet:#9b72cb;--pink:#d96570;
+    --ok:#1e8e3e;--ok-bg:#e6f4ea;--warn:#e37400;--warn-bg:#fef3e0;--bad:#d93025;--bad-bg:#fce8e6}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:'Chakra Petch',system-ui,sans-serif;color:var(--ink);background:radial-gradient(1200px 500px at 10% -10%,#cfe4ff,#f3f8ff 60%);line-height:1.55}
+  .wrap{max-width:1040px;margin:0 auto;padding:36px 20px 80px}
+  h1{font-size:34px;margin:0 0 6px}
+  h2{font-size:22px;margin:40px 0 12px;padding-top:8px}
+  h3{font-size:16px;margin:0 0 6px}
+  p{margin:8px 0}
+  .lead{font-size:17px;color:var(--muted);max-width:760px}
+  .gem{background:linear-gradient(90deg,var(--blue2),var(--violet) 60%,var(--pink));-webkit-background-clip:text;background-clip:text;color:transparent}
+  .pill{display:inline-block;padding:3px 10px;border-radius:999px;font-size:12px;font-weight:600;background:#e8f0fe;color:var(--blue);white-space:nowrap}
+  .pill.ok{background:var(--ok-bg);color:var(--ok)}.pill.warn{background:var(--warn-bg);color:var(--warn)}.pill.bad{background:var(--bad-bg);color:var(--bad)}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:18px 20px;box-shadow:0 6px 24px rgba(20,60,120,.06)}
+  .grid{display:grid;gap:14px}
+  .g3{grid-template-columns:repeat(3,1fr)} .g2{grid-template-columns:repeat(2,1fr)}
+  @media (max-width:760px){.g3,.g2{grid-template-columns:1fr}}
+  table{width:100%;border-collapse:collapse;background:#fff;border-radius:14px;overflow:hidden;border:1px solid var(--line);font-size:14px}
+  th,td{padding:11px 12px;text-align:left;vertical-align:top;border-bottom:1px solid var(--line)}
+  th{background:#eaf2ff;font-weight:600;font-size:13px}
+  tr:last-child td{border-bottom:0}
+  code{font-family:ui-monospace,Menlo,monospace;font-size:12.5px;background:#eef3fa;padding:1px 6px;border-radius:6px}
+  ul{margin:6px 0;padding-left:20px} li{margin:4px 0}
+  .muted{color:var(--muted)} .small{font-size:13px}
+  /* flow diagram */
+  .flow{display:grid;grid-template-columns:1fr 60px 1.4fr 60px 1fr;gap:10px;align-items:stretch}
+  .col{display:flex;flex-direction:column;gap:10px}
+  .box{border-radius:14px;padding:12px 14px;background:#fff;border:1.5px solid var(--line);font-size:14px}
+  .box b{display:block;font-size:12px;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);margin-bottom:4px}
+  .box.core{border-color:transparent;background:linear-gradient(135deg,#e8f0fe,#f1e9fb);border:1.5px solid #c7d7f7}
+  .box.risk{border-color:#f5c6a5;background:#fff8f0}
+  .arrow{display:flex;align-items:center;justify-content:center;color:var(--blue2);font-size:28px}
+  .tag{font-size:11px;font-weight:600;color:var(--muted);margin-top:4px}
+  @media (max-width:760px){.flow{grid-template-columns:1fr}.arrow{transform:rotate(90deg);height:32px}}
+  .foot{margin-top:50px;font-size:13px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+  a{color:var(--blue)}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="small"><a href="fontokmai.html">‹ กลับไปต้นแบบ</a></p>
+  <h1><span class="gem">ฝนตกไหม</span> เบื้องหลังจอ</h1>
+  <p class="lead">หน้านี้สำหรับทีม ไม่ใช่กรรมการ แสดงเฉพาะสิ่งที่เข้าถึงได้จริงภายในวันส่งงาน 18 ต.ค. 2026 (เหลือ 19 วันจาก 29 ก.ย.) และติดป้ายจุดเสี่ยงตรง ๆ</p>
+
+  <div class="grid g3" style="margin-top:20px">
+    <div class="card"><h3>บังคับตามกติกา</h3><ul class="small"><li>ต้องใช้ Gemini หรือ Gemma</li><li>ต้อง deploy บน Cloud Run หรือ Firebase</li><li>ส่ง proposal PDF + ต้นแบบใช้งานได้ + วิดีโอ ≤ 3 นาที</li></ul></div>
+    <div class="card"><h3>น้ำหนักคะแนน</h3><ul class="small"><li><b>40%</b> Technical merit และการใช้ Gen AI</li><li>25% ตรงโจทย์และ impact</li><li>25% ความใหม่</li><li>10% UX</li></ul></div>
+    <div class="card"><h3>สิ่งที่ "แนะนำ" แต่ไม่บังคับ</h3><p class="small">BigQuery, Earth Engine, Pub/Sub, Vision AI เป็นรายการแนะนำในโจทย์ ไม่มีในกติกาบังคับ ใช้เท่าที่มีเหตุผลจริง</p></div>
+  </div>
+
+  <h2>1. ภาพรวมระบบ: คำถามเดียว หลายทางเข้า</h2>
+  <p class="muted small" style="margin-top:-4px">ทริป (ไปไหน กี่โมง ด้วยอะไร) เข้าระบบได้ 3 ทาง ถามเอง / ระบบหาให้ / เรียนรู้กิจวัตร ทางแรกคือ baseline ที่ใช้ได้ทุกวันแม้ไม่มีนัด สองทางหลังคือส่วน proactive ที่เป็นจุดขาย</p>
+  <div class="flow">
+    <div class="col">
+      <div class="box core"><b>ทางเข้าหลัก · ถามเอง</b>"ห้าโมงไปสยามฝนตกไหม" พิมพ์หรือพูด<div class="tag">Gemini structured output → {ปลายทาง, เวลา, วิธีเดินทาง} · ชิปสถานที่จาก Google Maps</div></div>
+      <div class="box"><b>ทางเข้าอัตโนมัติ</b>นัดใน Google Calendar ที่มีสถานที่<div class="tag">Calendar API · OAuth ผู้ใช้</div></div>
+      <div class="box"><b>ทางเข้าอัตโนมัติ</b>อีเมลยืนยันตั๋ว / นัดหมอ<div class="tag">Gmail API · scope อ่านอย่างเดียว · ต้องมีจอขออนุญาตชัดเจน</div></div>
+      <div class="box"><b>ตัวกระตุ้นเวลา</b>Cloud Scheduler ทุก 15 นาที ตรวจคนที่มีนัดใน 3 ชม. ข้างหน้า<div class="tag">Cloud Scheduler → Cloud Run</div></div>
+      <div class="box"><b>ทางเข้าชุมชน</b>ผู้ใช้ถ่ายรูปน้ำท่วม<div class="tag">Firebase Auth + Cloud Storage</div></div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col">
+      <div class="box core"><b>สมอง</b><strong>Gemini agent บน Vertex AI</strong> (Cloud Run service)<ul class="small" style="margin-top:6px"><li>tool calling: weather(route, t), route(o, d, t), floodpoints(bbox), calendar(user)</li><li>ตัดสินใจ + เหตุผล เป็น structured output (JSON: verdict, leave_by, arrive_at, reasons[])</li><li>แปลงเป็นข้อความ "ภาษาคน" ตามโปรไฟล์ผู้ใช้</li><li>vision: ประเมินระดับน้ำจากรูป เทียบล้อรถ/ขอบทาง</li></ul></div>
+      <div class="box"><b>ข้อมูลนำเข้า</b>
+        <ul class="small" style="margin-top:6px">
+          <li>Google Weather API รายชั่วโมง 240 ชม. อัปเดตทุก 30 นาที <span class="pill ok">พร้อมใช้</span></li>
+          <li>Google Routes API แบบคิดรถติด <span class="pill ok">พร้อมใช้</span></li>
+          <li>กรมอุตุฯ NWP API รายชั่วโมง 72 ชม. 3 กม. <span class="pill warn">ต้องลงทะเบียน</span></li>
+          <li>ระดับคลอง/จุดน้ำท่วม กทม. ผ่าน ThaiWater (HII) <span class="pill bad">จุดเสี่ยง</span></li>
+          <li>รายงานจากผู้ใช้ (รูป + GPS) <span class="pill ok">สร้างเอง</span></li>
+        </ul>
+      </div>
+      <div class="box"><b>ที่เก็บ</b>Firestore: ผู้ใช้, บ้าน/ที่ทำงาน, การตัดสินใจย้อนหลัง, รายงานน้ำท่วม (geohash)</div>
+    </div>
+    <div class="arrow">→</div>
+    <div class="col">
+      <div class="box"><b>ผลลัพธ์</b>แจ้งเตือนเชิงรุกบนมือถือ<div class="tag">Firebase Cloud Messaging</div></div>
+      <div class="box"><b>ผลลัพธ์</b>เตือนคนที่เส้นทางผ่านจุดน้ำท่วมใน 30 นาที<div class="tag">Pub/Sub topic ต่อ geohash → fan-out</div></div>
+      <div class="box"><b>ผลลัพธ์</b>SMS / โทรอ่านข้อความ สำหรับคนไม่มีสมาร์ทโฟน<div class="tag">Pub/Sub → Cloud Function → Twilio/ผู้ให้บริการไทย · ต่อยอด ไม่อยู่ในรอบแรก</div></div>
+      <div class="box"><b>ผลลัพธ์</b>แชทถามต่อ<div class="tag">Gemini เดียวกัน มี context การตัดสินใจล่าสุด</div></div>
+    </div>
+  </div>
+
+  <h2>2. แหล่งข้อมูล ตรวจแล้ว 29 ก.ย. 2026</h2>
+  <table>
+    <tr><th style="width:22%">แหล่ง</th><th>ให้อะไร</th><th style="width:16%">สถานะ</th><th style="width:30%">ถ้าใช้ไม่ได้</th></tr>
+    <tr><td>Google Weather API (Maps Platform)</td><td>ปัจจุบัน + รายชั่วโมง 240 ชม. + เตือนภัย ครอบคลุมไทย ฟรี 10,000 ครั้ง/เดือน</td><td><span class="pill ok">พร้อมใช้</span></td><td>ไม่ต้องมีสำรอง ใช้เป็นแกนของฝน</td></tr>
+    <tr><td>Google Routes API</td><td>เวลาเดินทางคิดรถติด ฟรี 5,000 ครั้ง/เดือนแบบ traffic aware</td><td><span class="pill ok">พร้อมใช้</span></td><td>เก็บ cache ต่อเส้นทาง 15 นาที กันโควตาหมดตอนเดโม</td></tr>
+    <tr><td>กรมอุตุฯ NWP API (data.tmd.go.th/nwpapi)</td><td>รายชั่วโมง 72 ชม. ความละเอียด 3 กม. JSON, OAuth token</td><td><span class="pill warn">ต้องลงทะเบียน</span></td><td>ใช้เป็นแหล่งที่สองให้ Gemini เทียบสองพยากรณ์ ถ้าไม่ทันก็ตัดได้ ไม่กระทบแกน</td></tr>
+    <tr><td>สำนักการระบายน้ำ กทม.</td><td>ระดับคลอง จุดน้ำท่วม เรดาร์ฝน แต่<strong>ไม่มี API สาธารณะ</strong> เว็บเป็น SPA ที่เรียกตรงไม่ได้</td><td><span class="pill bad">จุดเสี่ยง</span></td><td>ดึงผ่าน ThaiWater ของ HII (thaiwater.net/bma) ที่สะท้อนข้อมูลเดียวกัน หรือ relay ของโปรเจกต์ flood2026 (199 สถานี ทุก 5 นาที) ถ้าล้มทั้งคู่ ใช้รายงานผู้ใช้เป็นเซ็นเซอร์แทน</td></tr>
+    <tr><td>Google Flood Hub / Flood Forecasting API</td><td>ไทยอยู่ในพื้นที่ครอบคลุมแม่น้ำ แต่ API จำกัดเฉพาะ pilot ต้องรอคิว "หลายเดือน"</td><td><span class="pill bad">ไม่ทัน</span></td><td>ไม่พึ่ง ใส่ใน proposal เป็นแผนต่อยอด</td></tr>
+    <tr><td>เรดาร์ / nowcast</td><td>กรมอุตุฯ มีแค่รูป JPG · RainViewer มี JSON ฟรี (ใช้ส่วนตัว ต้องให้เครดิต)</td><td><span class="pill warn">ใช้ได้จำกัด</span></td><td>ใช้ RainViewer โชว์เฟรมย้อนหลังในเดโม ไม่เอาเป็นข้อมูลตัดสิน</td></tr>
+    <tr><td>Google Calendar API</td><td>นัดพร้อมสถานที่และเวลา</td><td><span class="pill ok">พร้อมใช้</span></td><td>OAuth verification สำหรับแอปสาธารณะใช้เวลา ใช้โหมด testing กับบัญชีทีมในรอบนี้</td></tr>
+    <tr><td>Gmail API</td><td>อีเมลยืนยันตั๋ว</td><td><span class="pill warn">privacy</span></td><td>scope <code>gmail.readonly</code> เป็น restricted scope ต้องผ่านการตรวจ ในรอบนี้ใช้บัญชีทดสอบ และแสดงจอขออนุญาตชัดเจนในเดโม</td></tr>
+  </table>
+
+  <h2>3. AI ทำอะไรจริง เพื่อคะแนน 40%</h2>
+  <div class="grid g2">
+    <div class="card"><h3>Agent ตัดสินใจ ไม่ใช่สรุปข้อความ</h3><p class="small">Gemini ได้รับ tools (weather, route, floodpoints, calendar) แล้ว<strong>เลือกเรียกเอง</strong>ตามบริบท เช่น มีนัด 18:30 → ดูฝนช่วง 16:00 ถึง 18:30 บนเส้นทาง → ลองเวลาออก 3 ค่า → เลือกค่าที่ทัน คืนคำตอบเป็น JSON ที่ตรวจสอบได้ ก่อนแปลงเป็นภาษาคน</p></div>
+    <div class="card"><h3>Vision เป็นเซ็นเซอร์ชุมชน</h3><p class="small">รูปจากผู้ใช้ + GPS → Gemini ประเมินระดับน้ำ (ซม.) พร้อมความมั่นใจ → ยืนยันกับรายงานใกล้เคียง → เข้าเป็น floodpoint ให้ agent ตัวอื่นใช้ต่อ นี่คือคำตอบเวลาข้อมูลทางการเข้าไม่ถึง</p></div>
+    <div class="card"><h3>ภาษาคนที่มีตัวเลขเสมอ</h3><p class="small">prompt บังคับให้ทุกคำตอบมีเวลาออก เวลาถึง และเหตุผลอ้างข้อมูล กันปัญหา "พยากรณ์ลอย ๆ" แบบเว็บทั่วไป ประเมินได้ด้วย eval ง่าย ๆ: มีเวลาไหม อ้างข้อมูลจริงไหม</p></div>
+    <div class="card"><h3>รู้จักผู้ใช้</h3><p class="small">เก็บการตัดสินใจย้อนหลังใน Firestore เพื่อให้ agent รู้ว่าคนนี้ปกติกลับ 18:00 ทางรัชดา ใช้รถ ไม่ต้องตั้งค่า (ต่อยอด ไม่อยู่ในรอบแรก)</p></div>
+  </div>
+
+  <h2>4. สิ่งที่ต้องสร้างใน 19 วัน</h2>
+  <table>
+    <tr><th>ชิ้นงาน</th><th>รายละเอียด</th><th style="width:14%">ลำดับ</th></tr>
+    <tr><td>Agent service</td><td>Cloud Run + Vertex AI Gemini, tool definitions, structured output, prompt ภาษาคน, eval ชุดเล็ก</td><td><span class="pill bad">ก่อน</span></td></tr>
+    <tr><td>ถามเอง + ตั้งค่า</td><td>Gemini แกะข้อความภาษาคนเป็นทริป (structured output), สถานที่บันทึกจาก Google Maps, สวิตช์เปิดปิด Calendar / Gmail แยกกัน เป็นคำตอบเรื่อง privacy</td><td><span class="pill bad">ก่อน</span></td></tr>
+    <tr><td>Data adapters</td><td>Weather, Routes, ThaiWater/HII, (TMD ถ้าทัน) พร้อม cache ใน Firestore</td><td><span class="pill bad">ก่อน</span></td></tr>
+    <tr><td>Calendar + auth</td><td>Firebase Auth (Google) + Calendar readonly, ดึงนัดที่มีสถานที่ใน 6 ชม.</td><td><span class="pill warn">กลาง</span></td></tr>
+    <tr><td>Scheduler + push</td><td>Cloud Scheduler ทุก 15 นาที → ประเมิน → FCM เฉพาะเมื่อคำตอบเปลี่ยน</td><td><span class="pill warn">กลาง</span></td></tr>
+    <tr><td>รายงานรูป + Pub/Sub</td><td>อัปโหลด → vision → floodpoint → Pub/Sub → เตือนคนบนเส้นทาง</td><td><span class="pill warn">กลาง</span></td></tr>
+    <tr><td>แอปฝั่งผู้ใช้</td><td>PWA จากต้นแบบนี้ (หน้าหลัก, เหตุผล, แชท, รายงาน, โหมดน้ำท่วม)</td><td><span class="pill ok">ขนานกัน</span></td></tr>
+    <tr><td>Gmail card</td><td>อ่านอีเมลตั๋วในบัญชีทดสอบ แปลงเป็นนัด</td><td><span class="pill">ท้ายสุด</span></td></tr>
+    <tr><td>Proposal PDF + วิดีโอ 3 นาที</td><td>เริ่มเขียนตั้งแต่สัปดาห์แรก อัดวิดีโอ 2 วันก่อนส่ง</td><td><span class="pill bad">อย่าลืม</span></td></tr>
+  </table>
+
+  <h2>5. คำถามที่ทีมควรตอบก่อน commit</h2>
+  <div class="card">
+    <ul>
+      <li>ใครเคยใช้ Vertex AI tool calling จริง ถ้ายังไม่มี ให้คนนั้นทำ spike 1 วันแรกก่อนแบ่งงานอย่างอื่น</li>
+      <li>เดโมวิดีโอจะใช้ข้อมูลสดของวันอัด หรือใช้ replay ของวันฝนตกจริง (แนะนำ replay เพราะควบคุมดราม่าได้)</li>
+      <li>รับความเสี่ยงเรื่อง ThaiWater ล่มระหว่างเดโมไหม ถ้าไม่ ให้ snapshot ข้อมูลไว้ใน Firestore เป็นสำรองตั้งแต่ต้น</li>
+      <li>Gmail จะเอาเข้ารอบแรกจริงไหม เมื่อกรรมการจะถามเรื่อง privacy แน่ ถ้าตอบไม่ทันให้ตัดออกจากวิดีโอแต่คงไว้ใน proposal</li>
+      <li>ชื่ออังกฤษสำหรับกรรมการ JAPAC ตัดสินใจก่อนเขียน proposal</li>
+    </ul>
+  </div>
+
+  <div class="foot">
+    ตรวจสอบแหล่งข้อมูลจากเว็บทางการเมื่อ 29 ก.ย. 2026: aibuildercup.com · developers.google.com/maps/documentation/weather · developers.google.com/maps/documentation/routes · data.tmd.go.th/nwpapi/doc · thaiwater.net/bma · support.google.com/flood-hub · rainviewer.com/api.html
+  </div>
+</div>
+</body>
+</html>

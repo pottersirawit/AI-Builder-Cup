@@ -1,4 +1,6 @@
 # Bangkok Weather Resilience AI (ระบบเตือนภัยและรับมือน้ำท่วม/สภาพอากาศเชิงรุก)
+> **Mobile app (ฝนตกไหม):** Flutter app อยู่ใน `app/` และ Go API อยู่ใน `api/` ดูวิธีรันที่ [`RUNNING.md`](RUNNING.md) และแผนรวมไอเดียที่ [`docs/plan/merged-flow.md`](docs/plan/merged-flow.md)
+
 > ผสานพลัง **Google WeatherNext 3 (5km FGN)**, **Google Cloud Vertex AI (Gemini 1.5)** และโทรมาตรท้องถิ่นกรุงเทพฯ (เรดาร์ กทม. + ThaiWater Standard API) เพื่อสร้างการแจ้งเตือนและการเตรียมตัวเชิงรุกเฉพาะบุคคล (Hyper-personalized Proactive Advisory)
 
 ---

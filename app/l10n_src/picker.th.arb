@@ -1,0 +1,201 @@
+{
+  "placeKindHome": "บ้าน",
+  "placeKindWork": "ที่ทำงาน",
+  "placeKindOther": "สถานที่",
+  "placeDemoSiam": "สยาม",
+  "placeDemoThonglor": "ทองหล่อ",
+  "placeDemoImpact": "อิมแพ็ค",
+  "locationGpsOff": "GPS ปิดอยู่",
+  "locationDenied": "ไม่ได้อนุญาตให้ใช้ตำแหน่ง",
+  "locationUnavailable": "หาตำแหน่งไม่ได้",
+  "locationCurrent": "ตำแหน่งปัจจุบัน",
+  "locationFallbackSpot": "ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32",
+  "placesPinLabel": "หมุดตำแหน่ง {lat}, {lng}",
+  "@placesPinLabel": {
+    "placeholders": {
+      "lat": {
+        "type": "String"
+      },
+      "lng": {
+        "type": "String"
+      }
+    }
+  },
+  "placesDismiss": "ปิด",
+  "placesNotConnected": "ยังไม่เชื่อมต่อ",
+  "placesNotConnectedDetail": "ยังไม่เชื่อมต่อ · {detail}",
+  "@placesNotConnectedDetail": {
+    "placeholders": {
+      "detail": {
+        "type": "String"
+      }
+    }
+  },
+  "placesConnecting": "กำลังเชื่อมต่อ…",
+  "placesConnected": "เชื่อมต่อแล้ว",
+  "placesConnectFailed": "เชื่อมต่อไม่สำเร็จ ลองอีกครั้ง",
+  "placesComingSoon": "เร็ว ๆ นี้",
+  "placesConnect": "เชื่อมต่อ",
+  "placesDisconnect": "ยกเลิก",
+  "placesRetry": "ลองอีกครั้ง",
+  "placesSearching": "กำลังค้นหา",
+  "onboardingHeadline": "ให้แอปเตือนก่อนกลับบ้าน",
+  "onboardingIntro": "บอกว่าบ้านกับที่ทำงานอยู่ไหน แอปจะเช็กฝนและน้ำท่วมบนทางกลับให้ทุกเย็น และดูความเสี่ยงน้ำท่วมหน้าบ้าน",
+  "onboardingSkipNote": "ข้ามไปก่อนก็ได้ ถามเองได้เสมอ",
+  "onboardingStart": "เริ่มใช้",
+  "onboardingSkip": "ข้ามไปก่อน",
+  "onboardingDemo": "ใช้โปรไฟล์เดโม (มิว)",
+  "onboardingSet": "ตั้งแล้ว",
+  "onboardingHomeHint": "ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน",
+  "onboardingWorkHint": "ไม่บังคับ · ทำให้เตือนตอนเลิกงานได้แม่นขึ้น",
+  "onboardingWorkSummary": "{name} · {days} ออก {time}",
+  "@onboardingWorkSummary": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      },
+      "days": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "onboardingUseHere": "ใช้ตำแหน่งตอนนี้",
+  "onboardingSearch": "ค้นหา",
+  "onboardingEdit": "แก้ไข",
+  "pickerDeleted": "ลบ “{label}” แล้ว",
+  "@pickerDeleted": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerUndo": "เลิกทำ",
+  "pickerTitlePoint": "เลือกจุด",
+  "pickerTitleMove": "ย้าย{label}",
+  "@pickerTitleMove": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerTitleHome": "ตั้งบ้าน",
+  "pickerTitleWork": "ตั้งที่ทำงาน",
+  "pickerTitleOther": "เพิ่มสถานที่",
+  "pickerSubtitle": "ค้นหา หรือใช้ตำแหน่งตอนนี้",
+  "pickerHintTyping": "พิมพ์อย่างน้อย {count} ตัวอักษร ชื่อสถานี BTS ห้าง ซอย หรือเขต",
+  "@pickerHintTyping": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "pickerSearchFailedTitle": "ค้นหาไม่ได้",
+  "pickerSearchFailedMessage": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ และไม่มีรายชื่อสถานที่ในเครื่อง",
+  "pickerNoResultsTitle": "ไม่พบ “{query}”",
+  "@pickerNoResultsTitle": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerNoResultsMessage": "ลองพิมพ์ชื่อสถานี BTS หรือห้าง",
+  "pickerNoResultsMessageOffline": "ลองพิมพ์ชื่อสถานี BTS หรือห้าง ตอนนี้ค้นได้เฉพาะรายชื่อในเครื่อง",
+  "pickerUseLocation": "ใช้ตำแหน่งตอนนี้",
+  "pickerSearchOnlineAgain": "ค้นออนไลน์อีกครั้ง",
+  "pickerOfflineNotice": "ค้นออนไลน์ไม่ได้ แสดงข้อมูลในเครื่อง",
+  "pickerOutOfArea": "นอกพื้นที่",
+  "pickerSourceGoogle": "ผลการค้นหาจาก Google Maps",
+  "pickerSourceLocal": "สถานี BTS/MRT ห้าง และเขตในกรุงเทพฯ",
+  "pickerSearchHint": "ชื่อสถานที่ เช่น BTS อารีย์ หรือ Central",
+  "pickerClear": "ล้าง",
+  "pickerNaming": "กำลังหาชื่อสถานที่…",
+  "pickerDroppedPin": "ตำแหน่งที่ปักหมุด",
+  "pickerHereNow": "ตำแหน่งตอนนี้",
+  "locateBusy": "กำลังหาตำแหน่ง…",
+  "locateBusyHint": "ใช้ GPS ของเครื่อง ไม่เกิน 10 วินาที",
+  "locateSearchInstead": "ค้นหาแทน",
+  "locateIdleHint": "หาจาก GPS แล้วให้ยืนยันก่อนบันทึก",
+  "locateAskTitle": "ขอใช้ตำแหน่งครั้งนี้",
+  "locateAskMessage": "แอปใช้ตำแหน่งเพื่อหาว่าตรงนี้คือที่ไหนเท่านั้น ไม่เก็บประวัติการเดินทาง",
+  "locateAllow": "อนุญาตตำแหน่ง",
+  "locateDeniedTitle": "ไม่ได้รับสิทธิ์ตำแหน่ง",
+  "locateDeniedForeverMessage": "เปิดสิทธิ์ตำแหน่งให้ฝนตกไหมในการตั้งค่าของเครื่อง หรือค้นหาชื่อสถานที่แทน",
+  "locateDeniedMessage": "อนุญาตได้ในการตั้งค่าของแอป หรือค้นหาชื่อสถานที่แทน",
+  "locateOpenSettings": "เปิดการตั้งค่า",
+  "locateOffTitle": "ตำแหน่งปิดอยู่",
+  "locateOffMessage": "เปิดบริการตำแหน่งของเครื่องก่อน หรือค้นหาชื่อสถานที่แทน",
+  "locateOpenLocationSettings": "เปิดการตั้งค่าตำแหน่ง",
+  "locateTimeoutTitle": "หาตำแหน่งไม่ทันเวลา",
+  "locateErrorTitle": "หาตำแหน่งไม่ได้",
+  "locateWeakMessage": "สัญญาณ GPS อ่อน ลองอีกครั้งใกล้หน้าต่าง หรือค้นหาชื่อสถานที่แทน",
+  "sheetEdit": "แก้{label}",
+  "@sheetEdit": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetConfirm": "ยืนยัน{label}",
+  "@sheetConfirm": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetSourceGps": "ตำแหน่งจาก GPS",
+  "sheetSourceSaved": "บันทึกไว้ในเครื่อง",
+  "sheetSourceLocal": "ข้อมูลในเครื่อง",
+  "sheetOutOfArea": "นอกพื้นที่ที่แอปรองรับ ยังเตือนฝนได้ แต่ไม่มีข้อมูลจุดน้ำท่วมและระดับคลอง",
+  "sheetLowAccuracy": "ตำแหน่งอาจคลาดเคลื่อน {distance}",
+  "@sheetLowAccuracy": {
+    "placeholders": {
+      "distance": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetWorkFromHome": "ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น",
+  "sheetDuplicate": "ใกล้กับ ‘{label}’ ที่บันทึกไว้",
+  "@sheetDuplicate": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetNameLabel": "ชื่อที่เรียก",
+  "sheetIcon": "ไอคอน",
+  "sheetWorkDays": "วันทำงาน",
+  "sheetLeaveTime": "เวลาออกจากที่ทำงานปกติ",
+  "sheetLeaveHint": "แอปเช็กทางกลับบ้านให้ก่อนเวลานี้",
+  "sheetUpdateExisting": "อัปเดตที่เดิม",
+  "sheetSaveSeparate": "บันทึกแยก",
+  "sheetSave": "บันทึก",
+  "sheetMove": "ย้ายตำแหน่ง",
+  "sheetDelete": "ลบ{label}",
+  "@sheetDelete": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      }
+    }
+  },
+  "sheetTooMany": "บันทึกได้ไม่เกิน {max} แห่ง ลบที่เดิมก่อนจึงเพิ่มได้",
+  "@sheetTooMany": {
+    "placeholders": {
+      "max": {
+        "type": "int"
+      }
+    }
+  },
+  "onboardingAppName": "ฝนตกไหม"
+}

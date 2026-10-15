@@ -1,0 +1,22 @@
+{
+  "level": "normal",
+  "headline_th": "คืนนี้ยังไม่น่าห่วงเรื่องน้ำท่วม",
+  "summary_th": "ฝนวันนี้ยังน้อย และไม่มีรายงานน้ำขังใกล้บ้าน",
+  "canal": null,
+  "in_service_area": true,
+  "minutes_to_doorstep": null,
+  "rain_today_mm": 6,
+  "reports_nearby": 0,
+  "flood_spots": [],
+  "actions": [
+    {
+      "order": 1,
+      "text_th": "ถ้าฝนหนักเกิน 60 มม. ในชั่วโมงเดียว ให้เช็กหน้านี้อีกครั้ง"
+    }
+  ],
+  "sources": [
+    "Google Weather API",
+    "จุดเสี่ยงน้ำท่วม กทม.",
+    "รายงานจากผู้ใช้"
+  ]
+}

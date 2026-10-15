@@ -1,0 +1,248 @@
+{
+  "partsQuestion": "Question: “{question}”",
+  "@partsQuestion": {
+    "placeholders": {
+      "question": {
+        "type": "String"
+      }
+    }
+  },
+  "partsArriveBy": "Arrive by {time}",
+  "@partsArriveBy": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsChecking": "Checking this time…",
+  "partsPreviewEstimate": "Estimated from rain along the route. Release to confirm.",
+  "partsTakesMin": "Takes {minutes} min",
+  "@partsTakesMin": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "partsSegLeave": "Leave",
+  "partsSegArrive": "Arrive",
+  "partsSegMode": "Mode",
+  "partsSegConfidence": "Sure",
+  "partsNow": "Now",
+  "partsDragHint": "Drag the pin to try a departure time",
+  "partsLeaveNow": "Leave now",
+  "partsOutOfArea": "Outside coverage area",
+  "partsRainToday": "Rain today",
+  "partsMm": "{mm} mm",
+  "@partsMm": {
+    "placeholders": {
+      "mm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsFloodSpots": "Flood spots, 2 km",
+  "partsReports": "Reports, 500 m",
+  "partsCanalLevel": "Canal level",
+  "partsCanalLevelValue": "{level}/{bank} m",
+  "@partsCanalLevelValue": {
+    "placeholders": {
+      "level": {
+        "type": "String"
+      },
+      "bank": {
+        "type": "String"
+      }
+    }
+  },
+  "partsCanalRise": "Rise in 2 h",
+  "partsCm": "{cm} cm",
+  "@partsCm": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsToBank": "To the bank",
+  "partsAtBank": "At the bank",
+  "partsCmLeft": "{cm} cm to go",
+  "@partsCmLeft": {
+    "placeholders": {
+      "cm": {
+        "type": "int"
+      }
+    }
+  },
+  "partsNoCanalStation": "No canal gauge near home",
+  "partsOutsideBangkok": "Home is outside Bangkok, so canal levels and flood spots are not covered yet. The app can only warn about rain.",
+  "partsDemoClockSemantic": "Demo time {time}, tap to change",
+  "@partsDemoClockSemantic": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsRealTime": "Live time",
+  "partsDemoTime": "Demo time",
+  "partsDemoReplay": "Replays the storm of Tue 29 Sep 2026 · sent as X-Demo-Clock",
+  "partsRealTimeNoHeader": "Live time (no header sent)",
+  "partsPreset1610": "Before leaving work, rain not here yet",
+  "partsPreset1852": "Storm over Ratchada, water waiting to drain",
+  "partsPreset2140": "Flood mode at home",
+  "partsPresetDevice": "Use the device clock",
+  "partsKindLabel": "{kind, select, home{home} work{work} other{place}}",
+  "@partsKindLabel": {
+    "placeholders": {
+      "kind": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsFirst": "Need this first",
+  "partsNeedsWhere": "Where is your {place}?",
+  "@partsNeedsWhere": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNeedsSaveOnce": "Save it once and the app picks this question right back up.",
+  "partsUseMyLocation": "Use my location",
+  "partsSearch": "Search",
+  "partsWhichPlace": "Which place?",
+  "partsNotFound": "No match for “{query}”. Try another name.",
+  "@partsNotFound": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSimilar": "Several places look like “{query}”",
+  "@partsSimilar": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsSearchFor": "Search “{query}”",
+  "@partsSearchFor": {
+    "placeholders": {
+      "query": {
+        "type": "String"
+      }
+    }
+  },
+  "partsNoneOfThese": "None of these · search myself",
+  "marksSourceSemantic": "Source: {text}",
+  "@marksSourceSemantic": {
+    "placeholders": {
+      "text": {
+        "type": "String"
+      }
+    }
+  },
+  "marksSample": "Sample data",
+  "marksSampleSemantic": "Sample data, cannot reach the server",
+  "marksDemo": "Demo",
+  "marksDemoSemantic": "Demo profile, simulated data",
+  "marksConfidence": "Sure",
+  "marksConfidenceSemantic": "Confidence {percent}",
+  "@marksConfidenceSemantic": {
+    "placeholders": {
+      "percent": {
+        "type": "String"
+      }
+    }
+  },
+  "marksGeneratedByAi": "Analyzed by AI",
+  "marksGeneratedByFallback": "Using backup calculation · AI did not respond this time",
+  "rainBandLeave": "Leave {time}",
+  "@rainBandLeave": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "rainBandSlider": "Departure time. Drag to try another.",
+  "galleryTitle": "Design system",
+  "gallerySubtitle": "Fon Tok Mai · tokens and components",
+  "galleryClear": "Clear",
+  "galleryStorm": "Storm",
+  "galleryFlood": "Flood",
+  "gallerySkySwatches": "Sky fields",
+  "galleryPassPerSky": "Pass in each sky",
+  "galleryColors": "Colors",
+  "galleryType": "Type · Chakra Petch",
+  "gallerySpace": "Spacing · radius · shadow",
+  "galleryMotion": "Motion",
+  "galleryRainBand": "RainBand · draggable",
+  "galleryRerank": "Re-rank",
+  "galleryPlaces": "Places · Notice · ConnectRow",
+  "galleryNoticeWork": "Set your workplace for more accurate alerts",
+  "galleryNoticeOff": "Notifications are off, so the app cannot warn you before you leave",
+  "galleryOpenSettings": "Open settings",
+  "galleryNoticeCalendar": "Connect Calendar so the app can see your plans",
+  "galleryCalendarDetail": "Only events with a location",
+  "galleryCalendarAccount": "miw.demo@gmail.com · demo account",
+  "galleryRiskChips": "RiskChip · ConfidenceMeter · SourceLabel",
+  "galleryNotifTitle": "Leave before 16:45 · dinner with family",
+  "galleryNotifBody": "Rain reaches Rama 4 around 17:30. Leave now and you get home before it.",
+  "galleryStateLoading": "State: loading",
+  "galleryStateError": "State: error",
+  "galleryStateEmpty": "State: empty",
+  "galleryErrorTitle": "Could not load trips",
+  "galleryErrorMessage": "Cannot reach the server. Check your connection and try again.",
+  "galleryEmptyTitle": "No trips today",
+  "galleryEmptyMessage": "Just ask, for example “Siam at 5 pm”",
+  "galleryConnectCalendar": "Connect Calendar",
+  "galleryRowTransitSub": "Sala Daeng → Lat Phrao, no umbrella needed",
+  "galleryRowCarSub": "Arrive before the rain, on time for 18:30",
+  "galleryRowMotoSub": "Just in time; any later and you get wet",
+  "galleryRowTitle": "{mode} · {minutes} min",
+  "@galleryRowTitle": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "minutes": {
+        "type": "int"
+      }
+    }
+  },
+  "galleryHeadClear": "Leave before 16:45",
+  "galleryHeadStorm": "Do not leave yet",
+  "galleryHeadFlood": "Water reaches your door in 40 min",
+  "galleryColorPass": "Pass",
+  "galleryColorRain": "Rain (none → heavy)",
+  "galleryColorRisk": "Risk",
+  "galleryTypeVerdict": "verdict",
+  "galleryTypeSampleLong": "Rain reaches Rama 4 around 17:30, 25 cm of standing water",
+  "galleryTypeTabular": "Tabular figures (Petch Tabular) vs. regular figures",
+  "galleryMotionTap": "Button and selection states",
+  "galleryMotionFlap": "Verdict flips its letters",
+  "galleryMotionRerank": "Board re-ranks",
+  "galleryMotionEnter": "Notification slides down",
+  "galleryMotionSky": "Sky color changes state",
+  "galleryMotionCurves": "Curves: standard (0.2, 0, 0, 1) · emphasized decelerate (0.05, 0.7, 0.1, 1)",
+  "galleryMotionReduced": "Reduce motion is on: every duration is 0",
+  "galleryFlipDemo": "OK to leave at 16:45",
+  "galleryFlip": "Flip",
+  "galleryModeStatus": "{minutes} min · {status}",
+  "@galleryModeStatus": {
+    "placeholders": {
+      "minutes": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  }
+}
