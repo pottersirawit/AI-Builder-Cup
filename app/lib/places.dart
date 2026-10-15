@@ -75,6 +75,7 @@ class PlacesStore extends ChangeNotifier {
   bool _calendarHintDismissed = false;
   bool _locationAsked = false;
   LinkState _calendar = LinkState.notConnected;
+  LinkState _gmail = LinkState.notConnected;
 
   bool get _initialized => _prefs.containsKey(_kOnboarded);
 
@@ -112,6 +113,7 @@ class PlacesStore extends ChangeNotifier {
     _calendarHintDismissed = _prefs.getBool(_kCalendarHint) ?? false;
     _locationAsked = _prefs.getBool(_kLocationAsked) ?? false;
     _calendar = _demo ? LinkState.connected : LinkState.notConnected;
+    _gmail = _demo ? LinkState.connected : LinkState.notConnected;
   }
 
   void _write() {
@@ -249,6 +251,7 @@ class PlacesStore extends ChangeNotifier {
     _demo = true;
     _onboarded = true;
     _calendar = LinkState.connected;
+    _gmail = LinkState.connected;
     _calendarHintDismissed = false;
     _write();
   }
@@ -261,6 +264,7 @@ class PlacesStore extends ChangeNotifier {
     _demo = false;
     _onboarded = false;
     _calendar = LinkState.notConnected;
+    _gmail = LinkState.notConnected;
     _calendarHintDismissed = false;
     _locationAsked = false;
     _write();
@@ -290,8 +294,9 @@ class PlacesStore extends ChangeNotifier {
 
   Future<void> connectCalendar({
     Duration delay = const Duration(milliseconds: 1200),
+    bool allowLive = false,
   }) async {
-    if (!canConnectCalendar || _calendar == LinkState.connecting) return;
+    if ((!canConnectCalendar && !allowLive) || _calendar == LinkState.connecting) return;
     _calendar = LinkState.connecting;
     notifyListeners();
     await Future<void>.delayed(delay);
@@ -304,9 +309,35 @@ class PlacesStore extends ChangeNotifier {
     notifyListeners();
   }
 
+  LinkState get gmail => _gmail;
+  String get gmailAccount => 'miw.demo@gmail.com';
+  bool get canConnectGmail => true;
+
+  Future<void> connectGmail({
+    Duration delay = const Duration(milliseconds: 1200),
+  }) async {
+    if (_gmail == LinkState.connecting) return;
+    _gmail = LinkState.connecting;
+    notifyListeners();
+    await Future<void>.delayed(delay);
+    _gmail = LinkState.connected;
+    notifyListeners();
+  }
+
+  void disconnectGmail() {
+    _gmail = LinkState.notConnected;
+    notifyListeners();
+  }
+
   @visibleForTesting
   set calendarForTest(LinkState v) {
     _calendar = v;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  set gmailForTest(LinkState v) {
+    _gmail = v;
     notifyListeners();
   }
 }

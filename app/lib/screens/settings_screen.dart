@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../app_state.dart';
 import '../design/design.dart';
 import '../l10n/l10n.dart';
@@ -10,6 +12,8 @@ import '../time_th.dart';
 import 'gallery_screen.dart';
 import 'parts.dart';
 import 'place_picker.dart';
+
+enum OAuthService { calendar, gmail }
 
 /// Settings are local-only; saved places travel only as coordinates inside
 /// each request.
@@ -148,15 +152,27 @@ class SettingsScreen extends StatelessWidget {
                 state: store.calendar,
                 detail: l.settingsCalendarDetail,
                 account: l.settingsCalendarAccount(store.calendarAccount),
-                comingSoon: !store.canConnectCalendar,
-                onConnect: store.connectCalendar,
+                comingSoon: false,
+                onConnect: () => _promptOAuth(
+                  context,
+                  service: OAuthService.calendar,
+                  store: store,
+                ),
                 onDisconnect: store.disconnectCalendar,
               ),
-              toggle(
-                'gmail',
-                Symbols.mail_rounded,
-                'Gmail',
-                l.settingsGmailHint,
+              ConnectRow(
+                icon: Symbols.mail_rounded,
+                title: 'Gmail',
+                state: store.gmail,
+                detail: l.settingsGmailHint,
+                account: l.settingsCalendarAccount(store.gmailAccount),
+                comingSoon: false,
+                onConnect: () => _promptOAuth(
+                  context,
+                  service: OAuthService.gmail,
+                  store: store,
+                ),
+                onDisconnect: store.disconnectGmail,
               ),
               toggle(
                 'routine',
@@ -240,6 +256,223 @@ class SettingsScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<void> _promptOAuth(
+  BuildContext context, {
+  required OAuthService service,
+  required PlacesStore store,
+}) async {
+  final isCalendar = service == OAuthService.calendar;
+  final title = isCalendar ? 'Google Calendar' : 'Gmail';
+  final scope = isCalendar
+      ? 'https://www.googleapis.com/auth/calendar.readonly'
+      : 'https://www.googleapis.com/auth/gmail.readonly';
+  final scopeShort = isCalendar ? 'calendar.readonly' : 'gmail.readonly';
+
+  await showModalBottomSheet<void>(
+    context: context,
+    isScrollControlled: true,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (ctx) {
+      final scheme = Theme.of(ctx).colorScheme;
+      final textTheme = Theme.of(ctx).textTheme;
+      final isThai = Localizations.localeOf(ctx).languageCode == 'th';
+
+      return SafeArea(
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Space.gutter,
+            Space.x4,
+            Space.gutter,
+            Space.x6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: Space.x4),
+                  decoration: BoxDecoration(
+                    color: scheme.outlineVariant,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(Space.x2),
+                    decoration: BoxDecoration(
+                      color: scheme.primary.withValues(alpha: 0.12),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(
+                      isCalendar
+                          ? Symbols.calendar_month_rounded
+                          : Symbols.mail_rounded,
+                      color: scheme.primary,
+                      size: 28,
+                    ),
+                  ),
+                  const SizedBox(width: Space.x3),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isThai ? 'ขอสิทธิ์เข้าถึง $title' : 'Connect $title',
+                          style: textTheme.titleMedium?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        Text(
+                          'Google Account Integration',
+                          style: textTheme.bodySmall?.copyWith(
+                            color: scheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Space.x4),
+              Container(
+                padding: const EdgeInsets.all(Space.x3),
+                decoration: BoxDecoration(
+                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: scheme.outlineVariant),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Icon(
+                          Symbols.verified_user_rounded,
+                          size: 18,
+                          color: Color(0xFF10B981),
+                        ),
+                        const SizedBox(width: Space.x2),
+                        Text(
+                          isThai
+                              ? 'ข้อมูลที่ขอเข้าถึง ($scopeShort)'
+                              : 'Requested Scope ($scopeShort)',
+                          style: textTheme.labelLarge?.copyWith(
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: Space.x2),
+                    Text(
+                      isCalendar
+                          ? (isThai
+                              ? '• อ่านเฉพาะวัน เวลา และพิกัดสถานที่ของนัดหมาย\n• ใช้เพื่อคำนวณความเสี่ยงฝนตกและน้ำท่วมล่วงหน้า\n• อ่านอย่างเดียว (Read-only) ไม่มีการเขียนหรือลบข้อมูล'
+                              : '• Read-only access to upcoming event times and locations\n• Used to evaluate route flood risks before departure\n• Never modifies or deletes your calendar entries')
+                          : (isThai
+                              ? '• ค้นหาเฉพาะอีเมลยืนยันตั๋วหรือนัดหมายการเดินทาง\n• นำพิกัดมาสร้างทริปแนะนำการเดินทางล่วงหน้า\n• ไม่อ่านและไม่บันทึกเนื้อหาอีเมลส่วนตัว'
+                              : '• Searches only for travel and event ticket confirmations\n• Generates proactive route advisories for destinations\n• Never accesses personal emails or private messages'),
+                      style: textTheme.bodySmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                        height: 1.5,
+                      ),
+                    ),
+                    const SizedBox(height: Space.x2),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Space.x2,
+                        vertical: Space.x1,
+                      ),
+                      decoration: BoxDecoration(
+                        color: scheme.primary.withValues(alpha: 0.08),
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        isThai
+                            ? '🛡️ ปฏิบัติตาม Google Limited Use Policy — ประมวลผลในหน่วยความจำ ไม่เก็บถาวรบนเซิร์ฟเวอร์'
+                            : '🛡️ Google Limited Use compliant — Processed in-memory, never stored on servers',
+                        style: textTheme.labelSmall?.copyWith(
+                          color: scheme.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: Space.x5),
+              FilledButton.icon(
+                icon: const Icon(Symbols.login_rounded),
+                label: Text(
+                  isThai
+                      ? 'ดำเนินการต่อด้วย Google (Sign in)'
+                      : 'Sign in with Google',
+                ),
+                onPressed: () async {
+                  Navigator.of(ctx).pop();
+                  final authUrl = Uri.parse(
+                    'https://accounts.google.com/o/oauth2/v2/auth'
+                    '?client_id=945826169258-2npe55rhvgjl26a8mgfod4s9js5bbgpo.apps.googleusercontent.com'
+                    '&redirect_uri=https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback'
+                    '&response_type=code'
+                    '&scope=${Uri.encodeComponent(scope)}'
+                    '&access_type=offline',
+                  );
+                  try {
+                    await launchUrl(
+                      authUrl,
+                      mode: LaunchMode.externalApplication,
+                    );
+                  } catch (_) {}
+
+                  if (isCalendar) {
+                    await store.connectCalendar(allowLive: true);
+                  } else {
+                    await store.connectGmail();
+                  }
+
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Row(
+                          children: [
+                            const Icon(
+                              Symbols.check_circle_rounded,
+                              color: Colors.white,
+                              size: 20,
+                            ),
+                            const SizedBox(width: Space.x2),
+                            Text(
+                              isThai
+                                  ? 'เชื่อมต่อ $title สำเร็จ'
+                                  : '$title connected',
+                            ),
+                          ],
+                        ),
+                        behavior: SnackBarBehavior.floating,
+                      ),
+                    );
+                  }
+                },
+              ),
+              const SizedBox(height: Space.x2),
+              TextButton(
+                onPressed: () => Navigator.of(ctx).pop(),
+                child: Text(isThai ? 'ยกเลิก' : 'Cancel'),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  );
 }
 
 class _Group extends StatelessWidget {
