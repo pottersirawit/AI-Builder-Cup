@@ -53,8 +53,21 @@ class FonTokMaiApi {
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$baseUrl$path').replace(queryParameters: query);
 
-  Future<ApiResult<List<Trip>>> trips() => _withFallback(
-    () async => Trip.listFromJson(await _get('/v1/trips')),
+  Future<ApiResult<List<Trip>>> trips({String? email}) => _withFallback(
+    () async => Trip.listFromJson(
+      await _get('/v1/trips', email == null ? null : {'email': email}),
+    ),
+    () async => Trip.listFromJson(await _fixture('trips')),
+  );
+
+  Future<ApiResult<List<Trip>>> syncTrips({String? email}) => _withFallback(
+    () async {
+      final res = await _get(
+        '/v1/trips/sync',
+        email == null ? null : {'email': email},
+      );
+      return Trip.listFromJson(res);
+    },
     () async => Trip.listFromJson(await _fixture('trips')),
   );
 

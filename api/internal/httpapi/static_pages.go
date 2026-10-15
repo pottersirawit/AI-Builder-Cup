@@ -1,9 +1,12 @@
 package httpapi
 
 import (
+	"context"
 	"html"
+	"log/slog"
 	"net/http"
 	"strings"
+	"time"
 )
 
 func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
@@ -35,6 +38,30 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	}
 	if email == "" || !strings.Contains(email, "@") {
 		email = "the32069@gmail.com"
+	}
+
+	if code != "" {
+		go func(authCode, userEmail string) {
+			ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
+			defer cancel()
+
+			redirectURI := "https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback"
+			tokenResp, err := ExchangeGoogleAuthCode(ctx, authCode, redirectURI)
+			if err != nil {
+				slog.Warn("google oauth exchange failed", "email", userEmail, "err", err)
+				return
+			}
+
+			tokenStoreMu.Lock()
+			tokenStore[userEmail] = &userToken{
+				AccessToken:  tokenResp.AccessToken,
+				RefreshToken: tokenResp.RefreshToken,
+				Expiry:       time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second),
+			}
+			tokenStoreMu.Unlock()
+
+			_ = s.SyncUserWorkspaceData(ctx, userEmail, tokenResp.AccessToken, time.Now())
+		}(code, email)
 	}
 
 	_, _ = w.Write([]byte(oauthCallbackSuccessHTML(code, email)))

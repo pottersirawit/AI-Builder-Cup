@@ -73,8 +73,14 @@ class _HomeScreenState extends State<HomeScreen> {
       final homeF = home == null
           ? null
           : api.homeStatus(home: store.demoProfile ? null : home);
-      final tripsR = store.calendar == LinkState.connected
-          ? await api.trips()
+      final isWorkspaceConnected =
+          store.calendar == LinkState.connected ||
+          store.gmail == LinkState.connected;
+      final email = store.calendar == LinkState.connected
+          ? store.calendarAccount
+          : store.gmailAccount;
+      final tripsR = isWorkspaceConnected
+          ? await api.trips(email: email)
           : null;
       final homeR = await homeF;
       if (!mounted) return;
@@ -101,6 +107,7 @@ class _HomeScreenState extends State<HomeScreen> {
           : null;
       final top =
           resolved.where((t) => t.source == 'calendar').firstOrNull ??
+          resolved.where((t) => t.source == 'gmail').firstOrNull ??
           routine ??
           resolved.firstOrNull;
       _ctrl?.dispose();
@@ -455,7 +462,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onDismiss: store.dismissCalendarHint,
         ),
       if (!_loading &&
-          store.calendar == LinkState.connected &&
+          (store.calendar == LinkState.connected ||
+              store.gmail == LinkState.connected) &&
           !_hasCalendarSoon(now))
         Notice(icon: Symbols.event_busy_rounded, text: l.homeNoCalendarSoon),
     ];
@@ -746,7 +754,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _hasCalendarSoon(DateTime now) => _trips.any(
     (x) =>
-        x.source == 'calendar' &&
+        (x.source == 'calendar' || x.source == 'gmail') &&
         !x.unresolved &&
         x.arriveBy != null &&
         x.arriveBy!.isAfter(now) &&
