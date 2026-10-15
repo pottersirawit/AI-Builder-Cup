@@ -256,3 +256,20 @@ type TidalProvider interface {
 	Name() string
 }
 
+// EmergencyContact details an official government emergency helpline during severe weather/flooding.
+type EmergencyContact struct {
+	AgencyTH  string `json:"agency_th"`
+	AgencyEN  string `json:"agency_en"`
+	Number    string `json:"number"`
+	PurposeTH string `json:"purpose_th"`
+	PurposeEN string `json:"purpose_en"`
+	LineID    string `json:"line_id,omitempty"`
+}
+
+// HotlineProvider supplies official emergency dispatch contacts.
+type HotlineProvider interface {
+	EmergencyContacts() []EmergencyContact
+	Name() string
+}
+
+

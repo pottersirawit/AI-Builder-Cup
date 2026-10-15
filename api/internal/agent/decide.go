@@ -141,6 +141,8 @@ type Response struct {
 	// Explanation details why the mode/time was chosen, factors evaluated,
 	// and flood-avoidance route optimization advice.
 	Explanation decision.Explanation `json:"explanation"`
+	// EmergencyContacts are official government disaster helplines when danger risk is elevated.
+	EmergencyContacts []domain.EmergencyContact `json:"emergency_contacts,omitempty"`
 	// Model is the Gemini model that answered; empty on the deterministic fallback.
 	Model string `json:"model,omitempty"`
 	// LatencyMS is how long the whole Decide call took.
@@ -229,7 +231,8 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		LeaveBy: baseline.LeaveBy, Confidence: baseline.Confidence,
 		RainTimeline: baseline.RainTimeline, ModeOptions: baseline.ModeOptions, FloodSpots: baseline.FloodSpots,
 		Sources: sources, GeneratedBy: "fallback", DepartAt: depart, Mode: mode, Trip: s.Trip,
-		Explanation: baseline.Explanation,
+		Explanation:       baseline.Explanation,
+		EmergencyContacts: s.EmergencyContacts(),
 	}
 	if resp.FloodSpots == nil {
 		resp.FloodSpots = []decision.FloodSpot{}

@@ -378,4 +378,59 @@ func (BMATidal) TidalStatus(_ context.Context, at time.Time) (domain.TidalReadin
 	}, nil
 }
 
+// DirectoryHotlines provides verified emergency contact helplines for flood rescue, medical, road, and electricity assistance.
+type DirectoryHotlines struct{}
+
+func (DirectoryHotlines) Name() string { return "สายด่วนฉุกเฉิน (ปภ. 1784 / สพฉ. 1669)" }
+
+func (DirectoryHotlines) EmergencyContacts() []domain.EmergencyContact {
+	return []domain.EmergencyContact{
+		{
+			AgencyTH:  "กรมป้องกันและบรรเทาสาธารณภัย (ปภ.)",
+			AgencyEN:  "Disaster Prevention & Mitigation (DDPM)",
+			Number:    "1784",
+			PurposeTH: "ขอความช่วยเหลือ/อพยพ เหตุน้ำท่วม ตลอด 24 ชม.",
+			PurposeEN: "Flood rescue & evacuation assistance (24/7)",
+			LineID:    "@1784DDPM",
+		},
+		{
+			AgencyTH:  "สถาบันการแพทย์ฉุกเฉินแห่งชาติ (สพฉ.)",
+			AgencyEN:  "National Emergency Medical Services (EMS)",
+			Number:    "1669",
+			PurposeTH: "เจ็บป่วยฉุกเฉิน อุบัติเหตุ กู้ชีพเร่งด่วน",
+			PurposeEN: "Life-threatening medical emergencies & ambulance",
+		},
+		{
+			AgencyTH:  "กรมทางหลวง",
+			AgencyEN:  "Department of Highways",
+			Number:    "1586",
+			PurposeTH: "สอบถามเส้นทางน้ำท่วม ทางเบี่ยงทางหลวง",
+			PurposeEN: "Highway flood road conditions & detours",
+		},
+		{
+			AgencyTH:  "กรมทางหลวงชนบท",
+			AgencyEN:  "Department of Rural Roads",
+			Number:    "1146",
+			PurposeTH: "สอบถามเส้นทางถนนชนบทและสายรอง",
+			PurposeEN: "Rural road flood advisories & detours",
+		},
+		{
+			AgencyTH:  "การไฟฟ้านครหลวง (กทม.-นนทบุรี-สมุทรปราการ)",
+			AgencyEN:  "Metropolitan Electricity Authority (MEA)",
+			Number:    "1130",
+			PurposeTH: "ไฟฟ้ารั่ว ไฟดับ เสาไฟล้ม น้ำท่วมหม้อแปลง",
+			PurposeEN: "Electrical hazards, power outages & flooded equipment",
+			LineID:    "@meathailand",
+		},
+		{
+			AgencyTH:  "การไฟฟ้าส่วนภูมิภาค (ต่างจังหวัด)",
+			AgencyEN:  "Provincial Electricity Authority (PEA)",
+			Number:    "1129",
+			PurposeTH: "แจ้งเหตุไฟฟ้าขัดข้อง เหตุด่วนไฟฟ้าต่างจังหวัด",
+			PurposeEN: "Provincial electrical hazards & power outages",
+		},
+	}
+}
+
+
 

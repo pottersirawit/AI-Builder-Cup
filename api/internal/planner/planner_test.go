@@ -37,6 +37,7 @@ func scenarioProviders() Providers {
 		WeatherNext: scenario.WeatherNext{},
 		BMAFlood:    scenario.BMAFlood{},
 		BMATidal:    scenario.BMATidal{},
+		Hotlines:    scenario.DirectoryHotlines{},
 	}
 }
 
@@ -411,11 +412,21 @@ func TestSourcesUsed_DynamicAttribution(t *testing.T) {
 		"BMA Road Flood Sensors",
 		"BMA Canal Flow & Tidal Map",
 		"Google DeepMind WeatherNext 3",
+		"สายด่วนฉุกเฉิน",
 	} {
 		if !strings.Contains(joined, want) {
 			t.Errorf("sources %v should contain %q", sources, want)
 		}
 	}
+
+	contacts := s.EmergencyContacts()
+	if len(contacts) < 4 {
+		t.Fatalf("expected at least 4 emergency hotlines, got %d", len(contacts))
+	}
+	if contacts[0].Number != "1784" {
+		t.Errorf("expected 1784 DDPM as primary rescue hotline, got %s", contacts[0].Number)
+	}
 }
+
 
 

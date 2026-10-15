@@ -31,6 +31,7 @@ type Providers struct {
 	WeatherNext domain.WeatherNextProvider
 	BMAFlood    domain.RoadFloodProvider
 	BMATidal    domain.TidalProvider
+	Hotlines    domain.HotlineProvider
 }
 
 // Planner holds static data shared by all requests.
@@ -482,7 +483,18 @@ func (s *Session) SourcesUsed() []string {
 	if s.prov.BMATidal != nil {
 		out = append(out, s.prov.BMATidal.Name())
 	}
+	if s.prov.Hotlines != nil {
+		out = append(out, s.prov.Hotlines.Name())
+	}
 	return out
+}
+
+// EmergencyContacts returns official emergency helplines from the hotline provider.
+func (s *Session) EmergencyContacts() []domain.EmergencyContact {
+	if s.prov.Hotlines != nil {
+		return s.prov.Hotlines.EmergencyContacts()
+	}
+	return nil
 }
 
 // ---- tools ----

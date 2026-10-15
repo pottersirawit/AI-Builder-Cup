@@ -239,6 +239,7 @@ class Decision {
     this.trip,
     this.needsPlace,
     this.explanation,
+    this.emergencyContacts = const [],
   });
 
   factory Decision.fromJson(Json j) {
@@ -272,6 +273,9 @@ class Decision {
       explanation: j['explanation'] == null
           ? null
           : DecisionExplanation.fromJson(j['explanation'] as Json),
+      emergencyContacts: (j['emergency_contacts'] as List? ?? const [])
+          .map((c) => EmergencyContact.fromJson(c as Json))
+          .toList(),
     );
   }
 
@@ -317,6 +321,36 @@ class Decision {
 
   /// Transparent explanation on why chosen, factors, and flood-avoidance route advice.
   final DecisionExplanation? explanation;
+
+  /// Official emergency hotlines during severe flood and weather hazards.
+  final List<EmergencyContact> emergencyContacts;
+}
+
+class EmergencyContact {
+  const EmergencyContact({
+    required this.agencyTh,
+    required this.agencyEn,
+    required this.number,
+    required this.purposeTh,
+    required this.purposeEn,
+    this.lineId,
+  });
+
+  final String agencyTh;
+  final String agencyEn;
+  final String number;
+  final String purposeTh;
+  final String purposeEn;
+  final String? lineId;
+
+  factory EmergencyContact.fromJson(Json j) => EmergencyContact(
+        agencyTh: _str(j['agency_th']),
+        agencyEn: _str(j['agency_en']),
+        number: _str(j['number']),
+        purposeTh: _str(j['purpose_th']),
+        purposeEn: _str(j['purpose_en']),
+        lineId: j['line_id'] as String?,
+      );
 }
 
 /// Body of POST /v1/decide. The main input is [tripId], an ad-hoc

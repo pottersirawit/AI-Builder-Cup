@@ -76,6 +76,7 @@ func main() {
 		WeatherNext: wnScen,
 		BMAFlood:    bmaFloodScen,
 		BMATidal:    bmaTidalScen,
+		Hotlines:    scenario.DirectoryHotlines{},
 	}
 	liveProv := scen
 	if key := os.Getenv("GOOGLE_MAPS_API_KEY"); key != "" {

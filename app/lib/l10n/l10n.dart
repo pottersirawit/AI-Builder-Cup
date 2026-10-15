@@ -7,3 +7,7 @@ export 'app_localizations.dart';
 extension L10nContext on BuildContext {
   AppLocalizations get l10n => AppLocalizations.of(this);
 }
+
+extension AppLocalizationsHelper on AppLocalizations {
+  bool get isThai => localeName.startsWith('th');
+}
