@@ -72,6 +72,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/health", healthHandler)
 	mux.HandleFunc("GET /{$}", s.homePage)
 	mux.HandleFunc("GET /privacy", s.privacyPolicy)
+	mux.HandleFunc("GET /oauth2callback", s.oauth2Callback)
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
 	mux.HandleFunc("GET /v1/places", s.withClock(s.places))
 	mux.Handle("POST /v1/decide", s.Limits.rateLimit("decide", s.Limits.decideRPM(), s.Limits.limitBody(s.withClock(s.decide))))

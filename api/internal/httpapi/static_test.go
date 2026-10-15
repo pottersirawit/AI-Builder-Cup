@@ -55,4 +55,36 @@ func TestStaticPages(t *testing.T) {
 			t.Errorf("GET /privacy missing Google Limited Use disclosure")
 		}
 	})
+
+	t.Run("oauth2 callback success", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/oauth2callback?code=mock_code_123", nil)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("GET /oauth2callback returned status %d, want 200", w.Code)
+		}
+		ct := w.Header().Get("Content-Type")
+		if !strings.HasPrefix(ct, "text/html") {
+			t.Errorf("GET /oauth2callback content-type = %q, want text/html", ct)
+		}
+		body := w.Body.String()
+		if !strings.Contains(body, "Calendar") || !strings.Contains(body, "Connected") {
+			t.Errorf("GET /oauth2callback missing success confirmation in body")
+		}
+	})
+
+	t.Run("oauth2 callback error", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/oauth2callback?error=access_denied", nil)
+		w := httptest.NewRecorder()
+		h.ServeHTTP(w, r)
+
+		if w.Code != http.StatusOK {
+			t.Fatalf("GET /oauth2callback returned status %d, want 200", w.Code)
+		}
+		body := w.Body.String()
+		if !strings.Contains(body, "Cancelled") && !strings.Contains(body, "Denied") {
+			t.Errorf("GET /oauth2callback missing error notice in body")
+		}
+	})
 }

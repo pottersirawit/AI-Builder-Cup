@@ -16,6 +16,20 @@ func (s *Server) privacyPolicy(w http.ResponseWriter, r *http.Request) {
 	_, _ = w.Write([]byte(privacyPolicyHTML))
 }
 
+func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(http.StatusOK)
+
+	errParam := r.URL.Query().Get("error")
+	if errParam != "" {
+		_, _ = w.Write([]byte(oauthCallbackErrorHTML(errParam)))
+		return
+	}
+
+	code := r.URL.Query().Get("code")
+	_, _ = w.Write([]byte(oauthCallbackSuccessHTML(code)))
+}
+
 const homePageHTML = `<!DOCTYPE html>
 <html lang="en">
 <head>
@@ -343,3 +357,210 @@ const privacyPolicyHTML = `<!DOCTYPE html>
   </div>
 </body>
 </html>`
+
+func oauthCallbackSuccessHTML(code string) string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Google Calendar Connected - Fontokmai (ฝนตกไหม)</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --success: #10b981;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 520px;
+      width: 100%;
+      padding: 2.5rem;
+      text-align: center;
+      box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+    }
+    .icon-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(16, 185, 129, 0.15);
+      border: 2px solid var(--success);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      color: var(--success);
+      font-size: 2.5rem;
+      line-height: 1;
+    }
+    h1 {
+      font-size: 1.75rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .thai-sub {
+      font-size: 1.1rem;
+      color: var(--accent);
+      margin-bottom: 1.25rem;
+      font-weight: 500;
+    }
+    p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      line-height: 1.5;
+      margin-bottom: 1.75rem;
+    }
+    .badge {
+      display: inline-block;
+      padding: 0.35rem 0.75rem;
+      border-radius: 6px;
+      background: rgba(56, 189, 248, 0.1);
+      color: var(--accent);
+      font-size: 0.8rem;
+      font-family: monospace;
+      margin-bottom: 1.75rem;
+      border: 1px solid rgba(56, 189, 248, 0.2);
+    }
+    .btn {
+      display: inline-block;
+      width: 100%;
+      padding: 0.875rem;
+      background: #0284c7;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 1rem;
+      border: none;
+      cursor: pointer;
+      transition: background 0.15s ease;
+    }
+    .btn:hover {
+      background: #0369a1;
+    }
+    .note {
+      margin-top: 1.25rem;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-circle">&#10003;</div>
+    <h1>Google Calendar Connected</h1>
+    <div class="thai-sub">เชื่อมต่อ Google Calendar สำเร็จแล้ว</div>
+    <p>
+      Fontokmai is now authorized to coordinate your upcoming commute schedules with real-time Bangkok flood depth sensors, tidal surge, and weather radar.
+    </p>
+    <div class="badge">Scope: calendar.readonly</div>
+    <button class="btn" onclick="window.close();">Close Window</button>
+    <div class="note">You can safely close this browser tab and return to the app.</div>
+  </div>
+  <script>
+    if (window.opener) {
+      window.opener.postMessage({ type: 'GOOGLE_OAUTH_SUCCESS', code: '` + code + `' }, '*');
+    }
+  </script>
+</body>
+</html>`
+}
+
+func oauthCallbackErrorHTML(errParam string) string {
+	return `<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Authorization Cancelled - Fontokmai (ฝนตกไหม)</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --warning: #f59e0b;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      padding: 1.5rem;
+    }
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      max-width: 500px;
+      width: 100%;
+      padding: 2.5rem;
+      text-align: center;
+    }
+    .icon-circle {
+      width: 72px;
+      height: 72px;
+      border-radius: 50%;
+      background: rgba(245, 158, 11, 0.15);
+      border: 2px solid var(--warning);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 1.5rem;
+      color: var(--warning);
+      font-size: 2.5rem;
+      line-height: 1;
+    }
+    h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    p {
+      color: var(--text-muted);
+      font-size: 0.95rem;
+      margin-bottom: 1.5rem;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.75rem 1.5rem;
+      background: #334155;
+      color: #ffffff;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="icon-circle">!</div>
+    <h1>Authorization Cancelled</h1>
+    <p>Google Calendar was not connected (` + errParam + `). You can safely close this window and try again later.</p>
+    <a href="/" class="btn">Return to Home</a>
+  </div>
+</body>
+</html>`
+}
