@@ -24,10 +24,11 @@ import (
 
 // Providers are the data sources for one request (scenario or live).
 type Providers struct {
-	Weather domain.WeatherProvider
-	Routes  domain.RouteProvider
-	Canals  domain.CanalProvider
-	Reports domain.ReportStore
+	Weather     domain.WeatherProvider
+	Routes      domain.RouteProvider
+	Canals      domain.CanalProvider
+	Reports     domain.ReportStore
+	WeatherNext domain.WeatherNextProvider
 }
 
 // Planner holds static data shared by all requests.
@@ -400,10 +401,17 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	if err != nil {
 		return decision.Input{}, err
 	}
+	var windGustKMH float64
+	if s.prov.WeatherNext != nil && len(road.Polyline) > 0 {
+		if g, _, err := s.prov.WeatherNext.PeakConditionsAlongRoute(road.Polyline); err == nil {
+			windGustKMH = g
+		}
+	}
 	in := decision.Input{
 		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: s.Trip.ArriveBy, Mode: mode,
 		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
 		Rain: rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,
+		WindGustKMH: windGustKMH,
 	}
 	from, to := s.Trip.Origin.Point(), s.Trip.Destination.Point()
 	if tt, ok := s.prov.Routes.(domain.TravelTimer); ok {

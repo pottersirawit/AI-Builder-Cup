@@ -65,7 +65,8 @@ func main() {
 		os.Exit(1)
 	}
 	defer closeStore()
-	scen := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: store}
+	wnScen := scenario.WeatherNext{}
+	scen := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: store, WeatherNext: wnScen}
 	liveProv := scen
 	if key := os.Getenv("GOOGLE_MAPS_API_KEY"); key != "" {
 		liveProv.Weather = live.WeatherFallback{Primary: live.GoogleWeather{APIKey: key}, Fallback: scenario.Weather{}}
@@ -73,6 +74,25 @@ func main() {
 		geocoder = geocode.Fallback{Primary: geocode.Google{APIKey: key}, Fallback: geocoder}
 	}
 	liveProv.Canals = live.CanalFallback{Primary: live.ThaiWater{URL: os.Getenv("THAIWATER_URL")}, Fallback: scenario.Canals{}}
+
+	// BigQuery WeatherNext 3 Fetcher with 6-hour in-memory cache
+	bqFetcher, bqErr := live.NewBigQueryWeatherNextFetcher(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"))
+	if bqErr != nil {
+		slog.Warn("cannot init BigQuery WeatherNext fetcher, using scenario fallback", "err", bqErr)
+		liveProv.WeatherNext = wnScen
+	} else {
+		wnCache := live.NewWeatherNextCache(bqFetcher, 6*time.Hour)
+		go func() {
+			warmCtx, warmCancel := context.WithTimeout(context.Background(), 25*time.Second)
+			defer warmCancel()
+			if err := wnCache.Refresh(warmCtx, false); err != nil {
+				slog.Warn("initial WeatherNext cache warm failed", "err", err)
+			} else {
+				slog.Info("WeatherNext 3 6-hour cache warmed successfully from BigQuery")
+			}
+		}()
+		liveProv.WeatherNext = live.WeatherNextFallback{Primary: wnCache, Fallback: wnScen}
+	}
 
 	gemini := agent.NewGeminiFromEnv(ctx)
 	demo := !isFalse(os.Getenv("DEMO_MODE"))

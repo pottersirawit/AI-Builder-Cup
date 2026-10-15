@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
@@ -327,3 +328,48 @@ func TestGetTripSanitisesUntrustedTitle(t *testing.T) {
 		t.Errorf("title not sanitised: %q", got)
 	}
 }
+
+type mockWeatherNext struct {
+	gust float64
+	temp float64
+	err  error
+}
+
+func (m mockWeatherNext) Name() string { return "MockWeatherNext" }
+func (m mockWeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (float64, float64, error) {
+	return m.gust, m.temp, m.err
+}
+
+func TestWeatherNextHighWindGustElevatesMotorbikeRisk(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+	prov.WeatherNext = mockWeatherNext{gust: 52.0, temp: 31.0}
+
+	s, err := p.NewSession(context.Background(), prov, at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in, err := s.Input(at(16, 10), domain.ModeMoto)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if in.WindGustKMH != 52.0 {
+		t.Fatalf("expected WindGustKMH = 52.0, got %v", in.WindGustKMH)
+	}
+
+	base, err := s.Baseline(at(16, 10), domain.ModeMoto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	motoEval, ok := base.Evals[domain.ModeMoto]
+	if !ok {
+		t.Fatal("expected motorbike eval in baseline")
+	}
+
+	if motoEval.Risk != decision.RiskHigh {
+		t.Fatalf("expected HIGH motorbike risk with 52km/h wind gusts, got %v", motoEval.Risk)
+	}
+}
+

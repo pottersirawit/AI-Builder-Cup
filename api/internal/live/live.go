@@ -251,3 +251,18 @@ func (c CanalFallback) Canals(ctx context.Context, near domain.LatLng, at time.T
 	slog.Warn("live canals failed, using scenario", "err", err)
 	return c.Fallback.Canals(ctx, near, at)
 }
+
+type WeatherNextFallback struct {
+	Primary  domain.WeatherNextProvider
+	Fallback domain.WeatherNextProvider
+}
+
+func (w WeatherNextFallback) Name() string { return w.Primary.Name() }
+func (w WeatherNextFallback) PeakConditionsAlongRoute(polyline []domain.LatLng) (float64, float64, error) {
+	g, t, err := w.Primary.PeakConditionsAlongRoute(polyline)
+	if err == nil {
+		return g, t, nil
+	}
+	slog.Warn("live weathernext failed, using scenario", "err", err)
+	return w.Fallback.PeakConditionsAlongRoute(polyline)
+}

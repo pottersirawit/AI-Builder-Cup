@@ -214,3 +214,10 @@ type ReportStore interface {
 type TravelTimer interface {
 	TravelMinutes(from, to LatLng, mode Mode, departAt time.Time) int
 }
+
+// WeatherNextProvider provides high-resolution ~5km weather grid predictions,
+// surface wind gusts, and peak atmospheric conditions along commute routes.
+type WeatherNextProvider interface {
+	PeakConditionsAlongRoute(polyline []LatLng) (maxGust float64, maxTemp float64, err error)
+	Name() string
+}

@@ -319,3 +319,13 @@ var HomeProfile = struct {
 	SandbagPointEN string
 }{Home, HomeFloodLevelM, "ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม.", "สำนักงานเขตจตุจักร เปิดถึงเที่ยงคืน",
 	"the Central Ladprao car park (1.2 km)", "Chatuchak District Office (open until midnight)"}
+
+// WeatherNext replays scenario WeatherNext 3 telemetry (5km grid wind gust and temperature).
+type WeatherNext struct{}
+
+func (WeatherNext) Name() string { return "Google DeepMind WeatherNext 3 (scenario)" }
+
+func (WeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (maxGust float64, maxTemp float64, err error) {
+	return 25.0, 32.0, nil
+}
+
