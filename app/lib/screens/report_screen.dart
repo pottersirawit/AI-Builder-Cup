@@ -340,6 +340,29 @@ class _ResultPass extends StatelessWidget {
     final c = FonColors.of(context);
     final t = Theme.of(context).textTheme;
     final r = report;
+    if (r.rejected) {
+      return Pass(
+        semanticLabel: l.reportRejectedTitle,
+        sections: [
+          PassSection(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.reportRejectedTitle,
+                  style: t.titleMedium!.copyWith(color: c.paperInk),
+                ),
+                const SizedBox(height: Space.x2),
+                Text(
+                  r.descriptionTh,
+                  style: t.bodyMedium!.copyWith(color: c.paperInk),
+                ),
+              ],
+            ),
+          ),
+        ],
+      );
+    }
     return Pass(
       semanticLabel: l.reportDepthSemantics(r.depthCmMin, r.depthCmMax),
       sections: [
@@ -349,10 +372,12 @@ class _ResultPass extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  const GeminiMark(size: 16),
+                  GeminiMark(size: 16, fallback: !r.analysedByGemini),
                   const SizedBox(width: Space.x2),
                   Text(
-                    l.reportSeenByGemini,
+                    r.analysedByGemini
+                        ? l.reportSeenByGemini
+                        : l.reportSampleResult,
                     style: t.titleSmall!.copyWith(color: c.paperInk),
                   ),
                 ],

@@ -25,7 +25,7 @@ class FonTokMaiApi {
     AssetBundle? bundle,
     this.demoClock,
     this.language,
-    this.timeout = const Duration(seconds: 20),
+    this.timeout = const Duration(seconds: 45),
   }) : _client = client ?? http.Client(),
        _bundle = bundle ?? rootBundle;
 

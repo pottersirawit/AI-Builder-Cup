@@ -379,6 +379,7 @@ class FloodReport {
     required this.passable,
     required this.notifiedUsers,
     required this.corroboratingReports,
+    this.generatedBy = '',
   });
 
   factory FloodReport.fromJson(Json j) => FloodReport(
@@ -392,6 +393,7 @@ class FloodReport {
     ),
     notifiedUsers: _int(j['notified_users']),
     corroboratingReports: _int(j['corroborating_reports']),
+    generatedBy: _str(j['generated_by']),
   );
 
   static List<FloodReport> listFromJson(Json j) =>
@@ -407,6 +409,13 @@ class FloodReport {
   final Map<TravelMode, String> passable;
   final int notifiedUsers;
   final int corroboratingReports;
+
+  /// `gemini` when Gemini analysed the photo; anything else is a sample result.
+  final String generatedBy;
+  bool get analysedByGemini => generatedBy == 'gemini';
+
+  /// The photo was not usable as evidence (not a flood, a screenshot, too unsure).
+  bool get rejected => generatedBy == 'rejected';
 }
 
 enum HomeLevel {

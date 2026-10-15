@@ -1022,5 +1022,7 @@
   "verdictToolFloodSpots": "เช็กจุดน้ำท่วม",
   "verdictToolCanals": "เช็กระดับน้ำในคลอง",
   "verdictToolReports": "ดูรายงานจากคนในพื้นที่",
-  "verdictToolEvaluate": "ประเมินความเสี่ยง"
+  "verdictToolEvaluate": "ประเมินความเสี่ยง",
+  "reportSampleResult": "ผลประเมินตัวอย่าง ยังไม่ได้วิเคราะห์ภาพด้วย AI",
+  "reportRejectedTitle": "ใช้ภาพนี้ไม่ได้"
 }

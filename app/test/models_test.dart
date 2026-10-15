@@ -157,4 +157,36 @@ void main() {
       'Sat 3 Oct 19:00',
     );
   });
+
+  test('a flood report says whether Gemini analysed the photo', () {
+    final base = {
+      'id': 'r1',
+      'depth_cm_min': 20,
+      'depth_cm_max': 25,
+      'confidence': 0.8,
+      'description_th': '',
+      'passable': {'car': 'slow'},
+      'notified_users': 3,
+      'corroborating_reports': 0,
+    };
+    expect(
+      FloodReport.fromJson({
+        ...base,
+        'generated_by': 'gemini',
+      }).analysedByGemini,
+      isTrue,
+    );
+    expect(
+      FloodReport.fromJson({
+        ...base,
+        'generated_by': 'fallback',
+      }).analysedByGemini,
+      isFalse,
+    );
+    expect(FloodReport.fromJson(base).analysedByGemini, isFalse);
+    expect(
+      FloodReport.fromJson({...base, 'generated_by': 'rejected'}).rejected,
+      isTrue,
+    );
+  });
 }

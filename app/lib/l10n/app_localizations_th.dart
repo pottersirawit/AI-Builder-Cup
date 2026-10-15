@@ -1630,4 +1630,11 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get verdictToolEvaluate => 'ประเมินความเสี่ยง';
+
+  @override
+  String get reportSampleResult =>
+      'ผลประเมินตัวอย่าง ยังไม่ได้วิเคราะห์ภาพด้วย AI';
+
+  @override
+  String get reportRejectedTitle => 'ใช้ภาพนี้ไม่ได้';
 }
