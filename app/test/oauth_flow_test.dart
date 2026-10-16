@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/api.dart';
+import 'package:fontokmai/design/components/places.dart';
 import 'package:fontokmai/google_link.dart';
 import 'package:fontokmai/models.dart';
 import 'package:http/http.dart' as http;
@@ -248,5 +249,62 @@ void main() {
     final sync = asked.where((u) => u.path == '/v1/trips/sync');
     expect(sync, isNotEmpty);
     expect(sync.first.queryParameters['email'], owner);
+  });
+
+  testWidgets('reconnecting Gmail alone opens Google, not a false success', (
+    tester,
+  ) async {
+    final store = await emptyStore();
+    store
+      ..connectGoogle(owner)
+      ..takeSyncDue()
+      ..disconnectGmail();
+    var signedIn = false;
+    Uri? launched;
+    final state = await pumpApp(
+      tester,
+      null,
+      places: store,
+      launch: (u) async {
+        launched = u;
+        return true;
+      },
+      respond: (req) {
+        if (req.url.path == '/v1/oauth/status') {
+          return jsonResponse({'email': owner, 'connected': signedIn});
+        }
+        if (req.url.path.startsWith('/v1/trips')) {
+          return jsonResponse({'trips': []});
+        }
+        return null;
+      },
+    );
+    state.locale = const Locale('en');
+    await settle(tester);
+    await tapAndSettle(tester, find.byTooltip('Settings'));
+    final gmail = find.ancestor(
+      of: find.text('Gmail'),
+      matching: find.byType(ConnectRow),
+    );
+    await reveal(tester, gmail);
+    await tapAndSettle(
+      tester,
+      find.descendant(of: gmail, matching: find.text('Connect')),
+    );
+    expect(find.text('Connect Google'), findsOneWidget, reason: 'sheet stays');
+    expect(find.textContaining('Connected as'), findsNothing);
+    expect(launched, isNull);
+
+    await tester.tap(find.byKey(const ValueKey('google-sign-in')));
+    await tester.pump();
+    expect(launched?.path, '/v1/oauth/start');
+    expect(store.gmail, LinkState.connecting);
+
+    signedIn = true;
+    await tester.pump(const Duration(seconds: 3));
+    await settle(tester);
+    expect(store.gmail, LinkState.connected);
+    expect(store.gmailAccount, owner);
+    expect(find.text('Connect Google'), findsNothing);
   });
 }

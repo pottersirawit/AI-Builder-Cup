@@ -276,12 +276,25 @@ Future<void> promptOAuth(BuildContext context) async {
   );
 }
 
-class _GoogleSheet extends StatelessWidget {
+class _GoogleSheet extends StatefulWidget {
   const _GoogleSheet({required this.store, required this.link});
   final PlacesStore store;
   final GoogleLink? link;
 
+  @override
+  State<_GoogleSheet> createState() => _GoogleSheetState();
+}
+
+class _GoogleSheetState extends State<_GoogleSheet> {
+  PlacesStore get store => widget.store;
+  GoogleLink? get link => widget.link;
+
+  // Calendar can already be connected when only Gmail is being reconnected,
+  // so the sheet closes only on a sign-in it started itself.
+  bool _signingIn = false;
+
   void _signIn() {
+    _signingIn = true;
     if (store.demoProfile || link == null) {
       store
         ..connectCalendar()
@@ -299,10 +312,17 @@ class _GoogleSheet extends StatelessWidget {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final waiting = store.calendar == LinkState.connecting;
-        final failed = store.calendar == LinkState.error;
+        final waiting =
+            store.calendar == LinkState.connecting ||
+            store.gmail == LinkState.connecting;
+        final failed =
+            store.calendar == LinkState.error || store.gmail == LinkState.error;
         final account = store.calendarAccount;
-        if (store.calendar == LinkState.connected && account != null) {
+        if (_signingIn &&
+            store.calendar == LinkState.connected &&
+            store.gmail == LinkState.connected &&
+            account != null) {
+          _signingIn = false;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) Navigator.of(context).maybePop(account);
           });
