@@ -32,6 +32,8 @@ type Providers struct {
 	BMAFlood    domain.RoadFloodProvider
 	BMATidal    domain.TidalProvider
 	Hotlines    domain.HotlineProvider
+	// Outlook feeds /v1/outlook; nil replays the scenario.
+	Outlook domain.OutlookProvider
 }
 
 // Planner holds static data shared by all requests.

@@ -77,10 +77,12 @@ func main() {
 		BMAFlood:    bmaFloodScen,
 		BMATidal:    bmaTidalScen,
 		Hotlines:    scenario.DirectoryHotlines{},
+		Outlook:     scenario.Outlook{},
 	}
 	liveProv := scen
 	if key := os.Getenv("GOOGLE_MAPS_API_KEY"); key != "" {
 		liveProv.Weather = live.WeatherFallback{Primary: live.GoogleWeather{APIKey: key}, Fallback: scenario.Weather{}}
+		liveProv.Outlook = live.OutlookFallback{Primary: live.GoogleWeather{APIKey: key}, Fallback: scenario.Outlook{}}
 		liveProv.Routes = live.RouteFallback{Primary: live.GoogleRoutes{APIKey: key}, Fallback: scenario.Routes{}}
 		geocoder = geocode.Fallback{Primary: geocode.Google{APIKey: key}, Fallback: geocoder}
 	}

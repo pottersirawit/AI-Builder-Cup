@@ -119,6 +119,12 @@ func TestEndpoints(t *testing.T) {
 				}
 			}
 		}},
+		{"decide a week trip", "POST", "/v1/decide", "2026-09-29T16:10:00+07:00", `{"trip_id":"cal-lunch"}`, 200, func(t *testing.T, out map[string]any) {
+			trip := out["trip"].(map[string]any)
+			if trip["id"] != "cal-lunch" || trip["arrive_by"] != "2026-09-30T12:00:00+07:00" || trip["destination"].(map[string]any)["name_th"] != "สยาม" || out["mode"] != "transit" {
+				t.Fatal(out)
+			}
+		}},
 		{"decide question", "POST", "/v1/decide", "16:10", `{"trip_id":"cal-dinner","question_th":"ถ้ารอถึงสองทุ่มค่อยกลับล่ะ"}`, 200, func(t *testing.T, out map[string]any) {
 			if out["headline_th"] != "ออก 20:00 ได้ แต่เลยนัด 18:30" {
 				t.Fatal(out["headline_th"])

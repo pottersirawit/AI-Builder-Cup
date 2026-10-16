@@ -81,6 +81,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
 	mux.HandleFunc("GET /v1/reports", s.withClock(s.listReports))
 	mux.HandleFunc("GET /v1/home-status", s.withClock(s.homeStatus))
+	mux.Handle("GET /v1/outlook", s.Limits.rateLimit("outlook", s.Limits.placesRPM(), s.withClock(s.outlook)))
 	mux.Handle("GET /v1/places/search", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.searchPlaces)))
 	mux.Handle("GET /v1/places/reverse", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.reversePlace)))
 	ingest := s.Limits.limitBody(s.withClock(s.ingest))
@@ -462,6 +463,29 @@ func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	})
 	status.Place = scenario.LocalizePlace(status.Place, rc.lang)
 	writeJSON(w, http.StatusOK, status)
+}
+
+// outlook is the next hours of weather at a point (the demo home by default),
+// for the app's what-to-carry line.
+func (s *Server) outlook(w http.ResponseWriter, r *http.Request, rc reqCtx) {
+	at, given, err := point(r.URL.Query())
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !given {
+		at = s.Home.Place.Point()
+	}
+	var prov domain.OutlookProvider = scenario.Outlook{}
+	if rc.prov.Outlook != nil {
+		prov = rc.prov.Outlook
+	}
+	out, err := prov.Outlook(r.Context(), at, rc.now, rc.lang)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) searchPlaces(w http.ResponseWriter, r *http.Request) {
