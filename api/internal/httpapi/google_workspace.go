@@ -3,6 +3,7 @@ package httpapi
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -31,6 +32,11 @@ type userToken struct {
 	AccessToken  string
 	RefreshToken string
 	Expiry       time.Time
+	Scopes       []string
+	// LastSync is when Calendar and Gmail were last pulled; LastError is what
+	// failed then, if anything.
+	LastSync  time.Time
+	LastError string
 }
 
 var (
@@ -85,45 +91,7 @@ type GoogleTokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	Scope        string `json:"scope"`
 	TokenType    string `json:"token_type"`
-}
-
-// ExchangeGoogleAuthCode exchanges authorization code for Google access token.
-func ExchangeGoogleAuthCode(ctx context.Context, code, redirectURI string) (*GoogleTokenResponse, error) {
-	clientID, clientSecret := getOAuthCredentials()
-
-	data := url.Values{}
-	data.Set("code", code)
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("redirect_uri", redirectURI)
-	data.Set("grant_type", "authorization_code")
-
-	req, err := http.NewRequestWithContext(ctx, "POST", googleTokenURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("token exchange request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("token exchange error %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResp GoogleTokenResponse
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
-		return nil, fmt.Errorf("unmarshal token response failed: %w", err)
-	}
-	return &tokenResp, nil
+	IDToken      string `json:"id_token"`
 }
 
 type googleCalendarListResponse struct {
@@ -147,8 +115,8 @@ type googleCalendarItem struct {
 	ConferenceData json.RawMessage `json:"conferenceData"`
 }
 
-// FetchGoogleCalendarEvents queries upcoming events from Google Calendar API.
-func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time.Time) ([]googleCalendarItem, error) {
+// calendarEvents queries upcoming events from Google Calendar API.
+func (g GoogleOAuth) calendarEvents(ctx context.Context, accessToken string, now time.Time) ([]googleCalendarItem, error) {
 	tMin := now.Add(-24 * time.Hour)
 	realNow := time.Now()
 	if realNow.Before(tMin) || realNow.After(now.AddDate(0, 0, 14)) {
@@ -158,7 +126,7 @@ func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time
 	timeMax := tMin.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
 
 	u := fmt.Sprintf("%s?timeMin=%s&timeMax=%s&singleEvents=true&orderBy=startTime&maxResults=25",
-		googleCalendarEventsURL, url.QueryEscape(timeMin), url.QueryEscape(timeMax))
+		g.CalendarURL, url.QueryEscape(timeMin), url.QueryEscape(timeMax))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
@@ -166,7 +134,7 @@ func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := g.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("calendar events fetch failed: %w", err)
 	}
@@ -198,10 +166,10 @@ type gmailMessageItem struct {
 	Snippet string
 }
 
-// FetchGmailTravelMessages queries recent booking / ticket messages from Gmail API.
-func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailMessageItem, error) {
+// gmailTravelMessages queries recent booking / ticket messages from Gmail API.
+func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string) ([]gmailMessageItem, error) {
 	q := url.QueryEscape("ticket OR booking OR reservation OR flight OR concert OR hotel OR event")
-	u := fmt.Sprintf("%s?q=%s&maxResults=6", gmailMessagesURL, q)
+	u := fmt.Sprintf("%s?q=%s&maxResults=6", g.GmailURL, q)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
@@ -209,7 +177,7 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := g.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("gmail messages query failed: %w", err)
 	}
@@ -227,12 +195,12 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 
 	var items []gmailMessageItem
 	for _, m := range list.Messages {
-		msgReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s?format=metadata", gmailMessagesURL, m.ID), nil)
+		msgReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s?format=metadata", g.GmailURL, m.ID), nil)
 		if err != nil {
 			continue
 		}
 		msgReq.Header.Set("Authorization", "Bearer "+accessToken)
-		msgResp, err := http.DefaultClient.Do(msgReq)
+		msgResp, err := g.Client.Do(msgReq)
 		if err != nil || msgResp.StatusCode != 200 {
 			if msgResp != nil {
 				msgResp.Body.Close()
@@ -480,16 +448,21 @@ func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, geo g
 	}
 }
 
-// SyncUserWorkspaceData pulls actual events from Google APIs and upserts into UserStore.
+// SyncUserWorkspaceData pulls actual events from Google APIs and upserts into
+// UserStore. Its error names each service that failed; the other's trips are
+// still stored.
 func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken string, now time.Time) error {
+	g := s.google()
+	var failed []error
 	var savedPlaces []domain.SavedPlace
 	if s.Planner != nil && s.Planner.Places != nil {
 		savedPlaces = s.Planner.Places
 	}
 
-	calItems, err := FetchGoogleCalendarEvents(ctx, accessToken, now)
+	calItems, err := g.calendarEvents(ctx, accessToken, now)
 	if err != nil {
 		slog.Warn("fetch google calendar events error", "email", email, "err", err)
+		failed = append(failed, err)
 	} else {
 		for _, trip := range ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces) {
 			if s.UserStore != nil {
@@ -503,9 +476,10 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		slog.Info("synced google calendar events", "email", email, "count", len(calItems))
 	}
 
-	gmailItems, err := FetchGmailTravelMessages(ctx, accessToken)
+	gmailItems, err := g.gmailTravelMessages(ctx, accessToken)
 	if err != nil {
 		slog.Warn("fetch gmail messages error", "email", email, "err", err)
+		failed = append(failed, err)
 	} else {
 		for _, item := range gmailItems {
 			trip := ConvertGmailMessageToTrip(ctx, item, s.Geocoder, savedPlaces)
@@ -520,5 +494,5 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		slog.Info("synced gmail messages", "email", email, "count", len(gmailItems))
 	}
 
-	return nil
+	return errors.Join(failed...)
 }

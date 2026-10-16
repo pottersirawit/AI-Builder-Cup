@@ -6,6 +6,8 @@ import (
 	"encoding/json"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -387,5 +389,250 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 	h.ServeHTTP(wDirect, rDirect)
 	if wDirect.Code != http.StatusOK {
 		t.Fatalf("POST /v1/decide direct returned status %d, want 200: %s", wDirect.Code, wDirect.Body.String())
+	}
+}
+
+// fakeGoogle stands in for Google's token, userinfo, Calendar and Gmail
+// endpoints, counting the refresh_token grants it answers.
+type fakeGoogle struct {
+	email       string
+	failCode    bool
+	failRefresh bool
+	refreshes   int
+}
+
+func (f *fakeGoogle) start(t *testing.T, s *Server) {
+	t.Helper()
+	mux := http.NewServeMux()
+	mux.HandleFunc("POST /token", func(w http.ResponseWriter, r *http.Request) {
+		_ = r.ParseForm()
+		switch r.Form.Get("grant_type") {
+		case "authorization_code":
+			if f.failCode {
+				http.Error(w, `{"error":"invalid_grant"}`, http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"access_token": "at-1", "refresh_token": "rt-1", "expires_in": 3599,
+				"scope": "openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly"})
+		case "refresh_token":
+			f.refreshes++
+			if f.failRefresh || r.Form.Get("refresh_token") != "rt-1" {
+				http.Error(w, `{"error":"invalid_grant"}`, http.StatusBadRequest)
+				return
+			}
+			writeJSON(w, http.StatusOK, map[string]any{"access_token": "at-2", "expires_in": 3599})
+		default:
+			http.Error(w, "bad grant", http.StatusBadRequest)
+		}
+	})
+	mux.HandleFunc("GET /userinfo", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"email": f.email, "email_verified": true})
+	})
+	mux.HandleFunc("GET /calendar", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"items": []any{}})
+	})
+	mux.HandleFunc("GET /gmail", func(w http.ResponseWriter, r *http.Request) {
+		writeJSON(w, http.StatusOK, map[string]any{"messages": []any{}})
+	})
+	srv := httptest.NewServer(mux)
+	t.Cleanup(srv.Close)
+	s.Google = GoogleOAuth{
+		TokenURL:    srv.URL + "/token",
+		UserinfoURL: srv.URL + "/userinfo",
+		CalendarURL: srv.URL + "/calendar",
+		GmailURL:    srv.URL + "/gmail",
+		AppURLs:     []string{"https://fontokmai.example"},
+	}
+	t.Cleanup(func() {
+		tokenStoreMu.Lock()
+		delete(tokenStore, f.email)
+		tokenStoreMu.Unlock()
+	})
+}
+
+func get(h http.Handler, target string) *httptest.ResponseRecorder {
+	w := httptest.NewRecorder()
+	h.ServeHTTP(w, httptest.NewRequest("GET", target, nil))
+	return w
+}
+
+// startState runs /v1/oauth/start for returnTo and gives back the state Google
+// would echo to the callback.
+func startState(t *testing.T, h http.Handler, returnTo string) string {
+	t.Helper()
+	w := get(h, "/v1/oauth/start?return="+url.QueryEscape(returnTo))
+	if w.Code != http.StatusFound {
+		t.Fatalf("start = %d, want 302: %s", w.Code, w.Body.String())
+	}
+	loc, err := url.Parse(w.Header().Get("Location"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	return loc.Query().Get("state")
+}
+
+func TestOAuthStartAsksForBothScopesWithConsent(t *testing.T) {
+	s := newTestServer(t, false)
+	w := get(s.Handler(), "/v1/oauth/start?return="+url.QueryEscape("http://localhost:5173/#/"))
+	if w.Code != http.StatusFound {
+		t.Fatalf("status = %d, want 302: %s", w.Code, w.Body.String())
+	}
+	loc, err := url.Parse(w.Header().Get("Location"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if loc.Host != "accounts.google.com" {
+		t.Errorf("redirect host = %q, want accounts.google.com", loc.Host)
+	}
+	q := loc.Query()
+	scopes := strings.Fields(q.Get("scope"))
+	for _, want := range []string{"openid", "email", "https://www.googleapis.com/auth/calendar.readonly", "https://www.googleapis.com/auth/gmail.readonly"} {
+		if !slices.Contains(scopes, want) {
+			t.Errorf("scope %q missing from %q", want, q.Get("scope"))
+		}
+	}
+	for k, want := range map[string]string{
+		"prompt": "consent", "access_type": "offline", "include_granted_scopes": "true", "response_type": "code",
+		"redirect_uri": "https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback",
+	} {
+		if got := q.Get(k); got != want {
+			t.Errorf("%s = %q, want %q", k, got, want)
+		}
+	}
+	if q.Get("state") == "" || q.Get("client_id") == "" {
+		t.Errorf("state or client_id missing: %v", q)
+	}
+}
+
+func TestOAuthStartRejectsOtherOrigins(t *testing.T) {
+	s := newTestServer(t, false)
+	s.Google.AppURLs = []string{"https://fontokmai.example"}
+	h := s.Handler()
+	for _, ret := range []string{"https://evil.example/", "https://ai-cup-511208.web.app.evil.example/", "javascript:alert(1)", ""} {
+		if w := get(h, "/v1/oauth/start?return="+url.QueryEscape(ret)); w.Code != http.StatusBadRequest {
+			t.Errorf("return %q: status = %d, want 400", ret, w.Code)
+		}
+	}
+	for _, ret := range []string{"https://fontokmai.example/app", "https://ai-cup-511208.web.app/", "https://ai-cup-511208.firebaseapp.com/",
+		"http://localhost:8080/", "http://127.0.0.1:5000/"} {
+		if w := get(h, "/v1/oauth/start?return="+url.QueryEscape(ret)); w.Code != http.StatusFound {
+			t.Errorf("return %q: status = %d, want 302", ret, w.Code)
+		}
+	}
+}
+
+func TestOAuthCallbackStoresTokenUnderVerifiedEmail(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "owner.real@example.com"}
+	g.start(t, s)
+	h := s.Handler()
+
+	state := startState(t, h, "https://fontokmai.example/#/")
+	w := get(h, "/oauth2callback?code=c-1&state="+url.QueryEscape(state))
+	if w.Code != http.StatusFound {
+		t.Fatalf("callback = %d, want 302: %s", w.Code, w.Body.String())
+	}
+	if got, want := w.Header().Get("Location"), "https://fontokmai.example/?connected=owner.real%40example.com#/"; got != want {
+		t.Errorf("Location = %q, want %q", got, want)
+	}
+	tokenStoreMu.RLock()
+	tok := tokenStore[g.email]
+	tokenStoreMu.RUnlock()
+	if tok == nil || tok.AccessToken != "at-1" || tok.RefreshToken != "rt-1" || tok.LastSync.IsZero() {
+		t.Fatalf("stored token = %+v, want at-1/rt-1 synced", tok)
+	}
+
+	var st struct {
+		Connected bool      `json:"connected"`
+		Scopes    []string  `json:"scopes"`
+		LastSync  time.Time `json:"last_sync"`
+	}
+	sw := get(h, "/v1/oauth/status?email="+url.QueryEscape(g.email))
+	if err := json.NewDecoder(sw.Body).Decode(&st); err != nil {
+		t.Fatal(err)
+	}
+	if !st.Connected || !slices.Contains(st.Scopes, "https://www.googleapis.com/auth/calendar.readonly") || st.LastSync.IsZero() {
+		t.Errorf("status = %+v, want connected with calendar scope and a last sync", st)
+	}
+	if sw := get(h, "/v1/oauth/status?email=nobody@example.com"); !strings.Contains(sw.Body.String(), `"connected":false`) {
+		t.Errorf("unknown account status = %s, want connected:false", sw.Body.String())
+	}
+}
+
+func TestOAuthCallbackFailureStoresNothing(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "failed.exchange@example.com", failCode: true}
+	g.start(t, s)
+	h := s.Handler()
+
+	state := startState(t, h, "https://fontokmai.example/")
+	w := get(h, "/oauth2callback?code=bad&state="+url.QueryEscape(state))
+	if w.Code == http.StatusFound {
+		t.Fatalf("callback redirected to %q after a failed exchange", w.Header().Get("Location"))
+	}
+	body := w.Body.String()
+	if !strings.Contains(body, "Back to ฝนตกไหม") || !strings.Contains(body, `href="https://fontokmai.example/"`) || !strings.Contains(body, "invalid_grant") {
+		t.Errorf("error page lacks the reason or the way back: %s", body)
+	}
+	if hasToken(g.email) {
+		t.Error("a token was stored after a failed exchange")
+	}
+}
+
+func TestOAuthCallbackRejectsForgedState(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "forged.state@example.com"}
+	g.start(t, s)
+	h := s.Handler()
+	for _, state := range []string{"", "someone@example.com", startState(t, h, "https://fontokmai.example/") + "x"} {
+		w := get(h, "/oauth2callback?code=c-1&state="+url.QueryEscape(state))
+		if w.Code == http.StatusFound || hasToken(g.email) {
+			t.Errorf("state %q: status %d, token stored %v; want error page and no token", state, w.Code, hasToken(g.email))
+		}
+	}
+}
+
+func storeToken(t *testing.T, email string, tok userToken) {
+	t.Helper()
+	tokenStoreMu.Lock()
+	tokenStore[email] = &tok
+	tokenStoreMu.Unlock()
+}
+
+func TestSyncRefreshesAnExpiringToken(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "expiring@example.com"}
+	g.start(t, s)
+	storeToken(t, g.email, userToken{AccessToken: "at-old", RefreshToken: "rt-1", Expiry: time.Now().Add(time.Minute)})
+
+	w := get(s.Handler(), "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	if !strings.Contains(w.Body.String(), `"connected":true`) {
+		t.Errorf("sync = %s, want connected:true", w.Body.String())
+	}
+	if g.refreshes != 1 {
+		t.Errorf("refresh calls = %d, want 1", g.refreshes)
+	}
+	tokenStoreMu.RLock()
+	tok := *tokenStore[g.email]
+	tokenStoreMu.RUnlock()
+	if tok.AccessToken != "at-2" || tok.RefreshToken != "rt-1" || time.Until(tok.Expiry) < 30*time.Minute {
+		t.Errorf("token after refresh = %+v, want at-2 keeping rt-1 with a new expiry", tok)
+	}
+
+	get(s.Handler(), "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	if g.refreshes != 1 {
+		t.Errorf("refresh calls after a fresh token = %d, want still 1", g.refreshes)
+	}
+}
+
+func TestSyncWithAFailedRefreshIsDisconnected(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "revoked@example.com", failRefresh: true}
+	g.start(t, s)
+	storeToken(t, g.email, userToken{AccessToken: "at-old", RefreshToken: "rt-1", Expiry: time.Now().Add(-time.Hour)})
+
+	w := get(s.Handler(), "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	if !strings.Contains(w.Body.String(), `"connected":false`) {
+		t.Errorf("sync = %s, want connected:false", w.Body.String())
 	}
 }

@@ -56,21 +56,21 @@ func TestStaticPages(t *testing.T) {
 		}
 	})
 
-	t.Run("oauth2 callback success", func(t *testing.T) {
-		r := httptest.NewRequest("GET", "/oauth2callback?code=mock_code_123", nil)
+	t.Run("oauth2 callback without a signed state", func(t *testing.T) {
+		r := httptest.NewRequest("GET", "/oauth2callback?code=mock_code_123&state=someone@example.com", nil)
 		w := httptest.NewRecorder()
 		h.ServeHTTP(w, r)
 
-		if w.Code != http.StatusOK {
-			t.Fatalf("GET /oauth2callback returned status %d, want 200", w.Code)
+		if w.Code == http.StatusFound {
+			t.Fatalf("GET /oauth2callback redirected to %q, want the error page", w.Header().Get("Location"))
 		}
 		ct := w.Header().Get("Content-Type")
 		if !strings.HasPrefix(ct, "text/html") {
 			t.Errorf("GET /oauth2callback content-type = %q, want text/html", ct)
 		}
 		body := w.Body.String()
-		if !strings.Contains(body, "Calendar") || !strings.Contains(body, "Connected") {
-			t.Errorf("GET /oauth2callback missing success confirmation in body")
+		if strings.Contains(body, "Connected") || !strings.Contains(body, "Back to ฝนตกไหม") {
+			t.Errorf("GET /oauth2callback = %s, want an error page with a way back", body)
 		}
 	})
 
@@ -83,7 +83,7 @@ func TestStaticPages(t *testing.T) {
 			t.Fatalf("GET /oauth2callback returned status %d, want 200", w.Code)
 		}
 		body := w.Body.String()
-		if !strings.Contains(body, "Cancelled") && !strings.Contains(body, "Denied") {
+		if !strings.Contains(body, "Cancelled") || !strings.Contains(body, "access_denied") || !strings.Contains(body, "Back to ฝนตกไหม") {
 			t.Errorf("GET /oauth2callback missing error notice in body")
 		}
 	})

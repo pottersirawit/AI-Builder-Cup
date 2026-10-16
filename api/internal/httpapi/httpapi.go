@@ -59,6 +59,8 @@ type Server struct {
 	Internal   InternalAuth
 	IngestOpen bool
 	Limits     Limits
+	// Google is the OAuth flow's configuration; the zero value is production.
+	Google GoogleOAuth
 }
 
 func (s *Server) Handler() http.Handler {
@@ -73,6 +75,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.homePage)
 	mux.HandleFunc("GET /privacy", s.privacyPolicy)
 	mux.HandleFunc("GET /oauth2callback", s.oauth2Callback)
+	mux.HandleFunc("GET /v1/oauth/start", s.oauthStart)
+	mux.HandleFunc("GET /v1/oauth/status", s.oauthStatus)
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
 	mux.HandleFunc("GET /v1/trips/sync", s.withClock(s.syncTrips))
 	mux.HandleFunc("POST /v1/trips/sync", s.withClock(s.syncTrips))
@@ -168,19 +172,16 @@ func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 func (s *Server) syncTrips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	email := requestEmail(r)
 
-	tokenStoreMu.RLock()
-	tok, hasTok := tokenStore[email]
-	tokenStoreMu.RUnlock()
-
-	if hasTok && tok != nil && tok.AccessToken != "" {
-		_ = s.SyncUserWorkspaceData(r.Context(), email, tok.AccessToken, rc.now)
+	accessToken, connected := s.accessToken(r.Context(), email)
+	if connected {
+		s.syncAndRecord(r.Context(), email, accessToken, rc.now)
 	}
 
 	trips := s.userTrips(r, rc, email)
 	writeJSON(w, http.StatusOK, map[string]any{
 		"synced":    true,
 		"email":     email,
-		"connected": hasTok,
+		"connected": connected,
 		"count":     len(trips),
 		"trips":     trips,
 	})
