@@ -36,8 +36,9 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	if email == "" || !strings.Contains(email, "@") {
 		email = r.URL.Query().Get("email")
 	}
-	if email == "" || !strings.Contains(email, "@") {
-		email = "the32069@gmail.com"
+	if !strings.Contains(email, "@") {
+		slog.Warn("google oauth callback without an account email; token not stored")
+		code = ""
 	}
 
 	if code != "" {
@@ -223,7 +224,7 @@ const homePageHTML = `<!DOCTYPE html>
         <a href="/">Home</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="https://github.com/pottersirawit/AI-Builder-Cup" target="_blank" rel="noopener">GitHub Repository</a>
-        <a href="mailto:the32069@gmail.com">Contact Developer</a>
+        <a href="https://github.com/pottersirawit/AI-Builder-Cup/issues" target="_blank" rel="noopener">Contact Developer</a>
       </p>
     </footer>
   </div>
@@ -379,7 +380,7 @@ const privacyPolicyHTML = `<!DOCTYPE html>
         If you have any questions or inquiries regarding this Privacy Policy or data processing practices, please contact:
       </p>
       <p>
-        <strong>Developer Contact:</strong> <a href="mailto:the32069@gmail.com" style="color: var(--accent);">the32069@gmail.com</a><br>
+        <strong>Developer Contact:</strong> <a href="https://github.com/pottersirawit/AI-Builder-Cup/issues" target="_blank" rel="noopener" style="color: var(--accent);">GitHub Issues</a><br>
         <strong>Project Repository:</strong> <a href="https://github.com/pottersirawit/AI-Builder-Cup" target="_blank" rel="noopener" style="color: var(--accent);">github.com/pottersirawit/AI-Builder-Cup</a>
       </p>
     </section>

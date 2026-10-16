@@ -116,43 +116,57 @@ func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) h
 	}
 }
 
-func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	email := r.URL.Query().Get("email")
-	if email == "" {
-		email = r.URL.Query().Get("uid")
-	}
+// DemoEmail is มิว's address: the only account that sees the scripted trips
+// without an X-Demo-Clock header.
+const DemoEmail = "miw.demo@gmail.com"
 
-	var trips []domain.Trip
+func requestEmail(r *http.Request) string {
+	if email := r.URL.Query().Get("email"); email != "" {
+		return email
+	}
+	return r.URL.Query().Get("uid")
+}
+
+func hasToken(email string) bool {
+	tokenStoreMu.RLock()
+	defer tokenStoreMu.RUnlock()
+	_, ok := tokenStore[email]
+	return ok
+}
+
+// userTrips returns a real account's stored trips, never มิว's scenario: that
+// is only for demo requests, an empty email or DemoEmail.
+func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Trip {
+	trips := []domain.Trip{}
 	if s.UserStore != nil && email != "" {
-		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil && len(uTrips) > 0 {
+		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil {
 			for _, ut := range uTrips {
 				trips = append(trips, ut.Trip)
 			}
 		}
 	}
-
-	if len(trips) == 0 && s.Planner != nil && s.Planner.Trips != nil {
+	demo := r.Header.Get(clock.Header) != "" || email == "" || email == DemoEmail
+	if len(trips) == 0 && demo && s.Planner != nil && s.Planner.Trips != nil {
 		trips = s.Planner.Trips(rc.now)
 	}
-
 	if rc.lang == domain.LangEN {
-		localized := make([]domain.Trip, len(trips))
 		for i, t := range trips {
-			localized[i] = scenario.LocalizeTrip(t, rc.lang)
+			trips[i] = scenario.LocalizeTrip(t, rc.lang)
 		}
-		trips = localized
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"trips": trips})
+	return trips
+}
+
+func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
+	email := requestEmail(r)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"trips":     s.userTrips(r, rc, email),
+		"connected": hasToken(email),
+	})
 }
 
 func (s *Server) syncTrips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	email := r.URL.Query().Get("email")
-	if email == "" {
-		email = r.URL.Query().Get("uid")
-	}
-	if email == "" {
-		email = "the32069@gmail.com"
-	}
+	email := requestEmail(r)
 
 	tokenStoreMu.RLock()
 	tok, hasTok := tokenStore[email]
@@ -162,30 +176,13 @@ func (s *Server) syncTrips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		_ = s.SyncUserWorkspaceData(r.Context(), email, tok.AccessToken, rc.now)
 	}
 
-	var trips []domain.Trip
-	if s.UserStore != nil {
-		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil && len(uTrips) > 0 {
-			for _, ut := range uTrips {
-				trips = append(trips, ut.Trip)
-			}
-		}
-	}
-	if len(trips) == 0 && s.Planner != nil && s.Planner.Trips != nil {
-		trips = s.Planner.Trips(rc.now)
-	}
-
-	if rc.lang == domain.LangEN {
-		localized := make([]domain.Trip, len(trips))
-		for i, t := range trips {
-			localized[i] = scenario.LocalizeTrip(t, rc.lang)
-		}
-		trips = localized
-	}
+	trips := s.userTrips(r, rc, email)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"synced": true,
-		"email":  email,
-		"count":  len(trips),
-		"trips":  trips,
+		"synced":    true,
+		"email":     email,
+		"connected": hasTok,
+		"count":     len(trips),
+		"trips":     trips,
 	})
 }
 
@@ -230,14 +227,13 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		if email == "" {
 			email = r.URL.Query().Get("email")
 		}
-		if email == "" {
-			email = "the32069@gmail.com"
+		if email != "" {
+			_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+				UID:       email,
+				Trip:      *tripReq.Trip,
+				UpdatedAt: time.Now(),
+			})
 		}
-		_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
-			UID:       email,
-			Trip:      *tripReq.Trip,
-			UpdatedAt: time.Now(),
-		})
 	} else if tripReq.Trip == nil && tripReq.TripID != "" && s.UserStore != nil {
 		if ut, err := s.UserStore.FindTripByID(r.Context(), tripReq.TripID); err == nil {
 			tripReq.Trip = &ut.Trip

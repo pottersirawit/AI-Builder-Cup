@@ -298,7 +298,7 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 	s := newTestServer(t, true)
 	h := s.Handler()
 
-	testEmail := "the32069@gmail.com"
+	testEmail := "real.person@example.com"
 	customTrip := domain.Trip{
 		ID:          "cal-custom-1",
 		TitleTH:     "นัดหมายพิเศษจาก Calendar",
@@ -319,7 +319,7 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 		t.Fatalf("upsert trip failed: %v", err)
 	}
 
-	// 2. Query /v1/trips?email=the32069@gmail.com
+	// 2. Query /v1/trips?email=real.person@example.com
 	r := httptest.NewRequest("GET", "/v1/trips?email="+testEmail, nil)
 	w := httptest.NewRecorder()
 	h.ServeHTTP(w, r)
@@ -339,7 +339,7 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 		t.Errorf("got trips %+v, want custom trip cal-custom-1", res.Trips)
 	}
 
-	// 3. Query /v1/trips/sync?email=the32069@gmail.com
+	// 3. Query /v1/trips/sync?email=real.person@example.com
 	rSync := httptest.NewRequest("GET", "/v1/trips/sync?email="+testEmail, nil)
 	wSync := httptest.NewRecorder()
 	h.ServeHTTP(wSync, rSync)

@@ -505,3 +505,65 @@ func TestProactivePipelineEndToEnd(t *testing.T) {
 		t.Fatalf("invalid notification message: %+v", msg)
 	}
 }
+
+func TestTripsRealEmailNoStoreReturnsEmpty(t *testing.T) {
+	h := newServerMode(t, false)
+	code, out := do(t, h, "GET", "/v1/trips?email=real.person@example.com", "", nil, "")
+	if code != 200 {
+		t.Fatalf("status %d: %v", code, out)
+	}
+	trips, ok := out["trips"].([]any)
+	if !ok || len(trips) != 0 {
+		t.Fatalf("trips = %v, want []", out["trips"])
+	}
+	if out["connected"] != false {
+		t.Fatalf("connected = %v, want false", out["connected"])
+	}
+}
+
+func TestSyncRealEmailNoTokenReturnsEmptyNotConnected(t *testing.T) {
+	h := newServerMode(t, false)
+	code, out := do(t, h, "GET", "/v1/trips/sync?email=real.person@example.com", "", nil, "")
+	if code != 200 {
+		t.Fatalf("status %d: %v", code, out)
+	}
+	trips, ok := out["trips"].([]any)
+	if !ok || len(trips) != 0 {
+		t.Fatalf("trips = %v, want []", out["trips"])
+	}
+	if out["connected"] != false || out["email"] != "real.person@example.com" {
+		t.Fatalf("connected/email = %v/%v", out["connected"], out["email"])
+	}
+}
+
+func TestTripsConnectedWhenTokenExists(t *testing.T) {
+	h := newServerMode(t, false)
+	email := "linked.person@example.com"
+	tokenStoreMu.Lock()
+	tokenStore[email] = &userToken{}
+	tokenStoreMu.Unlock()
+	t.Cleanup(func() {
+		tokenStoreMu.Lock()
+		delete(tokenStore, email)
+		tokenStoreMu.Unlock()
+	})
+	_, out := do(t, h, "GET", "/v1/trips?email="+email, "", nil, "")
+	if out["connected"] != true || len(out["trips"].([]any)) != 0 {
+		t.Fatalf("got %v, want connected with no trips", out)
+	}
+}
+
+func TestTripsDemoHeaderStillReturnsScenario(t *testing.T) {
+	h := newServerMode(t, false)
+	for _, path := range []string{"/v1/trips?email=real.person@example.com", "/v1/trips/sync?email=real.person@example.com", "/v1/trips?email=" + DemoEmail, "/v1/trips"} {
+		clock := "16:10"
+		if !strings.Contains(path, "real.person") {
+			clock = ""
+		}
+		_, out := do(t, h, "GET", path, clock, nil, "")
+		trips := out["trips"].([]any)
+		if len(trips) == 0 || trips[0].(map[string]any)["id"] != "cal-dinner" {
+			t.Fatalf("%s: trips = %v, want scenario", path, out["trips"])
+		}
+	}
+}
