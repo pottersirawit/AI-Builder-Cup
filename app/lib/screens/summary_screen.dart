@@ -5,6 +5,7 @@ import '../app_state.dart';
 import '../carry.dart';
 import '../design/design.dart';
 import '../events.dart';
+import '../plan.dart';
 import '../l10n/l10n.dart';
 import '../location.dart';
 import '../models.dart';
@@ -13,11 +14,11 @@ import '../trips_repository.dart';
 import 'ask_sheet.dart';
 import 'event_cards.dart';
 import 'parts.dart';
+import 'plan_cards.dart';
 import 'place_picker.dart';
 import 'settings_screen.dart';
 import 'verdict_screen.dart';
 import 'weather_cards.dart';
-import '../time_th.dart';
 
 /// At a glance: the next event and when to leave for it, the rain around
 /// that departure, and the two events after it. Every card opens its detail.
@@ -43,6 +44,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
 
   /// Packing covers the trip and a while at the event.
   static const _tripTail = Duration(hours: 2);
+
+  /// Small cards after the hero, up to [alertHorizon] ahead.
+  static const _upNextLimit = 6;
 
   @override
   void initState() {
@@ -123,6 +127,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
         origin: t.origin,
         destination: saved.asPlace,
         arriveBy: t.arriveBy,
+        endsAt: t.endsAt,
         mode: t.mode,
       ),
     );
@@ -223,6 +228,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
         failed: ctrl?.error != null && d == null,
         unresolved: unresolved,
         footer: bring.isEmpty ? null : BringRow(items: bring),
+        aside: switch (leaveTimeOf(plan)) {
+          final leave? when leave.difference(now) <= planningWindow =>
+            CountdownRing(leaveAt: leave, now: now),
+          _ => null,
+        },
         onTap: unresolved
             ? () => _resolveTrip(next)
             : () => _openTrip(
@@ -236,30 +246,31 @@ class _SummaryScreenState extends State<SummaryScreen> {
     }
 
     final today = bangkokDay(now);
-    final rest = upcoming(
+    DateTime? leaveAt(Trip t) =>
+        t.id == next?.id ? leaveTimeOf(plan) : leaveTimeOf(_planFor(t, now));
+    final upNext = upcoming(repo.trips, now)
+        .where(
+          (t) =>
+              t.id != next?.id &&
+              t.arriveBy != null &&
+              t.arriveBy!.difference(now) <= alertHorizon,
+        )
+        .take(_upNextLimit)
+        .toList();
+    final todayLeft = upcoming(
       repo.trips,
       now,
-    ).where((t) => t.id != next?.id && t.arriveBy != null).toList();
-    final laterToday = rest
-        .where((t) => bangkokDay(t.arriveBy!) == today)
-        .toList();
-    // With nothing left today, the plan looks at tomorrow instead.
-    final tomorrow = laterToday.isNotEmpty
-        ? const <Trip>[]
-        : rest
-              .where(
-                (t) =>
-                    bangkokDay(t.arriveBy!) ==
-                    today.add(const Duration(days: 1)),
-              )
-              .toList();
-    final todayLeft = [
-      if (next != null &&
-          next.arriveBy != null &&
-          bangkokDay(next.arriveBy!) == today)
-        next,
-      ...laterToday,
-    ].length;
+    ).where((t) => t.travels && bangkokDay(t.arriveBy!) == today).length;
+    final alerts = planAlerts(
+      trips: repo.trips,
+      now: now,
+      leaveAt: leaveAt,
+      outlook: repo.outlook,
+    );
+    final todayTrips = upcoming(
+      repo.trips,
+      now,
+    ).where((t) => t.travels && bangkokDay(t.arriveBy!) == today).toList();
 
     final home = repo.home;
     final savedHome = store.home;
@@ -327,32 +338,69 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 ),
                 top: Space.x4,
               ),
-            if (laterToday.isNotEmpty || tomorrow.isNotEmpty)
+            if (alerts.isNotEmpty)
               SliverToBoxAdapter(
                 child: _Block(
-                  title: laterToday.isNotEmpty ? l.planToday : l.planTomorrow,
+                  title: l.alertsTitle,
+                  child: AlertsCard(
+                    alerts: alerts,
+                    onTap: (a) => a.kind == AlertKind.needsPlace
+                        ? _resolveTrip(a.trip)
+                        : _openTrip(
+                            a.trip,
+                            mode: _planFor(a.trip, now)?.best?.mode,
+                          ),
+                  ),
+                ),
+              ),
+            if (upNext.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _Block(
+                  title: l.upNextTitle,
                   trailing: TextButton(
                     onPressed: widget.onSeeAll,
                     child: Text(l.summarySeeAll),
                   ),
-                  child: Column(
-                    children: [
-                      for (final (i, t) in [...laterToday, ...tomorrow].indexed)
-                        _PlanStep(
-                          key: ValueKey('plan-${t.id}'),
-                          trip: t,
-                          plan: _planFor(t, now),
-                          weather: outlook,
-                          now: now,
-                          last: i == laterToday.length + tomorrow.length - 1,
-                          onTap: t.unresolved
-                              ? () => _resolveTrip(t)
-                              : () => _openTrip(
-                                  t,
-                                  mode: _planFor(t, now)?.best?.mode,
-                                ),
-                        ),
-                    ],
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    clipBehavior: Clip.none,
+                    child: IntrinsicHeight(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          for (final (i, t) in upNext.indexed) ...[
+                            if (i > 0) const SizedBox(width: Space.x3),
+                            UpNextCard(
+                              key: ValueKey('next-${t.id}'),
+                              trip: t,
+                              now: now,
+                              plan: _planFor(t, now),
+                              weather: outlook,
+                              onTap: t.unresolved
+                                  ? () => _resolveTrip(t)
+                                  : t.travels
+                                  ? () => _openTrip(
+                                      t,
+                                      mode: _planFor(t, now)?.best?.mode,
+                                    )
+                                  : widget.onSeeAll,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+            if (todayTrips.isNotEmpty)
+              SliverToBoxAdapter(
+                child: _Block(
+                  title: l.stripTitle,
+                  child: DayStrip(
+                    trips: todayTrips,
+                    now: now,
+                    leaveAt: leaveAt,
+                    outlook: outlook,
                   ),
                 ),
               ),
@@ -515,146 +563,4 @@ Future<void> showFloodSheet(
       );
     },
   );
-}
-
-/// One later event on the day's plan: a timeline dot at the event time,
-/// then when to leave, how, and the weather at that departure.
-class _PlanStep extends StatelessWidget {
-  const _PlanStep({
-    super.key,
-    required this.trip,
-    required this.now,
-    required this.last,
-    this.plan,
-    this.weather,
-    this.onTap,
-  });
-  final Trip trip;
-  final DateTime now;
-  final bool last;
-  final LeavePlan? plan;
-  final Outlook? weather;
-  final VoidCallback? onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = context.l10n;
-    final t = Theme.of(context).textTheme;
-    final scheme = Theme.of(context).colorScheme;
-    final c = FonColors.of(context);
-    final at = trip.arriveBy!;
-    final p = plan;
-    final best = p?.best;
-    final leave = p == null
-        ? null
-        : switch (p.kind) {
-            LeaveKind.before || LeaveKind.at => p.time,
-            _ => null,
-          };
-    final w = weather == null ? null : hourAt(weather!, leave ?? at);
-    return IntrinsicHeight(
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          SizedBox(
-            width: 52,
-            child: Column(
-              children: [
-                const SizedBox(height: Space.x4),
-                Text(hhmm(at), style: tabular(t.titleSmall!)),
-                const SizedBox(height: Space.x1),
-                Container(
-                  width: 10,
-                  height: 10,
-                  decoration: const BoxDecoration(
-                    shape: BoxShape.circle,
-                    gradient: LinearGradient(
-                      colors: [Color(0xFF2E6BFF), Color(0xFF14A8DC)],
-                    ),
-                  ),
-                ),
-                if (!last)
-                  Expanded(
-                    child: Container(
-                      width: 2,
-                      margin: const EdgeInsets.symmetric(vertical: Space.x1),
-                      color: Colors.white.withValues(alpha: .12),
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          const SizedBox(width: Space.x3),
-          Expanded(
-            child: Padding(
-              padding: EdgeInsets.only(bottom: last ? 0 : Space.x3),
-              child: GlassSurface(
-                radius: Radii.lg,
-                child: Material(
-                  type: MaterialType.transparency,
-                  child: InkWell(
-                    onTap: onTap,
-                    child: Padding(
-                      padding: const EdgeInsets.all(Space.x4),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            trip.titleTh,
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.titleMedium,
-                          ),
-                          Text(
-                            trip.unresolved
-                                ? (trip.locationTextTh ?? '')
-                                : trip.destination.nameTh,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: t.bodySmall!.copyWith(
-                              color: scheme.onSurfaceVariant,
-                            ),
-                          ),
-                          const SizedBox(height: Space.x2),
-                          Wrap(
-                            spacing: Space.x3,
-                            runSpacing: Space.x2,
-                            crossAxisAlignment: WrapCrossAlignment.center,
-                            children: [
-                              if (trip.unresolved)
-                                Text(
-                                  l.summarySetPlace,
-                                  style: t.labelLarge!.copyWith(
-                                    color: c.warning,
-                                  ),
-                                )
-                              else if (p != null && best != null)
-                                Text(
-                                  p.kind == LeaveKind.avoid
-                                      ? l.eventsAvoid
-                                      : l.eventsLeaveAt(
-                                          leave == null
-                                              ? l.summaryLeaveNow
-                                              : hhmm(leave),
-                                          best.mode.label(l),
-                                        ),
-                                  style: tabular(t.labelLarge!),
-                                ),
-                              if (best != null)
-                                RiskChip(risk: best.risk, dense: true),
-                              if (w != null) WeatherTag(hour: w),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
 }

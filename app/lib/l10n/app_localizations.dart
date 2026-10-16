@@ -2336,6 +2336,150 @@ abstract class AppLocalizations {
   /// **'ฝน {pct}%'**
   String planRainAt(String pct);
 
+  /// No description provided for @leaveIn.
+  ///
+  /// In th, this message translates to:
+  /// **'ต้องออกใน'**
+  String get leaveIn;
+
+  /// No description provided for @leaveDue.
+  ///
+  /// In th, this message translates to:
+  /// **'ถึงเวลาออก'**
+  String get leaveDue;
+
+  /// No description provided for @unitMin.
+  ///
+  /// In th, this message translates to:
+  /// **'นาที'**
+  String get unitMin;
+
+  /// No description provided for @unitHour.
+  ///
+  /// In th, this message translates to:
+  /// **'ชม.'**
+  String get unitHour;
+
+  /// No description provided for @alertsTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ต้องรู้ก่อนออก'**
+  String get alertsTitle;
+
+  /// No description provided for @alertShort.
+  ///
+  /// In th, this message translates to:
+  /// **'ไป{to}ไม่ทัน'**
+  String alertShort(String to);
+
+  /// No description provided for @alertShortBody.
+  ///
+  /// In th, this message translates to:
+  /// **'{from} จบ {end} เดินทางราว {need} แต่มีเวลาแค่ {gap}'**
+  String alertShortBody(String from, String end, String need, String gap);
+
+  /// No description provided for @alertOverlap.
+  ///
+  /// In th, this message translates to:
+  /// **'{from} กับ{to} เวลาชนกัน'**
+  String alertOverlap(String from, String to);
+
+  /// No description provided for @alertTight.
+  ///
+  /// In th, this message translates to:
+  /// **'เวลาไป{to}เผื่อน้อย'**
+  String alertTight(String to);
+
+  /// No description provided for @alertTightBody.
+  ///
+  /// In th, this message translates to:
+  /// **'เดินทางราว {need} มีเวลา {gap} ออกจาก{from}ให้ตรงเวลา'**
+  String alertTightBody(String need, String gap, String from);
+
+  /// No description provided for @alertWetLeave.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝน {pct}% ตอนออกไป{to}'**
+  String alertWetLeave(String pct, String to);
+
+  /// No description provided for @alertWetLeaveBody.
+  ///
+  /// In th, this message translates to:
+  /// **'ราว {time} เลือกทางที่ไม่ต้องเดินกลางฝน'**
+  String alertWetLeaveBody(String time);
+
+  /// No description provided for @alertWetLeaveMoto.
+  ///
+  /// In th, this message translates to:
+  /// **'ราว {time} ขี่มอเตอร์ไซค์ฝ่าฝน ใส่เสื้อกันฝนหรือเปลี่ยนไปรถไฟฟ้า'**
+  String alertWetLeaveMoto(String time);
+
+  /// No description provided for @alertWetReturn.
+  ///
+  /// In th, this message translates to:
+  /// **'ขากลับจาก{from}ฝน {pct}%'**
+  String alertWetReturn(String from, String pct);
+
+  /// No description provided for @alertWetReturnBody.
+  ///
+  /// In th, this message translates to:
+  /// **'เลิกราว {time} อย่าลืมพกร่มกลับด้วย'**
+  String alertWetReturnBody(String time);
+
+  /// No description provided for @alertNeedsPlace.
+  ///
+  /// In th, this message translates to:
+  /// **'{title} ยังไม่มีสถานที่'**
+  String alertNeedsPlace(String title);
+
+  /// No description provided for @alertNeedsPlaceBody.
+  ///
+  /// In th, this message translates to:
+  /// **'{when} · ระบุสถานที่เพื่อวางแผนเวลาออก'**
+  String alertNeedsPlaceBody(String when);
+
+  /// No description provided for @upNextTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ถัดไป'**
+  String get upNextTitle;
+
+  /// No description provided for @online.
+  ///
+  /// In th, this message translates to:
+  /// **'ออนไลน์ · ไม่ต้องเดินทาง'**
+  String get online;
+
+  /// No description provided for @allDay.
+  ///
+  /// In th, this message translates to:
+  /// **'ทั้งวัน'**
+  String get allDay;
+
+  /// No description provided for @stripTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ภาพรวมวันนี้'**
+  String get stripTitle;
+
+  /// No description provided for @stripEvent.
+  ///
+  /// In th, this message translates to:
+  /// **'นัด'**
+  String get stripEvent;
+
+  /// No description provided for @stripTravel.
+  ///
+  /// In th, this message translates to:
+  /// **'เดินทาง'**
+  String get stripTravel;
+
+  /// No description provided for @stripRain.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝน'**
+  String get stripRain;
+
   /// No description provided for @verdictCantDecide.
   ///
   /// In th, this message translates to:

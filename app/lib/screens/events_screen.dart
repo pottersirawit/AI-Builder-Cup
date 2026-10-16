@@ -60,6 +60,7 @@ class _EventsScreenState extends State<EventsScreen> {
         origin: t.origin,
         destination: saved.asPlace,
         arriveBy: t.arriveBy,
+        endsAt: t.endsAt,
         mode: t.mode,
       ),
       null,
@@ -285,7 +286,11 @@ class _EventsScreenState extends State<EventsScreen> {
       key: ValueKey('event-${trip.id}'),
       trip: trip,
       plan: plan,
-      onTap: trip.unresolved ? () => _resolve(trip) : () => _open(trip, plan),
+      onTap: trip.unresolved
+          ? () => _resolve(trip)
+          : trip.travels
+          ? () => _open(trip, plan)
+          : null,
     );
   }
 }
@@ -331,7 +336,11 @@ class EventTicket extends StatelessWidget {
                         ),
                         const SizedBox(width: Space.x1),
                         Text(
-                          at == null ? l.eventsNoTime : hhmm(at),
+                          at == null
+                              ? l.eventsNoTime
+                              : trip.allDay
+                              ? l.allDay
+                              : hhmm(at),
                           style: tabular(
                             t.labelMedium!,
                           ).copyWith(color: scheme.onSurfaceVariant),
@@ -373,6 +382,8 @@ class EventTicket extends StatelessWidget {
                   Icon(
                     trip.unresolved
                         ? Symbols.help_rounded
+                        : trip.virtual
+                        ? Symbols.videocam_rounded
                         : Symbols.location_on_rounded,
                     size: 16,
                     fill: 1,
@@ -388,6 +399,8 @@ class EventTicket extends StatelessWidget {
                     child: Text(
                       trip.unresolved
                           ? l.summarySetPlace
+                          : trip.virtual
+                          ? l.online
                           : trip.destination.nameTh,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

@@ -160,5 +160,19 @@ void main() {
         reason: '19:00 - 40 min by BTS - 10 min to spare',
       );
     });
+  
+    test('a leave-by far earlier than the event is stale even when planning from now', () {
+      final d = _fixture('decide_transit');
+      final now = DateTime.parse('2026-09-30T08:00:00+07:00');
+      final event = DateTime.parse('2026-09-30T09:30:00+07:00');
+      final p = leavePlan(
+        d,
+        rankOptions(serverOptions(d, now)),
+        now,
+        deadline: event,
+      );
+      expect(p.kind, LeaveKind.before);
+      expect(hhmm(p.time!), '08:40', reason: '09:30 - 40 min - 10 min');
+    });
   });
 }

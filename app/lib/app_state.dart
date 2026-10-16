@@ -8,7 +8,9 @@ import 'places.dart';
 
 /// App-wide state: demo clock, offline flag and local-only settings.
 class AppState extends ChangeNotifier {
-  AppState({String? demoClock}) : _demoClock = demoClock;
+  AppState({String? demoClock, Locale? locale})
+    : _demoClock = demoClock,
+      _locale = locale ?? defaultLocale;
 
   String? _demoClock;
 
@@ -28,7 +30,10 @@ class AppState extends ChangeNotifier {
   static const _localeKey = 'language';
   static const supportedLocales = [Locale('th'), Locale('en')];
 
-  Locale _locale = supportedLocales.first;
+  /// The language before the user picks one.
+  static const defaultLocale = Locale('en');
+
+  Locale _locale;
 
   /// The language of the whole app: its screens and the server's answers.
   Locale get locale => _locale;

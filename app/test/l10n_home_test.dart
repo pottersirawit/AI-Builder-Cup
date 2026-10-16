@@ -3,7 +3,9 @@ import 'dart:ui';
 import 'package:flutter/material.dart' show Text;
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fontokmai/app_state.dart';
 import 'package:fontokmai/l10n/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers.dart';
 
@@ -43,7 +45,8 @@ void main() {
     expect(find.text('16:45'), findsOneWidget);
     expect(find.text('in 2 h 20 min'), findsOneWidget);
     expect(find.text('2 more today'), findsOneWidget);
-    expect(find.text('Later today'), findsOneWidget);
+    expect(find.text('Up next'), findsOneWidget);
+    expect(find.text('Before you go'), findsOneWidget);
     expect(find.text('Weather now'), findsOneWidget);
     expect(find.text('Go by'), findsOneWidget);
     expect(find.text('Arrive about'), findsOneWidget);
@@ -108,5 +111,17 @@ void main() {
     expect(en.homeModeEta('Car', 1), 'Car · 1 min');
     expect(en.homeModeEta('Car', 5), 'Car · 5 min');
     expect(th.homeModeEta('รถยนต์', 5), 'รถยนต์ · 5 นาที');
+  });
+
+  test('a fresh install speaks English; a saved choice still wins', () async {
+    SharedPreferences.setMockInitialValues({});
+    final fresh = AppState();
+    await fresh.restoreLocale();
+    expect(fresh.locale, const Locale('en'));
+
+    SharedPreferences.setMockInitialValues({'language': 'th'});
+    final returning = AppState();
+    await returning.restoreLocale();
+    expect(returning.locale, const Locale('th'));
   });
 }

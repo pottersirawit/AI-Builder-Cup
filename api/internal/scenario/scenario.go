@@ -30,6 +30,8 @@ var (
 	Lumpini     = domain.Place{NameTH: "สวนลุมพินี", Lat: 13.7314, Lng: 100.5414}
 	DonMueang   = domain.Place{NameTH: "ท่าอากาศยานดอนเมือง", Lat: 13.9126, Lng: 100.6068}
 	Rama9Hosp   = domain.Place{NameTH: "โรงพยาบาลพระราม 9", Lat: 13.7563, Lng: 100.5653}
+	// Online is where a video call happens: no coordinates, no travel.
+	Online = domain.Place{NameTH: "ออนไลน์"}
 	// HeroReportPoint is ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32, where มิว takes the 18:52 photo.
 	HeroReportPoint = domain.LatLng{Lat: 13.8130, Lng: 100.5760}
 )
@@ -247,27 +249,33 @@ func Trips(now time.Time) []domain.Trip {
 	}
 	trips := []domain.Trip{
 		{ID: "cal-dinner", TitleTH: "กินข้าวเย็นกับที่บ้าน", Source: "calendar", Origin: Silom, Destination: Home,
-			ArriveBy: dinner, Mode: domain.ModeCar},
+			ArriveBy: dinner, EndsAt: dinner.Add(90 * time.Minute), Mode: domain.ModeCar},
 		{ID: "gmail-concert", TitleTH: "คอนเสิร์ตที่อิมแพ็ค", Source: "gmail", Origin: Silom, Destination: Impact,
-			ArriveBy: concert, Mode: domain.ModeCar},
+			ArriveBy: concert, EndsAt: concert.Add(3 * time.Hour), Mode: domain.ModeCar},
 	}
+	d1, d2 := day.AddDate(0, 0, 1), day.AddDate(0, 0, 2)
 	week := []domain.Trip{
 		{ID: "cal-client", TitleTH: "ประชุมลูกค้า Q4", Source: "calendar", Origin: Silom, Destination: Samyan,
-			ArriveBy: at(day, 14, 0), Mode: domain.ModeTransit},
+			ArriveBy: at(day, 14, 0), EndsAt: at(day, 15, 30), Mode: domain.ModeTransit},
 		{ID: "cal-gym", TitleTH: "เวทเทรนนิ่ง", Source: "calendar", Origin: Home, Destination: GymLadprao,
-			ArriveBy: at(day, 20, 30), Mode: domain.ModeMoto},
+			ArriveBy: at(day, 20, 30), EndsAt: at(day, 21, 30), Mode: domain.ModeMoto},
 		{ID: "cal-standup", TitleTH: "Daily standup ที่ออฟฟิศ", Source: "calendar", Origin: Home, Destination: Silom,
-			ArriveBy: at(day.AddDate(0, 0, 1), 9, 30), Mode: domain.ModeTransit},
+			ArriveBy: at(d1, 9, 30), EndsAt: at(d1, 10, 0), Mode: domain.ModeTransit},
+		{ID: "cal-sync", TitleTH: "ซิงก์งานกับทีม (Google Meet)", Source: "calendar", Origin: Silom, Destination: Online,
+			ArriveBy: at(d1, 11, 0), EndsAt: at(d1, 11, 30), Mode: domain.ModeTransit, Virtual: true},
 		{ID: "cal-lunch", TitleTH: "กินข้าวกับพี่เบียร์", Source: "calendar", Origin: Silom, Destination: Siam,
-			ArriveBy: at(day.AddDate(0, 0, 1), 12, 0), Mode: domain.ModeTransit},
+			ArriveBy: at(d1, 12, 0), EndsAt: at(d1, 12, 45), Mode: domain.ModeTransit},
+		// Starts 15 minutes after lunch at Siam ends: a deliberately tight connection.
+		{ID: "cal-review", TitleTH: "รีวิวงานที่ทองหล่อ", Source: "calendar", Origin: Siam, Destination: Thonglor,
+			ArriveBy: at(d1, 13, 0), EndsAt: at(d1, 14, 0), Mode: domain.ModeTransit},
 		{ID: "cal-pitch", TitleTH: "Pitch AI Builder Cup", Source: "calendar", Origin: Home, Destination: TrueDigital,
-			ArriveBy: at(day.AddDate(0, 0, 2), 10, 0), Mode: domain.ModeCar},
+			ArriveBy: at(d2, 10, 0), EndsAt: at(d2, 11, 0), Mode: domain.ModeCar},
 		{ID: "cal-yoga", TitleTH: "โยคะสวนลุม", Source: "calendar", Origin: Silom, Destination: Lumpini,
-			ArriveBy: at(day.AddDate(0, 0, 2), 19, 0), Mode: domain.ModeTransit},
+			ArriveBy: at(d2, 19, 0), EndsAt: at(d2, 20, 0), Mode: domain.ModeTransit},
 		{ID: "gmail-flight", TitleTH: "เที่ยวบิน FD3433 ไปเชียงใหม่", Source: "gmail", Origin: Home, Destination: DonMueang,
 			ArriveBy: at(day.AddDate(0, 0, 5), 7, 30), Mode: domain.ModeCar},
 		{ID: "cal-checkup", TitleTH: "ตรวจสุขภาพประจำปี", Source: "calendar", Origin: Home, Destination: Rama9Hosp,
-			ArriveBy: at(day.AddDate(0, 0, 7), 8, 0), Mode: domain.ModeCar},
+			ArriveBy: at(day.AddDate(0, 0, 7), 8, 0), EndsAt: at(day.AddDate(0, 0, 7), 10, 0), Mode: domain.ModeCar},
 	}
 	for _, t := range week {
 		if !now.After(t.ArriveBy.Add(tripPast)) {
@@ -416,7 +424,9 @@ func (BMATidal) TidalStatus(_ context.Context, at time.Time) (domain.TidalReadin
 // DirectoryHotlines provides verified emergency contact helplines for flood rescue, medical, road, and electricity assistance.
 type DirectoryHotlines struct{}
 
-func (DirectoryHotlines) Name() string { return "สายด่วนฉุกเฉิน (ปภ. 1784 / สพฉ. 1669)" }
+func (DirectoryHotlines) Name() string {
+	return "สายด่วนฉุกเฉิน (ปภ. 1784 / สพฉ. 1669)"
+}
 
 func (DirectoryHotlines) EmergencyContacts() []domain.EmergencyContact {
 	return []domain.EmergencyContact{
@@ -466,6 +476,3 @@ func (DirectoryHotlines) EmergencyContacts() []domain.EmergencyContact {
 		},
 	}
 }
-
-
-

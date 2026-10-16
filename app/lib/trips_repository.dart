@@ -134,6 +134,7 @@ class TripsRepository extends ChangeNotifier {
     final due = upcoming(_trips, now).where(
       (t) =>
           t.id != next?.id &&
+          t.travels &&
           !t.unresolved &&
           t.arriveBy != null &&
           t.arriveBy!.difference(now) <= decideAhead &&

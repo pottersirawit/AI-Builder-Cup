@@ -16,22 +16,20 @@ const planningWindow = Duration(hours: 3);
 /// Calendar and Gmail events not yet over, earliest first; untimed last.
 List<Trip> upcoming(List<Trip> trips, DateTime now) {
   final cutoff = now.subtract(startedGrace);
+  // An all-day event stays on the list until its day is over.
+  bool ahead(Trip t) => t.allDay
+      ? (t.endsAt ?? t.arriveBy!.add(const Duration(days: 1))).isAfter(now)
+      : t.arriveBy!.isAfter(cutoff);
   final timed =
-      trips
-          .where(
-            (t) =>
-                _isEvent(t) &&
-                t.arriveBy != null &&
-                t.arriveBy!.isAfter(cutoff),
-          )
-          .toList()
+      trips.where((t) => _isEvent(t) && t.arriveBy != null && ahead(t)).toList()
         ..sort((a, b) => a.arriveBy!.compareTo(b.arriveBy!));
   return [...timed, ...trips.where((t) => _isEvent(t) && t.arriveBy == null)];
 }
 
-/// The event the summary is about: the first timed one coming up.
+/// The event the summary is about: the first one coming up that means
+/// going somewhere. Online and all-day events need no departure.
 Trip? nextEvent(List<Trip> trips, DateTime now) =>
-    upcoming(trips, now).where((t) => t.arriveBy != null).firstOrNull;
+    upcoming(trips, now).where((t) => t.travels).firstOrNull;
 
 /// One Bangkok calendar day of events; [day] is null for untimed events.
 typedef DayGroup = ({DateTime? day, List<Trip> trips});
@@ -92,6 +90,9 @@ typedef LeavePlan = ({
   DateTime arriveAt,
 });
 
+/// No departure is planned this long before an event.
+const staleLead = Duration(hours: 6);
+
 /// Time to spare when backing a departure off an event's start.
 const arrivalSlack = Duration(minutes: 10);
 
@@ -104,16 +105,16 @@ LeavePlan leavePlan(
   final best = board.firstOrNull;
   final eta = Duration(minutes: best?.etaMin ?? 0);
   final planned = best?.departAt;
-  // An answer about an earlier departure than the one planned says nothing
-  // about this trip; back off the event's start instead, else leave at the
-  // planned time.
+  // An answer about an earlier departure than the one planned, or hours
+  // before the event, is not about this trip: back off the event's start
+  // instead, else leave at the planned time.
+  final lb = d.leaveBy;
   final stale =
-      d.leaveBy != null &&
-      planned != null &&
-      planned.isAfter(now) &&
-      d.leaveBy!.isBefore(planned);
+      lb != null &&
+      ((planned != null && planned.isAfter(now) && lb.isBefore(planned)) ||
+          (deadline != null && lb.isBefore(deadline.subtract(staleLead))));
   final time = !stale
-      ? d.leaveBy
+      ? lb
       : (deadline?.subtract(eta + arrivalSlack) ?? planned);
   final kind = switch (d.verdict) {
     Verdict.dontGo => LeaveKind.avoid,

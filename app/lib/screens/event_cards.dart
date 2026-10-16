@@ -148,6 +148,7 @@ class NextEventCard extends StatelessWidget {
     this.onRetry,
     this.onResolvePlace,
     this.footer,
+    this.aside,
   });
 
   final Trip trip;
@@ -156,6 +157,9 @@ class NextEventCard extends StatelessWidget {
 
   /// Under the leave answer, e.g. what to bring for this trip.
   final Widget? footer;
+
+  /// Beside the leave time, e.g. the countdown to it.
+  final Widget? aside;
 
   /// The agent's one-paragraph reason, shown under the leave time.
   final String? summary;
@@ -198,6 +202,7 @@ class NextEventCard extends StatelessWidget {
         summary: summary,
         deadline: arriveBy,
         footer: footer,
+        aside: aside,
       );
     } else if (failed) {
       body = Row(
@@ -376,10 +381,12 @@ class _LeaveBlock extends StatelessWidget {
     this.summary,
     this.deadline,
     this.footer,
+    this.aside,
   });
   final LeavePlan plan;
   final String? summary;
   final Widget? footer;
+  final Widget? aside;
 
   /// When the event starts; arriving after it earns a warning.
   final DateTime? deadline;
@@ -405,13 +412,26 @@ class _LeaveBlock extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (label != null)
-          Text(label, style: t.labelLarge!.copyWith(color: muted)),
-        Text(
-          big,
-          style: isTime
-              ? tabular(t.displayLarge!).copyWith(color: c.paperInk)
-              : t.displaySmall!.copyWith(color: c.paperInk),
+        Row(
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  if (label != null)
+                    Text(label, style: t.labelLarge!.copyWith(color: muted)),
+                  Text(
+                    big,
+                    style: isTime
+                        ? tabular(t.displayLarge!).copyWith(color: c.paperInk)
+                        : t.displaySmall!.copyWith(color: c.paperInk),
+                  ),
+                ],
+              ),
+            ),
+            if (aside != null) ...[const SizedBox(width: Space.x3), aside!],
+          ],
         ),
         if (late.inMinutes > 0) ...[
           const SizedBox(height: Space.x1),

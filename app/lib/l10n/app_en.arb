@@ -902,6 +902,138 @@
       }
     }
   },
+  "leaveIn": "Leave in",
+  "leaveDue": "Time to go",
+  "unitMin": "min",
+  "unitHour": "h",
+  "alertsTitle": "Before you go",
+  "alertShort": "You can't make {to} in time",
+  "@alertShort": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertShortBody": "{from} ends {end}; the trip takes about {need} but you only have {gap}",
+  "@alertShortBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      }
+    }
+  },
+  "alertOverlap": "{from} and {to} overlap",
+  "@alertOverlap": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTight": "Tight hop to {to}",
+  "@alertTight": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTightBody": "About {need} on the road with {gap} to spare. Leave {from} on time",
+  "@alertTightBody": {
+    "placeholders": {
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeave": "{pct}% rain as you leave for {to}",
+  "@alertWetLeave": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveBody": "Around {time}. Pick a way that keeps you out of it",
+  "@alertWetLeaveBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveMoto": "Around {time}, riding through rain. Wear a raincoat or switch to the train",
+  "@alertWetLeaveMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturn": "{pct}% rain on the way back from {from}",
+  "@alertWetReturn": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturnBody": "It ends around {time}. Take an umbrella for the ride home",
+  "@alertWetReturnBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlace": "{title} has no place yet",
+  "@alertNeedsPlace": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlaceBody": "{when} · set the place to plan when to leave",
+  "@alertNeedsPlaceBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextTitle": "Up next",
+  "online": "Online · no travel",
+  "allDay": "All day",
+  "stripTitle": "Today at a glance",
+  "stripEvent": "Event",
+  "stripTravel": "Travel",
+  "stripRain": "Rain",
   "verdictCantDecide": "Can't decide yet",
   "verdictServerError": "Couldn't reach the server. Check your connection and try again.",
   "verdictRetry": "Try again",

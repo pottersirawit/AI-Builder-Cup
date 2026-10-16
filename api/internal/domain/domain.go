@@ -57,13 +57,18 @@ func (m Mode) NameFor(l Lang) string {
 	}
 }
 
+// Place is a named point. A place at (0,0) is unresolved: only its name is
+// known (an event location we could not geocode), and its JSON has no lat/lng.
 type Place struct {
 	NameTH string  `json:"name_th"`
-	Lat    float64 `json:"lat"`
-	Lng    float64 `json:"lng"`
+	Lat    float64 `json:"lat,omitempty"`
+	Lng    float64 `json:"lng,omitempty"`
 }
 
 func (p Place) Point() LatLng { return LatLng{p.Lat, p.Lng} }
+
+// Resolved reports whether p has coordinates.
+func (p Place) Resolved() bool { return p.Lat != 0 || p.Lng != 0 }
 
 // Kinds of saved place. A user has at most one home and one work place.
 const (
@@ -121,6 +126,19 @@ type Trip struct {
 	Destination Place     `json:"destination"`
 	ArriveBy    time.Time `json:"arrive_by,omitzero"` // zero for a typed trip with no deadline
 	Mode        Mode      `json:"mode"`
+	EndsAt      time.Time `json:"ends_at,omitzero"`
+	// Virtual is an online meeting and AllDay an all-day event: neither is travel.
+	Virtual bool `json:"virtual,omitempty"`
+	AllDay  bool `json:"all_day,omitempty"`
+	// LocationTextTH is the event's location as written, kept when Destination
+	// is unresolved so the app can ask the user where it is.
+	LocationTextTH string `json:"location_text_th,omitempty"`
+}
+
+// Plannable reports whether t is travel the planner can route: a real trip
+// with both ends resolved.
+func (t Trip) Plannable() bool {
+	return !t.Virtual && !t.AllDay && t.Origin.Resolved() && t.Destination.Resolved()
 }
 
 // Route is one way of getting from origin to destination with one mode.
@@ -271,5 +289,3 @@ type HotlineProvider interface {
 	EmergencyContacts() []EmergencyContact
 	Name() string
 }
-
-

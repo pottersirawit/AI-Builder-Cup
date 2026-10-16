@@ -46,7 +46,8 @@ Future<AppState> pumpApp(
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
 
-  final state = AppState(demoClock: clock);
+  // Most widget tests read the Thai copy; English ones switch explicitly.
+  final state = AppState(demoClock: clock, locale: const Locale('th'));
   final api = FonTokMaiApi(
     baseUrl: 'http://offline.test',
     demoClock: () => state.demoClock,

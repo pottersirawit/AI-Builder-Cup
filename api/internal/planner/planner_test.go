@@ -428,5 +428,32 @@ func TestSourcesUsed_DynamicAttribution(t *testing.T) {
 	}
 }
 
+func TestOpenRefusesTripsWithNoTravel(t *testing.T) {
+	p := newPlanner(t)
+	ctx := context.Background()
+	unresolved := domain.Trip{ID: "cal-x", TitleTH: "ไม่รู้ที่", Origin: scenario.Home, Destination: domain.Place{NameTH: "ร้านลับ"}, ArriveBy: at(18, 0), Mode: domain.ModeCar}
+	allDay := domain.Trip{ID: "cal-y", TitleTH: "สัมมนา", Origin: scenario.Home, Destination: scenario.Siam, ArriveBy: at(0, 0), AllDay: true, Mode: domain.ModeCar}
+	for name, req := range map[string]TripRequest{
+		"virtual trip id": {TripID: "cal-sync"},
+		"unresolved trip": {Trip: &unresolved},
+		"all-day trip":    {Trip: &allDay},
+	} {
+		if _, err := p.Open(ctx, scenarioProviders(), at(16, 10), req); !errors.Is(err, ErrBadTrip) {
+			t.Errorf("%s: err = %v, want ErrBadTrip", name, err)
+		}
+	}
+}
 
-
+func TestOpenSkipsTripsWithNoTravelByDefault(t *testing.T) {
+	p := newPlanner(t)
+	p.Trips = func(now time.Time) []domain.Trip {
+		trips := scenario.Trips(now)
+		online := trips[0]
+		online.ID, online.Virtual, online.Destination = "cal-online", true, scenario.Online
+		return append([]domain.Trip{online}, trips...)
+	}
+	s, err := p.Open(context.Background(), scenarioProviders(), at(16, 10), TripRequest{})
+	if err != nil || s.Trip.ID != "cal-dinner" {
+		t.Fatalf("got %v, %v; want cal-dinner", s, err)
+	}
+}

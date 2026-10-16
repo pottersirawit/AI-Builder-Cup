@@ -75,11 +75,22 @@ class Trip {
     required this.arriveBy,
     required this.mode,
     this.locationTextTh,
+    this.endsAt,
+    this.virtual = false,
+    this.allDay = false,
   });
 
   factory Trip.fromJson(Json j) {
     final dest = j['destination'] as Json?;
-    final resolved = dest != null && dest['lat'] != null && dest['lng'] != null;
+    final virtual = j['virtual'] == true;
+    final allDay = j['all_day'] == true;
+    // (0, 0) is how an unplaced trip comes back from the device cache.
+    final resolved =
+        dest != null &&
+        dest['lat'] != null &&
+        dest['lng'] != null &&
+        !(_num(dest['lat']) == 0 && _num(dest['lng']) == 0);
+    final placeless = !resolved && !virtual && !allDay;
     final text =
         j['location_text_th'] as String? ?? j['location_th'] as String?;
     return Trip(
@@ -92,7 +103,10 @@ class Trip {
           : Place(nameTh: text ?? _str(dest?['name_th']), lat: 0, lng: 0),
       arriveBy: DateTime.tryParse(_str(j['arrive_by'])),
       mode: TravelMode.parse(j['mode']),
-      locationTextTh: resolved ? null : (text ?? _str(dest?['name_th'])),
+      locationTextTh: placeless ? (text ?? _str(dest?['name_th'])) : null,
+      endsAt: DateTime.tryParse(_str(j['ends_at'])),
+      virtual: virtual,
+      allDay: allDay,
     );
   }
 
@@ -116,6 +130,18 @@ class Trip {
   final String? locationTextTh;
   bool get unresolved => locationTextTh != null;
 
+  /// When the event ends; Gmail bookings often have none.
+  final DateTime? endsAt;
+
+  /// An online meeting: nothing to travel to.
+  final bool virtual;
+
+  /// An all-day event (a holiday, a trip day): not a departure.
+  final bool allDay;
+
+  /// Whether this event means going somewhere at a time.
+  bool get travels => !virtual && !allDay && arriveBy != null;
+
   Json toJson() => {
     'id': id,
     'title_th': titleTh,
@@ -125,6 +151,9 @@ class Trip {
     if (arriveBy != null) 'arrive_by': arriveBy!.toIso8601String(),
     'mode': mode.wire,
     if (locationTextTh != null) 'location_text_th': locationTextTh,
+    if (endsAt != null) 'ends_at': endsAt!.toIso8601String(),
+    if (virtual) 'virtual': true,
+    if (allDay) 'all_day': true,
   };
 }
 

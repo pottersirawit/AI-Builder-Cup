@@ -447,15 +447,6 @@ class _CarryTile extends StatelessWidget {
   }
 }
 
-/// The hour of [o] containing [t], if the outlook reaches it.
-WeatherHour? hourAt(Outlook o, DateTime t) => o.hours
-    .where(
-      (h) =>
-          !t.isBefore(h.time) &&
-          t.isBefore(h.time.add(const Duration(hours: 1))),
-    )
-    .firstOrNull;
-
 /// "พกไปด้วย ☂ ร่ม · 🧴 ครีมกันแดด": the trip's packing list as small pills.
 class BringRow extends StatelessWidget {
   const BringRow({super.key, required this.items});
@@ -552,11 +543,15 @@ class WeatherTag extends StatelessWidget {
           color: glow,
         ),
         const SizedBox(width: Space.x1),
-        Text(
-          wet ? l.planRainAt('${hour.rainProbPct}') : '${hour.tempC.round()}°',
-          style: tabular(
-            t.labelMedium!,
-          ).copyWith(color: wet ? const Color(0xFF8AB4FF) : glow),
+        Flexible(
+          child: Text(
+            wet
+                ? l.planRainAt('${hour.rainProbPct}')
+                : '${hour.tempC.round()}°',
+            style: tabular(
+              t.labelMedium!,
+            ).copyWith(color: wet ? const Color(0xFF8AB4FF) : glow),
+          ),
         ),
       ],
     );

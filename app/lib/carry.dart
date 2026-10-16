@@ -83,3 +83,12 @@ List<CarryItem> whatToCarry(
     if (soaking) span(CarryKind.shoes, wet, peakProb),
   ];
 }
+
+/// The hour of [o] containing [t], if the outlook reaches it.
+WeatherHour? hourAt(Outlook o, DateTime t) => o.hours
+    .where(
+      (h) =>
+          !t.isBefore(h.time) &&
+          t.isBefore(h.time.add(const Duration(hours: 1))),
+    )
+    .firstOrNull;

@@ -9,6 +9,7 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -142,6 +143,8 @@ type googleCalendarItem struct {
 		DateTime string `json:"dateTime"`
 		Date     string `json:"date"`
 	} `json:"end"`
+	HangoutLink    string          `json:"hangoutLink"`
+	ConferenceData json.RawMessage `json:"conferenceData"`
 }
 
 // FetchGoogleCalendarEvents queries upcoming events from Google Calendar API.
@@ -272,118 +275,189 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 	return items, nil
 }
 
-// ConvertCalendarEventToTrip turns a Google Calendar entry into a domain.Trip.
+// defaultOrigin is where a synced trip starts when the user has saved no home.
+var defaultOrigin = domain.Place{NameTH: "สีลม", Lat: 13.7279, Lng: 100.5281}
+
+// onlineTH names the destination of an online meeting.
+const onlineTH = "ออนไลน์"
+
+// connectWindow is how soon after one event ends the next must start for the
+// user to travel straight from the first place to the second.
+const connectWindow = 3 * time.Hour
+
+// homeOrigin is the user's saved home, or defaultOrigin.
+func homeOrigin(savedPlaces []domain.SavedPlace) domain.Place {
+	for _, sp := range savedPlaces {
+		if sp.Kind == domain.KindHome && sp.Resolved() {
+			return sp.Place
+		}
+	}
+	return defaultOrigin
+}
+
+// matchSavedPlace is the first saved place whose name or label appears in text.
+func matchSavedPlace(text string, savedPlaces []domain.SavedPlace) (domain.Place, bool) {
+	text = strings.ToLower(text)
+	for _, sp := range savedPlaces {
+		for _, name := range []string{sp.NameTH, sp.LabelTH} {
+			if name != "" && strings.Contains(text, strings.ToLower(name)) {
+				return sp.Place, true
+			}
+		}
+	}
+	return domain.Place{}, false
+}
+
+var onlineMarkers = []string{"meet.google.com", "zoom.us", "teams.microsoft.com", "zoom", "google meet", "teams"}
+
+// isOnlineMeeting reports whether a Calendar event happens on a video call:
+// it carries a Meet link or conference data, or its location is a URL or
+// names a video-call service.
+func isOnlineMeeting(item googleCalendarItem) bool {
+	if item.HangoutLink != "" || len(item.ConferenceData) > 0 && string(item.ConferenceData) != "null" {
+		return true
+	}
+	loc := strings.ToLower(strings.TrimSpace(item.Location))
+	if strings.HasPrefix(loc, "http://") || strings.HasPrefix(loc, "https://") {
+		return true
+	}
+	for _, m := range onlineMarkers {
+		if strings.Contains(loc, m) {
+			return true
+		}
+	}
+	return false
+}
+
+// ConvertCalendarEventToTrip turns a Google Calendar entry into a domain.Trip
+// from the user's home. It never invents a place or a time: an online meeting
+// is Virtual, an all-day event is AllDay, and a location that matches no saved
+// place and does not geocode leaves the destination unresolved with the
+// location text in LocationTextTH.
 func ConvertCalendarEventToTrip(ctx context.Context, item googleCalendarItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) domain.Trip {
 	title := strings.TrimSpace(item.Summary)
 	if title == "" {
 		title = "นัดหมายในปฏิทิน"
 	}
-
-	destName := strings.TrimSpace(item.Location)
-	if destName == "" {
-		destName = title
+	trip := domain.Trip{
+		ID:      "cal-" + item.ID,
+		TitleTH: title,
+		Source:  "calendar",
+		Origin:  homeOrigin(savedPlaces),
+		Mode:    domain.ModeCar,
 	}
 
-	destPlace := domain.Place{
-		NameTH: destName,
-		Lat:    13.7462,
-		Lng:    100.5348, // Siam default
-	}
-
-	// 1. Try matching with saved places
-	for _, sp := range savedPlaces {
-		if strings.Contains(strings.ToLower(destName), strings.ToLower(sp.NameTH)) ||
-			strings.Contains(strings.ToLower(destName), strings.ToLower(sp.LabelTH)) {
-			destPlace = sp.Place
-			break
-		}
-	}
-
-	// 2. Try geocoding if not matched in saved places
-	if geo != nil && destPlace.Lat == 13.7462 && destPlace.Lng == 100.5348 {
-		searchQuery := item.Location
-		if searchQuery == "" {
-			searchQuery = title
-		}
-		if candidates, err := geo.Search(ctx, searchQuery); err == nil && len(candidates) > 0 {
-			destPlace = domain.Place{
-				NameTH: searchQuery,
-				Lat:    candidates[0].Lat,
-				Lng:    candidates[0].Lng,
-			}
-		}
-	}
-
-	var arriveBy time.Time
 	if item.Start.DateTime != "" {
 		if t, err := time.Parse(time.RFC3339, item.Start.DateTime); err == nil {
-			arriveBy = t
+			trip.ArriveBy = t.In(domain.Bangkok)
 		}
-	} else if item.Start.Date != "" {
-		if t, err := time.Parse("2006-01-02", item.Start.Date); err == nil {
-			// default to 09:00 Bangkok time for all-day events
-			loc, _ := time.LoadLocation("Asia/Bangkok")
-			if loc != nil {
-				arriveBy = time.Date(t.Year(), t.Month(), t.Day(), 9, 0, 0, 0, loc)
-			} else {
-				arriveBy = t.Add(9 * time.Hour)
-			}
+		if t, err := time.Parse(time.RFC3339, item.End.DateTime); err == nil {
+			trip.EndsAt = t.In(domain.Bangkok)
 		}
-	}
-
-	origin := domain.Place{
-		NameTH: "สีลม",
-		Lat:    13.7279,
-		Lng:    100.5281,
-	}
-	for _, sp := range savedPlaces {
-		if sp.ID == "work" {
-			origin = sp.Place
-			break
+	} else if t, err := time.ParseInLocation(time.DateOnly, item.Start.Date, domain.Bangkok); err == nil {
+		// Google's all-day end date is exclusive: the midnight the event ends.
+		trip.AllDay, trip.ArriveBy, trip.EndsAt = true, t, t.AddDate(0, 0, 1)
+		if end, err := time.ParseInLocation(time.DateOnly, item.End.Date, domain.Bangkok); err == nil && end.After(t) {
+			trip.EndsAt = end
 		}
 	}
 
-	return domain.Trip{
-		ID:          "cal-" + item.ID,
-		TitleTH:     title,
-		Source:      "calendar",
-		Origin:      origin,
-		Destination: destPlace,
-		ArriveBy:    arriveBy,
-		Mode:        domain.ModeCar,
+	location := strings.TrimSpace(item.Location)
+	switch {
+	case isOnlineMeeting(item):
+		trip.Virtual = true
+		trip.Destination = domain.Place{NameTH: onlineTH}
+	case trip.AllDay:
+		trip.Destination = domain.Place{NameTH: location}
+		trip.LocationTextTH = location
+	default:
+		query := location
+		if query == "" {
+			query = title
+		}
+		if p, ok := resolveEventPlace(ctx, query, geo, savedPlaces); ok {
+			trip.Destination = p
+		} else {
+			trip.Destination = domain.Place{NameTH: location}
+			trip.LocationTextTH = location
+		}
 	}
+	return trip
 }
 
-// ConvertGmailMessageToTrip turns an extracted travel email into a domain.Trip.
+// resolveEventPlace finds query among the saved places, then by geocoding it.
+func resolveEventPlace(ctx context.Context, query string, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) (domain.Place, bool) {
+	if p, ok := matchSavedPlace(query, savedPlaces); ok {
+		return p, true
+	}
+	if geo == nil {
+		return domain.Place{}, false
+	}
+	candidates, err := geo.Search(ctx, query)
+	if err != nil || len(candidates) == 0 || (candidates[0].Lat == 0 && candidates[0].Lng == 0) {
+		return domain.Place{}, false
+	}
+	return domain.Place{NameTH: query, Lat: candidates[0].Lat, Lng: candidates[0].Lng}, true
+}
+
+// ConvertCalendarEventsToTrips converts items in start order and chains
+// back-to-back events: when the last same-day event the user travelled to
+// (not online or all-day, with a resolved place) ends at most connectWindow
+// before the next one starts, the next trip starts from that event's place
+// instead of home.
+func ConvertCalendarEventsToTrips(ctx context.Context, items []googleCalendarItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) []domain.Trip {
+	trips := make([]domain.Trip, 0, len(items))
+	for _, item := range items {
+		trips = append(trips, ConvertCalendarEventToTrip(ctx, item, geo, savedPlaces))
+	}
+	sort.SliceStable(trips, func(i, j int) bool { return trips[i].ArriveBy.Before(trips[j].ArriveBy) })
+
+	var prev *domain.Trip
+	for i := range trips {
+		t := &trips[i]
+		if prev != nil && sameDay(prev.ArriveBy, t.ArriveBy) {
+			ended := prev.EndsAt
+			if ended.IsZero() {
+				ended = prev.ArriveBy
+			}
+			if gap := t.ArriveBy.Sub(ended); gap >= 0 && gap <= connectWindow {
+				t.Origin = prev.Destination
+			}
+		}
+		if !t.Virtual && !t.AllDay && t.Destination.Resolved() {
+			prev = t
+		}
+	}
+	return trips
+}
+
+func sameDay(a, b time.Time) bool {
+	a, b = a.In(domain.Bangkok), b.In(domain.Bangkok)
+	return a.Year() == b.Year() && a.YearDay() == b.YearDay()
+}
+
+// gmailKeywords are venues a booking email may name that the geocoder knows.
+var gmailKeywords = []string{"อิมแพ็ค", "Impact", "Siam", "สยาม", "สนามบิน", "Central", "ไอคอนสยาม"}
+
+// ConvertGmailMessageToTrip turns an extracted travel email into a domain.Trip
+// from the user's home. A venue that matches no saved place and no geocoded
+// keyword leaves the destination unresolved rather than guessed.
 func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) domain.Trip {
 	title := strings.TrimSpace(item.Subject)
 	if title == "" {
 		title = "ตั๋วหรือนัดหมายการเดินทาง"
 	}
 
-	destName := title
-	if item.Snippet != "" {
-		destName = item.Snippet
-	}
-
-	destPlace := domain.Place{
-		NameTH: destName,
-		Lat:    13.9114,
-		Lng:    100.5492, // Default impact/venue
-	}
-
-	// Try geocoding if keyword found
-	if geo != nil {
-		for _, kw := range []string{"อิมแพ็ค", "Impact", "Siam", "สยาม", "สนามบิน", "Central", "ไอคอนสยาม"} {
-			if strings.Contains(strings.ToLower(title), strings.ToLower(kw)) || strings.Contains(strings.ToLower(item.Snippet), strings.ToLower(kw)) {
-				if candidates, err := geo.Search(ctx, kw); err == nil && len(candidates) > 0 {
-					destPlace = domain.Place{
-						NameTH: candidates[0].NameTH,
-						Lat:    candidates[0].Lat,
-						Lng:    candidates[0].Lng,
-					}
-					break
-				}
+	text := title + " " + item.Snippet
+	destPlace, resolved := matchSavedPlace(text, savedPlaces)
+	if !resolved && geo != nil {
+		for _, kw := range gmailKeywords {
+			if !strings.Contains(strings.ToLower(text), strings.ToLower(kw)) {
+				continue
+			}
+			if candidates, err := geo.Search(ctx, kw); err == nil && len(candidates) > 0 {
+				destPlace = domain.Place{NameTH: candidates[0].NameTH, Lat: candidates[0].Lat, Lng: candidates[0].Lng}
+				break
 			}
 		}
 	}
@@ -395,23 +469,11 @@ func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, geo g
 		}
 	}
 
-	origin := domain.Place{
-		NameTH: "สีลม",
-		Lat:    13.7279,
-		Lng:    100.5281,
-	}
-	for _, sp := range savedPlaces {
-		if sp.ID == "work" {
-			origin = sp.Place
-			break
-		}
-	}
-
 	return domain.Trip{
 		ID:          "gmail-" + item.ID,
 		TitleTH:     title,
 		Source:      "gmail",
-		Origin:      origin,
+		Origin:      homeOrigin(savedPlaces),
 		Destination: destPlace,
 		ArriveBy:    arriveBy,
 		Mode:        domain.ModeCar,
@@ -429,8 +491,7 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 	if err != nil {
 		slog.Warn("fetch google calendar events error", "email", email, "err", err)
 	} else {
-		for _, item := range calItems {
-			trip := ConvertCalendarEventToTrip(ctx, item, s.Geocoder, savedPlaces)
+		for _, trip := range ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces) {
 			if s.UserStore != nil {
 				_ = s.UserStore.UpsertTrip(ctx, users.UserTrip{
 					UID:       email,

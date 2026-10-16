@@ -14,9 +14,16 @@ void main() {
 
     expect(find.text('วันนี้อีก 3 นัด'), findsOneWidget);
     expect(find.text('ประชุมลูกค้า Q4'), findsOneWidget, reason: 'the hero');
-    expect(find.text('แผนต่อจากนี้'), findsOneWidget);
-    expect(find.byKey(const ValueKey('plan-cal-dinner')), findsOneWidget);
-    expect(find.byKey(const ValueKey('plan-cal-gym')), findsOneWidget);
+    expect(find.text('ถัดไป'), findsOneWidget);
+    expect(find.byKey(const ValueKey('next-cal-dinner')), findsOneWidget);
+    expect(find.byKey(const ValueKey('next-cal-gym')), findsOneWidget);
+    expect(find.text('ภาพรวมวันนี้'), findsOneWidget);
+    expect(find.text('ต้องรู้ก่อนออก'), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('alert-wetReturn-cal-gym')),
+      findsOneWidget,
+      reason: 'heavy rain at 21:30 on the way back from the gym',
+    );
     expect(find.text('พกไปด้วย'), findsOneWidget);
     expect(find.byType(WeatherPeek), findsOneWidget);
     expect(find.byType(WeatherHeroCard), findsNothing, reason: 'on tap only');
@@ -27,10 +34,28 @@ void main() {
     expect(find.text('10 สูงมาก'), findsOneWidget, reason: 'UV in the sheet');
   });
 
+  testWidgets('tomorrow: an online meeting and a hop that cannot be made', (
+    tester,
+  ) async {
+    await pumpApp(tester, '2026-09-30T08:00:00+07:00', height: 2400);
+
+    expect(
+      find.byKey(const ValueKey('alert-shortConnection-cal-review')),
+      findsOneWidget,
+      reason: 'lunch at Siam ends 12:45, review at Thonglor starts 13:00',
+    );
+    expect(find.text('ไปรีวิวงานที่ทองหล่อไม่ทัน'), findsOneWidget);
+    expect(find.byKey(const ValueKey('alert-needsPlace-cal-dentist')), findsOneWidget);
+    expect(find.text('ออนไลน์ · ไม่ต้องเดินทาง'), findsOneWidget);
+    expect(find.text('Daily standup ที่ออฟฟิศ'), findsOneWidget, reason: 'hero');
+  });
+
   testWidgets('a hot afternoon before a storm: bring rain gear', (
     tester,
   ) async {
     await pumpApp(tester, '2026-09-29T16:10:00+07:00', height: 2400);
+    expect(find.text('ต้องออกใน'), findsOneWidget, reason: 'countdown ring');
+    expect(find.text('35'), findsOneWidget, reason: '16:10 to 16:45');
     for (final kind in ['raincoat', 'umbrella']) {
       expect(find.byKey(ValueKey('bring-$kind')), findsOneWidget);
     }

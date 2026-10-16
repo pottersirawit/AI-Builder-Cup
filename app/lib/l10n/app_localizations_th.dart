@@ -1340,6 +1340,102 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String get leaveIn => 'ต้องออกใน';
+
+  @override
+  String get leaveDue => 'ถึงเวลาออก';
+
+  @override
+  String get unitMin => 'นาที';
+
+  @override
+  String get unitHour => 'ชม.';
+
+  @override
+  String get alertsTitle => 'ต้องรู้ก่อนออก';
+
+  @override
+  String alertShort(String to) {
+    return 'ไป$toไม่ทัน';
+  }
+
+  @override
+  String alertShortBody(String from, String end, String need, String gap) {
+    return '$from จบ $end เดินทางราว $need แต่มีเวลาแค่ $gap';
+  }
+
+  @override
+  String alertOverlap(String from, String to) {
+    return '$from กับ$to เวลาชนกัน';
+  }
+
+  @override
+  String alertTight(String to) {
+    return 'เวลาไป$toเผื่อน้อย';
+  }
+
+  @override
+  String alertTightBody(String need, String gap, String from) {
+    return 'เดินทางราว $need มีเวลา $gap ออกจาก$fromให้ตรงเวลา';
+  }
+
+  @override
+  String alertWetLeave(String pct, String to) {
+    return 'ฝน $pct% ตอนออกไป$to';
+  }
+
+  @override
+  String alertWetLeaveBody(String time) {
+    return 'ราว $time เลือกทางที่ไม่ต้องเดินกลางฝน';
+  }
+
+  @override
+  String alertWetLeaveMoto(String time) {
+    return 'ราว $time ขี่มอเตอร์ไซค์ฝ่าฝน ใส่เสื้อกันฝนหรือเปลี่ยนไปรถไฟฟ้า';
+  }
+
+  @override
+  String alertWetReturn(String from, String pct) {
+    return 'ขากลับจาก$fromฝน $pct%';
+  }
+
+  @override
+  String alertWetReturnBody(String time) {
+    return 'เลิกราว $time อย่าลืมพกร่มกลับด้วย';
+  }
+
+  @override
+  String alertNeedsPlace(String title) {
+    return '$title ยังไม่มีสถานที่';
+  }
+
+  @override
+  String alertNeedsPlaceBody(String when) {
+    return '$when · ระบุสถานที่เพื่อวางแผนเวลาออก';
+  }
+
+  @override
+  String get upNextTitle => 'ถัดไป';
+
+  @override
+  String get online => 'ออนไลน์ · ไม่ต้องเดินทาง';
+
+  @override
+  String get allDay => 'ทั้งวัน';
+
+  @override
+  String get stripTitle => 'ภาพรวมวันนี้';
+
+  @override
+  String get stripEvent => 'นัด';
+
+  @override
+  String get stripTravel => 'เดินทาง';
+
+  @override
+  String get stripRain => 'ฝน';
+
+  @override
   String get verdictCantDecide => 'ยังตัดสินไม่ได้';
 
   @override

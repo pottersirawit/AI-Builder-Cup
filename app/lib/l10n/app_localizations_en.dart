@@ -1359,6 +1359,102 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get leaveIn => 'Leave in';
+
+  @override
+  String get leaveDue => 'Time to go';
+
+  @override
+  String get unitMin => 'min';
+
+  @override
+  String get unitHour => 'h';
+
+  @override
+  String get alertsTitle => 'Before you go';
+
+  @override
+  String alertShort(String to) {
+    return 'You can\'t make $to in time';
+  }
+
+  @override
+  String alertShortBody(String from, String end, String need, String gap) {
+    return '$from ends $end; the trip takes about $need but you only have $gap';
+  }
+
+  @override
+  String alertOverlap(String from, String to) {
+    return '$from and $to overlap';
+  }
+
+  @override
+  String alertTight(String to) {
+    return 'Tight hop to $to';
+  }
+
+  @override
+  String alertTightBody(String need, String gap, String from) {
+    return 'About $need on the road with $gap to spare. Leave $from on time';
+  }
+
+  @override
+  String alertWetLeave(String pct, String to) {
+    return '$pct% rain as you leave for $to';
+  }
+
+  @override
+  String alertWetLeaveBody(String time) {
+    return 'Around $time. Pick a way that keeps you out of it';
+  }
+
+  @override
+  String alertWetLeaveMoto(String time) {
+    return 'Around $time, riding through rain. Wear a raincoat or switch to the train';
+  }
+
+  @override
+  String alertWetReturn(String from, String pct) {
+    return '$pct% rain on the way back from $from';
+  }
+
+  @override
+  String alertWetReturnBody(String time) {
+    return 'It ends around $time. Take an umbrella for the ride home';
+  }
+
+  @override
+  String alertNeedsPlace(String title) {
+    return '$title has no place yet';
+  }
+
+  @override
+  String alertNeedsPlaceBody(String when) {
+    return '$when · set the place to plan when to leave';
+  }
+
+  @override
+  String get upNextTitle => 'Up next';
+
+  @override
+  String get online => 'Online · no travel';
+
+  @override
+  String get allDay => 'All day';
+
+  @override
+  String get stripTitle => 'Today at a glance';
+
+  @override
+  String get stripEvent => 'Event';
+
+  @override
+  String get stripTravel => 'Travel';
+
+  @override
+  String get stripRain => 'Rain';
+
+  @override
   String get verdictCantDecide => 'Can\'t decide yet';
 
   @override

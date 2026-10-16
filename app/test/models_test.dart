@@ -13,7 +13,7 @@ Json fixture(String name) =>
 void main() {
   test('trips fixture parses calendar and gmail trips', () {
     final trips = Trip.listFromJson(fixture('trips'));
-    expect(trips, hasLength(11));
+    expect(trips, hasLength(13));
     final dinner = trips.first;
     expect(dinner.id, 'cal-dinner');
     expect(dinner.source, 'calendar');
@@ -189,5 +189,57 @@ void main() {
       FloodReport.fromJson({...base, 'generated_by': 'rejected'}).rejected,
       isTrue,
     );
+  });
+
+  group('real Calendar and Gmail events', () {
+    Json trip(Map<String, Object?> extra) => {
+      'id': 'x',
+      'title_th': 'นัด',
+      'source': 'calendar',
+      'origin': {'name_th': 'บ้าน', 'lat': 13.8, 'lng': 100.5},
+      'arrive_by': '2026-09-30T11:00:00+07:00',
+      'mode': 'transit',
+      ...extra,
+    };
+
+    test('reads the end time, online and all-day flags', () {
+      final t = Trip.fromJson(
+        trip({
+          'destination': {'name_th': 'ออนไลน์'},
+          'ends_at': '2026-09-30T11:30:00+07:00',
+          'virtual': true,
+        }),
+      );
+      expect(hhmm(t.endsAt!), '11:30');
+      expect(t.virtual, isTrue);
+      expect(t.unresolved, isFalse, reason: 'online needs no place');
+      expect(t.travels, isFalse);
+      expect(
+        Trip.fromJson(trip({'all_day': true, 'destination': {'name_th': 'วันหยุด'}})).travels,
+        isFalse,
+      );
+    });
+
+    test('an unplaced event stays unplaced through the device cache', () {
+      final t = Trip.fromJson(
+        trip({'location_text_th': 'คลินิกอารีย์', 'destination': {'name_th': 'คลินิกอารีย์'}}),
+      );
+      expect(t.unresolved, isTrue);
+      final again = Trip.fromJson(t.toJson());
+      expect(again.unresolved, isTrue, reason: 'not a trip to (0, 0)');
+      expect(again.locationTextTh, 'คลินิกอารีย์');
+    });
+
+    test('round-trips the new fields', () {
+      final t = Trip.fromJson(
+        trip({
+          'destination': {'name_th': 'สยาม', 'lat': 13.74, 'lng': 100.53},
+          'ends_at': '2026-09-30T12:45:00+07:00',
+        }),
+      );
+      final again = Trip.fromJson(t.toJson());
+      expect(again.endsAt, t.endsAt);
+      expect(again.travels, isTrue);
+    });
   });
 }

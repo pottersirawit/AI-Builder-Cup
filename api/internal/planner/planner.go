@@ -128,7 +128,7 @@ func (p *Planner) TripTo(now time.Time, placeID string) (domain.Trip, error) {
 // upcomingTo is a Calendar or Gmail trip to near there within tripWindow.
 func (p *Planner) upcomingTo(now time.Time, dest domain.LatLng) (domain.Trip, bool) {
 	for _, t := range p.Trips(now) {
-		if geo.HaversineM(t.Destination.Point(), dest) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
+		if t.Plannable() && geo.HaversineM(t.Destination.Point(), dest) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
 			return t, true
 		}
 	}
@@ -219,12 +219,18 @@ func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time,
 
 // Open starts a decision for the requested trip: the app's coordinates, a
 // known trip ID, or the first upcoming trip.
+// Online meetings, all-day events and trips with an unresolved end are not
+// travel and are refused with ErrBadTrip rather than planned to (0,0).
 func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
 	s, err := p.open(ctx, prov, now, req)
-	if err == nil {
-		s.Trip = scenario.LocalizeTrip(s.Trip, s.Lang)
+	if err != nil {
+		return s, err
 	}
-	return s, err
+	if !s.Trip.Plannable() {
+		return nil, fmt.Errorf("%w: %q is not travel we can plan (online, all-day or no known place)", ErrBadTrip, s.Trip.ID)
+	}
+	s.Trip = scenario.LocalizeTrip(s.Trip, s.Lang)
+	return s, nil
 }
 
 func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
@@ -257,6 +263,12 @@ func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req T
 	}
 	if tripID == "" {
 		s.Trip = trips[0]
+		for _, t := range trips {
+			if t.Plannable() {
+				s.Trip = t
+				break
+			}
+		}
 		return s, nil
 	}
 	for _, t := range trips {

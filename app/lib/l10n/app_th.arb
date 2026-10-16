@@ -902,6 +902,138 @@
       }
     }
   },
+  "leaveIn": "ต้องออกใน",
+  "leaveDue": "ถึงเวลาออก",
+  "unitMin": "นาที",
+  "unitHour": "ชม.",
+  "alertsTitle": "ต้องรู้ก่อนออก",
+  "alertShort": "ไป{to}ไม่ทัน",
+  "@alertShort": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertShortBody": "{from} จบ {end} เดินทางราว {need} แต่มีเวลาแค่ {gap}",
+  "@alertShortBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      }
+    }
+  },
+  "alertOverlap": "{from} กับ{to} เวลาชนกัน",
+  "@alertOverlap": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTight": "เวลาไป{to}เผื่อน้อย",
+  "@alertTight": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTightBody": "เดินทางราว {need} มีเวลา {gap} ออกจาก{from}ให้ตรงเวลา",
+  "@alertTightBody": {
+    "placeholders": {
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeave": "ฝน {pct}% ตอนออกไป{to}",
+  "@alertWetLeave": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveBody": "ราว {time} เลือกทางที่ไม่ต้องเดินกลางฝน",
+  "@alertWetLeaveBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveMoto": "ราว {time} ขี่มอเตอร์ไซค์ฝ่าฝน ใส่เสื้อกันฝนหรือเปลี่ยนไปรถไฟฟ้า",
+  "@alertWetLeaveMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturn": "ขากลับจาก{from}ฝน {pct}%",
+  "@alertWetReturn": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturnBody": "เลิกราว {time} อย่าลืมพกร่มกลับด้วย",
+  "@alertWetReturnBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlace": "{title} ยังไม่มีสถานที่",
+  "@alertNeedsPlace": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlaceBody": "{when} · ระบุสถานที่เพื่อวางแผนเวลาออก",
+  "@alertNeedsPlaceBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextTitle": "ถัดไป",
+  "online": "ออนไลน์ · ไม่ต้องเดินทาง",
+  "allDay": "ทั้งวัน",
+  "stripTitle": "ภาพรวมวันนี้",
+  "stripEvent": "นัด",
+  "stripTravel": "เดินทาง",
+  "stripRain": "ฝน",
   "verdictCantDecide": "ยังตัดสินไม่ได้",
   "verdictServerError": "ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
   "verdictRetry": "ลองอีกครั้ง",
