@@ -210,6 +210,13 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ),
             SliverToBoxAdapter(
+              child: _CalculatedRouteSection(
+                decision: d,
+                trip: trip,
+                selectedMode: _c.mode,
+              ),
+            ),
+            SliverToBoxAdapter(
               child: Section(
                 title: l.verdictFloodSpotsTitle,
                 child: d.floodSpots.isEmpty
@@ -572,4 +579,282 @@ IconData _sourceIcon(String s) {
   }
   return Symbols.database_rounded;
 }
+
+/// Renders the route calculated for the selected travel mode, plus explicit
+/// transit line and boarding/alighting stations for BTS/MRT.
+class _CalculatedRouteSection extends StatelessWidget {
+  const _CalculatedRouteSection({
+    required this.decision,
+    required this.trip,
+    required this.selectedMode,
+  });
+
+  final Decision decision;
+  final Trip? trip;
+  final TravelMode selectedMode;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+
+    final selectedOption = decision.modeOptions
+        .where((o) => o.mode == selectedMode)
+        .firstOrNull;
+    final transitOption = decision.modeOptions
+        .where((o) => o.mode == TravelMode.transit)
+        .firstOrNull;
+    final routeStep = decision.reasoning
+        .where((r) => r.tool == 'get_route')
+        .firstOrNull;
+
+    final via = selectedOption?.viaTh ?? const <String>[];
+    final transitLegs = transitOption?.transitLegs ?? const <TransitLeg>[];
+
+    final originName = trip?.origin.nameTh ?? '';
+    final destName = trip?.destination.nameTh ?? '';
+
+    final nodes = <({String label, bool endpoint})>[
+      if (originName.isNotEmpty) (label: originName, endpoint: true),
+      for (final stop in via)
+        if (stop != originName && stop != destName)
+          (label: stop, endpoint: false),
+      if (destName.isNotEmpty && destName != originName)
+        (label: destName, endpoint: true),
+    ];
+
+    return Section(
+      title: l.isThai ? 'เส้นทางที่ใช้คำนวณ' : 'Calculated route',
+      trailing: Icon(
+        selectedMode.icon,
+        size: 20,
+        color: scheme.primary,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (selectedOption != null) ...[
+            Row(
+              children: [
+                Icon(
+                   Symbols.route_rounded,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: Space.x2),
+                Expanded(
+                  child: Text(
+                    '${selectedMode.label(l)} · ${l.partsTakesMin(selectedOption.etaMin)}',
+                    style: tabular(t.labelLarge!).copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.x3),
+          ],
+          if (nodes.isNotEmpty)
+            Wrap(
+              spacing: Space.x2,
+              runSpacing: Space.x2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (var i = 0; i < nodes.length; i++) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Space.x3,
+                      vertical: Space.x1 + 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: nodes[i].endpoint
+                          ? scheme.primaryContainer
+                          : scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                    ),
+                    child: Text(
+                      nodes[i].label,
+                      style: t.labelLarge!.copyWith(
+                        color: nodes[i].endpoint
+                            ? scheme.onPrimaryContainer
+                            : scheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  if (i < nodes.length - 1)
+                    Icon(
+                      Symbols.arrow_forward_rounded,
+                      size: 16,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                ],
+              ],
+            )
+          else if (routeStep != null)
+            Text(routeStep.summaryTh, style: t.bodyMedium),
+          if (transitLegs.isNotEmpty) ...[
+            const SizedBox(height: Space.x4),
+            if (selectedMode != TravelMode.transit) ...[
+              Row(
+                children: [
+                  Icon(
+                    Symbols.train_rounded,
+                    size: 18,
+                    color: scheme.primary,
+                  ),
+                  const SizedBox(width: Space.x2),
+                  Expanded(
+                    child: Text(
+                      l.isThai
+                          ? 'เส้นทางรถไฟฟ้า (สายและสถานีขึ้น-ลง)'
+                          : 'Transit route (line & stations)',
+                      style: t.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Space.x2),
+            ],
+            for (var i = 0; i < transitLegs.length; i++) ...[
+              _TransitLegTile(
+                leg: transitLegs[i],
+                index: i,
+                isThai: l.isThai,
+              ),
+              if (i < transitLegs.length - 1) const SizedBox(height: Space.x2),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TransitLegTile extends StatelessWidget {
+  const _TransitLegTile({
+    required this.leg,
+    required this.index,
+    required this.isThai,
+  });
+
+  final TransitLeg leg;
+  final int index;
+  final bool isThai;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final boardLabel = index == 0
+        ? (isThai ? 'ขึ้นที่สถานี' : 'Get on at')
+        : (isThai ? 'เปลี่ยนสายที่สถานี' : 'Transfer at');
+    final alightLabel = isThai ? 'ลงที่สถานี' : 'Get off at';
+
+    return Container(
+      padding: const EdgeInsets.all(Space.x3),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(Radii.md),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: Space.x2,
+            runSpacing: Space.x1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.x2,
+                  vertical: Space.x1,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(Radii.xs),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Symbols.train_rounded,
+                      size: 16,
+                      color: scheme.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: Space.x1),
+                    Flexible(
+                      child: Text(
+                        leg.lineTh,
+                        style: t.labelLarge!.copyWith(
+                          color: scheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (leg.stopCount > 0)
+                Text(
+                  isThai ? '${leg.stopCount} สถานี' : '${leg.stopCount} stops',
+                  style: tabular(t.labelMedium!).copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: Space.x2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      boardLabel,
+                      style: t.labelSmall!.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(leg.fromStationTh, style: t.titleSmall),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.x2,
+                  vertical: Space.x2,
+                ),
+                child: Icon(
+                  Symbols.arrow_forward_rounded,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      alightLabel,
+                      style: t.labelSmall!.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(leg.toStationTh, style: t.titleSmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 

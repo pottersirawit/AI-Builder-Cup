@@ -109,6 +109,7 @@ Future<void> settle(WidgetTester tester) async {
 
 /// Scrolls the visible vertical list until [f] is built; lists build lazily.
 Future<void> reveal(WidgetTester tester, Finder f) async {
+  if (f.hitTestable().evaluate().isNotEmpty) return;
   final list = find
       .byWidgetPredicate(
         (w) => w is Scrollable && w.axisDirection == AxisDirection.down,

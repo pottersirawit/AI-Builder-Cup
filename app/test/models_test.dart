@@ -37,6 +37,16 @@ void main() {
       16.5,
     );
     expect(d.modeOptions.map((o) => o.mode), TravelMode.values);
+    expect(d.modeOptions.first.viaTh, ['พระราม 4', 'อโศก', 'รัชดาภิเษก']);
+    final transit = d.modeOptions.firstWhere(
+      (o) => o.mode == TravelMode.transit,
+    );
+    expect(transit.viaTh, ['MRT สีลม', 'MRT สุขุมวิท', 'MRT ลาดพร้าว']);
+    expect(transit.transitLegs, hasLength(1));
+    expect(transit.transitLegs.first.lineTh, 'MRT สายสีน้ำเงิน');
+    expect(transit.transitLegs.first.fromStationTh, 'MRT สีลม');
+    expect(transit.transitLegs.first.toStationTh, 'MRT ลาดพร้าว');
+    expect(transit.transitLegs.first.stopCount, 11);
     expect(d.modeOptions.last.risk, Risk.medium);
     expect(d.floodSpots.first.id, 'BKK-FL-012');
     expect(d.reasoning.first.tool, 'get_trip');

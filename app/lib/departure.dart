@@ -61,6 +61,8 @@ class Departure {
     required this.departAt,
     required this.noteTh,
     required this.isPreview,
+    this.viaTh = const [],
+    this.transitLegs = const [],
   });
 
   final TravelMode mode;
@@ -72,6 +74,9 @@ class Departure {
 
   /// True when computed on the device during a drag, before the agent answers.
   final bool isPreview;
+
+  final List<String> viaTh;
+  final List<TransitLeg> transitLegs;
 
   DateTime get arriveAt => departAt.add(Duration(minutes: etaMin));
 }
@@ -111,6 +116,8 @@ Departure _preview(
     departAt: departAt,
     noteTh: note,
     isPreview: true,
+    viaTh: o.viaTh,
+    transitLegs: o.transitLegs,
   );
 
   switch (o.mode) {
@@ -157,6 +164,8 @@ List<Departure> serverOptions(Decision d, DateTime departAt) => [
       departAt: departAt,
       noteTh: o.noteTh,
       isPreview: false,
+      viaTh: o.viaTh,
+      transitLegs: o.transitLegs,
     ),
 ];
 

@@ -181,9 +181,11 @@ class TripController extends ChangeNotifier {
     final app = t.id.startsWith('app-');
     _request = DecideRequest(
       tripId: t.id,
-      origin: app ? t.origin : null,
-      destination: app ? t.destination : null,
+      origin: app ? t.origin : _request.origin,
+      destination: app ? t.destination : _request.destination,
       places: _request.places,
+      trip: _request.trip,
+      email: _request.email,
     );
   }
 

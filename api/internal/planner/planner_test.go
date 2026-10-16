@@ -457,6 +457,82 @@ func TestOpenRefusesTripsWithNoTravel(t *testing.T) {
 	}
 }
 
+type countingWeatherNext struct {
+	calls int
+	gust  float64
+	temp  float64
+}
+
+func (c *countingWeatherNext) Name() string { return "CountingWeatherNext" }
+func (c *countingWeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (float64, float64, error) {
+	c.calls++
+	return c.gust, c.temp, nil
+}
+
+func TestSessionMemoizesInputAndBaselineAcrossToolCalls(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+	wn := &countingWeatherNext{gust: 30.0, temp: 31.0}
+	prov.WeatherNext = wn
+
+	s, err := p.NewSession(context.Background(), prov, at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Baseline(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Call("get_flood_spots_on_route", map[string]any{"mode": "car", "depart_at": "16:10"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Call("evaluate_departure", map[string]any{"mode": "car", "depart_at": "16:10"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Input(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	if wn.calls != 1 {
+		t.Fatalf("expected WeatherNext provider to be queried once for memoized (mode, depart), got %d calls", wn.calls)
+	}
+
+	// Switching trip via PlanTo must clear memoized inputs/baselines.
+	if err := s.PlanTo("siam"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Baseline(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	if wn.calls != 2 {
+		t.Fatalf("expected PlanTo to invalidate memoized session caches, got %d calls", wn.calls)
+	}
+}
+
+func TestBaselineModeOptionsIncludeCalculatedRoutesAndTransitLegs(t *testing.T) {
+	p := newPlanner(t)
+	s, err := p.NewSession(context.Background(), scenarioProviders(), at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := s.Baseline(at(16, 10), domain.ModeCar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byMode := map[domain.Mode]decision.ModeOption{}
+	for _, o := range res.ModeOptions {
+		byMode[o.Mode] = o
+	}
+	if len(byMode[domain.ModeCar].ViaTH) == 0 || byMode[domain.ModeCar].ViaTH[0] != "พระราม 4" {
+		t.Fatalf("car ModeOption missing ViaTH: %+v", byMode[domain.ModeCar])
+	}
+	trOpt := byMode[domain.ModeTransit]
+	if len(trOpt.TransitLegs) == 0 {
+		t.Fatalf("transit ModeOption missing TransitLegs: %+v", trOpt)
+	}
+	if trOpt.TransitLegs[0].LineTH != "MRT สายสีน้ำเงิน" || trOpt.TransitLegs[0].FromStationTH != "MRT สีลม" || trOpt.TransitLegs[0].ToStationTH != "MRT ลาดพร้าว" {
+		t.Fatalf("unexpected transit leg: %+v", trOpt.TransitLegs[0])
+	}
+}
+
 func TestOpenSkipsTripsWithNoTravelByDefault(t *testing.T) {
 	p := newPlanner(t)
 	p.Trips = func(now time.Time) []domain.Trip {

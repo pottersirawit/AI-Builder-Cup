@@ -144,13 +144,22 @@ func (t Trip) Plannable() bool {
 	return !t.Virtual && !t.AllDay && t.Origin.Resolved() && t.Destination.Resolved()
 }
 
+// TransitLeg is one rail/transit segment from a boarding station to an alighting station.
+type TransitLeg struct {
+	LineTH        string `json:"line_th"`
+	FromStationTH string `json:"from_station_th"`
+	ToStationTH   string `json:"to_station_th"`
+	StopCount     int    `json:"stop_count,omitempty"`
+}
+
 // Route is one way of getting from origin to destination with one mode.
 type Route struct {
-	Mode        Mode     `json:"mode"`
-	Polyline    []LatLng `json:"-"`
-	DurationMin int      `json:"duration_min"`
-	ViaTH       []string `json:"via_th"`
-	Source      string   `json:"source"`
+	Mode        Mode         `json:"mode"`
+	Polyline    []LatLng     `json:"-"`
+	DurationMin int          `json:"duration_min"`
+	ViaTH       []string     `json:"via_th"`
+	TransitLegs []TransitLeg `json:"transit_legs,omitempty"`
+	Source      string       `json:"source"`
 }
 
 // RainSample is precipitation intensity valid from Time until the next sample.

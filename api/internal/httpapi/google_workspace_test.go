@@ -67,6 +67,9 @@ func TestConvertCalendarEventToTrip(t *testing.T) {
 		if trip.Destination.Lat == 0 || trip.Destination.Lng == 0 {
 			t.Errorf("destination not geocoded")
 		}
+		if trip.Origin.NameTH == "สีลม ซอย 3" || trip.Origin.NameTH != "บ้านลาดพร้าว" {
+			t.Errorf("trip Origin = %+v, want saved home place (บ้านลาดพร้าว), not hardcoded work (สีลม ซอย 3)", trip.Origin)
+		}
 	})
 
 	t.Run("all day event", func(t *testing.T) {
@@ -361,6 +364,23 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 
 	if len(res.Trips) != 1 || res.Trips[0].ID != "cal-custom-1" {
 		t.Errorf("got trips %+v, want custom trip cal-custom-1", res.Trips)
+	}
+
+	// 2b. Query /v1/trips with user's saved home address overrides hardcoded Silom origin
+	rHome := httptest.NewRequest("GET", "/v1/trips?email="+testEmail+"&home_name=BTS+%E0%B8%AD%E0%B8%B2%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B9%8C&home_lat=13.7797&home_lng=100.5446", nil)
+	wHome := httptest.NewRecorder()
+	h.ServeHTTP(wHome, rHome)
+	if wHome.Code != http.StatusOK {
+		t.Fatalf("GET /v1/trips with home params returned status %d, want 200", wHome.Code)
+	}
+	var resHome struct {
+		Trips []domain.Trip `json:"trips"`
+	}
+	if err := json.NewDecoder(wHome.Body).Decode(&resHome); err != nil {
+		t.Fatalf("decode trips with home failed: %v", err)
+	}
+	if len(resHome.Trips) != 1 || resHome.Trips[0].Origin.NameTH != "BTS อารีย์" {
+		t.Errorf("got trip origin %+v, want BTS อารีย์", resHome.Trips)
 	}
 
 	// 3. Query /v1/trips/sync?email=real.person@example.com

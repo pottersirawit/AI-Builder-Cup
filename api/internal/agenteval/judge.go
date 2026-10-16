@@ -57,7 +57,7 @@ func Judge(ctx context.Context, g *agent.Gemini, resp agent.Response, core decis
 	answer := fmt.Sprintf("คำตอบที่ผู้ใช้เห็น:\nหัวข้อ: %s\nสรุป: %s\nเหตุผล: %s",
 		resp.HeadlineTH, resp.SummaryTH, resp.Explanation.ReasonWhyTH)
 	zero := float32(0)
-	out, err := g.Gen.GenerateContent(ctx, g.Model, []*genai.Content{genai.NewContentFromText(facts+"\n\n"+answer, genai.RoleUser)},
+	out, _, err := g.Generate(ctx, []*genai.Content{genai.NewContentFromText(facts+"\n\n"+answer, genai.RoleUser)},
 		&genai.GenerateContentConfig{
 			SystemInstruction: genai.NewContentFromText(judgePrompt, genai.RoleUser),
 			Temperature:       &zero, ResponseMIMEType: "application/json", ResponseSchema: judgeSchema,

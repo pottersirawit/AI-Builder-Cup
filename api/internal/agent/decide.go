@@ -243,11 +243,20 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 	}
 
 	if g.Available() {
+		cacheKey := decideCacheKey(s, depart, mode, req.QuestionTH, baseline)
+		if cached, ok := g.GetCached(cacheKey); ok {
+			if cResp, ok := cached.(Response); ok {
+				cResp.Sources = sources
+				cResp.Reasoning = append([]planner.Call(nil), cResp.Reasoning...)
+				return cResp, nil
+			}
+		}
 		out, err := runAgent(ctx, g, s, depart, mode, req.QuestionTH, baseline)
 		if err == nil {
 			applyAgent(&resp, out, baseline, s)
 			resp.Model = out.model
 			resp.Reasoning = append(preface, resp.Reasoning...)
+			g.SetCached(cacheKey, resp, decideCacheTTL)
 			return resp, nil
 		}
 		slog.Warn("gemini agent failed, using fallback", "err", err)
@@ -260,6 +269,44 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 	}
 	resp.Reasoning = append(preface, s.Calls()...)
 	return resp, nil
+}
+
+const decideCacheTTL = 5 * time.Minute
+
+func decideCacheKey(s *planner.Session, depart time.Time, mode domain.Mode, question string, baseline decision.Result) string {
+	ev := baseline.Evals[mode]
+	return fmt.Sprintf("decide|%s|%s|%s|%s|%s|%.5f,%.5f>%.5f,%.5f|%s|%s|%s|%.1f|%.1f",
+		s.Lang,
+		s.Now.In(domain.Bangkok).Truncate(5*time.Minute).Format(time.RFC3339),
+		depart.In(domain.Bangkok).Truncate(5*time.Minute).Format(time.RFC3339),
+		mode,
+		s.Trip.ID,
+		s.Trip.Origin.Lat, s.Trip.Origin.Lng,
+		s.Trip.Destination.Lat, s.Trip.Destination.Lng,
+		s.Trip.ArriveBy.Format(time.RFC3339),
+		strings.TrimSpace(question),
+		baseline.Verdict,
+		ev.MaxDepthCM,
+		ev.MaxRainMM,
+	)
+}
+
+var requiredAgentTools = []string{"get_trip", "get_rain_along_route", "get_flood_spots_on_route", "evaluate_departure"}
+
+func hasRequiredTools(calls []planner.Call) bool {
+	for _, req := range requiredAgentTools {
+		found := false
+		for _, c := range calls {
+			if c.Tool == req {
+				found = true
+				break
+			}
+		}
+		if !found {
+			return false
+		}
+	}
+	return true
 }
 
 type agentOutput struct {
@@ -279,7 +326,7 @@ type agentOutput struct {
 const systemPrompt = `คุณคือ "ฝนตกไหม" ผู้ช่วยตัดสินใจเดินทางในกรุงเทพฯ ช่วงฝนตกและน้ำท่วม
 หน้าที่: ตอบคำถามเดียวว่า "ควรออกเดินทางตอนไหน ด้วยอะไร" สำหรับทริปนี้ พร้อมอธิบายเหตุผลและปัจจัยที่พิจารณา ด้วยภาษาไทยที่สั้น ชัด เหมือนเพื่อนบอก
 กติกา:
-1. ต้องเรียกเครื่องมือเพื่อดูข้อมูลจริงก่อนตัดสินใจ อย่างน้อย get_trip, get_rain_along_route, get_flood_spots_on_route และ evaluate_departure ของวิธีเดินทางที่ผู้ใช้เลือก ใช้ get_route, get_community_reports, get_canal_levels เมื่อช่วยให้คำตอบดีขึ้น
+1. ต้องเรียกเครื่องมือเพื่อดูข้อมูลจริงก่อนตัดสินใจ โดยเรียกพร้อมกันในรอบแรกทีเดียวอย่างน้อย get_trip, get_rain_along_route, get_flood_spots_on_route และ evaluate_departure ของวิธีเดินทางที่ผู้ใช้เลือก ใช้ get_route, get_community_reports, get_canal_levels เมื่อช่วยให้คำตอบดีขึ้น
 2. ห้ามขัดกับผลของ evaluate_departure: ถ้าความเสี่ยงสูง ห้ามบอกให้ออกด้วยวิธีนั้น ความสูงใต้ท้องรถ: รถเก๋งเสี่ยงที่น้ำ 15 ซม. มอเตอร์ไซค์ 10 ซม. หรือฝนหนัก รถไฟฟ้าไม่กระทบน้ำบนถนน
 3. verdict เลือกหนึ่งใน leave_now, wait, switch_mode, dont_go
 4. ระบุเวลาเป็นตัวเลข HH:MM บอกเหตุผลจากข้อมูล ไม่ใช่ข้อความสำเร็จรูป ตัวเลขที่มีหน่วย (ซม. มม./ชม. นาที กม./ชม.) ต้องมาจากผลของเครื่องมือเท่านั้น ห้ามเดาหรือปัดเอง และห้ามเอ่ยชื่อถนนหรือทางด่วนที่ไม่อยู่ในผลของเครื่องมือ
@@ -360,7 +407,15 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 	}
 	contents := []*genai.Content{genai.NewContentFromText(user, genai.RoleUser)}
 	for turn := 0; turn < maxAgentTurns; turn++ {
-		resp, model, err := g.Generate(ctx, contents, cfg)
+		turnCfg := *cfg
+		if hasRequiredTools(s.Calls()) {
+			turnCfg.ToolConfig = &genai.ToolConfig{
+				FunctionCallingConfig: &genai.FunctionCallingConfig{
+					Mode: genai.FunctionCallingConfigModeNone,
+				},
+			}
+		}
+		resp, model, err := g.Generate(ctx, contents, &turnCfg)
 		if err != nil {
 			return agentOutput{}, err
 		}

@@ -77,8 +77,17 @@ class FonTokMaiApi {
 
   /// The account's trips. With [sample] false a failure throws instead of
   /// answering with มิว's fixture trips.
-  Future<ApiResult<List<Trip>>> trips({String? email, bool sample = true}) =>
-      _tripsFrom('/v1/trips', email, sample);
+  Future<ApiResult<List<Trip>>> trips({
+    String? email,
+    bool sample = true,
+    SavedPlace? home,
+  }) => _tripsFrom('/v1/trips', email, sample, {
+    if (home != null && (home.lat != 0 || home.lng != 0)) ...{
+      'home_lat': '${home.lat}',
+      'home_lng': '${home.lng}',
+      'home_name': home.nameTh.isNotEmpty ? home.nameTh : home.labelTh,
+    },
+  });
 
   /// Pulls Calendar and Gmail again, then the trips; see [trips]. Synced
   /// trips start from [home]; without it the server starts them downtown.
@@ -87,10 +96,10 @@ class FonTokMaiApi {
     bool sample = true,
     SavedPlace? home,
   }) => _tripsFrom('/v1/trips/sync', email, sample, {
-    if (home != null) ...{
+    if (home != null && (home.lat != 0 || home.lng != 0)) ...{
       'home_lat': '${home.lat}',
       'home_lng': '${home.lng}',
-      'home_name': home.nameTh,
+      'home_name': home.nameTh.isNotEmpty ? home.nameTh : home.labelTh,
     },
   });
 
@@ -100,7 +109,7 @@ class FonTokMaiApi {
     bool sample, [
     Map<String, String> extra = const {},
   ]) async {
-    final query = {if (email != null) 'email': email, ...extra};
+    final query = {if (email != null && email.isNotEmpty) 'email': email, ...extra};
     Future<List<Trip>> live() async =>
         Trip.listFromJson(await _get(path, query.isEmpty ? null : query));
     return _withFallback(

@@ -327,13 +327,39 @@ func parseFallback(q string, now time.Time, places []domain.SavedPlace) Intent {
 }
 
 // parseQuestionTimeout bounds the Gemini question parser; past it the regex parser answers.
-const parseQuestionTimeout = 8 * time.Second
+const (
+	parseQuestionTimeout  = 8 * time.Second
+	parseQuestionCacheTTL = 10 * time.Minute
+)
+
+func questionCacheKey(q string, now time.Time, trip domain.Trip, places []domain.SavedPlace) string {
+	var sb strings.Builder
+	sb.WriteString("q|")
+	sb.WriteString(strings.ToLower(strings.TrimSpace(q)))
+	sb.WriteByte('|')
+	sb.WriteString(now.In(domain.Bangkok).Truncate(time.Minute).Format("2006-01-02T15:04"))
+	sb.WriteByte('|')
+	sb.WriteString(trip.ID)
+	for _, p := range places {
+		sb.WriteByte('|')
+		sb.WriteString(p.ID)
+		sb.WriteByte(':')
+		sb.WriteString(p.LabelTH)
+	}
+	return sb.String()
+}
 
 // ParseQuestion asks Gemini for structured intent (time, mode and destination
 // among the saved places) and falls back to the regex and keyword matching.
 func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip domain.Trip, places []domain.SavedPlace) (Intent, string) {
 	if !g.Available() {
 		return parseFallback(q, now, places), "fallback"
+	}
+	cacheKey := questionCacheKey(q, now, trip, places)
+	if cached, ok := g.GetCached(cacheKey); ok {
+		if in, ok := cached.(Intent); ok {
+			return in, "gemini"
+		}
 	}
 	cfg := &genai.GenerateContentConfig{
 		Temperature:      temperature(0),
@@ -361,7 +387,7 @@ func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip
 		now.Format("15:04"), trip.TitleTH, trip.Origin.NameTH, trip.Destination.NameTH, deadline, trip.Mode, strings.Join(saved, ", "), q)
 	ctx, cancel := context.WithTimeout(ctx, parseQuestionTimeout)
 	defer cancel()
-	resp, _, err := g.Generate(ctx, []*genai.Content{genai.NewContentFromText(prompt, genai.RoleUser)}, cfg)
+	resp, _, err := g.GenerateFast(ctx, []*genai.Content{genai.NewContentFromText(prompt, genai.RoleUser)}, cfg)
 	if err != nil {
 		return parseFallback(q, now, places), "fallback"
 	}
@@ -398,6 +424,7 @@ func ParseQuestion(ctx context.Context, g *Gemini, q string, now time.Time, trip
 	if m := domain.Mode(out.Mode); m.Valid() {
 		in.Mode = &m
 	}
+	g.SetCached(cacheKey, in, parseQuestionCacheTTL)
 	return in, "gemini"
 }
 

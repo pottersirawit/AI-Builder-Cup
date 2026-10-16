@@ -165,6 +165,27 @@ class RainPoint {
   final double mmPerHr;
 }
 
+class TransitLeg {
+  const TransitLeg({
+    required this.lineTh,
+    required this.fromStationTh,
+    required this.toStationTh,
+    this.stopCount = 0,
+  });
+
+  factory TransitLeg.fromJson(Json j) => TransitLeg(
+    lineTh: _str(j['line_th']),
+    fromStationTh: _str(j['from_station_th']),
+    toStationTh: _str(j['to_station_th']),
+    stopCount: _int(j['stop_count']),
+  );
+
+  final String lineTh;
+  final String fromStationTh;
+  final String toStationTh;
+  final int stopCount;
+}
+
 class ModeOption {
   const ModeOption({
     required this.mode,
@@ -172,6 +193,8 @@ class ModeOption {
     required this.etaMin,
     required this.risk,
     required this.noteTh,
+    this.viaTh = const [],
+    this.transitLegs = const [],
   });
   factory ModeOption.fromJson(Json j) => ModeOption(
     mode: TravelMode.parse(j['mode']),
@@ -179,12 +202,16 @@ class ModeOption {
     etaMin: _int(j['eta_min']),
     risk: Risk.parse(j['risk']),
     noteTh: _str(j['note_th']),
+    viaTh: _strList(j['via_th']),
+    transitLegs: _list(j['transit_legs']).map(TransitLeg.fromJson).toList(),
   );
   final TravelMode mode;
   final Verdict verdict;
   final int etaMin;
   final Risk risk;
   final String noteTh;
+  final List<String> viaTh;
+  final List<TransitLeg> transitLegs;
 }
 
 class FloodSpot {

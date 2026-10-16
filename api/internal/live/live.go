@@ -19,6 +19,7 @@ import (
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
+	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
 var defaultHTTP = &http.Client{Timeout: 6 * time.Second}
@@ -127,7 +128,7 @@ func (g GoogleRoutes) Route(ctx context.Context, from, to domain.LatLng, mode do
 	req, _ := http.NewRequest(http.MethodPost, base+"/directions/v2:computeRoutes", bytes.NewReader(b))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("X-Goog-Api-Key", g.APIKey)
-	req.Header.Set("X-Goog-FieldMask", "routes.duration,routes.polyline.encodedPolyline,routes.description")
+	req.Header.Set("X-Goog-FieldMask", "routes.duration,routes.polyline.encodedPolyline,routes.description,routes.legs.steps.transitDetails")
 	var body struct {
 		Routes []struct {
 			Duration    string `json:"duration"`
@@ -135,6 +136,25 @@ func (g GoogleRoutes) Route(ctx context.Context, from, to domain.LatLng, mode do
 			Polyline    struct {
 				EncodedPolyline string `json:"encodedPolyline"`
 			} `json:"polyline"`
+			Legs []struct {
+				Steps []struct {
+					TransitDetails *struct {
+						StopCount   int `json:"stopCount"`
+						StopDetails struct {
+							DepartureStop struct {
+								Name string `json:"name"`
+							} `json:"departureStop"`
+							ArrivalStop struct {
+								Name string `json:"name"`
+							} `json:"arrivalStop"`
+						} `json:"stopDetails"`
+						TransitLine struct {
+							Name      string `json:"name"`
+							NameShort string `json:"nameShort"`
+						} `json:"transitLine"`
+					} `json:"transitDetails"`
+				} `json:"steps"`
+			} `json:"legs"`
 		} `json:"routes"`
 	}
 	if err := getJSON(ctx, g.HTTP, req, &body); err != nil {
@@ -151,6 +171,41 @@ func (g GoogleRoutes) Route(ctx context.Context, from, to domain.LatLng, mode do
 	route := domain.Route{Mode: mode, Polyline: geo.DecodePolyline(r.Polyline.EncodedPolyline), DurationMin: int(math.Round(float64(secs) / 60)), Source: "Google Routes API"}
 	if r.Description != "" {
 		route.ViaTH = []string{r.Description}
+	}
+	for _, leg := range r.Legs {
+		for _, step := range leg.Steps {
+			td := step.TransitDetails
+			if td == nil {
+				continue
+			}
+			line := strings.TrimSpace(td.TransitLine.Name)
+			if line == "" {
+				line = strings.TrimSpace(td.TransitLine.NameShort)
+			}
+			dep := strings.TrimSpace(td.StopDetails.DepartureStop.Name)
+			arr := strings.TrimSpace(td.StopDetails.ArrivalStop.Name)
+			if dep != "" && arr != "" {
+				route.TransitLegs = append(route.TransitLegs, domain.TransitLeg{
+					LineTH:        line,
+					FromStationTH: dep,
+					ToStationTH:   arr,
+					StopCount:     td.StopCount,
+				})
+				if len(route.ViaTH) == 0 || route.ViaTH[len(route.ViaTH)-1] != dep {
+					route.ViaTH = append(route.ViaTH, dep)
+				}
+				if route.ViaTH[len(route.ViaTH)-1] != arr {
+					route.ViaTH = append(route.ViaTH, arr)
+				}
+			}
+		}
+	}
+	fallbackVia, fallbackLegs := scenario.DescribeRoute(from, to, mode)
+	if len(route.ViaTH) == 0 {
+		route.ViaTH = fallbackVia
+	}
+	if mode == domain.ModeTransit && len(route.TransitLegs) == 0 {
+		route.TransitLegs = fallbackLegs
 	}
 	return route, nil
 }

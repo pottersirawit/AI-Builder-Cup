@@ -70,7 +70,8 @@ type Input struct {
 	Mode     domain.Mode
 
 	DestinationTH string
-	RoadViaTH     []string // named roads on the car route, first one is where rain is reported
+	RoadViaTH     []string                    // named roads on the car route, first one is where rain is reported
+	Routes        map[domain.Mode]domain.Route // calculated route details per mode
 
 	Rain        []domain.RainSample
 	Spots       []floodspot.Spot // flood spots on the road route
@@ -97,11 +98,13 @@ func (e Eval) Late() bool { return e.LateMinutes > 0 }
 func (e Eval) OK() bool   { return e.Risk == RiskLow && !e.Late() }
 
 type ModeOption struct {
-	Mode    domain.Mode `json:"mode"`
-	Verdict Verdict     `json:"verdict"`
-	EtaMin  int         `json:"eta_min"`
-	Risk    Risk        `json:"risk"`
-	NoteTH  string      `json:"note_th"`
+	Mode        domain.Mode         `json:"mode"`
+	Verdict     Verdict             `json:"verdict"`
+	EtaMin      int                 `json:"eta_min"`
+	Risk        Risk                `json:"risk"`
+	NoteTH      string              `json:"note_th"`
+	ViaTH       []string            `json:"via_th,omitempty"`
+	TransitLegs []domain.TransitLeg `json:"transit_legs,omitempty"`
 }
 
 type FloodSpot struct {
@@ -147,10 +150,17 @@ func Decide(in Input) Result {
 	}
 	for _, m := range domain.AllModes {
 		v, _ := verdictFor(in, m, res.Evals)
-		res.ModeOptions = append(res.ModeOptions, ModeOption{
+		opt := ModeOption{
 			Mode: m, Verdict: v, EtaMin: res.Evals[m].Minutes, Risk: res.Evals[m].Risk,
 			NoteTH: modeNote(in, res.Evals[m]),
-		})
+		}
+		if rt, ok := in.Routes[m]; ok {
+			opt.ViaTH = rt.ViaTH
+			opt.TransitLegs = rt.TransitLegs
+		} else if m != domain.ModeTransit && len(in.RoadViaTH) > 0 {
+			opt.ViaTH = in.RoadViaTH
+		}
+		res.ModeOptions = append(res.ModeOptions, opt)
 	}
 	res.Verdict, res.WaitUntil = verdictFor(in, in.Mode, res.Evals)
 	res.LeaveBy = LeaveBy(in, in.Mode)

@@ -126,7 +126,11 @@ class TripsRepository extends ChangeNotifier {
                     sample: demo,
                     home: demo ? null : savedHome,
                   )
-                : _api.trips(email: account, sample: demo));
+                : _api.trips(
+                    email: account,
+                    sample: demo,
+                    home: demo ? null : savedHome,
+                  ));
     } catch (e) {
       tripsError = e;
     }
@@ -145,11 +149,17 @@ class TripsRepository extends ChangeNotifier {
       _state.homeLevel = homeR?.data.level ?? HomeLevel.normal;
       _home = homeR?.data;
     }
-    final fresh = tripsR?.data ?? const <Trip>[];
+    var fresh = tripsR?.data ?? const <Trip>[];
+    if (savedHome != null && fresh.isNotEmpty && !demo) {
+      fresh = [for (final t in fresh) _withHomeOrigin(t, savedHome)];
+    }
     if (fresh.isNotEmpty && !tripsR!.isSample) _places.setCachedTrips(fresh);
+    final cached = savedHome == null || demo
+        ? _places.cachedTrips
+        : [for (final t in _places.cachedTrips) _withHomeOrigin(t, savedHome)];
     _trips = fresh.isNotEmpty
         ? fresh
-        : (connected ? _places.cachedTrips : const []);
+        : (connected ? cached : const []);
     _outlook = outlookR?.data ?? _outlook;
     _decisions.removeWhere((id, _) => !_trips.any((t) => t.id == id));
     _error = tripsError;
@@ -200,6 +210,32 @@ class TripsRepository extends ChangeNotifier {
 
   void _notify() {
     if (!_disposed) notifyListeners();
+  }
+
+  Trip _withHomeOrigin(Trip t, SavedPlace home) {
+    if ((t.source == 'calendar' || t.source == 'gmail') &&
+        (t.origin.lat != home.lat || t.origin.lng != home.lng) &&
+        (t.destination.lat != home.lat || t.destination.lng != home.lng)) {
+      final homeOrigin = Place(
+        nameTh: home.nameTh.isNotEmpty ? home.nameTh : home.labelTh,
+        lat: home.lat,
+        lng: home.lng,
+      );
+      return Trip(
+        id: t.id,
+        titleTh: t.titleTh,
+        source: t.source,
+        origin: homeOrigin,
+        destination: t.destination,
+        arriveBy: t.arriveBy,
+        mode: t.mode,
+        locationTextTh: t.locationTextTh,
+        endsAt: t.endsAt,
+        virtual: t.virtual,
+        allDay: t.allDay,
+      );
+    }
+    return t;
   }
 
   @override

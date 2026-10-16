@@ -27,9 +27,9 @@
     {"time": "2026-09-29T20:45:00+07:00", "mm_per_hr": 0.0}
   ],
   "mode_options": [
-    {"mode": "car", "verdict": "leave_now", "eta_min": 50, "risk": "low", "note_th": "ถึงราว 17:05 ก่อนฝน ทันนัด 18:30"},
-    {"mode": "transit", "verdict": "leave_now", "eta_min": 40, "risk": "low", "note_th": "ศาลาแดง → ลาดพร้าว ไม่ต้องพกร่มถ้าออกตอนนี้"},
-    {"mode": "moto", "verdict": "leave_now", "eta_min": 30, "risk": "medium", "note_th": "ทันพอดี ถ้าช้ากว่านี้ 15 นาทีจะโดนฝนกลางทาง"}
+    {"mode": "car", "verdict": "leave_now", "eta_min": 50, "risk": "low", "note_th": "ถึงราว 17:05 ก่อนฝน ทันนัด 18:30", "via_th": ["พระราม 4", "อโศก", "รัชดาภิเษก"]},
+    {"mode": "transit", "verdict": "leave_now", "eta_min": 40, "risk": "low", "note_th": "ศาลาแดง → ลาดพร้าว ไม่ต้องพกร่มถ้าออกตอนนี้", "via_th": ["MRT สีลม", "MRT สุขุมวิท", "MRT ลาดพร้าว"], "transit_legs": [{"line_th": "MRT สายสีน้ำเงิน", "from_station_th": "MRT สีลม", "to_station_th": "MRT ลาดพร้าว", "stop_count": 11}]},
+    {"mode": "moto", "verdict": "leave_now", "eta_min": 30, "risk": "medium", "note_th": "ทันพอดี ถ้าช้ากว่านี้ 15 นาทีจะโดนฝนกลางทาง", "via_th": ["พระราม 4", "อโศก", "รัชดาภิเษก"]}
   ],
   "flood_spots": [
     {"id": "BKK-FL-012", "name_th": "แยกรัชดา-ลาดพร้าว", "lat": 13.8063, "lng": 100.5737, "expected_depth_cm": 0, "risk": "low"},
