@@ -133,6 +133,9 @@ type Trip struct {
 	// LocationTextTH is the event's location as written, kept when Destination
 	// is unresolved so the app can ask the user where it is.
 	LocationTextTH string `json:"location_text_th,omitempty"`
+	// NoteTH says how the trip was found when that is not obvious, such as an
+	// email Gemini read.
+	NoteTH string `json:"note_th,omitempty"`
 }
 
 // Plannable reports whether t is travel the planner can route: a real trip

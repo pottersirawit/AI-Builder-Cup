@@ -2,6 +2,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -16,6 +17,7 @@ import (
 	"time"
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
+	"github.com/pottersirawit/fontokmai/api/internal/extract"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
@@ -164,11 +166,49 @@ type gmailMessageItem struct {
 	Subject string
 	Date    string
 	Snippet string
+	// Body is the message's plain text, or empty when it has none.
+	Body string
+}
+
+// gmailTravelQuery finds bookings and tickets, leaving out the Promotions and
+// Social tabs where the same words mostly sell things.
+const gmailTravelQuery = "(ticket OR booking OR reservation OR flight OR concert OR hotel OR event) -category:promotions -category:social"
+
+// gmailPart is a MIME part of a message fetched with format=full.
+type gmailPart struct {
+	MimeType string `json:"mimeType"`
+	Headers  []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"headers"`
+	Body struct {
+		Data string `json:"data"`
+	} `json:"body"`
+	Parts []gmailPart `json:"parts"`
+}
+
+// plainText is the first text/plain part under p, decoded.
+func (p gmailPart) plainText() string {
+	if p.MimeType == "text/plain" && p.Body.Data != "" {
+		b, err := base64.URLEncoding.DecodeString(p.Body.Data)
+		if err != nil {
+			b, err = base64.RawURLEncoding.DecodeString(p.Body.Data)
+		}
+		if err == nil {
+			return string(b)
+		}
+	}
+	for _, c := range p.Parts {
+		if t := c.plainText(); t != "" {
+			return t
+		}
+	}
+	return ""
 }
 
 // gmailTravelMessages queries recent booking / ticket messages from Gmail API.
 func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string) ([]gmailMessageItem, error) {
-	q := url.QueryEscape("ticket OR booking OR reservation OR flight OR concert OR hotel OR event")
+	q := url.QueryEscape(gmailTravelQuery)
 	u := fmt.Sprintf("%s?q=%s&maxResults=6", g.GmailURL, q)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
@@ -195,7 +235,7 @@ func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string
 
 	var items []gmailMessageItem
 	for _, m := range list.Messages {
-		msgReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s?format=metadata", g.GmailURL, m.ID), nil)
+		msgReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s?format=full", g.GmailURL, m.ID), nil)
 		if err != nil {
 			continue
 		}
@@ -209,14 +249,9 @@ func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string
 		}
 
 		var detail struct {
-			ID      string `json:"id"`
-			Snippet string `json:"snippet"`
-			Payload struct {
-				Headers []struct {
-					Name  string `json:"name"`
-					Value string `json:"value"`
-				} `json:"headers"`
-			} `json:"payload"`
+			ID      string    `json:"id"`
+			Snippet string    `json:"snippet"`
+			Payload gmailPart `json:"payload"`
 		}
 		_ = json.NewDecoder(msgResp.Body).Decode(&detail)
 		msgResp.Body.Close()
@@ -237,14 +272,28 @@ func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string
 			Subject: subject,
 			Date:    dateStr,
 			Snippet: detail.Snippet,
+			Body:    detail.Payload.plainText(),
 		})
 	}
 
 	return items, nil
 }
 
-// defaultOrigin is where a synced trip starts when the user has saved no home.
-var defaultOrigin = domain.Place{NameTH: "สีลม", Lat: 13.7279, Lng: 100.5281}
+// defaultOrigin is where a synced trip starts when the app sent no home; its
+// name says so.
+var defaultOrigin = domain.Place{NameTH: "สีลม (ยังไม่ได้ตั้งบ้าน)", Lat: 13.7279, Lng: 100.5281}
+
+// gmailNoteTH marks a trip Gemini found in the user's email.
+const gmailNoteTH = "Gemini อ่านจากอีเมลของคุณ"
+
+// homePlaces is the saved places of a user known only by home: none when home
+// is unresolved.
+func homePlaces(home domain.Place) []domain.SavedPlace {
+	if !home.Resolved() {
+		return nil
+	}
+	return []domain.SavedPlace{{ID: "home", Kind: domain.KindHome, LabelTH: "บ้าน", Place: home}}
+}
 
 // onlineTH names the destination of an online meeting.
 const onlineTH = "ออนไลน์"
@@ -263,10 +312,15 @@ func homeOrigin(savedPlaces []domain.SavedPlace) domain.Place {
 	return defaultOrigin
 }
 
-// matchSavedPlace is the first saved place whose name or label appears in text.
+// matchSavedPlace is the first saved place other than home whose name or
+// label appears in text. Home is never matched: "บ้าน" also begins a friend's
+// or a parent's home (บ้านเพื่อน, บ้านแม่).
 func matchSavedPlace(text string, savedPlaces []domain.SavedPlace) (domain.Place, bool) {
 	text = strings.ToLower(text)
 	for _, sp := range savedPlaces {
+		if sp.Kind == domain.KindHome {
+			continue
+		}
 		for _, name := range []string{sp.NameTH, sp.LabelTH} {
 			if name != "" && strings.Contains(text, strings.ToLower(name)) {
 				return sp.Place, true
@@ -404,58 +458,93 @@ func sameDay(a, b time.Time) bool {
 	return a.Year() == b.Year() && a.YearDay() == b.YearDay()
 }
 
-// gmailKeywords are venues a booking email may name that the geocoder knows.
-var gmailKeywords = []string{"อิมแพ็ค", "Impact", "Siam", "สยาม", "สนามบิน", "Central", "ไอคอนสยาม"}
-
-// ConvertGmailMessageToTrip turns an extracted travel email into a domain.Trip
-// from the user's home. A venue that matches no saved place and no geocoded
-// keyword leaves the destination unresolved rather than guessed.
-func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) domain.Trip {
+// ConvertGmailMessageToTrip turns an email Gemini read into a domain.Trip from
+// the user's home. ok is false unless the reply is a trip with both a start
+// time and a place: an email's own date says nothing about when the event is.
+// A place that matches no saved place and does not geocode is left unresolved.
+func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, p extract.Payload, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) (trip domain.Trip, ok bool) {
+	place := strings.TrimSpace(p.DestinationText)
+	if !p.IsTrip || p.ArriveBy == nil || place == "" {
+		return domain.Trip{}, false
+	}
 	title := strings.TrimSpace(item.Subject)
+	if t := strings.TrimSpace(p.TitleTH); t != "" {
+		title = t
+	}
 	if title == "" {
 		title = "ตั๋วหรือนัดหมายการเดินทาง"
 	}
+	trip = domain.Trip{
+		ID:       "gmail-" + item.ID,
+		TitleTH:  title,
+		Source:   "gmail",
+		Origin:   homeOrigin(savedPlaces),
+		ArriveBy: p.ArriveBy.In(domain.Bangkok),
+		Mode:     domain.ModeCar,
+		NoteTH:   gmailNoteTH,
+	}
+	if p.Mode != nil {
+		trip.Mode = *p.Mode
+	}
+	if dest, found := resolveEventPlace(ctx, place, geo, savedPlaces); found {
+		trip.Destination = dest
+	} else {
+		trip.Destination = domain.Place{NameTH: place}
+		trip.LocationTextTH = place
+	}
+	return trip, true
+}
 
-	text := title + " " + item.Snippet
-	destPlace, resolved := matchSavedPlace(text, savedPlaces)
-	if !resolved && geo != nil {
-		for _, kw := range gmailKeywords {
-			if !strings.Contains(strings.ToLower(text), strings.ToLower(kw)) {
-				continue
+// gmailTrips has Gemini read each message, all at once, and keeps the trips.
+// Without Gemini there are none.
+func (s *Server) gmailTrips(ctx context.Context, items []gmailMessageItem, savedPlaces []domain.SavedPlace, now time.Time) []domain.Trip {
+	if !s.Gemini.Available() {
+		return nil
+	}
+	found := make([]*domain.Trip, len(items))
+	var wg sync.WaitGroup
+	for i, item := range items {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			body := item.Body
+			if strings.TrimSpace(body) == "" {
+				body = item.Snippet
 			}
-			if candidates, err := geo.Search(ctx, kw); err == nil && len(candidates) > 0 {
-				destPlace = domain.Place{NameTH: candidates[0].NameTH, Lat: candidates[0].Lat, Lng: candidates[0].Lng}
-				break
+			p, err := extract.WithGemini(ctx, s.Gemini, extract.RawMessage{
+				Source:    extract.SourceGmail,
+				SourceRef: item.ID,
+				Title:     item.Subject,
+				Body:      "Sent: " + item.Date + "\n" + body,
+			}, now)
+			if err != nil {
+				slog.Warn("gemini could not read a gmail message", "id", item.ID, "err", err)
+				return
 			}
+			if trip, ok := ConvertGmailMessageToTrip(ctx, item, p, s.Geocoder, savedPlaces); ok {
+				found[i] = &trip
+			}
+		}()
+	}
+	wg.Wait()
+	var trips []domain.Trip
+	for _, t := range found {
+		if t != nil {
+			trips = append(trips, *t)
 		}
 	}
-
-	arriveBy := time.Now().Add(24 * time.Hour)
-	if item.Date != "" {
-		if t, err := time.Parse(time.RFC1123Z, item.Date); err == nil {
-			arriveBy = t.Add(24 * time.Hour) // assume event is day after or scheduled
-		}
-	}
-
-	return domain.Trip{
-		ID:          "gmail-" + item.ID,
-		TitleTH:     title,
-		Source:      "gmail",
-		Origin:      homeOrigin(savedPlaces),
-		Destination: destPlace,
-		ArriveBy:    arriveBy,
-		Mode:        domain.ModeCar,
-	}
+	return trips
 }
 
 // SyncUserWorkspaceData pulls actual events from Google APIs and upserts into
-// UserStore. Its error names each service that failed; the other's trips are
-// still stored.
-func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken string, now time.Time) error {
+// UserStore, planning each from home (the app's saved home, unresolved when it
+// sent none). Only มิว's DemoEmail uses the scenario's saved places. Its error
+// names each service that failed; the other's trips are still stored.
+func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken string, home domain.Place, now time.Time) error {
 	g := s.google()
 	var failed []error
-	var savedPlaces []domain.SavedPlace
-	if s.Planner != nil && s.Planner.Places != nil {
+	savedPlaces := homePlaces(home)
+	if email == DemoEmail && s.Planner != nil {
 		savedPlaces = s.Planner.Places
 	}
 
@@ -481,8 +570,8 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		slog.Warn("fetch gmail messages error", "email", email, "err", err)
 		failed = append(failed, err)
 	} else {
-		for _, item := range gmailItems {
-			trip := ConvertGmailMessageToTrip(ctx, item, s.Geocoder, savedPlaces)
+		trips := s.gmailTrips(ctx, gmailItems, savedPlaces, now)
+		for _, trip := range trips {
 			if s.UserStore != nil {
 				_ = s.UserStore.UpsertTrip(ctx, users.UserTrip{
 					UID:       email,
@@ -491,7 +580,7 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 				})
 			}
 		}
-		slog.Info("synced gmail messages", "email", email, "count", len(gmailItems))
+		slog.Info("synced gmail messages", "email", email, "count", len(gmailItems), "trips", len(trips))
 	}
 
 	return errors.Join(failed...)

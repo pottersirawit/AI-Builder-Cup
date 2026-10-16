@@ -131,6 +131,22 @@ func requestEmail(r *http.Request) string {
 	return r.URL.Query().Get("uid")
 }
 
+// requestHome is the app's saved home from ?home_lat=&home_lng=&home_name=,
+// unresolved when it sent none.
+func requestHome(r *http.Request) domain.Place {
+	q := r.URL.Query()
+	lat, errLat := strconv.ParseFloat(q.Get("home_lat"), 64)
+	lng, errLng := strconv.ParseFloat(q.Get("home_lng"), 64)
+	if errLat != nil || errLng != nil || lat < -90 || lat > 90 || lng < -180 || lng > 180 {
+		return domain.Place{}
+	}
+	name := strings.TrimSpace(q.Get("home_name"))
+	if name == "" {
+		name = "บ้าน"
+	}
+	return domain.Place{NameTH: name, Lat: lat, Lng: lng}
+}
+
 func hasToken(email string) bool {
 	tokenStoreMu.RLock()
 	defer tokenStoreMu.RUnlock()
@@ -174,7 +190,7 @@ func (s *Server) syncTrips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 
 	accessToken, connected := s.accessToken(r.Context(), email)
 	if connected {
-		s.syncAndRecord(r.Context(), email, accessToken, rc.now)
+		s.syncAndRecord(r.Context(), email, accessToken, requestHome(r), rc.now)
 	}
 
 	trips := s.userTrips(r, rc, email)

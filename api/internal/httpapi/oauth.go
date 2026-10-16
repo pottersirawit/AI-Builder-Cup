@@ -17,6 +17,8 @@ import (
 	"strings"
 	"sync"
 	"time"
+
+	"github.com/pottersirawit/fontokmai/api/internal/domain"
 )
 
 const (
@@ -274,7 +276,7 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	tokenStore[email] = tok
 	tokenStoreMu.Unlock()
 
-	s.syncAndRecord(ctx, email, tok.AccessToken, now)
+	s.syncAndRecord(ctx, email, tok.AccessToken, domain.Place{}, now)
 	if st.Nonce != "" {
 		recordSignIn(st.Nonce, email, now)
 	}
@@ -286,10 +288,10 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, back.String(), http.StatusFound)
 }
 
-// syncAndRecord pulls the account's Calendar and Gmail and notes the outcome
-// for /v1/oauth/status.
-func (s *Server) syncAndRecord(ctx context.Context, email, accessToken string, now time.Time) {
-	err := s.SyncUserWorkspaceData(ctx, email, accessToken, now)
+// syncAndRecord pulls the account's Calendar and Gmail, planned from home, and
+// notes the outcome for /v1/oauth/status.
+func (s *Server) syncAndRecord(ctx context.Context, email, accessToken string, home domain.Place, now time.Time) {
+	err := s.SyncUserWorkspaceData(ctx, email, accessToken, home, now)
 	tokenStoreMu.Lock()
 	defer tokenStoreMu.Unlock()
 	if tok := tokenStore[email]; tok != nil {

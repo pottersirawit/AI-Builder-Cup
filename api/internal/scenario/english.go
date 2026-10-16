@@ -32,6 +32,8 @@ var english = map[string]string{
 	"ซิงก์งานกับทีม (Google Meet)":  "Team sync (Google Meet)",
 	"รีวิวงานที่ทองหล่อ":            "Work review in Thong Lo",
 	"ออนไลน์":                       "Online",
+	"สีลม (ยังไม่ได้ตั้งบ้าน)":      "Silom (no home set)",
+	"Gemini อ่านจากอีเมลของคุณ":     "Read by Gemini from your email",
 	"พระราม 4":                      "Rama IV",
 	"อโศก":                          "Asok",
 	"รัชดาภิเษก":                    "Ratchadaphisek",
@@ -69,7 +71,7 @@ func LocalizeReport(r domain.Report, l domain.Lang) domain.Report {
 
 // LocalizeTrip gives t's title and place names in l.
 func LocalizeTrip(t domain.Trip, l domain.Lang) domain.Trip {
-	t.TitleTH = Text(t.TitleTH, l)
+	t.TitleTH, t.NoteTH = Text(t.TitleTH, l), Text(t.NoteTH, l)
 	t.Origin, t.Destination = LocalizePlace(t.Origin, l), LocalizePlace(t.Destination, l)
 	return t
 }
