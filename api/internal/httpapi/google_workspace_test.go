@@ -559,6 +559,39 @@ func TestOAuthCallbackStoresTokenUnderVerifiedEmail(t *testing.T) {
 	}
 }
 
+func TestOAuthStatusFindsTheAccountByNonce(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "nonce.owner@example.com"}
+	g.start(t, s)
+	h := s.Handler()
+
+	nonce := "n0nce-AbC_123"
+	if sw := get(h, "/v1/oauth/status?nonce="+nonce); !strings.Contains(sw.Body.String(), `"connected":false`) {
+		t.Fatalf("status before sign-in = %s, want connected:false", sw.Body.String())
+	}
+	w := get(h, "/v1/oauth/start?nonce="+nonce+"&return="+url.QueryEscape("https://fontokmai.example/"))
+	loc, _ := url.Parse(w.Header().Get("Location"))
+	if cb := get(h, "/oauth2callback?code=c-1&state="+url.QueryEscape(loc.Query().Get("state"))); cb.Code != http.StatusFound {
+		t.Fatalf("callback = %d: %s", cb.Code, cb.Body.String())
+	}
+	var st struct {
+		Email     string `json:"email"`
+		Connected bool   `json:"connected"`
+	}
+	if err := json.NewDecoder(get(h, "/v1/oauth/status?nonce="+nonce).Body).Decode(&st); err != nil {
+		t.Fatal(err)
+	}
+	if !st.Connected || st.Email != g.email {
+		t.Errorf("status by nonce = %+v, want connected as %s", st, g.email)
+	}
+	if sw := get(h, "/v1/oauth/status?nonce=other-nonce"); !strings.Contains(sw.Body.String(), `"connected":false`) {
+		t.Errorf("another nonce = %s, want connected:false", sw.Body.String())
+	}
+	if w := get(h, "/v1/oauth/start?nonce="+url.QueryEscape("bad nonce!")+"&return="+url.QueryEscape("https://fontokmai.example/")); w.Code != http.StatusBadRequest {
+		t.Errorf("malformed nonce: status = %d, want 400", w.Code)
+	}
+}
+
 func TestOAuthCallbackFailureStoresNothing(t *testing.T) {
 	s := newTestServer(t, false)
 	g := &fakeGoogle{email: "failed.exchange@example.com", failCode: true}

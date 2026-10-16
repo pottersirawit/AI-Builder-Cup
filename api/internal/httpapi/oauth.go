@@ -13,7 +13,9 @@ import (
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"strings"
+	"sync"
 	"time"
 )
 
@@ -109,6 +111,42 @@ func (g GoogleOAuth) allowedReturn(raw string) bool {
 type oauthState struct {
 	Return string `json:"r"`
 	Issued int64  `json:"t"`
+	Nonce  string `json:"n,omitempty"`
+}
+
+// validNonce is the shape of the app's random sign-in id.
+var validNonce = regexp.MustCompile(`^[A-Za-z0-9_-]{8,64}$`)
+
+// signIns maps a finished sign-in's nonce to its account, so an app that
+// opened Google elsewhere (another tab, the system browser) can poll for it.
+var (
+	signInsMu sync.Mutex
+	signIns   = map[string]signIn{}
+)
+
+type signIn struct {
+	email string
+	at    time.Time
+}
+
+func recordSignIn(nonce, email string, now time.Time) {
+	signInsMu.Lock()
+	defer signInsMu.Unlock()
+	for n, si := range signIns {
+		if now.Sub(si.at) > stateTTL {
+			delete(signIns, n)
+		}
+	}
+	signIns[nonce] = signIn{email: email, at: now}
+}
+
+func signedInAs(nonce string, now time.Time) string {
+	signInsMu.Lock()
+	defer signInsMu.Unlock()
+	if si, ok := signIns[nonce]; ok && now.Sub(si.at) <= stateTTL {
+		return si.email
+	}
+	return ""
 }
 
 func stateKey() []byte {
@@ -127,36 +165,42 @@ func signState(st oauthState) string {
 	return payload + "." + base64.RawURLEncoding.EncodeToString(mac.Sum(nil))
 }
 
-// parseState returns the return URL a state this server signed carries.
-func parseState(state string, now time.Time) (string, error) {
+// parseState returns what a state this server signed carries.
+func parseState(state string, now time.Time) (oauthState, error) {
 	payload, sig, ok := strings.Cut(state, ".")
 	if !ok {
-		return "", errors.New("sign-in was not started from the app")
+		return oauthState{}, errors.New("sign-in was not started from the app")
 	}
 	got, err := base64.RawURLEncoding.DecodeString(sig)
 	mac := hmac.New(sha256.New, stateKey())
 	mac.Write([]byte(payload))
 	if err != nil || !hmac.Equal(got, mac.Sum(nil)) {
-		return "", errors.New("sign-in state is not valid")
+		return oauthState{}, errors.New("sign-in state is not valid")
 	}
 	b, err := base64.RawURLEncoding.DecodeString(payload)
 	var st oauthState
 	if err != nil || json.Unmarshal(b, &st) != nil {
-		return "", errors.New("sign-in state is not valid")
+		return oauthState{}, errors.New("sign-in state is not valid")
 	}
 	if now.Sub(time.Unix(st.Issued, 0)) > stateTTL {
-		return "", errors.New("sign-in took too long")
+		return oauthState{}, errors.New("sign-in took too long")
 	}
-	return st.Return, nil
+	return st, nil
 }
 
 // oauthStart sends the browser to Google's consent screen for every scope the
-// app uses, asking for a refresh token.
+// app uses, asking for a refresh token. An optional nonce lets the app find
+// the account through /v1/oauth/status once the user is done.
 func (s *Server) oauthStart(w http.ResponseWriter, r *http.Request) {
 	g := s.google()
 	ret := r.URL.Query().Get("return")
 	if !g.allowedReturn(ret) {
 		writeError(w, http.StatusBadRequest, "return must be the app's URL")
+		return
+	}
+	nonce := r.URL.Query().Get("nonce")
+	if nonce != "" && !validNonce.MatchString(nonce) {
+		writeError(w, http.StatusBadRequest, "nonce must be 8-64 letters, digits, - or _")
 		return
 	}
 	clientID, _ := getOAuthCredentials()
@@ -168,7 +212,7 @@ func (s *Server) oauthStart(w http.ResponseWriter, r *http.Request) {
 		"access_type":            {"offline"},
 		"prompt":                 {"consent"},
 		"include_granted_scopes": {"true"},
-		"state":                  {signState(oauthState{Return: ret, Issued: time.Now().Unix()})},
+		"state":                  {signState(oauthState{Return: ret, Issued: time.Now().Unix(), Nonce: nonce})},
 	}
 	if hint := r.URL.Query().Get("login_hint"); hint != "" {
 		q.Set("login_hint", hint)
@@ -181,10 +225,8 @@ func (s *Server) oauthStart(w http.ResponseWriter, r *http.Request) {
 // the browser to the app with ?connected=<email>.
 func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	q := r.URL.Query()
-	ret, stateErr := parseState(q.Get("state"), time.Now())
-	if stateErr != nil {
-		ret = ""
-	}
+	st, stateErr := parseState(q.Get("state"), time.Now())
+	ret := st.Return
 	if e := q.Get("error"); e != "" {
 		oauthError(w, http.StatusOK, "Authorization Cancelled", e, ret)
 		return
@@ -233,6 +275,9 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	tokenStoreMu.Unlock()
 
 	s.syncAndRecord(ctx, email, tok.AccessToken, now)
+	if st.Nonce != "" {
+		recordSignIn(st.Nonce, email, now)
+	}
 
 	back, _ := url.Parse(ret)
 	bq := back.Query()
@@ -255,9 +300,13 @@ func (s *Server) syncAndRecord(ctx context.Context, email, accessToken string, n
 	}
 }
 
-// oauthStatus tells the app whether an account is connected and what it granted.
+// oauthStatus tells the app whether an account is connected and what it
+// granted. ?nonce= asks for the account a sign-in started with that nonce.
 func (s *Server) oauthStatus(w http.ResponseWriter, r *http.Request) {
 	email := requestEmail(r)
+	if nonce := r.URL.Query().Get("nonce"); email == "" && nonce != "" {
+		email = signedInAs(nonce, time.Now())
+	}
 	tokenStoreMu.RLock()
 	tok := tokenStore[email]
 	var out struct {
