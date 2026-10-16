@@ -17,8 +17,20 @@ class ApiResult<T> {
   final bool isSample;
 }
 
-/// Client for API contract v0 plus the v1 places additions. Every call falls back to
-/// `assets/fixtures/*.json` when the backend fails, so the app always demos.
+/// What the server knows about a Google sign-in.
+class OAuthStatus {
+  const OAuthStatus({required this.email, required this.connected});
+  factory OAuthStatus.fromJson(Json j) => OAuthStatus(
+    email: j['email'] as String? ?? '',
+    connected: j['connected'] as bool? ?? false,
+  );
+  final String email;
+  final bool connected;
+}
+
+/// Client for API contract v0 plus the v1 places additions. Calls fall back to
+/// `assets/fixtures/*.json` when the backend fails, so the app always demos;
+/// a real account's trips never do.
 class FonTokMaiApi {
   FonTokMaiApi({
     required this.baseUrl,
@@ -54,21 +66,35 @@ class FonTokMaiApi {
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$baseUrl$path').replace(queryParameters: query);
 
-  Future<ApiResult<List<Trip>>> trips({String? email}) => _withFallback(
-    () async => Trip.listFromJson(
-      await _get('/v1/trips', email == null ? null : {'email': email}),
-    ),
-    () async => Trip.listFromJson(await _fixture('trips')),
-  );
+  /// The account's trips. With [sample] false a failure throws instead of
+  /// answering with มิว's fixture trips.
+  Future<ApiResult<List<Trip>>> trips({String? email, bool sample = true}) =>
+      _tripsFrom('/v1/trips', email, sample);
 
-  Future<ApiResult<List<Trip>>> syncTrips({String? email}) =>
-      _withFallback(() async {
-        final res = await _get(
-          '/v1/trips/sync',
-          email == null ? null : {'email': email},
-        );
-        return Trip.listFromJson(res);
-      }, () async => Trip.listFromJson(await _fixture('trips')));
+  /// Pulls Calendar and Gmail again, then the trips; see [trips].
+  Future<ApiResult<List<Trip>>> syncTrips({
+    String? email,
+    bool sample = true,
+  }) => _tripsFrom('/v1/trips/sync', email, sample);
+
+  Future<ApiResult<List<Trip>>> _tripsFrom(
+    String path,
+    String? email,
+    bool sample,
+  ) async {
+    Future<List<Trip>> live() async => Trip.listFromJson(
+      await _get(path, email == null ? null : {'email': email}),
+    );
+    if (!sample) return ApiResult(await live(), isSample: false);
+    return _withFallback(
+      live,
+      () async => Trip.listFromJson(await _fixture('trips')),
+    );
+  }
+
+  /// Whether the sign-in started with [nonce] has finished, and as whom.
+  Future<OAuthStatus> oauthStatus({required String nonce}) async =>
+      OAuthStatus.fromJson(await _get('/v1/oauth/status', {'nonce': nonce}));
 
   Future<ApiResult<Decision>> decide(DecideRequest req) => _withFallback(
     () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),

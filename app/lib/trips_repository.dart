@@ -98,12 +98,21 @@ class TripsRepository extends ChangeNotifier {
               ? null
               : (lat: savedHome.lat, lng: savedHome.lng));
     final outlookF = _api.outlook(lat: at?.lat, lng: at?.lng);
+    // Only มิว's demo profile may fill in with sample trips; a real account
+    // shows the error and Retry instead.
+    final demo = _places.demoProfile;
+    Object? tripsError;
+    ApiResult<List<Trip>>? tripsR;
     try {
-      final tripsR = !connected
+      tripsR = !connected
           ? null
           : await (sync
-                ? _api.syncTrips(email: account)
-                : _api.trips(email: account));
+                ? _api.syncTrips(email: account, sample: demo)
+                : _api.trips(email: account, sample: demo));
+    } catch (e) {
+      tripsError = e;
+    }
+    try {
       final homeR = await homeF;
       final outlookR = await outlookF;
       if (seq != _seq || _disposed) return;
@@ -111,13 +120,14 @@ class TripsRepository extends ChangeNotifier {
         ..markSample((tripsR?.isSample ?? false) || (homeR?.isSample ?? false))
         ..homeLevel = homeR?.data.level ?? HomeLevel.normal;
       final fresh = tripsR?.data ?? const <Trip>[];
-      if (fresh.isNotEmpty) _places.setCachedTrips(fresh);
+      if (fresh.isNotEmpty && !tripsR!.isSample) _places.setCachedTrips(fresh);
       _trips = fresh.isNotEmpty
           ? fresh
           : (connected ? _places.cachedTrips : const []);
       _home = homeR?.data;
       _outlook = outlookR.data;
       _decisions.removeWhere((id, _) => !_trips.any((t) => t.id == id));
+      _error = tripsError;
     } catch (e) {
       if (seq != _seq || _disposed) return;
       _error = e;

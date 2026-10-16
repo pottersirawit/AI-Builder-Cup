@@ -1580,6 +1580,78 @@ abstract class AppLocalizations {
   /// **'ฝนตกไหม'**
   String get onboardingAppName;
 
+  /// No description provided for @settingsGoogleTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'เชื่อมต่อ Google'**
+  String get settingsGoogleTitle;
+
+  /// No description provided for @settingsGoogleSubtitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ปฏิทินและ Gmail ลงชื่อเข้าใช้ครั้งเดียว'**
+  String get settingsGoogleSubtitle;
+
+  /// No description provided for @settingsGoogleUseTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'สิ่งที่แอปอ่าน'**
+  String get settingsGoogleUseTitle;
+
+  /// No description provided for @settingsGoogleCalendarUse.
+  ///
+  /// In th, this message translates to:
+  /// **'ปฏิทิน: นัดที่มีเวลาและสถานที่ เพื่อบอกว่าควรออกกี่โมง'**
+  String get settingsGoogleCalendarUse;
+
+  /// No description provided for @settingsGoogleGmailUse.
+  ///
+  /// In th, this message translates to:
+  /// **'Gmail: เฉพาะอีเมลยืนยันตั๋วและการจอง'**
+  String get settingsGoogleGmailUse;
+
+  /// No description provided for @settingsGooglePrivacy.
+  ///
+  /// In th, this message translates to:
+  /// **'อ่านอย่างเดียว ไม่แก้ไขหรือลบอะไร นัดของคุณถูกเก็บไว้บนเซิร์ฟเวอร์ของเราระหว่างที่ใช้แอป'**
+  String get settingsGooglePrivacy;
+
+  /// No description provided for @settingsGoogleSignIn.
+  ///
+  /// In th, this message translates to:
+  /// **'ลงชื่อเข้าใช้ด้วย Google'**
+  String get settingsGoogleSignIn;
+
+  /// No description provided for @settingsGoogleWaiting.
+  ///
+  /// In th, this message translates to:
+  /// **'กำลังรอ Google…'**
+  String get settingsGoogleWaiting;
+
+  /// No description provided for @settingsGoogleWaitingHint.
+  ///
+  /// In th, this message translates to:
+  /// **'ลงชื่อเข้าใช้ใน Google ให้เสร็จ แล้วกลับมาที่แอปนี้'**
+  String get settingsGoogleWaitingHint;
+
+  /// No description provided for @settingsGoogleFailed.
+  ///
+  /// In th, this message translates to:
+  /// **'Google ยังไม่ยืนยันการลงชื่อเข้าใช้ ลองอีกครั้ง'**
+  String get settingsGoogleFailed;
+
+  /// No description provided for @settingsGoogleConnected.
+  ///
+  /// In th, this message translates to:
+  /// **'เชื่อมต่อแล้วกับ {email}'**
+  String settingsGoogleConnected(String email);
+
+  /// No description provided for @settingsGoogleCancel.
+  ///
+  /// In th, this message translates to:
+  /// **'ยกเลิก'**
+  String get settingsGoogleCancel;
+
   /// No description provided for @modeCar.
   ///
   /// In th, this message translates to:

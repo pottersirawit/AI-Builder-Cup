@@ -103,7 +103,7 @@ void main() {
       expect(s.calendar, LinkState.notConnected);
     });
 
-    test('Calendar connects only in the demo profile (OAuth stubbed)', () async {
+    test('the stub connect works only in the demo profile', () async {
       final s = await freshStore();
       expect(s.canConnectCalendar, isFalse);
       await s.connectCalendar(delay: Duration.zero);
@@ -117,31 +117,27 @@ void main() {
       expect(s.calendar, LinkState.connected);
     });
 
-    test('Calendar and Gmail connection and emails survive page reload / store restart', () async {
+    test('a real profile has no account until Google names one', () async {
+      final s = await freshStore();
+      expect(s.calendarAccount, isNull);
+      expect(s.gmailAccount, isNull);
+    });
+
+    test('Google connection and email survive page reload / store restart', () async {
       SharedPreferences.setMockInitialValues({});
       final prefs = await SharedPreferences.getInstance();
-      final s1 = PlacesStore(prefs);
-
-      await s1.connectCalendar(
-        delay: Duration.zero,
-        allowLive: true,
-        email: 'the32069@gmail.com',
-      );
-      await s1.connectGmail(
-        delay: Duration.zero,
-        email: 'the32069@gmail.com',
-      );
+      final s1 = PlacesStore(prefs)..connectGoogle('owner.real@example.com');
       expect(s1.calendar, LinkState.connected);
-      expect(s1.calendarAccount, 'the32069@gmail.com');
+      expect(s1.calendarAccount, 'owner.real@example.com');
       expect(s1.gmail, LinkState.connected);
-      expect(s1.gmailAccount, 'the32069@gmail.com');
+      expect(s1.gmailAccount, 'owner.real@example.com');
 
       // Re-instantiate PlacesStore using the same preferences (browser refresh)
       final s2 = PlacesStore(prefs);
       expect(s2.calendar, LinkState.connected);
-      expect(s2.calendarAccount, 'the32069@gmail.com');
+      expect(s2.calendarAccount, 'owner.real@example.com');
       expect(s2.gmail, LinkState.connected);
-      expect(s2.gmailAccount, 'the32069@gmail.com');
+      expect(s2.gmailAccount, 'owner.real@example.com');
 
       // Disconnect clears saved state
       s2.disconnectCalendar();
@@ -149,6 +145,15 @@ void main() {
       final s3 = PlacesStore(prefs);
       expect(s3.calendar, LinkState.notConnected);
       expect(s3.gmail, LinkState.connected);
+    });
+
+    test('a connect left half-way does not come back as connected', () async {
+      SharedPreferences.setMockInitialValues({});
+      final prefs = await SharedPreferences.getInstance();
+      PlacesStore(prefs).beginGoogleConnect();
+      final s = PlacesStore(prefs);
+      expect(s.calendar, LinkState.notConnected);
+      expect(s.gmail, LinkState.notConnected);
     });
   });
 

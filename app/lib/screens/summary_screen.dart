@@ -178,8 +178,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final Widget hero;
     if (!repo.connected) {
       hero = ConnectCalendarCard(
-        onConnect: () =>
-            promptOAuth(context, service: OAuthService.calendar, store: store),
+        onConnect: () => promptOAuth(context),
         onAsk: () => showAskSheet(context),
       );
     } else if (next == null && repo.loading) {

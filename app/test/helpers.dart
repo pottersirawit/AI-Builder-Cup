@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/api.dart';
 import 'package:fontokmai/app_state.dart';
+import 'package:fontokmai/google_link.dart';
 import 'package:fontokmai/location.dart';
 import 'package:fontokmai/main.dart';
 import 'package:fontokmai/places.dart';
@@ -33,6 +34,7 @@ http.Response jsonResponse(Object body) => http.Response.bytes(
 
 /// Pumps the app offline (every request falls back to fixtures). [places]
 /// defaults to มิว's demo profile; [respond] can answer a request instead.
+/// [launch] stands in for opening Google; [appBase] is the app's URL.
 Future<AppState> pumpApp(
   WidgetTester tester,
   String? clock, {
@@ -41,6 +43,8 @@ Future<AppState> pumpApp(
   PlacesStore? places,
   Locator locator = const StagedLocator(LocateStatus.ok),
   http.Response? Function(http.Request req)? respond,
+  Future<bool> Function(Uri url)? launch,
+  Uri? appBase,
 }) async {
   tester.view.physicalSize = Size(402 * 3, height * 3);
   tester.view.devicePixelRatio = 3;
@@ -61,8 +65,21 @@ Future<AppState> pumpApp(
     bundle: _DiskBundle(),
   );
   places ??= await demoStore();
+  final link = GoogleLink(
+    api: api,
+    places: places,
+    appBase: appBase ?? Uri.parse('http://localhost:8080/'),
+    launch: launch ?? (_) async => false,
+    replaceUrl: (_) {},
+  );
   await tester.pumpWidget(
-    FonTokMaiApp(state: state, places: places, api: api, locator: locator),
+    FonTokMaiApp(
+      state: state,
+      places: places,
+      api: api,
+      locator: locator,
+      googleLink: link,
+    ),
   );
   await settle(tester);
   return state;

@@ -868,6 +868,49 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingAppName => 'Fon Tok Mai';
 
   @override
+  String get settingsGoogleTitle => 'Connect Google';
+
+  @override
+  String get settingsGoogleSubtitle => 'Calendar and Gmail, one sign-in';
+
+  @override
+  String get settingsGoogleUseTitle => 'What the app reads';
+
+  @override
+  String get settingsGoogleCalendarUse =>
+      'Calendar: events with a time and place, to tell you when to leave.';
+
+  @override
+  String get settingsGoogleGmailUse =>
+      'Gmail: ticket and booking confirmations only.';
+
+  @override
+  String get settingsGooglePrivacy =>
+      'Read-only. Events are kept on our server while you use the app.';
+
+  @override
+  String get settingsGoogleSignIn => 'Sign in with Google';
+
+  @override
+  String get settingsGoogleWaiting => 'Waiting for Google…';
+
+  @override
+  String get settingsGoogleWaitingHint =>
+      'Finish signing in on Google, then come back here.';
+
+  @override
+  String get settingsGoogleFailed =>
+      'Google didn\'t confirm the sign-in. Try again.';
+
+  @override
+  String settingsGoogleConnected(String email) {
+    return 'Connected as $email';
+  }
+
+  @override
+  String get settingsGoogleCancel => 'Cancel';
+
+  @override
   String get modeCar => 'Car';
 
   @override

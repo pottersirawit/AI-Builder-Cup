@@ -5,6 +5,7 @@ import 'api.dart';
 import 'app_state.dart';
 import 'config.dart';
 import 'design/design.dart';
+import 'google_link.dart';
 import 'l10n/l10n.dart';
 import 'location.dart';
 import 'models.dart';
@@ -63,12 +64,16 @@ class FonTokMaiApp extends StatefulWidget {
     required this.api,
     this.launch,
     this.locator = const Locator(),
+    this.googleLink,
   });
 
   final AppState state;
   final PlacesStore places;
   final FonTokMaiApi api;
   final Locator locator;
+
+  /// Connects Google; built from [api] and [places] when null.
+  final GoogleLink? googleLink;
 
   /// Opens a demo state on start (screenshots, demo video).
   final DemoLaunch? launch;
@@ -77,17 +82,34 @@ class FonTokMaiApp extends StatefulWidget {
   State<FonTokMaiApp> createState() => _FonTokMaiAppState();
 }
 
-class _FonTokMaiAppState extends State<FonTokMaiApp> {
+class _FonTokMaiAppState extends State<FonTokMaiApp>
+    with WidgetsBindingObserver {
   final _nav = GlobalKey<NavigatorState>();
+  late final GoogleLink _link =
+      widget.googleLink ?? GoogleLink(api: widget.api, places: widget.places);
   static final _night = buildTheme(night: true);
   static final _flood = buildTheme(flood: true);
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
+    _link.acceptReturn();
     final l = widget.launch;
     if (l != null)
       WidgetsBinding.instance.addPostFrameCallback((_) => _open(l));
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  /// Back from Google's consent screen in another app or tab.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState s) {
+    if (s == AppLifecycleState.resumed) _link.check();
   }
 
   Future<void> _open(DemoLaunch l) async {
@@ -151,6 +173,7 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
       places: widget.places,
       api: widget.api,
       locator: widget.locator,
+      link: _link,
       child: ListenableBuilder(
         listenable: widget.state,
         builder: (context, _) => MaterialApp(

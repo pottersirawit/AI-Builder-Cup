@@ -34,6 +34,7 @@ class _ShellState extends State<Shell> {
   late ShellTab _tab = widget.initialTab;
   TripsRepository? _repo;
   String? _loadedFor;
+  String? _accountFor;
 
   TripsRepository get repo => _repo!;
 
@@ -50,9 +51,11 @@ class _ShellState extends State<Shell> {
     String sig(SavedPlace? p) => p == null ? '-' : '${p.id},${p.lat},${p.lng}';
     final key =
         '${state.locale.languageCode}|${state.demoClock ?? 'live'}|${sig(store.home)}|${store.calendar}|${store.gmail}|${store.demoProfile}';
-    if (key != _loadedFor) {
+    final account = '${store.calendarAccount}|${store.gmailAccount}';
+    if (key != _loadedFor || account != _accountFor) {
       _loadedFor = key;
-      _refresh();
+      _accountFor = account;
+      _refresh(sync: AppScope.readPlaces(context).takeSyncDue());
     }
   }
 

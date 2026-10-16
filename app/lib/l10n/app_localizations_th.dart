@@ -849,6 +849,49 @@ class AppLocalizationsTh extends AppLocalizations {
   String get onboardingAppName => 'ฝนตกไหม';
 
   @override
+  String get settingsGoogleTitle => 'เชื่อมต่อ Google';
+
+  @override
+  String get settingsGoogleSubtitle =>
+      'ปฏิทินและ Gmail ลงชื่อเข้าใช้ครั้งเดียว';
+
+  @override
+  String get settingsGoogleUseTitle => 'สิ่งที่แอปอ่าน';
+
+  @override
+  String get settingsGoogleCalendarUse =>
+      'ปฏิทิน: นัดที่มีเวลาและสถานที่ เพื่อบอกว่าควรออกกี่โมง';
+
+  @override
+  String get settingsGoogleGmailUse => 'Gmail: เฉพาะอีเมลยืนยันตั๋วและการจอง';
+
+  @override
+  String get settingsGooglePrivacy =>
+      'อ่านอย่างเดียว ไม่แก้ไขหรือลบอะไร นัดของคุณถูกเก็บไว้บนเซิร์ฟเวอร์ของเราระหว่างที่ใช้แอป';
+
+  @override
+  String get settingsGoogleSignIn => 'ลงชื่อเข้าใช้ด้วย Google';
+
+  @override
+  String get settingsGoogleWaiting => 'กำลังรอ Google…';
+
+  @override
+  String get settingsGoogleWaitingHint =>
+      'ลงชื่อเข้าใช้ใน Google ให้เสร็จ แล้วกลับมาที่แอปนี้';
+
+  @override
+  String get settingsGoogleFailed =>
+      'Google ยังไม่ยืนยันการลงชื่อเข้าใช้ ลองอีกครั้ง';
+
+  @override
+  String settingsGoogleConnected(String email) {
+    return 'เชื่อมต่อแล้วกับ $email';
+  }
+
+  @override
+  String get settingsGoogleCancel => 'ยกเลิก';
+
+  @override
   String get modeCar => 'รถยนต์';
 
   @override

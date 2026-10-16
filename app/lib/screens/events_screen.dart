@@ -70,7 +70,8 @@ class _EventsScreenState extends State<EventsScreen> {
   @override
   Widget build(BuildContext context) {
     final state = AppScope.stateOf(context);
-    final store = AppScope.placesOf(context);
+    // The connect card follows the Google link state.
+    AppScope.placesOf(context);
     final l = context.l10n;
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
@@ -109,11 +110,7 @@ class _EventsScreenState extends State<EventsScreen> {
         final Widget? placeholder;
         if (!repo.connected) {
           placeholder = ConnectCalendarCard(
-            onConnect: () => promptOAuth(
-              context,
-              service: OAuthService.calendar,
-              store: store,
-            ),
+            onConnect: () => promptOAuth(context),
             onAsk: () => showAskSheet(context),
           );
         } else if (events.isEmpty && repo.loading) {
