@@ -1,0 +1,164 @@
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:fontokmai/departure.dart';
+import 'package:fontokmai/events.dart';
+import 'package:fontokmai/models.dart';
+import 'package:fontokmai/time_th.dart';
+
+Decision _fixture(String name) => Decision.fromJson(
+  jsonDecode(File('assets/fixtures/$name.json').readAsStringSync())
+      as Map<String, dynamic>,
+);
+
+Trip _trip(
+  String id,
+  String? arriveBy, {
+  String source = 'calendar',
+  bool resolved = true,
+}) => Trip(
+  id: id,
+  titleTh: id,
+  source: source,
+  origin: const Place(nameTh: 'สีลม', lat: 13.72, lng: 100.53),
+  destination: resolved
+      ? const Place(nameTh: 'สยาม', lat: 13.74, lng: 100.53)
+      : const Place(nameTh: 'ตึกใหม่', lat: 0, lng: 0),
+  arriveBy: arriveBy == null ? null : DateTime.parse(arriveBy),
+  mode: TravelMode.car,
+  locationTextTh: resolved ? null : 'ตึกใหม่',
+);
+
+void main() {
+  final now = DateTime.parse('2026-10-17T16:00:00+07:00');
+
+  group('upcoming', () {
+    test('sorts by arrival and drops past events and routine trips', () {
+      final out = upcoming([
+        _trip('late', '2026-10-18T09:00:00+07:00'),
+        _trip('past', '2026-10-17T12:00:00+07:00'),
+        _trip('soon', '2026-10-17T18:30:00+07:00', source: 'gmail'),
+        _trip('home', '2026-10-17T19:00:00+07:00', source: 'routine'),
+      ], now);
+      expect(out.map((t) => t.id), ['soon', 'late']);
+    });
+
+    test('keeps an event that started under 10 minutes ago', () {
+      final out = upcoming([
+        _trip('started', '2026-10-17T15:55:00+07:00'),
+        _trip('gone', '2026-10-17T15:45:00+07:00'),
+      ], now);
+      expect(out.map((t) => t.id), ['started']);
+    });
+
+    test('puts events without a time last', () {
+      final out = upcoming([
+        _trip('untimed', null),
+        _trip('timed', '2026-10-20T09:00:00+07:00'),
+      ], now);
+      expect(out.map((t) => t.id), ['timed', 'untimed']);
+    });
+  });
+
+  group('nextEvent', () {
+    test('is the first timed upcoming event, unresolved or not', () {
+      final next = nextEvent([
+        _trip('untimed', null),
+        _trip('b', '2026-10-17T20:00:00+07:00'),
+        _trip('a', '2026-10-17T18:00:00+07:00', resolved: false),
+      ], now);
+      expect(next?.id, 'a');
+    });
+
+    test('is null when nothing is coming up', () {
+      expect(nextEvent([_trip('untimed', null)], now), isNull);
+      expect(nextEvent(const [], now), isNull);
+    });
+  });
+
+  group('groupByDay', () {
+    test('groups on Bangkok days, not device days', () {
+      final groups = groupByDay([
+        _trip('a', '2026-10-17T23:30:00+07:00'),
+        _trip('b', '2026-10-18T00:30:00+07:00'),
+        _trip('c', '2026-10-18T09:00:00+07:00'),
+      ]);
+      expect(groups.map((g) => g.day), [
+        DateTime.utc(2026, 10, 17),
+        DateTime.utc(2026, 10, 18),
+      ]);
+      expect(groups.map((g) => g.trips.map((t) => t.id).toList()), [
+        ['a'],
+        ['b', 'c'],
+      ]);
+    });
+
+    test('gives untimed events their own group with no day', () {
+      final groups = groupByDay([
+        _trip('a', '2026-10-17T18:00:00+07:00'),
+        _trip('x', null),
+      ]);
+      expect(groups.last.day, isNull);
+      expect(groups.last.trips.single.id, 'x');
+    });
+  });
+
+  group('planDepartFor', () {
+    test('plans from now when the event is within the planning window', () {
+      final t = _trip('soon', '2026-10-17T18:30:00+07:00');
+      expect(planDepartFor(t, now), now);
+    });
+
+    test('plans a later event from three hours before it', () {
+      final t = _trip('tomorrow', '2026-10-18T09:00:00+07:00');
+      expect(isoBangkok(planDepartFor(t, now)), '2026-10-18T06:00:00+07:00');
+    });
+  });
+
+  group('leavePlan', () {
+    final at = DateTime.parse('2026-09-29T16:10:00+07:00');
+    LeavePlan plan(String fixture, DateTime now) {
+      final d = _fixture(fixture);
+      return leavePlan(d, rankOptions(serverOptions(d, now)), now);
+    }
+
+    test('go now: leave before the server time, on the best-ranked mode', () {
+      final p = plan('decide_car', at);
+      expect(p.kind, LeaveKind.before);
+      expect(hhmm(p.time!), '16:45');
+      expect(p.best!.mode, TravelMode.transit);
+      expect(hhmm(p.arriveAt), '17:25', reason: '16:45 + 40 min by BTS');
+    });
+
+    test('a passed leave-by time becomes overdue, arriving from now', () {
+      final p = plan('decide_car', DateTime.parse('2026-09-29T16:50:00+07:00'));
+      expect(p.kind, LeaveKind.overdue);
+      expect(hhmm(p.arriveAt), '17:30');
+    });
+
+    test('wait: leave at the server time', () {
+      final p = plan('decide_car_storm', at);
+      expect(p.kind, LeaveKind.at);
+      expect(hhmm(p.time!), '19:15');
+    });
+
+    test('a leave-by before the planned departure is stale, not overdue', () {
+      final d = _fixture('decide_car');
+      final planned = DateTime.parse('2026-10-03T16:00:00+07:00');
+      final now = DateTime.parse('2026-09-29T18:40:00+07:00');
+      final board = rankOptions(serverOptions(d, planned));
+      final p = leavePlan(d, board, now);
+      expect(p.kind, LeaveKind.before);
+      expect(isoBangkok(p.time!), '2026-10-03T16:00:00+07:00');
+
+      final event = DateTime.parse('2026-10-03T19:00:00+07:00');
+      final timed = leavePlan(d, board, now, deadline: event);
+      expect(
+        isoBangkok(timed.time!),
+        '2026-10-03T18:10:00+07:00',
+        reason: '19:00 - 40 min by BTS - 10 min to spare',
+      );
+    });
+  });
+}

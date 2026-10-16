@@ -22,19 +22,26 @@ Future<PlacesStore> freshStore([Map<String, Object> values = const {}]) async {
 Future<PlacesStore> demoStore() async => (await freshStore())..useDemoProfile();
 
 /// Skipped onboarding, nothing saved.
-Future<PlacesStore> emptyStore() async => (await freshStore())..completeOnboarding();
+Future<PlacesStore> emptyStore() async =>
+    (await freshStore())..completeOnboarding();
 
 http.Response jsonResponse(Object body) => http.Response.bytes(
-    utf8.encode(jsonEncode(body)), 200, headers: {'content-type': 'application/json'});
+  utf8.encode(jsonEncode(body)),
+  200,
+  headers: {'content-type': 'application/json'},
+);
 
 /// Pumps the app offline (every request falls back to fixtures). [places]
 /// defaults to มิว's demo profile; [respond] can answer a request instead.
-Future<AppState> pumpApp(WidgetTester tester, String? clock,
-    {List<String>? decideLog,
-    double height = 874,
-    PlacesStore? places,
-    Locator locator = const StagedLocator(LocateStatus.ok),
-    http.Response? Function(http.Request req)? respond}) async {
+Future<AppState> pumpApp(
+  WidgetTester tester,
+  String? clock, {
+  List<String>? decideLog,
+  double height = 874,
+  PlacesStore? places,
+  Locator locator = const StagedLocator(LocateStatus.ok),
+  http.Response? Function(http.Request req)? respond,
+}) async {
   tester.view.physicalSize = Size(402 * 3, height * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
@@ -53,7 +60,9 @@ Future<AppState> pumpApp(WidgetTester tester, String? clock,
     bundle: _DiskBundle(),
   );
   places ??= await demoStore();
-  await tester.pumpWidget(FonTokMaiApp(state: state, places: places, api: api, locator: locator));
+  await tester.pumpWidget(
+    FonTokMaiApp(state: state, places: places, api: api, locator: locator),
+  );
   await settle(tester);
   return state;
 }
@@ -61,10 +70,12 @@ Future<AppState> pumpApp(WidgetTester tester, String? clock,
 /// Serves assets straight from disk so fixture loads finish inside fake async.
 class _DiskBundle extends CachingAssetBundle {
   @override
-  Future<ByteData> load(String key) async => ByteData.sublistView(File(key).readAsBytesSync());
+  Future<ByteData> load(String key) async =>
+      ByteData.sublistView(File(key).readAsBytesSync());
 
   @override
-  Future<String> loadString(String key, {bool cache = true}) async => File(key).readAsStringSync();
+  Future<String> loadString(String key, {bool cache = true}) async =>
+      File(key).readAsStringSync();
 }
 
 Future<void> settle(WidgetTester tester) async {
@@ -76,7 +87,9 @@ Future<void> settle(WidgetTester tester) async {
 /// Scrolls the visible vertical list until [f] is built; lists build lazily.
 Future<void> reveal(WidgetTester tester, Finder f) async {
   final list = find
-      .byWidgetPredicate((w) => w is Scrollable && w.axisDirection == AxisDirection.down)
+      .byWidgetPredicate(
+        (w) => w is Scrollable && w.axisDirection == AxisDirection.down,
+      )
       .hitTestable()
       .first;
   for (final dy in [-250.0, 250.0]) {
@@ -97,6 +110,16 @@ Future<void> tapAndSettle(WidgetTester tester, Finder f) async {
 }
 
 String bubbleText(WidgetTester tester) => tester
-    .widget<Text>(find.descendant(of: find.byKey(const ValueKey('rain-band-bubble')), matching: find.byType(Text)).first)
+    .widget<Text>(
+      find
+          .descendant(
+            of: find.byKey(const ValueKey('rain-band-bubble')),
+            matching: find.byType(Text),
+          )
+          .first,
+    )
     .data!;
 
+/// Opens the summary hero's detail (the demo's dinner trip).
+Future<void> openHero(WidgetTester tester) =>
+    tapAndSettle(tester, find.byKey(const ValueKey('hero-cal-dinner')));

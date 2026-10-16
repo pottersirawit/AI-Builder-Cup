@@ -21,15 +21,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsLanguageEnglish => 'English';
 
   @override
-  String get shellTabTrip => 'Travel';
-
-  @override
-  String get shellTabReport => 'Report flood';
-
-  @override
-  String get shellTabHome => 'Home';
-
-  @override
   String get designBack => 'Back';
 
   @override
@@ -83,57 +74,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get boardHeadlineSwitchTransit => 'Take the BTS instead';
 
   @override
-  String get homeLoadErrorTitle => 'Couldn’t load your trips';
-
-  @override
-  String get homeLoadErrorBody =>
-      'Can’t reach the server and there’s no sample data on this device. Check your connection and try again.';
-
-  @override
-  String get homeSeeWhatToDo => 'See what to do now';
-
-  @override
-  String get homeDecideErrorTitle => 'No verdict yet';
-
-  @override
-  String get homeDecideErrorBody =>
-      'Can’t reach the server. Check your connection and try again.';
-
-  @override
-  String get homeSeeReasons => 'See why and the options';
-
-  @override
-  String get homeAskMore => 'Ask more';
-
-  @override
-  String get homeNoTripTitle => 'No trips yet';
-
-  @override
-  String get homeNoTripBody =>
-      'Save your home and the app will warn you before you leave work each day. Or just ask above.';
-
-  @override
-  String get homeSetHome => 'Set home';
-
-  @override
-  String get homeSetWork => 'Set work';
-
-  @override
-  String get homeNoHomeTripTitle => 'No trip home today';
-
-  @override
-  String get homeWfhBody =>
-      'You’re working from home, so the app only warns about other trips. Ask below, e.g. “Siam at 5 pm”.';
-
-  @override
-  String get homeNotWorkdayBody =>
-      'Today isn’t a workday. If you’re heading out, ask below.';
-
-  @override
-  String get homePastCommuteBody =>
-      'It’s past your usual time to head home. Tomorrow the app will check before you leave work.';
-
-  @override
   String homeGpsInaccurate(String distance) {
     return 'Location may be off by $distance';
   }
@@ -142,66 +82,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get homePinMyself => 'Pin it myself';
 
   @override
-  String get homeSetHomeHint =>
-      'Set home to get a warning before you head back';
-
-  @override
-  String get homeSetWorkHint => 'Set your workplace for more accurate warnings';
-
-  @override
-  String get homeWfhNotice =>
-      'Working from home — only other trips get warnings';
-
-  @override
-  String get homeCalendarHint =>
-      'Connect Calendar so the app can see your plans';
-
-  @override
-  String get homeConnect => 'Connect';
-
-  @override
-  String get homeNoCalendarSoon => 'No events with a location in the next 24 h';
-
-  @override
-  String get homeAskHintHero => 'Where to, and when?';
-
-  @override
-  String get homeGreetingDemo => 'Hi Miw';
-
-  @override
-  String get homeGreeting => 'Hello';
-
-  @override
   String get homeCurrentPlace => 'Current location';
 
   @override
-  String get homeCurrentPlaceAlt => 'Current location';
-
-  @override
-  String homeHereSemantics(String name) {
-    return 'Current location $name. Tap to pin your location yourself.';
-  }
-
-  @override
   String get homeSettings => 'Settings';
-
-  @override
-  String homeRouteTo(String place) {
-    return 'Route to $place';
-  }
-
-  @override
-  String homePreview(String time) {
-    return 'Preview $time';
-  }
-
-  @override
-  String homeDepart(String time) {
-    return 'Leave $time';
-  }
-
-  @override
-  String get homeArriveCaption => 'Arrive';
 
   @override
   String homeModeEta(String mode, int minutes) {
@@ -215,42 +99,6 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get homeNextTrips => 'Upcoming trips';
-
-  @override
-  String homeUnresolvedSubtitle(String location) {
-    return '“$location” · Tap to pick the place';
-  }
-
-  @override
-  String get homeUnresolvedStatus => 'Unknown place';
-
-  @override
-  String homeFutureSubtitle(String place) {
-    return '$place · We’ll tell you when to leave on the day';
-  }
-
-  @override
-  String get homeFutureStatus => 'Upcoming';
-
-  @override
-  String get homeTonightTitle => 'Home tonight';
-
-  @override
-  String get homeNoCanalStation => 'No canal gauge near home';
-
-  @override
-  String get homeOutOfArea => 'Outside the covered area · rain data only';
-
-  @override
-  String homeCanalLevel(String canal, String level, String bank) {
-    return '$canal $level of $bank m';
-  }
-
-  @override
-  String get homeQuickAsk => 'Quick ask';
-
-  @override
   String get homeQuestionHomeNow => 'Go home now';
 
   @override
@@ -259,56 +107,12 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String homeSetPlaceTooltip(String label) {
-    return 'Set $label';
-  }
-
-  @override
-  String get homeDefaultPlaceHome => 'Home';
-
-  @override
-  String get homeDefaultPlaceWork => 'Work';
-
-  @override
-  String get homeDefaultPlaceSiam => 'Siam';
-
-  @override
-  String get homeDefaultPlaceThonglor => 'Thonglor';
-
-  @override
-  String get homeDefaultPlaceImpact => 'IMPACT';
-
-  @override
   String homeUsingPinned(String name) {
     return 'Using “$name” as your current location';
   }
 
   @override
   String get homeBackToGps => 'Use GPS again';
-
-  @override
-  String get homeTripGoHome => 'Go home';
-
-  @override
-  String get homeFromHereSemantics => 'Going home, from your current location';
-
-  @override
-  String get homeFromHereTitle => 'Going home · from your current location';
-
-  @override
-  String homeLeaveAround(String time) {
-    return 'Leave around $time';
-  }
-
-  @override
-  String get homeCheckRainHome => 'Check the rain on your way home';
-
-  @override
-  String get homeLocationOnTap =>
-      'The app uses your location only when you tap, as the starting point.';
-
-  @override
-  String get homeCheckWayHome => 'Check the way home';
 
   @override
   String get askSuggestion1 => 'What if I wait until 8 pm?';
@@ -1190,6 +994,371 @@ class AppLocalizationsEn extends AppLocalizations {
   String get workDaysWeekdays => 'Mon–Fri';
 
   @override
+  String get navSummary => 'Summary';
+
+  @override
+  String get navEvents => 'Events';
+
+  @override
+  String get navAsk => 'Ask about a trip';
+
+  @override
+  String get summaryTitle => 'Summary';
+
+  @override
+  String get summaryNextEvent => 'Next event';
+
+  @override
+  String summaryIn(String duration) {
+    return 'in $duration';
+  }
+
+  @override
+  String get summaryStarted => 'Started';
+
+  @override
+  String durationHm(String h, String m) {
+    return '$h h $m min';
+  }
+
+  @override
+  String durationH(String h) {
+    return '$h h';
+  }
+
+  @override
+  String durationM(String m) {
+    return '$m min';
+  }
+
+  @override
+  String durationD(String d) {
+    return '$d days';
+  }
+
+  @override
+  String get summaryLeaveBefore => 'Leave before';
+
+  @override
+  String get summaryLeaveAt => 'Leave at';
+
+  @override
+  String get summaryLeaveNow => 'Leave now';
+
+  @override
+  String summaryOverdue(String time) {
+    return 'You should have left at $time';
+  }
+
+  @override
+  String get summaryGoNow => 'Go now';
+
+  @override
+  String get summaryAvoid => 'Avoid this trip';
+
+  @override
+  String get summaryBy => 'Go by';
+
+  @override
+  String get summaryArrive => 'Arrive about';
+
+  @override
+  String get summaryRain => 'Rain on the way';
+
+  @override
+  String get summaryRainNone => 'no rain';
+
+  @override
+  String get summaryRainLight => 'light rain';
+
+  @override
+  String get summaryRainModerate => 'moderate rain';
+
+  @override
+  String get summaryRainHeavy => 'heavy rain';
+
+  @override
+  String get summaryLater => 'Coming up';
+
+  @override
+  String get summarySeeAll => 'See all';
+
+  @override
+  String get summaryDecideError => 'Couldn\'t work out when to leave';
+
+  @override
+  String get summaryRetry => 'Try again';
+
+  @override
+  String get summarySetPlace => 'Set place';
+
+  @override
+  String get summaryUnresolved =>
+      'We don\'t know where this event is yet. Set the place to get a leave time.';
+
+  @override
+  String get summaryNoEventsTitle => 'No upcoming events';
+
+  @override
+  String get summaryNoEventsBody =>
+      'New Google Calendar events show up here. Meanwhile, you can ask about any trip.';
+
+  @override
+  String get summaryAskInstead => 'Ask about a trip';
+
+  @override
+  String get summaryConnectTitle => 'Connect your calendar';
+
+  @override
+  String get summaryConnectBody =>
+      'We\'ll look at your next event and tell you when to leave and how to go without getting soaked.';
+
+  @override
+  String get summaryConnectCta => 'Connect Google Calendar';
+
+  @override
+  String get summaryLoadErrorTitle => 'Couldn\'t load events';
+
+  @override
+  String get summaryLoadErrorBody => 'Check your connection and try again.';
+
+  @override
+  String summaryHeroSemantics(String title, String time, String leave) {
+    return 'Next event $title at $time. $leave. Tap for details.';
+  }
+
+  @override
+  String get summaryFloodTitle => 'Flooding near home';
+
+  @override
+  String get summaryFloodWhatToDo => 'What to do';
+
+  @override
+  String get eventsTitle => 'Events';
+
+  @override
+  String eventsSource(String account) {
+    return 'From Google Calendar · $account';
+  }
+
+  @override
+  String eventsToday(String date) {
+    return 'Today · $date';
+  }
+
+  @override
+  String eventsTomorrow(String date) {
+    return 'Tomorrow · $date';
+  }
+
+  @override
+  String get eventsNoTime => 'No time set';
+
+  @override
+  String eventsLeaveAt(String time, String mode) {
+    return 'Leave $time · $mode';
+  }
+
+  @override
+  String get eventsAvoid => 'Avoid this trip';
+
+  @override
+  String get eventsRefresh => 'Refresh';
+
+  @override
+  String eventsCount(String count) {
+    return '$count events';
+  }
+
+  @override
+  String get askSheetTitle => 'Where to?';
+
+  @override
+  String get askTomorrowMorning => 'Rain tomorrow morning?';
+
+  @override
+  String summaryLate(String duration) {
+    return 'Arrives $duration after it starts';
+  }
+
+  @override
+  String get wxRainNow => 'Raining now';
+
+  @override
+  String wxRainStops(String time) {
+    return 'Raining, easing around $time';
+  }
+
+  @override
+  String wxRainFrom(String time) {
+    return 'Rain from about $time';
+  }
+
+  @override
+  String get wxDryAhead => 'No rain for 12 hours';
+
+  @override
+  String get wxSunStrong => 'Strong sun';
+
+  @override
+  String get wxHot => 'Very hot';
+
+  @override
+  String get wxFeels => 'Feels like';
+
+  @override
+  String get wxUv => 'UV';
+
+  @override
+  String get wxRainChance => 'Rain chance';
+
+  @override
+  String get wxUvLow => 'low';
+
+  @override
+  String get wxUvModerate => 'moderate';
+
+  @override
+  String get wxUvHigh => 'high';
+
+  @override
+  String get wxUvVeryHigh => 'very high';
+
+  @override
+  String get wxUvExtreme => 'extreme';
+
+  @override
+  String get wxNow => 'Now';
+
+  @override
+  String get carryTitle => 'Take with you today';
+
+  @override
+  String get carryNothing => 'Nothing extra needed';
+
+  @override
+  String get carryNothingBody => 'Fine weather for the next 12 hours';
+
+  @override
+  String get carryRaincoat => 'Raincoat';
+
+  @override
+  String get carryUmbrella => 'Umbrella';
+
+  @override
+  String get carrySunUmbrella => 'Sun umbrella';
+
+  @override
+  String get carrySunscreen => 'Sunscreen';
+
+  @override
+  String get carryWater => 'Water';
+
+  @override
+  String get carryShoes => 'Waterproof shoes';
+
+  @override
+  String carryWhyRain(String pct, String from, String to) {
+    return '$pct% rain · $from–$to';
+  }
+
+  @override
+  String carryWhyHeavy(String from, String to) {
+    return 'Heavy rain, beyond an umbrella · $from–$to';
+  }
+
+  @override
+  String carryWhyMoto(String from, String to) {
+    return 'Riding through rain · $from–$to';
+  }
+
+  @override
+  String carryWhyUv(String uv, String from, String to) {
+    return 'UV $uv · $from–$to';
+  }
+
+  @override
+  String carryWhyShade(String from, String to) {
+    return 'Fierce sun, walk in shade · $from–$to';
+  }
+
+  @override
+  String carryWhyHeat(String c) {
+    return 'Feels like $c°, sip often';
+  }
+
+  @override
+  String carryWhyShoes(String from, String to) {
+    return 'Water on the roads · $from–$to';
+  }
+
+  @override
+  String get eventsAllDays => 'All days';
+
+  @override
+  String get eventsNoneOn => 'No events this day';
+
+  @override
+  String get calPrev => 'Previous month';
+
+  @override
+  String get calNext => 'Next month';
+
+  @override
+  String calMonth(String month, String year) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      '1': 'January',
+      '2': 'February',
+      '3': 'March',
+      '4': 'April',
+      '5': 'May',
+      '6': 'June',
+      '7': 'July',
+      '8': 'August',
+      '9': 'September',
+      '10': 'October',
+      '11': 'November',
+      '12': 'December',
+      'other': '',
+    });
+    return '$_temp0 $year';
+  }
+
+  @override
+  String get dayToday => 'Today';
+
+  @override
+  String get dayTomorrow => 'Tomorrow';
+
+  @override
+  String get eventsCalendar => 'Calendar';
+
+  @override
+  String planTitleToday(String count) {
+    return '$count more today';
+  }
+
+  @override
+  String get planTitleFree => 'Nothing else today';
+
+  @override
+  String get planToday => 'Later today';
+
+  @override
+  String get planTomorrow => 'Tomorrow';
+
+  @override
+  String get planBring => 'Bring';
+
+  @override
+  String get planWeatherNow => 'Weather now';
+
+  @override
+  String planRainAt(String pct) {
+    return '$pct% rain';
+  }
+
+  @override
   String get verdictCantDecide => 'Can\'t decide yet';
 
   @override
@@ -1276,220 +1445,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get floodSetHomeTitle =>
-      'Set your home to see flood risk at your door';
-
-  @override
-  String get floodSetHomeMsg =>
-      'We watch nearby canal levels, known flood spots and neighbours\' reports, and warn you even when the app is closed.';
-
-  @override
-  String get floodUseLocation => 'Use my location';
-
-  @override
-  String get floodSearch => 'Search';
-
-  @override
-  String get floodReadError => 'Can\'t read water levels';
-
-  @override
-  String get floodReadErrorMsg =>
-      'Couldn\'t reach ThaiWater through the server. If water is rising fast, move your things up high first.';
-
-  @override
-  String get floodRetry => 'Try again';
-
-  @override
-  String get floodModeTitle => 'Flood mode';
-
-  @override
-  String get floodHome => 'Home';
-
-  @override
-  String get floodSameQuestion => 'Same question, higher stakes';
-
-  @override
-  String get floodNoHome => 'No home set yet';
-
-  @override
   String get floodDoNow => 'Do this now, in order';
-
-  @override
-  String get floodPrepare => 'Get ready';
-
-  @override
-  String get floodSpotsTitle => 'Flood-prone spots near home';
-
-  @override
-  String get floodNoSpots => 'No flood spots within 2 km';
-
-  @override
-  String get floodNoSpotsMsg =>
-      'Home isn\'t near any chronic flood spot the city has listed.';
-
-  @override
-  String floodFromHome(int meters) {
-    return '$meters m from home';
-  }
-
-  @override
-  String get floodNeighborsTitle => 'Neighbours on your street';
-
-  @override
-  String get floodNeighborsDanger => '11 people got the same alert';
-
-  @override
-  String get floodNeighborsWatch =>
-      '3 people reported standing water in 20 minutes';
-
-  @override
-  String get floodNeighborsNote =>
-      'People without smartphones get a LINE / SMS message, or a call that reads it aloud.';
-
-  @override
-  String floodStepSemantics(int order, String text) {
-    return 'Step $order: $text';
-  }
-
-  @override
-  String get floodNearbyTitle => 'Flood reports near me';
-
-  @override
-  String get floodNearbyButton => 'See flood reports near me';
-
-  @override
-  String get floodHereNow => 'Your location';
-
-  @override
-  String floodAround(String where) {
-    return 'Around $where';
-  }
-
-  @override
-  String get floodNoReports => 'No reports within 500 m';
-
-  @override
-  String get floodNoReportsMsg =>
-      'Nobody has reported standing water here in the last 24 hours.';
-
-  @override
-  String floodWaterDepth(int min, int max) {
-    return 'Water $min–$max cm';
-  }
-
-  @override
-  String floodCarPassable(String status) {
-    return 'Car: $status';
-  }
-
-  @override
-  String get floodOtherSpot => 'Check another spot';
-
-  @override
-  String get reportCameraError =>
-      'Couldn\'t open the camera. Try picking from your gallery instead.';
-
-  @override
-  String get reportGalleryError =>
-      'Couldn\'t open your gallery. Check photo permission in your device settings.';
-
-  @override
-  String get reportTitle => 'Report flooding';
-
-  @override
-  String get reportSubtitle =>
-      'Snap the water on the road and warn people heading there';
-
-  @override
-  String get reportTakePhoto => 'Take photo';
-
-  @override
-  String get reportFromGallery => 'From gallery';
-
-  @override
-  String get reportFailed => 'Couldn\'t send the report';
-
-  @override
-  String get reportFailedMsg =>
-      'Couldn\'t reach the server. Your photo is still on your phone, so you can send it again.';
-
-  @override
-  String get reportResend => 'Send again';
-
-  @override
-  String get reportAnalyzing =>
-      'Gemini is looking at the photo and judging the water against wheels and the curb…';
-
-  @override
-  String get reportAnalyzeHint =>
-      'Gemini estimates the water depth from your photo, then warns people whose route passes within 300 m.';
-
-  @override
-  String get reportSeeHome => 'See conditions at home';
-
-  @override
-  String get reportLocating => 'Finding your location…';
-
-  @override
-  String get reportUsingGps => 'Using your phone\'s GPS';
-
-  @override
-  String reportGpsDetail(String lat, String lng, String time) {
-    return 'GPS · $lat, $lng · $time';
-  }
-
-  @override
-  String reportFallbackDetail(String note) {
-    return '$note · using the demo\'s backup location';
-  }
-
-  @override
-  String get reportRetryGps => 'Retry GPS';
-
-  @override
-  String reportDepthSemantics(int min, int max) {
-    return 'Water about $min to $max centimetres deep';
-  }
-
-  @override
-  String get reportSeenByGemini => 'Gemini has looked at it';
-
-  @override
-  String reportDepth(int min, int max) {
-    return 'Water $min–$max cm deep';
-  }
-
-  @override
-  String reportNotified(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Alerted $count people heading through here',
-      one: 'Alerted 1 person heading through here',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String reportCorroborated(int count) {
-    String _temp0 = intl.Intl.pluralLogic(
-      count,
-      locale: localeName,
-      other: 'Backed up by $count other reports within 300 m',
-      one: 'Backed up by 1 other report within 300 m',
-    );
-    return '$_temp0';
-  }
-
-  @override
-  String get reportDemoNumbers =>
-      'The number of people alerted is a simulated figure for the demo';
-
-  @override
-  String get reportFrameHint => 'Include a wheel or the curb in the shot';
-
-  @override
-  String get reportNoPhoto => 'No photo · sample result';
 
   @override
   String get settingsTitle => 'Settings';
@@ -1674,11 +1630,4 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verdictToolEvaluate => 'Weighed the risk';
-
-  @override
-  String get reportSampleResult =>
-      'Sample result. The photo was not analysed by AI';
-
-  @override
-  String get reportRejectedTitle => 'We couldn\'t use this photo';
 }

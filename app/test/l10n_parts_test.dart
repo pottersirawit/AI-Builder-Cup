@@ -15,6 +15,7 @@ void main() {
     final state = await pumpApp(tester, '2026-09-29T16:10:00+07:00');
     state.locale = const Locale('en');
     await settle(tester);
+    await openHero(tester);
 
     expect(find.text('Analyzed by AI'), findsOneWidget);
     expect(find.text('AI วิเคราะห์ให้'), findsNothing);
@@ -42,9 +43,7 @@ void main() {
       );
       state.locale = const Locale('en');
       await settle(tester);
-
-      await tester.tap(find.byTooltip('Dismiss notification'));
-      await tester.pump();
+      await openHero(tester);
 
       final band = find.byKey(const ValueKey('rain-band'));
       await reveal(tester, band);
@@ -71,6 +70,8 @@ void main() {
     final state = await pumpApp(tester, '2026-09-29T21:40:00+07:00');
     state.locale = const Locale('en');
     await settle(tester);
+    expect(find.text('Flooding near home'), findsOneWidget);
+    await tapAndSettle(tester, find.text('What to do'));
 
     expect(find.text('Danger'), findsWidgets);
     expect(find.text('Canal level'), findsOneWidget);

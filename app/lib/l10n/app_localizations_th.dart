@@ -21,15 +21,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get settingsLanguageEnglish => 'English';
 
   @override
-  String get shellTabTrip => 'เดินทาง';
-
-  @override
-  String get shellTabReport => 'แจ้งน้ำท่วม';
-
-  @override
-  String get shellTabHome => 'บ้าน';
-
-  @override
   String get designBack => 'กลับ';
 
   @override
@@ -80,57 +71,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get boardHeadlineSwitchTransit => 'เปลี่ยนเป็น BTS ดีกว่า';
 
   @override
-  String get homeLoadErrorTitle => 'โหลดทริปไม่ได้';
-
-  @override
-  String get homeLoadErrorBody =>
-      'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้และไม่มีข้อมูลตัวอย่างในเครื่อง ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง';
-
-  @override
-  String get homeSeeWhatToDo => 'ดูสิ่งที่ต้องทำตอนนี้';
-
-  @override
-  String get homeDecideErrorTitle => 'ยังตัดสินไม่ได้';
-
-  @override
-  String get homeDecideErrorBody =>
-      'ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง';
-
-  @override
-  String get homeSeeReasons => 'ดูเหตุผลและทางเลือก';
-
-  @override
-  String get homeAskMore => 'ถามต่อ';
-
-  @override
-  String get homeNoTripTitle => 'ยังไม่มีทริป';
-
-  @override
-  String get homeNoTripBody =>
-      'ตั้งบ้านไว้ แอปจะเตือนก่อนเวลาเลิกงานทุกวัน หรือพิมพ์ถามด้านบนได้เลย';
-
-  @override
-  String get homeSetHome => 'ตั้งบ้าน';
-
-  @override
-  String get homeSetWork => 'ตั้งที่ทำงาน';
-
-  @override
-  String get homeNoHomeTripTitle => 'วันนี้ไม่มีทริปกลับบ้าน';
-
-  @override
-  String get homeWfhBody =>
-      'ทำงานที่บ้าน แอปจะเตือนเฉพาะทริปอื่น พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม”';
-
-  @override
-  String get homeNotWorkdayBody =>
-      'วันนี้ไม่ใช่วันทำงาน ถ้าจะออกไปไหน พิมพ์ถามด้านล่างได้เลย';
-
-  @override
-  String get homePastCommuteBody =>
-      'เลยเวลากลับบ้านปกติมาแล้ว พรุ่งนี้แอปจะเช็กให้ก่อนเลิกงาน';
-
-  @override
   String homeGpsInaccurate(String distance) {
     return 'ตำแหน่งอาจคลาดเคลื่อน $distance';
   }
@@ -139,104 +79,15 @@ class AppLocalizationsTh extends AppLocalizations {
   String get homePinMyself => 'ปักหมุดเอง';
 
   @override
-  String get homeSetHomeHint => 'ตั้งบ้านเพื่อให้เตือนตอนกลับ';
-
-  @override
-  String get homeSetWorkHint => 'ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น';
-
-  @override
-  String get homeWfhNotice => 'ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น';
-
-  @override
-  String get homeCalendarHint => 'เชื่อม Calendar เพื่อให้แอปเห็นนัด';
-
-  @override
-  String get homeConnect => 'เชื่อมต่อ';
-
-  @override
-  String get homeNoCalendarSoon => 'ไม่มีนัดที่มีสถานที่ใน 24 ชม.';
-
-  @override
-  String get homeAskHintHero => 'ไปไหน กี่โมง?';
-
-  @override
-  String get homeGreetingDemo => 'สวัสดีมิว';
-
-  @override
-  String get homeGreeting => 'สวัสดี';
-
-  @override
   String get homeCurrentPlace => 'ตำแหน่งตอนนี้';
-
-  @override
-  String get homeCurrentPlaceAlt => 'ตำแหน่งปัจจุบัน';
-
-  @override
-  String homeHereSemantics(String name) {
-    return 'ตำแหน่งตอนนี้ $name แตะเพื่อปักหมุดตำแหน่งเอง';
-  }
 
   @override
   String get homeSettings => 'ตั้งค่า';
 
   @override
-  String homeRouteTo(String place) {
-    return 'ทางกลับ$place';
-  }
-
-  @override
-  String homePreview(String time) {
-    return 'พรีวิว $time';
-  }
-
-  @override
-  String homeDepart(String time) {
-    return 'ออก $time';
-  }
-
-  @override
-  String get homeArriveCaption => 'ถึง';
-
-  @override
   String homeModeEta(String mode, int minutes) {
     return '$mode · $minutes นาที';
   }
-
-  @override
-  String get homeNextTrips => 'ทริปถัดไป';
-
-  @override
-  String homeUnresolvedSubtitle(String location) {
-    return '“$location” · แตะเพื่อเลือกสถานที่';
-  }
-
-  @override
-  String get homeUnresolvedStatus => 'ไม่รู้ว่าที่ไหน';
-
-  @override
-  String homeFutureSubtitle(String place) {
-    return '$place · จะเตือนวันเดินทางว่าออกกี่โมงดี';
-  }
-
-  @override
-  String get homeFutureStatus => 'รอวัน';
-
-  @override
-  String get homeTonightTitle => 'ที่บ้านคืนนี้';
-
-  @override
-  String get homeNoCanalStation => 'ไม่มีสถานีวัดระดับคลองใกล้บ้าน';
-
-  @override
-  String get homeOutOfArea => 'นอกพื้นที่ที่รองรับ · มีเฉพาะข้อมูลฝน';
-
-  @override
-  String homeCanalLevel(String canal, String level, String bank) {
-    return '$canal $level จาก $bank ม.';
-  }
-
-  @override
-  String get homeQuickAsk => 'ถามเร็ว';
 
   @override
   String get homeQuestionHomeNow => 'กลับบ้านตอนนี้';
@@ -247,56 +98,12 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String homeSetPlaceTooltip(String label) {
-    return 'ตั้ง$label';
-  }
-
-  @override
-  String get homeDefaultPlaceHome => 'บ้าน';
-
-  @override
-  String get homeDefaultPlaceWork => 'ที่ทำงาน';
-
-  @override
-  String get homeDefaultPlaceSiam => 'สยาม';
-
-  @override
-  String get homeDefaultPlaceThonglor => 'ทองหล่อ';
-
-  @override
-  String get homeDefaultPlaceImpact => 'อิมแพ็ค';
-
-  @override
   String homeUsingPinned(String name) {
     return 'ใช้ “$name” เป็นตำแหน่งตอนนี้แล้ว';
   }
 
   @override
   String get homeBackToGps => 'กลับไปใช้ GPS';
-
-  @override
-  String get homeTripGoHome => 'กลับบ้าน';
-
-  @override
-  String get homeFromHereSemantics => 'กลับบ้าน จากตำแหน่งตอนนี้';
-
-  @override
-  String get homeFromHereTitle => 'กลับบ้าน · จากตำแหน่งตอนนี้';
-
-  @override
-  String homeLeaveAround(String time) {
-    return 'ออกราว $time';
-  }
-
-  @override
-  String get homeCheckRainHome => 'เช็กฝนบนทางกลับบ้าน';
-
-  @override
-  String get homeLocationOnTap =>
-      'แอปใช้ตำแหน่งตอนกดเท่านั้น เพื่อเป็นจุดเริ่มต้นของทาง';
-
-  @override
-  String get homeCheckWayHome => 'เช็กทางกลับบ้าน';
 
   @override
   String get askSuggestion1 => 'ถ้ารอถึงสองทุ่มค่อยกลับล่ะ';
@@ -1168,6 +975,371 @@ class AppLocalizationsTh extends AppLocalizations {
   String get workDaysWeekdays => 'จ–ศ';
 
   @override
+  String get navSummary => 'สรุป';
+
+  @override
+  String get navEvents => 'อีเวนต์';
+
+  @override
+  String get navAsk => 'ถามเส้นทาง';
+
+  @override
+  String get summaryTitle => 'สรุป';
+
+  @override
+  String get summaryNextEvent => 'อีเวนต์ถัดไป';
+
+  @override
+  String summaryIn(String duration) {
+    return 'อีก $duration';
+  }
+
+  @override
+  String get summaryStarted => 'เริ่มแล้ว';
+
+  @override
+  String durationHm(String h, String m) {
+    return '$h ชม. $m นาที';
+  }
+
+  @override
+  String durationH(String h) {
+    return '$h ชม.';
+  }
+
+  @override
+  String durationM(String m) {
+    return '$m นาที';
+  }
+
+  @override
+  String durationD(String d) {
+    return '$d วัน';
+  }
+
+  @override
+  String get summaryLeaveBefore => 'ควรออกก่อน';
+
+  @override
+  String get summaryLeaveAt => 'ออกได้ตอน';
+
+  @override
+  String get summaryLeaveNow => 'ออกได้เลย';
+
+  @override
+  String summaryOverdue(String time) {
+    return 'ควรออกตั้งแต่ $time';
+  }
+
+  @override
+  String get summaryGoNow => 'ออกเลย';
+
+  @override
+  String get summaryAvoid => 'เลี่ยงการเดินทาง';
+
+  @override
+  String get summaryBy => 'ไปด้วย';
+
+  @override
+  String get summaryArrive => 'ถึงราว';
+
+  @override
+  String get summaryRain => 'ฝนระหว่างทาง';
+
+  @override
+  String get summaryRainNone => 'ไม่มีฝน';
+
+  @override
+  String get summaryRainLight => 'ฝนเบา';
+
+  @override
+  String get summaryRainModerate => 'ฝนปานกลาง';
+
+  @override
+  String get summaryRainHeavy => 'ฝนหนัก';
+
+  @override
+  String get summaryLater => 'ต่อจากนี้';
+
+  @override
+  String get summarySeeAll => 'ดูทั้งหมด';
+
+  @override
+  String get summaryDecideError => 'ยังคำนวณเวลาออกไม่ได้';
+
+  @override
+  String get summaryRetry => 'ลองใหม่';
+
+  @override
+  String get summarySetPlace => 'ระบุสถานที่';
+
+  @override
+  String get summaryUnresolved =>
+      'ยังไม่รู้ว่าอีเวนต์นี้อยู่ที่ไหน ระบุสถานที่แล้วจะบอกเวลาออกให้';
+
+  @override
+  String get summaryNoEventsTitle => 'ไม่มีอีเวนต์ที่กำลังจะถึง';
+
+  @override
+  String get summaryNoEventsBody =>
+      'อีเวนต์ใหม่ใน Google Calendar จะขึ้นที่นี่เอง ระหว่างนี้ถามเส้นทางเองได้';
+
+  @override
+  String get summaryAskInstead => 'ถามเส้นทางเอง';
+
+  @override
+  String get summaryConnectTitle => 'เชื่อมปฏิทินก่อน';
+
+  @override
+  String get summaryConnectBody =>
+      'ฝนตกไหมจะดูนัดถัดไปของคุณ แล้วบอกว่าควรออกกี่โมง ไปทางไหนไม่เปียก';
+
+  @override
+  String get summaryConnectCta => 'เชื่อม Google Calendar';
+
+  @override
+  String get summaryLoadErrorTitle => 'โหลดอีเวนต์ไม่ได้';
+
+  @override
+  String get summaryLoadErrorBody => 'เช็กอินเทอร์เน็ตแล้วลองใหม่';
+
+  @override
+  String summaryHeroSemantics(String title, String time, String leave) {
+    return 'อีเวนต์ถัดไป $title เวลา $time. $leave. แตะเพื่อดูรายละเอียด';
+  }
+
+  @override
+  String get summaryFloodTitle => 'น้ำท่วมใกล้บ้าน';
+
+  @override
+  String get summaryFloodWhatToDo => 'ดูสิ่งที่ต้องทำ';
+
+  @override
+  String get eventsTitle => 'อีเวนต์';
+
+  @override
+  String eventsSource(String account) {
+    return 'จาก Google Calendar · $account';
+  }
+
+  @override
+  String eventsToday(String date) {
+    return 'วันนี้ · $date';
+  }
+
+  @override
+  String eventsTomorrow(String date) {
+    return 'พรุ่งนี้ · $date';
+  }
+
+  @override
+  String get eventsNoTime => 'ไม่ระบุเวลา';
+
+  @override
+  String eventsLeaveAt(String time, String mode) {
+    return 'ออก $time · $mode';
+  }
+
+  @override
+  String get eventsAvoid => 'เลี่ยงการเดินทาง';
+
+  @override
+  String get eventsRefresh => 'รีเฟรช';
+
+  @override
+  String eventsCount(String count) {
+    return '$count อีเวนต์';
+  }
+
+  @override
+  String get askSheetTitle => 'อยากไปไหน';
+
+  @override
+  String get askTomorrowMorning => 'พรุ่งนี้เช้าฝนตกไหม';
+
+  @override
+  String summaryLate(String duration) {
+    return 'ถึงหลังเวลานัด $duration';
+  }
+
+  @override
+  String get wxRainNow => 'ฝนกำลังตก';
+
+  @override
+  String wxRainStops(String time) {
+    return 'ฝนกำลังตก ซาราว $time';
+  }
+
+  @override
+  String wxRainFrom(String time) {
+    return 'ฝนมาราว $time';
+  }
+
+  @override
+  String get wxDryAhead => 'ไม่มีฝนอีก 12 ชม.';
+
+  @override
+  String get wxSunStrong => 'แดดแรง';
+
+  @override
+  String get wxHot => 'ร้อนจัด';
+
+  @override
+  String get wxFeels => 'รู้สึกเหมือน';
+
+  @override
+  String get wxUv => 'UV';
+
+  @override
+  String get wxRainChance => 'โอกาสฝน';
+
+  @override
+  String get wxUvLow => 'ต่ำ';
+
+  @override
+  String get wxUvModerate => 'ปานกลาง';
+
+  @override
+  String get wxUvHigh => 'สูง';
+
+  @override
+  String get wxUvVeryHigh => 'สูงมาก';
+
+  @override
+  String get wxUvExtreme => 'อันตราย';
+
+  @override
+  String get wxNow => 'ตอนนี้';
+
+  @override
+  String get carryTitle => 'วันนี้ควรพก';
+
+  @override
+  String get carryNothing => 'ไม่ต้องพกอะไรเพิ่ม';
+
+  @override
+  String get carryNothingBody => 'อากาศดีตลอด 12 ชม.ข้างหน้า';
+
+  @override
+  String get carryRaincoat => 'เสื้อกันฝน';
+
+  @override
+  String get carryUmbrella => 'ร่ม';
+
+  @override
+  String get carrySunUmbrella => 'ร่มกันแดด';
+
+  @override
+  String get carrySunscreen => 'ครีมกันแดด';
+
+  @override
+  String get carryWater => 'น้ำดื่ม';
+
+  @override
+  String get carryShoes => 'รองเท้าลุยน้ำ';
+
+  @override
+  String carryWhyRain(String pct, String from, String to) {
+    return 'ฝน $pct% · $from–$to';
+  }
+
+  @override
+  String carryWhyHeavy(String from, String to) {
+    return 'ฝนหนัก ร่มเอาไม่อยู่ · $from–$to';
+  }
+
+  @override
+  String carryWhyMoto(String from, String to) {
+    return 'ขี่มอเตอร์ไซค์ฝ่าฝน · $from–$to';
+  }
+
+  @override
+  String carryWhyUv(String uv, String from, String to) {
+    return 'UV $uv · $from–$to';
+  }
+
+  @override
+  String carryWhyShade(String from, String to) {
+    return 'แดดแรงมาก กางร่มเดิน · $from–$to';
+  }
+
+  @override
+  String carryWhyHeat(String c) {
+    return 'รู้สึกเหมือน $c° ดื่มบ่อย ๆ';
+  }
+
+  @override
+  String carryWhyShoes(String from, String to) {
+    return 'น้ำขังบนถนน · $from–$to';
+  }
+
+  @override
+  String get eventsAllDays => 'ทุกวัน';
+
+  @override
+  String get eventsNoneOn => 'ไม่มีอีเวนต์วันนี้';
+
+  @override
+  String get calPrev => 'เดือนก่อน';
+
+  @override
+  String get calNext => 'เดือนถัดไป';
+
+  @override
+  String calMonth(String month, String year) {
+    String _temp0 = intl.Intl.selectLogic(month, {
+      '1': 'มกราคม',
+      '2': 'กุมภาพันธ์',
+      '3': 'มีนาคม',
+      '4': 'เมษายน',
+      '5': 'พฤษภาคม',
+      '6': 'มิถุนายน',
+      '7': 'กรกฎาคม',
+      '8': 'สิงหาคม',
+      '9': 'กันยายน',
+      '10': 'ตุลาคม',
+      '11': 'พฤศจิกายน',
+      '12': 'ธันวาคม',
+      'other': '',
+    });
+    return '$_temp0 $year';
+  }
+
+  @override
+  String get dayToday => 'วันนี้';
+
+  @override
+  String get dayTomorrow => 'พรุ่งนี้';
+
+  @override
+  String get eventsCalendar => 'ดูปฏิทิน';
+
+  @override
+  String planTitleToday(String count) {
+    return 'วันนี้อีก $count นัด';
+  }
+
+  @override
+  String get planTitleFree => 'วันนี้ไม่มีนัดแล้ว';
+
+  @override
+  String get planToday => 'แผนต่อจากนี้';
+
+  @override
+  String get planTomorrow => 'พรุ่งนี้';
+
+  @override
+  String get planBring => 'พกไปด้วย';
+
+  @override
+  String get planWeatherNow => 'อากาศตอนนี้';
+
+  @override
+  String planRainAt(String pct) {
+    return 'ฝน $pct%';
+  }
+
+  @override
   String get verdictCantDecide => 'ยังตัดสินไม่ได้';
 
   @override
@@ -1254,203 +1426,7 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String get floodSetHomeTitle => 'ตั้งบ้านเพื่อดูความเสี่ยงน้ำท่วมหน้า⁠บ้าน';
-
-  @override
-  String get floodSetHomeMsg =>
-      'แอปจะดูระดับคลองใกล้บ้าน จุดน้ำท่วมของ กทม. และรายงานจากเพื่อนบ้าน แล้วเตือนแม้ไม่ได้เปิดแอป';
-
-  @override
-  String get floodUseLocation => 'ใช้ตำแหน่งตอนนี้';
-
-  @override
-  String get floodSearch => 'ค้นหา';
-
-  @override
-  String get floodReadError => 'อ่านระดับน้ำไม่ได้';
-
-  @override
-  String get floodReadErrorMsg =>
-      'เชื่อมต่อ ThaiWater ผ่านเซิร์ฟเวอร์ไม่ได้ ถ้าน้ำขึ้นเร็วให้ยกของขึ้นที่สูงไว้ก่อน';
-
-  @override
-  String get floodRetry => 'ลองอีกครั้ง';
-
-  @override
-  String get floodModeTitle => 'โหมดน้ำท่วม';
-
-  @override
-  String get floodHome => 'บ้าน';
-
-  @override
-  String get floodSameQuestion => 'คำถามเดิม ระดับใหม่';
-
-  @override
-  String get floodNoHome => 'ยังไม่ได้ตั้งบ้าน';
-
-  @override
   String get floodDoNow => 'ทำตอนนี้ เรียงตามลำดับ';
-
-  @override
-  String get floodPrepare => 'เตรียมไว้ก่อน';
-
-  @override
-  String get floodSpotsTitle => 'จุดเสี่ยงน้ำท่วม กทม. ใกล้บ้าน';
-
-  @override
-  String get floodNoSpots => 'ไม่มีจุดเสี่ยงใน 2 กม.';
-
-  @override
-  String get floodNoSpotsMsg =>
-      'บ้านไม่อยู่ใกล้จุดน้ำท่วมซ้ำซากที่ กทม. ประกาศไว้';
-
-  @override
-  String floodFromHome(int meters) {
-    return 'ห่างบ้าน $meters ม.';
-  }
-
-  @override
-  String get floodNeighborsTitle => 'เพื่อนบ้านในซอย';
-
-  @override
-  String get floodNeighborsDanger => '11 คนได้รับเตือนเดียวกัน';
-
-  @override
-  String get floodNeighborsWatch => '3 คนรายงานน้ำขังใน 20 นาที';
-
-  @override
-  String get floodNeighborsNote =>
-      'คนที่ไม่มีสมาร์ทโฟนได้รับข้อความทาง LINE / SMS หรือโทรอ่านให้ฟัง';
-
-  @override
-  String floodStepSemantics(int order, String text) {
-    return 'ขั้นที่ $order $text';
-  }
-
-  @override
-  String get floodNearbyTitle => 'รายงานน้ำท่วมใกล้ฉัน';
-
-  @override
-  String get floodNearbyButton => 'ดูรายงานน้ำท่วมใกล้ฉัน';
-
-  @override
-  String get floodHereNow => 'ตำแหน่งตอนนี้';
-
-  @override
-  String floodAround(String where) {
-    return 'รอบ $where';
-  }
-
-  @override
-  String get floodNoReports => 'ไม่มีรายงานใน 500 ม.';
-
-  @override
-  String get floodNoReportsMsg => 'ยังไม่มีใครรายงานน้ำขังแถวนี้ใน 24 ชั่วโมง';
-
-  @override
-  String floodWaterDepth(int min, int max) {
-    return 'น้ำ $min–$max ซม.';
-  }
-
-  @override
-  String floodCarPassable(String status) {
-    return 'รถยนต์ $status';
-  }
-
-  @override
-  String get floodOtherSpot => 'ดูจุดอื่น';
-
-  @override
-  String get reportCameraError => 'เปิดกล้องไม่ได้ ลองเลือกจากคลังภาพแทน';
-
-  @override
-  String get reportGalleryError =>
-      'เปิดคลังภาพไม่ได้ ตรวจสิทธิ์รูปภาพในตั้งค่าเครื่อง';
-
-  @override
-  String get reportTitle => 'แจ้งน้ำท่วม';
-
-  @override
-  String get reportSubtitle => 'ถ่ายรูปน้ำบนถนน บอกคนที่กำลังจะผ่าน';
-
-  @override
-  String get reportTakePhoto => 'ถ่ายรูป';
-
-  @override
-  String get reportFromGallery => 'จากคลังภาพ';
-
-  @override
-  String get reportFailed => 'ส่งรายงานไม่สำเร็จ';
-
-  @override
-  String get reportFailedMsg =>
-      'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ รูปยังอยู่ในเครื่อง ส่งใหม่ได้เลย';
-
-  @override
-  String get reportResend => 'ส่งอีกครั้ง';
-
-  @override
-  String get reportAnalyzing =>
-      'Gemini กำลังดูภาพ ประเมินระดับน้ำเทียบกับล้อรถและขอบทาง…';
-
-  @override
-  String get reportAnalyzeHint =>
-      'Gemini จะประเมินระดับน้ำจากภาพ แล้วเตือนคนที่เส้นทางผ่านจุดนี้ในรัศมี 300 ม.';
-
-  @override
-  String get reportSeeHome => 'ดูสถานการณ์ที่บ้าน';
-
-  @override
-  String get reportLocating => 'กำลังหาตำแหน่ง…';
-
-  @override
-  String get reportUsingGps => 'ใช้ GPS ของเครื่อง';
-
-  @override
-  String reportGpsDetail(String lat, String lng, String time) {
-    return 'GPS · $lat, $lng · $time';
-  }
-
-  @override
-  String reportFallbackDetail(String note) {
-    return '$note · ใช้ตำแหน่งสำรองของเดโม';
-  }
-
-  @override
-  String get reportRetryGps => 'ลองหา GPS';
-
-  @override
-  String reportDepthSemantics(int min, int max) {
-    return 'น้ำสูงประมาณ $min ถึง $max เซนติเมตร';
-  }
-
-  @override
-  String get reportSeenByGemini => 'Gemini ดูภาพแล้ว';
-
-  @override
-  String reportDepth(int min, int max) {
-    return 'น้ำสูง $min–$max ซม.';
-  }
-
-  @override
-  String reportNotified(int count) {
-    return 'แจ้งคน $count คนที่กำลังจะผ่านจุดนี้';
-  }
-
-  @override
-  String reportCorroborated(int count) {
-    return 'ยืนยันกับอีก $count รายงานในรัศมี 300 ม.';
-  }
-
-  @override
-  String get reportDemoNumbers =>
-      'จำนวนคนที่แจ้งเตือนเป็นตัวเลขจำลองสำหรับเดโม';
-
-  @override
-  String get reportFrameHint => 'ถ่ายให้เห็นล้อรถหรือขอบทาง';
-
-  @override
-  String get reportNoPhoto => 'ไม่มีภาพ · ผลตัวอย่าง';
 
   @override
   String get settingsTitle => 'ตั้งค่า';
@@ -1630,11 +1606,4 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get verdictToolEvaluate => 'ประเมินความเสี่ยง';
-
-  @override
-  String get reportSampleResult =>
-      'ผลประเมินตัวอย่าง ยังไม่ได้วิเคราะห์ภาพด้วย AI';
-
-  @override
-  String get reportRejectedTitle => 'ใช้ภาพนี้ไม่ได้';
 }

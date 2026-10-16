@@ -4,9 +4,6 @@
   "settingsLanguage": "ภาษา",
   "settingsLanguageThai": "ไทย",
   "settingsLanguageEnglish": "English",
-  "shellTabTrip": "เดินทาง",
-  "shellTabReport": "แจ้งน้ำท่วม",
-  "shellTabHome": "บ้าน",
   "designBack": "กลับ",
   "designAskTooltip": "ถาม",
   "designAskHint": "ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม",
@@ -30,21 +27,6 @@
   },
   "boardHeadlineWait": "อย่าเพิ่งออก",
   "boardHeadlineSwitchTransit": "เปลี่ยนเป็น BTS ดีกว่า",
-  "homeLoadErrorTitle": "โหลดทริปไม่ได้",
-  "homeLoadErrorBody": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้และไม่มีข้อมูลตัวอย่างในเครื่อง ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
-  "homeSeeWhatToDo": "ดูสิ่งที่ต้องทำตอนนี้",
-  "homeDecideErrorTitle": "ยังตัดสินไม่ได้",
-  "homeDecideErrorBody": "ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
-  "homeSeeReasons": "ดูเหตุผลและทางเลือก",
-  "homeAskMore": "ถามต่อ",
-  "homeNoTripTitle": "ยังไม่มีทริป",
-  "homeNoTripBody": "ตั้งบ้านไว้ แอปจะเตือนก่อนเวลาเลิกงานทุกวัน หรือพิมพ์ถามด้านบนได้เลย",
-  "homeSetHome": "ตั้งบ้าน",
-  "homeSetWork": "ตั้งที่ทำงาน",
-  "homeNoHomeTripTitle": "วันนี้ไม่มีทริปกลับบ้าน",
-  "homeWfhBody": "ทำงานที่บ้าน แอปจะเตือนเฉพาะทริปอื่น พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม”",
-  "homeNotWorkdayBody": "วันนี้ไม่ใช่วันทำงาน ถ้าจะออกไปไหน พิมพ์ถามด้านล่างได้เลย",
-  "homePastCommuteBody": "เลยเวลากลับบ้านปกติมาแล้ว พรุ่งนี้แอปจะเช็กให้ก่อนเลิกงาน",
   "homeGpsInaccurate": "ตำแหน่งอาจคลาดเคลื่อน {distance}",
   "@homeGpsInaccurate": {
     "placeholders": {
@@ -54,51 +36,8 @@
     }
   },
   "homePinMyself": "ปักหมุดเอง",
-  "homeSetHomeHint": "ตั้งบ้านเพื่อให้เตือนตอนกลับ",
-  "homeSetWorkHint": "ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น",
-  "homeWfhNotice": "ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น",
-  "homeCalendarHint": "เชื่อม Calendar เพื่อให้แอปเห็นนัด",
-  "homeConnect": "เชื่อมต่อ",
-  "homeNoCalendarSoon": "ไม่มีนัดที่มีสถานที่ใน 24 ชม.",
-  "homeAskHintHero": "ไปไหน กี่โมง?",
-  "homeGreetingDemo": "สวัสดีมิว",
-  "homeGreeting": "สวัสดี",
   "homeCurrentPlace": "ตำแหน่งตอนนี้",
-  "homeCurrentPlaceAlt": "ตำแหน่งปัจจุบัน",
-  "homeHereSemantics": "ตำแหน่งตอนนี้ {name} แตะเพื่อปักหมุดตำแหน่งเอง",
-  "@homeHereSemantics": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "homeSettings": "ตั้งค่า",
-  "homeRouteTo": "ทางกลับ{place}",
-  "@homeRouteTo": {
-    "placeholders": {
-      "place": {
-        "type": "String"
-      }
-    }
-  },
-  "homePreview": "พรีวิว {time}",
-  "@homePreview": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeDepart": "ออก {time}",
-  "@homeDepart": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeArriveCaption": "ถึง",
   "homeModeEta": "{mode} · {minutes} นาที",
   "@homeModeEta": {
     "placeholders": {
@@ -110,43 +49,6 @@
       }
     }
   },
-  "homeNextTrips": "ทริปถัดไป",
-  "homeUnresolvedSubtitle": "“{location}” · แตะเพื่อเลือกสถานที่",
-  "@homeUnresolvedSubtitle": {
-    "placeholders": {
-      "location": {
-        "type": "String"
-      }
-    }
-  },
-  "homeUnresolvedStatus": "ไม่รู้ว่าที่ไหน",
-  "homeFutureSubtitle": "{place} · จะเตือนวันเดินทางว่าออกกี่โมงดี",
-  "@homeFutureSubtitle": {
-    "placeholders": {
-      "place": {
-        "type": "String"
-      }
-    }
-  },
-  "homeFutureStatus": "รอวัน",
-  "homeTonightTitle": "ที่บ้านคืนนี้",
-  "homeNoCanalStation": "ไม่มีสถานีวัดระดับคลองใกล้บ้าน",
-  "homeOutOfArea": "นอกพื้นที่ที่รองรับ · มีเฉพาะข้อมูลฝน",
-  "homeCanalLevel": "{canal} {level} จาก {bank} ม.",
-  "@homeCanalLevel": {
-    "placeholders": {
-      "canal": {
-        "type": "String"
-      },
-      "level": {
-        "type": "String"
-      },
-      "bank": {
-        "type": "String"
-      }
-    }
-  },
-  "homeQuickAsk": "ถามเร็ว",
   "homeQuestionHomeNow": "กลับบ้านตอนนี้",
   "homeQuestionToNow": "ไป{place}ตอนนี้",
   "@homeQuestionToNow": {
@@ -156,19 +58,6 @@
       }
     }
   },
-  "homeSetPlaceTooltip": "ตั้ง{label}",
-  "@homeSetPlaceTooltip": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "homeDefaultPlaceHome": "บ้าน",
-  "homeDefaultPlaceWork": "ที่ทำงาน",
-  "homeDefaultPlaceSiam": "สยาม",
-  "homeDefaultPlaceThonglor": "ทองหล่อ",
-  "homeDefaultPlaceImpact": "อิมแพ็ค",
   "homeUsingPinned": "ใช้ “{name}” เป็นตำแหน่งตอนนี้แล้ว",
   "@homeUsingPinned": {
     "placeholders": {
@@ -178,20 +67,6 @@
     }
   },
   "homeBackToGps": "กลับไปใช้ GPS",
-  "homeTripGoHome": "กลับบ้าน",
-  "homeFromHereSemantics": "กลับบ้าน จากตำแหน่งตอนนี้",
-  "homeFromHereTitle": "กลับบ้าน · จากตำแหน่งตอนนี้",
-  "homeLeaveAround": "ออกราว {time}",
-  "@homeLeaveAround": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeCheckRainHome": "เช็กฝนบนทางกลับบ้าน",
-  "homeLocationOnTap": "แอปใช้ตำแหน่งตอนกดเท่านั้น เพื่อเป็นจุดเริ่มต้นของทาง",
-  "homeCheckWayHome": "เช็กทางกลับบ้าน",
   "askSuggestion1": "ถ้ารอถึงสองทุ่มค่อยกลับล่ะ",
   "askSuggestion2": "ไป BTS แทนดีไหม",
   "askOpeningPlain": "อยากรู้อะไรเรื่องฝนกับการเดินทาง ถามได้เลย",
@@ -714,6 +589,319 @@
   },
   "workDaysEveryday": "ทุกวัน",
   "workDaysWeekdays": "จ–ศ",
+  "navSummary": "สรุป",
+  "navEvents": "อีเวนต์",
+  "navAsk": "ถามเส้นทาง",
+  "summaryTitle": "สรุป",
+  "summaryNextEvent": "อีเวนต์ถัดไป",
+  "summaryIn": "อีก {duration}",
+  "@summaryIn": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryStarted": "เริ่มแล้ว",
+  "durationHm": "{h} ชม. {m} นาที",
+  "@durationHm": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationH": "{h} ชม.",
+  "@durationH": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      }
+    }
+  },
+  "durationM": "{m} นาที",
+  "@durationM": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationD": "{d} วัน",
+  "@durationD": {
+    "placeholders": {
+      "d": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryLeaveBefore": "ควรออกก่อน",
+  "summaryLeaveAt": "ออกได้ตอน",
+  "summaryLeaveNow": "ออกได้เลย",
+  "summaryOverdue": "ควรออกตั้งแต่ {time}",
+  "@summaryOverdue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryGoNow": "ออกเลย",
+  "summaryAvoid": "เลี่ยงการเดินทาง",
+  "summaryBy": "ไปด้วย",
+  "summaryArrive": "ถึงราว",
+  "summaryRain": "ฝนระหว่างทาง",
+  "summaryRainNone": "ไม่มีฝน",
+  "summaryRainLight": "ฝนเบา",
+  "summaryRainModerate": "ฝนปานกลาง",
+  "summaryRainHeavy": "ฝนหนัก",
+  "summaryLater": "ต่อจากนี้",
+  "summarySeeAll": "ดูทั้งหมด",
+  "summaryDecideError": "ยังคำนวณเวลาออกไม่ได้",
+  "summaryRetry": "ลองใหม่",
+  "summarySetPlace": "ระบุสถานที่",
+  "summaryUnresolved": "ยังไม่รู้ว่าอีเวนต์นี้อยู่ที่ไหน ระบุสถานที่แล้วจะบอกเวลาออกให้",
+  "summaryNoEventsTitle": "ไม่มีอีเวนต์ที่กำลังจะถึง",
+  "summaryNoEventsBody": "อีเวนต์ใหม่ใน Google Calendar จะขึ้นที่นี่เอง ระหว่างนี้ถามเส้นทางเองได้",
+  "summaryAskInstead": "ถามเส้นทางเอง",
+  "summaryConnectTitle": "เชื่อมปฏิทินก่อน",
+  "summaryConnectBody": "ฝนตกไหมจะดูนัดถัดไปของคุณ แล้วบอกว่าควรออกกี่โมง ไปทางไหนไม่เปียก",
+  "summaryConnectCta": "เชื่อม Google Calendar",
+  "summaryLoadErrorTitle": "โหลดอีเวนต์ไม่ได้",
+  "summaryLoadErrorBody": "เช็กอินเทอร์เน็ตแล้วลองใหม่",
+  "summaryHeroSemantics": "อีเวนต์ถัดไป {title} เวลา {time}. {leave}. แตะเพื่อดูรายละเอียด",
+  "@summaryHeroSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "leave": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryFloodTitle": "น้ำท่วมใกล้บ้าน",
+  "summaryFloodWhatToDo": "ดูสิ่งที่ต้องทำ",
+  "eventsTitle": "อีเวนต์",
+  "eventsSource": "จาก Google Calendar · {account}",
+  "@eventsSource": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsToday": "วันนี้ · {date}",
+  "@eventsToday": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsTomorrow": "พรุ่งนี้ · {date}",
+  "@eventsTomorrow": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsNoTime": "ไม่ระบุเวลา",
+  "eventsLeaveAt": "ออก {time} · {mode}",
+  "@eventsLeaveAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsAvoid": "เลี่ยงการเดินทาง",
+  "eventsRefresh": "รีเฟรช",
+  "eventsCount": "{count} อีเวนต์",
+  "@eventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "askSheetTitle": "อยากไปไหน",
+  "askTomorrowMorning": "พรุ่งนี้เช้าฝนตกไหม",
+  "summaryLate": "ถึงหลังเวลานัด {duration}",
+  "@summaryLate": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "wxRainNow": "ฝนกำลังตก",
+  "wxRainStops": "ฝนกำลังตก ซาราว {time}",
+  "@wxRainStops": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxRainFrom": "ฝนมาราว {time}",
+  "@wxRainFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxDryAhead": "ไม่มีฝนอีก 12 ชม.",
+  "wxSunStrong": "แดดแรง",
+  "wxHot": "ร้อนจัด",
+  "wxFeels": "รู้สึกเหมือน",
+  "wxUv": "UV",
+  "wxRainChance": "โอกาสฝน",
+  "wxUvLow": "ต่ำ",
+  "wxUvModerate": "ปานกลาง",
+  "wxUvHigh": "สูง",
+  "wxUvVeryHigh": "สูงมาก",
+  "wxUvExtreme": "อันตราย",
+  "wxNow": "ตอนนี้",
+  "carryTitle": "วันนี้ควรพก",
+  "carryNothing": "ไม่ต้องพกอะไรเพิ่ม",
+  "carryNothingBody": "อากาศดีตลอด 12 ชม.ข้างหน้า",
+  "carryRaincoat": "เสื้อกันฝน",
+  "carryUmbrella": "ร่ม",
+  "carrySunUmbrella": "ร่มกันแดด",
+  "carrySunscreen": "ครีมกันแดด",
+  "carryWater": "น้ำดื่ม",
+  "carryShoes": "รองเท้าลุยน้ำ",
+  "carryWhyRain": "ฝน {pct}% · {from}–{to}",
+  "@carryWhyRain": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyHeavy": "ฝนหนัก ร่มเอาไม่อยู่ · {from}–{to}",
+  "@carryWhyHeavy": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyMoto": "ขี่มอเตอร์ไซค์ฝ่าฝน · {from}–{to}",
+  "@carryWhyMoto": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyUv": "UV {uv} · {from}–{to}",
+  "@carryWhyUv": {
+    "placeholders": {
+      "uv": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyShade": "แดดแรงมาก กางร่มเดิน · {from}–{to}",
+  "@carryWhyShade": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyHeat": "รู้สึกเหมือน {c}° ดื่มบ่อย ๆ",
+  "@carryWhyHeat": {
+    "placeholders": {
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyShoes": "น้ำขังบนถนน · {from}–{to}",
+  "@carryWhyShoes": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsAllDays": "ทุกวัน",
+  "eventsNoneOn": "ไม่มีอีเวนต์วันนี้",
+  "calPrev": "เดือนก่อน",
+  "calNext": "เดือนถัดไป",
+  "calMonth": "{month, select, 1{มกราคม} 2{กุมภาพันธ์} 3{มีนาคม} 4{เมษายน} 5{พฤษภาคม} 6{มิถุนายน} 7{กรกฎาคม} 8{สิงหาคม} 9{กันยายน} 10{ตุลาคม} 11{พฤศจิกายน} 12{ธันวาคม} other{}} {year}",
+  "@calMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "dayToday": "วันนี้",
+  "dayTomorrow": "พรุ่งนี้",
+  "eventsCalendar": "ดูปฏิทิน",
+  "planTitleToday": "วันนี้อีก {count} นัด",
+  "@planTitleToday": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "planTitleFree": "วันนี้ไม่มีนัดแล้ว",
+  "planToday": "แผนต่อจากนี้",
+  "planTomorrow": "พรุ่งนี้",
+  "planBring": "พกไปด้วย",
+  "planWeatherNow": "อากาศตอนนี้",
+  "planRainAt": "ฝน {pct}%",
+  "@planRainAt": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
   "verdictCantDecide": "ยังตัดสินไม่ได้",
   "verdictServerError": "ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
   "verdictRetry": "ลองอีกครั้ง",
@@ -783,157 +971,7 @@
       }
     }
   },
-  "floodSetHomeTitle": "ตั้งบ้านเพื่อดูความเสี่ยงน้ำท่วมหน้า⁠บ้าน",
-  "floodSetHomeMsg": "แอปจะดูระดับคลองใกล้บ้าน จุดน้ำท่วมของ กทม. และรายงานจากเพื่อนบ้าน แล้วเตือนแม้ไม่ได้เปิดแอป",
-  "floodUseLocation": "ใช้ตำแหน่งตอนนี้",
-  "floodSearch": "ค้นหา",
-  "floodReadError": "อ่านระดับน้ำไม่ได้",
-  "floodReadErrorMsg": "เชื่อมต่อ ThaiWater ผ่านเซิร์ฟเวอร์ไม่ได้ ถ้าน้ำขึ้นเร็วให้ยกของขึ้นที่สูงไว้ก่อน",
-  "floodRetry": "ลองอีกครั้ง",
-  "floodModeTitle": "โหมดน้ำท่วม",
-  "floodHome": "บ้าน",
-  "floodSameQuestion": "คำถามเดิม ระดับใหม่",
-  "floodNoHome": "ยังไม่ได้ตั้งบ้าน",
   "floodDoNow": "ทำตอนนี้ เรียงตามลำดับ",
-  "floodPrepare": "เตรียมไว้ก่อน",
-  "floodSpotsTitle": "จุดเสี่ยงน้ำท่วม กทม. ใกล้บ้าน",
-  "floodNoSpots": "ไม่มีจุดเสี่ยงใน 2 กม.",
-  "floodNoSpotsMsg": "บ้านไม่อยู่ใกล้จุดน้ำท่วมซ้ำซากที่ กทม. ประกาศไว้",
-  "floodFromHome": "ห่างบ้าน {meters} ม.",
-  "@floodFromHome": {
-    "placeholders": {
-      "meters": {
-        "type": "int"
-      }
-    }
-  },
-  "floodNeighborsTitle": "เพื่อนบ้านในซอย",
-  "floodNeighborsDanger": "11 คนได้รับเตือนเดียวกัน",
-  "floodNeighborsWatch": "3 คนรายงานน้ำขังใน 20 นาที",
-  "floodNeighborsNote": "คนที่ไม่มีสมาร์ทโฟนได้รับข้อความทาง LINE / SMS หรือโทรอ่านให้ฟัง",
-  "floodStepSemantics": "ขั้นที่ {order} {text}",
-  "@floodStepSemantics": {
-    "placeholders": {
-      "order": {
-        "type": "int"
-      },
-      "text": {
-        "type": "String"
-      }
-    }
-  },
-  "floodNearbyTitle": "รายงานน้ำท่วมใกล้ฉัน",
-  "floodNearbyButton": "ดูรายงานน้ำท่วมใกล้ฉัน",
-  "floodHereNow": "ตำแหน่งตอนนี้",
-  "floodAround": "รอบ {where}",
-  "@floodAround": {
-    "placeholders": {
-      "where": {
-        "type": "String"
-      }
-    }
-  },
-  "floodNoReports": "ไม่มีรายงานใน 500 ม.",
-  "floodNoReportsMsg": "ยังไม่มีใครรายงานน้ำขังแถวนี้ใน 24 ชั่วโมง",
-  "floodWaterDepth": "น้ำ {min}–{max} ซม.",
-  "@floodWaterDepth": {
-    "placeholders": {
-      "min": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "floodCarPassable": "รถยนต์ {status}",
-  "@floodCarPassable": {
-    "placeholders": {
-      "status": {
-        "type": "String"
-      }
-    }
-  },
-  "floodOtherSpot": "ดูจุดอื่น",
-  "reportCameraError": "เปิดกล้องไม่ได้ ลองเลือกจากคลังภาพแทน",
-  "reportGalleryError": "เปิดคลังภาพไม่ได้ ตรวจสิทธิ์รูปภาพในตั้งค่าเครื่อง",
-  "reportTitle": "แจ้งน้ำท่วม",
-  "reportSubtitle": "ถ่ายรูปน้ำบนถนน บอกคนที่กำลังจะผ่าน",
-  "reportTakePhoto": "ถ่ายรูป",
-  "reportFromGallery": "จากคลังภาพ",
-  "reportFailed": "ส่งรายงานไม่สำเร็จ",
-  "reportFailedMsg": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ รูปยังอยู่ในเครื่อง ส่งใหม่ได้เลย",
-  "reportResend": "ส่งอีกครั้ง",
-  "reportAnalyzing": "Gemini กำลังดูภาพ ประเมินระดับน้ำเทียบกับล้อรถและขอบทาง…",
-  "reportAnalyzeHint": "Gemini จะประเมินระดับน้ำจากภาพ แล้วเตือนคนที่เส้นทางผ่านจุดนี้ในรัศมี 300 ม.",
-  "reportSeeHome": "ดูสถานการณ์ที่บ้าน",
-  "reportLocating": "กำลังหาตำแหน่ง…",
-  "reportUsingGps": "ใช้ GPS ของเครื่อง",
-  "reportGpsDetail": "GPS · {lat}, {lng} · {time}",
-  "@reportGpsDetail": {
-    "placeholders": {
-      "lat": {
-        "type": "String"
-      },
-      "lng": {
-        "type": "String"
-      },
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "reportFallbackDetail": "{note} · ใช้ตำแหน่งสำรองของเดโม",
-  "@reportFallbackDetail": {
-    "placeholders": {
-      "note": {
-        "type": "String"
-      }
-    }
-  },
-  "reportRetryGps": "ลองหา GPS",
-  "reportDepthSemantics": "น้ำสูงประมาณ {min} ถึง {max} เซนติเมตร",
-  "@reportDepthSemantics": {
-    "placeholders": {
-      "min": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "reportSeenByGemini": "Gemini ดูภาพแล้ว",
-  "reportDepth": "น้ำสูง {min}–{max} ซม.",
-  "@reportDepth": {
-    "placeholders": {
-      "min": {
-        "type": "int"
-      },
-      "max": {
-        "type": "int"
-      }
-    }
-  },
-  "reportNotified": "แจ้งคน {count} คนที่กำลังจะผ่านจุดนี้",
-  "@reportNotified": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reportCorroborated": "ยืนยันกับอีก {count} รายงานในรัศมี 300 ม.",
-  "@reportCorroborated": {
-    "placeholders": {
-      "count": {
-        "type": "int"
-      }
-    }
-  },
-  "reportDemoNumbers": "จำนวนคนที่แจ้งเตือนเป็นตัวเลขจำลองสำหรับเดโม",
-  "reportFrameHint": "ถ่ายให้เห็นล้อรถหรือขอบทาง",
-  "reportNoPhoto": "ไม่มีภาพ · ผลตัวอย่าง",
   "settingsTitle": "ตั้งค่า",
   "settingsSubtitle": "ข้อมูลเก็บไว้ในเครื่องนี้",
   "settingsNotificationsOff": "ปิดการแจ้งเตือนอยู่ แอปเตือนก่อนออกไม่ได้",
@@ -1022,7 +1060,5 @@
   "verdictToolFloodSpots": "เช็กจุดน้ำท่วม",
   "verdictToolCanals": "เช็กระดับน้ำในคลอง",
   "verdictToolReports": "ดูรายงานจากคนในพื้นที่",
-  "verdictToolEvaluate": "ประเมินความเสี่ยง",
-  "reportSampleResult": "ผลประเมินตัวอย่าง ยังไม่ได้วิเคราะห์ภาพด้วย AI",
-  "reportRejectedTitle": "ใช้ภาพนี้ไม่ได้"
+  "verdictToolEvaluate": "ประเมินความเสี่ยง"
 }

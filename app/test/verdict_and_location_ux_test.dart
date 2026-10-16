@@ -2,13 +2,11 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/l10n/app_localizations_en.dart';
 import 'package:fontokmai/l10n/app_localizations_th.dart';
 import 'package:fontokmai/design/design.dart';
 import 'package:fontokmai/location.dart';
-import 'package:material_symbols_icons/symbols.dart';
 
 import 'helpers.dart';
 
@@ -50,9 +48,7 @@ void main() {
             ? jsonResponse(_decideWithExplanation())
             : null,
       );
-      await tester.tap(find.byTooltip('ปิดแจ้งเตือน'));
-      await tester.pump();
-      await tapAndSettle(tester, find.text('ดูเหตุผลและทางเลือก'));
+      await openHero(tester);
     }
 
     testWidgets(
@@ -106,7 +102,8 @@ void main() {
         locator: const _HangingLocator(),
       );
 
-      expect(find.text('ออกก่อน 16:45'), findsOneWidget);
+      expect(find.text('ควรออกก่อน'), findsOneWidget);
+      expect(find.text('16:45'), findsOneWidget);
     });
 
     testWidgets('a coarse fix says how far off it may be, in plain units', (
@@ -121,41 +118,6 @@ void main() {
       await reveal(tester, find.text('ตำแหน่งอาจคลาดเคลื่อน ~1.5 กม.'));
       expect(find.text('ตำแหน่งอาจคลาดเคลื่อน ~1.5 กม.'), findsOneWidget);
       expect(find.text('ปักหมุดเอง'), findsOneWidget);
-    });
-
-    testWidgets(
-      'the header offers to pin the location only when it shows the location',
-      (tester) async {
-        await pumpApp(tester, '2026-09-29T16:10:00+07:00');
-        expect(
-          find.byIcon(Symbols.edit_location_alt_rounded),
-          findsNothing,
-          reason: 'the subtitle shows the trip origin, not where the phone is',
-        );
-      },
-    );
-
-    testWidgets('the pin-location affordance is a 48 dp, labelled button', (
-      tester,
-    ) async {
-      final semantics = tester.ensureSemantics();
-      await pumpApp(
-        tester,
-        '2026-09-29T16:10:00+07:00',
-        places: await emptyStore(),
-      );
-
-      final icon = find.byIcon(Symbols.edit_location_alt_rounded);
-      expect(icon, findsOneWidget);
-      final target = find
-          .ancestor(of: icon, matching: find.byType(InkWell))
-          .first;
-      expect(tester.getSize(target).height, greaterThanOrEqualTo(Space.target));
-      expect(
-        find.bySemanticsLabel(RegExp('ปักหมุดตำแหน่งเอง')),
-        findsOneWidget,
-      );
-      semantics.dispose();
     });
   });
 

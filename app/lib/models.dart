@@ -355,13 +355,13 @@ class EmergencyContact {
   final String? lineId;
 
   factory EmergencyContact.fromJson(Json j) => EmergencyContact(
-        agencyTh: _str(j['agency_th']),
-        agencyEn: _str(j['agency_en']),
-        number: _str(j['number']),
-        purposeTh: _str(j['purpose_th']),
-        purposeEn: _str(j['purpose_en']),
-        lineId: j['line_id'] as String?,
-      );
+    agencyTh: _str(j['agency_th']),
+    agencyEn: _str(j['agency_en']),
+    number: _str(j['number']),
+    purposeTh: _str(j['purpose_th']),
+    purposeEn: _str(j['purpose_en']),
+    lineId: j['line_id'] as String?,
+  );
 }
 
 /// Body of POST /v1/decide. The main input is [tripId], an ad-hoc
@@ -755,4 +755,83 @@ class NeedsPlace {
   /// home or work when the question named one the user has not saved.
   final PlaceKind? kind;
   final List<PlaceCandidate> candidates;
+}
+
+/// One hour of weather at a place.
+class WeatherHour {
+  const WeatherHour({
+    required this.time,
+    required this.tempC,
+    required this.feelsLikeC,
+    required this.uvIndex,
+    required this.rainProbPct,
+    required this.rainMmPerHr,
+    this.humidityPct = 0,
+    this.windKph = 0,
+    this.condition = '',
+    this.conditionTh = '',
+  });
+
+  factory WeatherHour.fromJson(Json j) => WeatherHour(
+    time: DateTime.parse(_str(j['time'])),
+    tempC: _num(j['temp_c']),
+    feelsLikeC: _num(j['feels_like_c']),
+    uvIndex: _int(j['uv_index']),
+    rainProbPct: _int(j['rain_prob_pct']),
+    rainMmPerHr: _num(j['rain_mm_per_hr']),
+    humidityPct: _int(j['humidity_pct']),
+    windKph: _num(j['wind_kph']),
+    condition: _str(j['condition']),
+    conditionTh: _str(j['condition_th']),
+  );
+
+  final DateTime time;
+  final double tempC;
+  final double feelsLikeC;
+  final int uvIndex;
+  final int rainProbPct;
+  final double rainMmPerHr;
+  final int humidityPct;
+  final double windKph;
+
+  /// Google's weatherCondition.type, e.g. PARTLY_CLOUDY, HEAVY_RAIN.
+  final String condition;
+
+  /// Short description in the request's language.
+  final String conditionTh;
+
+  WeatherHour shifted(Duration by) => WeatherHour(
+    time: time.add(by),
+    tempC: tempC,
+    feelsLikeC: feelsLikeC,
+    uvIndex: uvIndex,
+    rainProbPct: rainProbPct,
+    rainMmPerHr: rainMmPerHr,
+    humidityPct: humidityPct,
+    windKph: windKph,
+    condition: condition,
+    conditionTh: conditionTh,
+  );
+}
+
+/// The next hours of weather where the user is (`GET /v1/outlook`).
+class Outlook {
+  const Outlook({
+    required this.now,
+    required this.hours,
+    this.sunset,
+    this.sources = const [],
+  });
+
+  factory Outlook.fromJson(Json j) => Outlook(
+    now: WeatherHour.fromJson(j['now'] as Json),
+    hours: _list(j['hours']).map(WeatherHour.fromJson).toList(),
+    sunset: DateTime.tryParse(_str(j['sunset'])),
+    sources: (j['sources'] as List? ?? const []).cast<String>(),
+  );
+
+  final WeatherHour now;
+  final List<WeatherHour> hours;
+  final DateTime? sunset;
+  final List<String> sources;
 }

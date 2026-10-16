@@ -1,7 +1,4 @@
 {
-  "shellTabTrip": "เดินทาง",
-  "shellTabReport": "แจ้งน้ำท่วม",
-  "shellTabHome": "บ้าน",
   "designBack": "กลับ",
   "designAskTooltip": "ถาม",
   "designAskHint": "ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม",
@@ -25,21 +22,6 @@
   },
   "boardHeadlineWait": "อย่าเพิ่งออก",
   "boardHeadlineSwitchTransit": "เปลี่ยนเป็น BTS ดีกว่า",
-  "homeLoadErrorTitle": "โหลดทริปไม่ได้",
-  "homeLoadErrorBody": "เชื่อมต่อเซิร์ฟเวอร์ไม่ได้และไม่มีข้อมูลตัวอย่างในเครื่อง ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
-  "homeSeeWhatToDo": "ดูสิ่งที่ต้องทำตอนนี้",
-  "homeDecideErrorTitle": "ยังตัดสินไม่ได้",
-  "homeDecideErrorBody": "ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง",
-  "homeSeeReasons": "ดูเหตุผลและทางเลือก",
-  "homeAskMore": "ถามต่อ",
-  "homeNoTripTitle": "ยังไม่มีทริป",
-  "homeNoTripBody": "ตั้งบ้านไว้ แอปจะเตือนก่อนเวลาเลิกงานทุกวัน หรือพิมพ์ถามด้านบนได้เลย",
-  "homeSetHome": "ตั้งบ้าน",
-  "homeSetWork": "ตั้งที่ทำงาน",
-  "homeNoHomeTripTitle": "วันนี้ไม่มีทริปกลับบ้าน",
-  "homeWfhBody": "ทำงานที่บ้าน แอปจะเตือนเฉพาะทริปอื่น พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม”",
-  "homeNotWorkdayBody": "วันนี้ไม่ใช่วันทำงาน ถ้าจะออกไปไหน พิมพ์ถามด้านล่างได้เลย",
-  "homePastCommuteBody": "เลยเวลากลับบ้านปกติมาแล้ว พรุ่งนี้แอปจะเช็กให้ก่อนเลิกงาน",
   "homeGpsInaccurate": "ตำแหน่งอาจคลาดเคลื่อน {distance}",
   "@homeGpsInaccurate": {
     "placeholders": {
@@ -49,51 +31,8 @@
     }
   },
   "homePinMyself": "ปักหมุดเอง",
-  "homeSetHomeHint": "ตั้งบ้านเพื่อให้เตือนตอนกลับ",
-  "homeSetWorkHint": "ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น",
-  "homeWfhNotice": "ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น",
-  "homeCalendarHint": "เชื่อม Calendar เพื่อให้แอปเห็นนัด",
-  "homeConnect": "เชื่อมต่อ",
-  "homeNoCalendarSoon": "ไม่มีนัดที่มีสถานที่ใน 24 ชม.",
-  "homeAskHintHero": "ไปไหน กี่โมง?",
-  "homeGreetingDemo": "สวัสดีมิว",
-  "homeGreeting": "สวัสดี",
   "homeCurrentPlace": "ตำแหน่งตอนนี้",
-  "homeCurrentPlaceAlt": "ตำแหน่งปัจจุบัน",
-  "homeHereSemantics": "ตำแหน่งตอนนี้ {name} แตะเพื่อปักหมุดตำแหน่งเอง",
-  "@homeHereSemantics": {
-    "placeholders": {
-      "name": {
-        "type": "String"
-      }
-    }
-  },
   "homeSettings": "ตั้งค่า",
-  "homeRouteTo": "ทางกลับ{place}",
-  "@homeRouteTo": {
-    "placeholders": {
-      "place": {
-        "type": "String"
-      }
-    }
-  },
-  "homePreview": "พรีวิว {time}",
-  "@homePreview": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeDepart": "ออก {time}",
-  "@homeDepart": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeArriveCaption": "ถึง",
   "homeModeEta": "{mode} · {minutes} นาที",
   "@homeModeEta": {
     "placeholders": {
@@ -105,43 +44,6 @@
       }
     }
   },
-  "homeNextTrips": "ทริปถัดไป",
-  "homeUnresolvedSubtitle": "“{location}” · แตะเพื่อเลือกสถานที่",
-  "@homeUnresolvedSubtitle": {
-    "placeholders": {
-      "location": {
-        "type": "String"
-      }
-    }
-  },
-  "homeUnresolvedStatus": "ไม่รู้ว่าที่ไหน",
-  "homeFutureSubtitle": "{place} · จะเตือนวันเดินทางว่าออกกี่โมงดี",
-  "@homeFutureSubtitle": {
-    "placeholders": {
-      "place": {
-        "type": "String"
-      }
-    }
-  },
-  "homeFutureStatus": "รอวัน",
-  "homeTonightTitle": "ที่บ้านคืนนี้",
-  "homeNoCanalStation": "ไม่มีสถานีวัดระดับคลองใกล้บ้าน",
-  "homeOutOfArea": "นอกพื้นที่ที่รองรับ · มีเฉพาะข้อมูลฝน",
-  "homeCanalLevel": "{canal} {level} จาก {bank} ม.",
-  "@homeCanalLevel": {
-    "placeholders": {
-      "canal": {
-        "type": "String"
-      },
-      "level": {
-        "type": "String"
-      },
-      "bank": {
-        "type": "String"
-      }
-    }
-  },
-  "homeQuickAsk": "ถามเร็ว",
   "homeQuestionHomeNow": "กลับบ้านตอนนี้",
   "homeQuestionToNow": "ไป{place}ตอนนี้",
   "@homeQuestionToNow": {
@@ -151,19 +53,6 @@
       }
     }
   },
-  "homeSetPlaceTooltip": "ตั้ง{label}",
-  "@homeSetPlaceTooltip": {
-    "placeholders": {
-      "label": {
-        "type": "String"
-      }
-    }
-  },
-  "homeDefaultPlaceHome": "บ้าน",
-  "homeDefaultPlaceWork": "ที่ทำงาน",
-  "homeDefaultPlaceSiam": "สยาม",
-  "homeDefaultPlaceThonglor": "ทองหล่อ",
-  "homeDefaultPlaceImpact": "อิมแพ็ค",
   "homeUsingPinned": "ใช้ “{name}” เป็นตำแหน่งตอนนี้แล้ว",
   "@homeUsingPinned": {
     "placeholders": {
@@ -173,20 +62,6 @@
     }
   },
   "homeBackToGps": "กลับไปใช้ GPS",
-  "homeTripGoHome": "กลับบ้าน",
-  "homeFromHereSemantics": "กลับบ้าน จากตำแหน่งตอนนี้",
-  "homeFromHereTitle": "กลับบ้าน · จากตำแหน่งตอนนี้",
-  "homeLeaveAround": "ออกราว {time}",
-  "@homeLeaveAround": {
-    "placeholders": {
-      "time": {
-        "type": "String"
-      }
-    }
-  },
-  "homeCheckRainHome": "เช็กฝนบนทางกลับบ้าน",
-  "homeLocationOnTap": "แอปใช้ตำแหน่งตอนกดเท่านั้น เพื่อเป็นจุดเริ่มต้นของทาง",
-  "homeCheckWayHome": "เช็กทางกลับบ้าน",
   "askSuggestion1": "ถ้ารอถึงสองทุ่มค่อยกลับล่ะ",
   "askSuggestion2": "ไป BTS แทนดีไหม",
   "askOpeningPlain": "อยากรู้อะไรเรื่องฝนกับการเดินทาง ถามได้เลย",

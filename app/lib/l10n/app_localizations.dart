@@ -122,24 +122,6 @@ abstract class AppLocalizations {
   /// **'English'**
   String get settingsLanguageEnglish;
 
-  /// No description provided for @shellTabTrip.
-  ///
-  /// In th, this message translates to:
-  /// **'เดินทาง'**
-  String get shellTabTrip;
-
-  /// No description provided for @shellTabReport.
-  ///
-  /// In th, this message translates to:
-  /// **'แจ้งน้ำท่วม'**
-  String get shellTabReport;
-
-  /// No description provided for @shellTabHome.
-  ///
-  /// In th, this message translates to:
-  /// **'บ้าน'**
-  String get shellTabHome;
-
   /// No description provided for @designBack.
   ///
   /// In th, this message translates to:
@@ -236,96 +218,6 @@ abstract class AppLocalizations {
   /// **'เปลี่ยนเป็น BTS ดีกว่า'**
   String get boardHeadlineSwitchTransit;
 
-  /// No description provided for @homeLoadErrorTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'โหลดทริปไม่ได้'**
-  String get homeLoadErrorTitle;
-
-  /// No description provided for @homeLoadErrorBody.
-  ///
-  /// In th, this message translates to:
-  /// **'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้และไม่มีข้อมูลตัวอย่างในเครื่อง ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง'**
-  String get homeLoadErrorBody;
-
-  /// No description provided for @homeSeeWhatToDo.
-  ///
-  /// In th, this message translates to:
-  /// **'ดูสิ่งที่ต้องทำตอนนี้'**
-  String get homeSeeWhatToDo;
-
-  /// No description provided for @homeDecideErrorTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ยังตัดสินไม่ได้'**
-  String get homeDecideErrorTitle;
-
-  /// No description provided for @homeDecideErrorBody.
-  ///
-  /// In th, this message translates to:
-  /// **'ติดต่อเซิร์ฟเวอร์ไม่ได้ ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง'**
-  String get homeDecideErrorBody;
-
-  /// No description provided for @homeSeeReasons.
-  ///
-  /// In th, this message translates to:
-  /// **'ดูเหตุผลและทางเลือก'**
-  String get homeSeeReasons;
-
-  /// No description provided for @homeAskMore.
-  ///
-  /// In th, this message translates to:
-  /// **'ถามต่อ'**
-  String get homeAskMore;
-
-  /// No description provided for @homeNoTripTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ยังไม่มีทริป'**
-  String get homeNoTripTitle;
-
-  /// No description provided for @homeNoTripBody.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้งบ้านไว้ แอปจะเตือนก่อนเวลาเลิกงานทุกวัน หรือพิมพ์ถามด้านบนได้เลย'**
-  String get homeNoTripBody;
-
-  /// No description provided for @homeSetHome.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้งบ้าน'**
-  String get homeSetHome;
-
-  /// No description provided for @homeSetWork.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้งที่ทำงาน'**
-  String get homeSetWork;
-
-  /// No description provided for @homeNoHomeTripTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'วันนี้ไม่มีทริปกลับบ้าน'**
-  String get homeNoHomeTripTitle;
-
-  /// No description provided for @homeWfhBody.
-  ///
-  /// In th, this message translates to:
-  /// **'ทำงานที่บ้าน แอปจะเตือนเฉพาะทริปอื่น พิมพ์ถามด้านล่างได้เลย เช่น “ห้าโมงไปสยาม”'**
-  String get homeWfhBody;
-
-  /// No description provided for @homeNotWorkdayBody.
-  ///
-  /// In th, this message translates to:
-  /// **'วันนี้ไม่ใช่วันทำงาน ถ้าจะออกไปไหน พิมพ์ถามด้านล่างได้เลย'**
-  String get homeNotWorkdayBody;
-
-  /// No description provided for @homePastCommuteBody.
-  ///
-  /// In th, this message translates to:
-  /// **'เลยเวลากลับบ้านปกติมาแล้ว พรุ่งนี้แอปจะเช็กให้ก่อนเลิกงาน'**
-  String get homePastCommuteBody;
-
   /// No description provided for @homeGpsInaccurate.
   ///
   /// In th, this message translates to:
@@ -338,77 +230,11 @@ abstract class AppLocalizations {
   /// **'ปักหมุดเอง'**
   String get homePinMyself;
 
-  /// No description provided for @homeSetHomeHint.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้งบ้านเพื่อให้เตือนตอนกลับ'**
-  String get homeSetHomeHint;
-
-  /// No description provided for @homeSetWorkHint.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้งที่ทำงานเพื่อให้เตือนได้แม่นขึ้น'**
-  String get homeSetWorkHint;
-
-  /// No description provided for @homeWfhNotice.
-  ///
-  /// In th, this message translates to:
-  /// **'ทำงานที่บ้าน — แอปจะเตือนเฉพาะทริปอื่น'**
-  String get homeWfhNotice;
-
-  /// No description provided for @homeCalendarHint.
-  ///
-  /// In th, this message translates to:
-  /// **'เชื่อม Calendar เพื่อให้แอปเห็นนัด'**
-  String get homeCalendarHint;
-
-  /// No description provided for @homeConnect.
-  ///
-  /// In th, this message translates to:
-  /// **'เชื่อมต่อ'**
-  String get homeConnect;
-
-  /// No description provided for @homeNoCalendarSoon.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่มีนัดที่มีสถานที่ใน 24 ชม.'**
-  String get homeNoCalendarSoon;
-
-  /// No description provided for @homeAskHintHero.
-  ///
-  /// In th, this message translates to:
-  /// **'ไปไหน กี่โมง?'**
-  String get homeAskHintHero;
-
-  /// No description provided for @homeGreetingDemo.
-  ///
-  /// In th, this message translates to:
-  /// **'สวัสดีมิว'**
-  String get homeGreetingDemo;
-
-  /// No description provided for @homeGreeting.
-  ///
-  /// In th, this message translates to:
-  /// **'สวัสดี'**
-  String get homeGreeting;
-
   /// No description provided for @homeCurrentPlace.
   ///
   /// In th, this message translates to:
   /// **'ตำแหน่งตอนนี้'**
   String get homeCurrentPlace;
-
-  /// No description provided for @homeCurrentPlaceAlt.
-  ///
-  /// In th, this message translates to:
-  /// **'ตำแหน่งปัจจุบัน'**
-  String get homeCurrentPlaceAlt;
-
-  /// No description provided for @homeHereSemantics.
-  ///
-  /// In th, this message translates to:
-  /// **'ตำแหน่งตอนนี้ {name} แตะเพื่อปักหมุดตำแหน่งเอง'**
-  String homeHereSemantics(String name);
 
   /// No description provided for @homeSettings.
   ///
@@ -416,95 +242,11 @@ abstract class AppLocalizations {
   /// **'ตั้งค่า'**
   String get homeSettings;
 
-  /// No description provided for @homeRouteTo.
-  ///
-  /// In th, this message translates to:
-  /// **'ทางกลับ{place}'**
-  String homeRouteTo(String place);
-
-  /// No description provided for @homePreview.
-  ///
-  /// In th, this message translates to:
-  /// **'พรีวิว {time}'**
-  String homePreview(String time);
-
-  /// No description provided for @homeDepart.
-  ///
-  /// In th, this message translates to:
-  /// **'ออก {time}'**
-  String homeDepart(String time);
-
-  /// No description provided for @homeArriveCaption.
-  ///
-  /// In th, this message translates to:
-  /// **'ถึง'**
-  String get homeArriveCaption;
-
   /// No description provided for @homeModeEta.
   ///
   /// In th, this message translates to:
   /// **'{mode} · {minutes} นาที'**
   String homeModeEta(String mode, int minutes);
-
-  /// No description provided for @homeNextTrips.
-  ///
-  /// In th, this message translates to:
-  /// **'ทริปถัดไป'**
-  String get homeNextTrips;
-
-  /// No description provided for @homeUnresolvedSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'“{location}” · แตะเพื่อเลือกสถานที่'**
-  String homeUnresolvedSubtitle(String location);
-
-  /// No description provided for @homeUnresolvedStatus.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่รู้ว่าที่ไหน'**
-  String get homeUnresolvedStatus;
-
-  /// No description provided for @homeFutureSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'{place} · จะเตือนวันเดินทางว่าออกกี่โมงดี'**
-  String homeFutureSubtitle(String place);
-
-  /// No description provided for @homeFutureStatus.
-  ///
-  /// In th, this message translates to:
-  /// **'รอวัน'**
-  String get homeFutureStatus;
-
-  /// No description provided for @homeTonightTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ที่บ้านคืนนี้'**
-  String get homeTonightTitle;
-
-  /// No description provided for @homeNoCanalStation.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่มีสถานีวัดระดับคลองใกล้บ้าน'**
-  String get homeNoCanalStation;
-
-  /// No description provided for @homeOutOfArea.
-  ///
-  /// In th, this message translates to:
-  /// **'นอกพื้นที่ที่รองรับ · มีเฉพาะข้อมูลฝน'**
-  String get homeOutOfArea;
-
-  /// No description provided for @homeCanalLevel.
-  ///
-  /// In th, this message translates to:
-  /// **'{canal} {level} จาก {bank} ม.'**
-  String homeCanalLevel(String canal, String level, String bank);
-
-  /// No description provided for @homeQuickAsk.
-  ///
-  /// In th, this message translates to:
-  /// **'ถามเร็ว'**
-  String get homeQuickAsk;
 
   /// No description provided for @homeQuestionHomeNow.
   ///
@@ -518,42 +260,6 @@ abstract class AppLocalizations {
   /// **'ไป{place}ตอนนี้'**
   String homeQuestionToNow(String place);
 
-  /// No description provided for @homeSetPlaceTooltip.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้ง{label}'**
-  String homeSetPlaceTooltip(String label);
-
-  /// No description provided for @homeDefaultPlaceHome.
-  ///
-  /// In th, this message translates to:
-  /// **'บ้าน'**
-  String get homeDefaultPlaceHome;
-
-  /// No description provided for @homeDefaultPlaceWork.
-  ///
-  /// In th, this message translates to:
-  /// **'ที่ทำงาน'**
-  String get homeDefaultPlaceWork;
-
-  /// No description provided for @homeDefaultPlaceSiam.
-  ///
-  /// In th, this message translates to:
-  /// **'สยาม'**
-  String get homeDefaultPlaceSiam;
-
-  /// No description provided for @homeDefaultPlaceThonglor.
-  ///
-  /// In th, this message translates to:
-  /// **'ทองหล่อ'**
-  String get homeDefaultPlaceThonglor;
-
-  /// No description provided for @homeDefaultPlaceImpact.
-  ///
-  /// In th, this message translates to:
-  /// **'อิมแพ็ค'**
-  String get homeDefaultPlaceImpact;
-
   /// No description provided for @homeUsingPinned.
   ///
   /// In th, this message translates to:
@@ -565,48 +271,6 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'กลับไปใช้ GPS'**
   String get homeBackToGps;
-
-  /// No description provided for @homeTripGoHome.
-  ///
-  /// In th, this message translates to:
-  /// **'กลับบ้าน'**
-  String get homeTripGoHome;
-
-  /// No description provided for @homeFromHereSemantics.
-  ///
-  /// In th, this message translates to:
-  /// **'กลับบ้าน จากตำแหน่งตอนนี้'**
-  String get homeFromHereSemantics;
-
-  /// No description provided for @homeFromHereTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'กลับบ้าน · จากตำแหน่งตอนนี้'**
-  String get homeFromHereTitle;
-
-  /// No description provided for @homeLeaveAround.
-  ///
-  /// In th, this message translates to:
-  /// **'ออกราว {time}'**
-  String homeLeaveAround(String time);
-
-  /// No description provided for @homeCheckRainHome.
-  ///
-  /// In th, this message translates to:
-  /// **'เช็กฝนบนทางกลับบ้าน'**
-  String get homeCheckRainHome;
-
-  /// No description provided for @homeLocationOnTap.
-  ///
-  /// In th, this message translates to:
-  /// **'แอปใช้ตำแหน่งตอนกดเท่านั้น เพื่อเป็นจุดเริ่มต้นของทาง'**
-  String get homeLocationOnTap;
-
-  /// No description provided for @homeCheckWayHome.
-  ///
-  /// In th, this message translates to:
-  /// **'เช็กทางกลับบ้าน'**
-  String get homeCheckWayHome;
 
   /// No description provided for @askSuggestion1.
   ///
@@ -2078,6 +1742,600 @@ abstract class AppLocalizations {
   /// **'จ–ศ'**
   String get workDaysWeekdays;
 
+  /// No description provided for @navSummary.
+  ///
+  /// In th, this message translates to:
+  /// **'สรุป'**
+  String get navSummary;
+
+  /// No description provided for @navEvents.
+  ///
+  /// In th, this message translates to:
+  /// **'อีเวนต์'**
+  String get navEvents;
+
+  /// No description provided for @navAsk.
+  ///
+  /// In th, this message translates to:
+  /// **'ถามเส้นทาง'**
+  String get navAsk;
+
+  /// No description provided for @summaryTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'สรุป'**
+  String get summaryTitle;
+
+  /// No description provided for @summaryNextEvent.
+  ///
+  /// In th, this message translates to:
+  /// **'อีเวนต์ถัดไป'**
+  String get summaryNextEvent;
+
+  /// No description provided for @summaryIn.
+  ///
+  /// In th, this message translates to:
+  /// **'อีก {duration}'**
+  String summaryIn(String duration);
+
+  /// No description provided for @summaryStarted.
+  ///
+  /// In th, this message translates to:
+  /// **'เริ่มแล้ว'**
+  String get summaryStarted;
+
+  /// No description provided for @durationHm.
+  ///
+  /// In th, this message translates to:
+  /// **'{h} ชม. {m} นาที'**
+  String durationHm(String h, String m);
+
+  /// No description provided for @durationH.
+  ///
+  /// In th, this message translates to:
+  /// **'{h} ชม.'**
+  String durationH(String h);
+
+  /// No description provided for @durationM.
+  ///
+  /// In th, this message translates to:
+  /// **'{m} นาที'**
+  String durationM(String m);
+
+  /// No description provided for @durationD.
+  ///
+  /// In th, this message translates to:
+  /// **'{d} วัน'**
+  String durationD(String d);
+
+  /// No description provided for @summaryLeaveBefore.
+  ///
+  /// In th, this message translates to:
+  /// **'ควรออกก่อน'**
+  String get summaryLeaveBefore;
+
+  /// No description provided for @summaryLeaveAt.
+  ///
+  /// In th, this message translates to:
+  /// **'ออกได้ตอน'**
+  String get summaryLeaveAt;
+
+  /// No description provided for @summaryLeaveNow.
+  ///
+  /// In th, this message translates to:
+  /// **'ออกได้เลย'**
+  String get summaryLeaveNow;
+
+  /// No description provided for @summaryOverdue.
+  ///
+  /// In th, this message translates to:
+  /// **'ควรออกตั้งแต่ {time}'**
+  String summaryOverdue(String time);
+
+  /// No description provided for @summaryGoNow.
+  ///
+  /// In th, this message translates to:
+  /// **'ออกเลย'**
+  String get summaryGoNow;
+
+  /// No description provided for @summaryAvoid.
+  ///
+  /// In th, this message translates to:
+  /// **'เลี่ยงการเดินทาง'**
+  String get summaryAvoid;
+
+  /// No description provided for @summaryBy.
+  ///
+  /// In th, this message translates to:
+  /// **'ไปด้วย'**
+  String get summaryBy;
+
+  /// No description provided for @summaryArrive.
+  ///
+  /// In th, this message translates to:
+  /// **'ถึงราว'**
+  String get summaryArrive;
+
+  /// No description provided for @summaryRain.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนระหว่างทาง'**
+  String get summaryRain;
+
+  /// No description provided for @summaryRainNone.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่มีฝน'**
+  String get summaryRainNone;
+
+  /// No description provided for @summaryRainLight.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนเบา'**
+  String get summaryRainLight;
+
+  /// No description provided for @summaryRainModerate.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนปานกลาง'**
+  String get summaryRainModerate;
+
+  /// No description provided for @summaryRainHeavy.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนหนัก'**
+  String get summaryRainHeavy;
+
+  /// No description provided for @summaryLater.
+  ///
+  /// In th, this message translates to:
+  /// **'ต่อจากนี้'**
+  String get summaryLater;
+
+  /// No description provided for @summarySeeAll.
+  ///
+  /// In th, this message translates to:
+  /// **'ดูทั้งหมด'**
+  String get summarySeeAll;
+
+  /// No description provided for @summaryDecideError.
+  ///
+  /// In th, this message translates to:
+  /// **'ยังคำนวณเวลาออกไม่ได้'**
+  String get summaryDecideError;
+
+  /// No description provided for @summaryRetry.
+  ///
+  /// In th, this message translates to:
+  /// **'ลองใหม่'**
+  String get summaryRetry;
+
+  /// No description provided for @summarySetPlace.
+  ///
+  /// In th, this message translates to:
+  /// **'ระบุสถานที่'**
+  String get summarySetPlace;
+
+  /// No description provided for @summaryUnresolved.
+  ///
+  /// In th, this message translates to:
+  /// **'ยังไม่รู้ว่าอีเวนต์นี้อยู่ที่ไหน ระบุสถานที่แล้วจะบอกเวลาออกให้'**
+  String get summaryUnresolved;
+
+  /// No description provided for @summaryNoEventsTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่มีอีเวนต์ที่กำลังจะถึง'**
+  String get summaryNoEventsTitle;
+
+  /// No description provided for @summaryNoEventsBody.
+  ///
+  /// In th, this message translates to:
+  /// **'อีเวนต์ใหม่ใน Google Calendar จะขึ้นที่นี่เอง ระหว่างนี้ถามเส้นทางเองได้'**
+  String get summaryNoEventsBody;
+
+  /// No description provided for @summaryAskInstead.
+  ///
+  /// In th, this message translates to:
+  /// **'ถามเส้นทางเอง'**
+  String get summaryAskInstead;
+
+  /// No description provided for @summaryConnectTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'เชื่อมปฏิทินก่อน'**
+  String get summaryConnectTitle;
+
+  /// No description provided for @summaryConnectBody.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนตกไหมจะดูนัดถัดไปของคุณ แล้วบอกว่าควรออกกี่โมง ไปทางไหนไม่เปียก'**
+  String get summaryConnectBody;
+
+  /// No description provided for @summaryConnectCta.
+  ///
+  /// In th, this message translates to:
+  /// **'เชื่อม Google Calendar'**
+  String get summaryConnectCta;
+
+  /// No description provided for @summaryLoadErrorTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'โหลดอีเวนต์ไม่ได้'**
+  String get summaryLoadErrorTitle;
+
+  /// No description provided for @summaryLoadErrorBody.
+  ///
+  /// In th, this message translates to:
+  /// **'เช็กอินเทอร์เน็ตแล้วลองใหม่'**
+  String get summaryLoadErrorBody;
+
+  /// No description provided for @summaryHeroSemantics.
+  ///
+  /// In th, this message translates to:
+  /// **'อีเวนต์ถัดไป {title} เวลา {time}. {leave}. แตะเพื่อดูรายละเอียด'**
+  String summaryHeroSemantics(String title, String time, String leave);
+
+  /// No description provided for @summaryFloodTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'น้ำท่วมใกล้บ้าน'**
+  String get summaryFloodTitle;
+
+  /// No description provided for @summaryFloodWhatToDo.
+  ///
+  /// In th, this message translates to:
+  /// **'ดูสิ่งที่ต้องทำ'**
+  String get summaryFloodWhatToDo;
+
+  /// No description provided for @eventsTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'อีเวนต์'**
+  String get eventsTitle;
+
+  /// No description provided for @eventsSource.
+  ///
+  /// In th, this message translates to:
+  /// **'จาก Google Calendar · {account}'**
+  String eventsSource(String account);
+
+  /// No description provided for @eventsToday.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้ · {date}'**
+  String eventsToday(String date);
+
+  /// No description provided for @eventsTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'พรุ่งนี้ · {date}'**
+  String eventsTomorrow(String date);
+
+  /// No description provided for @eventsNoTime.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่ระบุเวลา'**
+  String get eventsNoTime;
+
+  /// No description provided for @eventsLeaveAt.
+  ///
+  /// In th, this message translates to:
+  /// **'ออก {time} · {mode}'**
+  String eventsLeaveAt(String time, String mode);
+
+  /// No description provided for @eventsAvoid.
+  ///
+  /// In th, this message translates to:
+  /// **'เลี่ยงการเดินทาง'**
+  String get eventsAvoid;
+
+  /// No description provided for @eventsRefresh.
+  ///
+  /// In th, this message translates to:
+  /// **'รีเฟรช'**
+  String get eventsRefresh;
+
+  /// No description provided for @eventsCount.
+  ///
+  /// In th, this message translates to:
+  /// **'{count} อีเวนต์'**
+  String eventsCount(String count);
+
+  /// No description provided for @askSheetTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'อยากไปไหน'**
+  String get askSheetTitle;
+
+  /// No description provided for @askTomorrowMorning.
+  ///
+  /// In th, this message translates to:
+  /// **'พรุ่งนี้เช้าฝนตกไหม'**
+  String get askTomorrowMorning;
+
+  /// No description provided for @summaryLate.
+  ///
+  /// In th, this message translates to:
+  /// **'ถึงหลังเวลานัด {duration}'**
+  String summaryLate(String duration);
+
+  /// No description provided for @wxRainNow.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนกำลังตก'**
+  String get wxRainNow;
+
+  /// No description provided for @wxRainStops.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนกำลังตก ซาราว {time}'**
+  String wxRainStops(String time);
+
+  /// No description provided for @wxRainFrom.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนมาราว {time}'**
+  String wxRainFrom(String time);
+
+  /// No description provided for @wxDryAhead.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่มีฝนอีก 12 ชม.'**
+  String get wxDryAhead;
+
+  /// No description provided for @wxSunStrong.
+  ///
+  /// In th, this message translates to:
+  /// **'แดดแรง'**
+  String get wxSunStrong;
+
+  /// No description provided for @wxHot.
+  ///
+  /// In th, this message translates to:
+  /// **'ร้อนจัด'**
+  String get wxHot;
+
+  /// No description provided for @wxFeels.
+  ///
+  /// In th, this message translates to:
+  /// **'รู้สึกเหมือน'**
+  String get wxFeels;
+
+  /// No description provided for @wxUv.
+  ///
+  /// In th, this message translates to:
+  /// **'UV'**
+  String get wxUv;
+
+  /// No description provided for @wxRainChance.
+  ///
+  /// In th, this message translates to:
+  /// **'โอกาสฝน'**
+  String get wxRainChance;
+
+  /// No description provided for @wxUvLow.
+  ///
+  /// In th, this message translates to:
+  /// **'ต่ำ'**
+  String get wxUvLow;
+
+  /// No description provided for @wxUvModerate.
+  ///
+  /// In th, this message translates to:
+  /// **'ปานกลาง'**
+  String get wxUvModerate;
+
+  /// No description provided for @wxUvHigh.
+  ///
+  /// In th, this message translates to:
+  /// **'สูง'**
+  String get wxUvHigh;
+
+  /// No description provided for @wxUvVeryHigh.
+  ///
+  /// In th, this message translates to:
+  /// **'สูงมาก'**
+  String get wxUvVeryHigh;
+
+  /// No description provided for @wxUvExtreme.
+  ///
+  /// In th, this message translates to:
+  /// **'อันตราย'**
+  String get wxUvExtreme;
+
+  /// No description provided for @wxNow.
+  ///
+  /// In th, this message translates to:
+  /// **'ตอนนี้'**
+  String get wxNow;
+
+  /// No description provided for @carryTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้ควรพก'**
+  String get carryTitle;
+
+  /// No description provided for @carryNothing.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่ต้องพกอะไรเพิ่ม'**
+  String get carryNothing;
+
+  /// No description provided for @carryNothingBody.
+  ///
+  /// In th, this message translates to:
+  /// **'อากาศดีตลอด 12 ชม.ข้างหน้า'**
+  String get carryNothingBody;
+
+  /// No description provided for @carryRaincoat.
+  ///
+  /// In th, this message translates to:
+  /// **'เสื้อกันฝน'**
+  String get carryRaincoat;
+
+  /// No description provided for @carryUmbrella.
+  ///
+  /// In th, this message translates to:
+  /// **'ร่ม'**
+  String get carryUmbrella;
+
+  /// No description provided for @carrySunUmbrella.
+  ///
+  /// In th, this message translates to:
+  /// **'ร่มกันแดด'**
+  String get carrySunUmbrella;
+
+  /// No description provided for @carrySunscreen.
+  ///
+  /// In th, this message translates to:
+  /// **'ครีมกันแดด'**
+  String get carrySunscreen;
+
+  /// No description provided for @carryWater.
+  ///
+  /// In th, this message translates to:
+  /// **'น้ำดื่ม'**
+  String get carryWater;
+
+  /// No description provided for @carryShoes.
+  ///
+  /// In th, this message translates to:
+  /// **'รองเท้าลุยน้ำ'**
+  String get carryShoes;
+
+  /// No description provided for @carryWhyRain.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝน {pct}% · {from}–{to}'**
+  String carryWhyRain(String pct, String from, String to);
+
+  /// No description provided for @carryWhyHeavy.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนหนัก ร่มเอาไม่อยู่ · {from}–{to}'**
+  String carryWhyHeavy(String from, String to);
+
+  /// No description provided for @carryWhyMoto.
+  ///
+  /// In th, this message translates to:
+  /// **'ขี่มอเตอร์ไซค์ฝ่าฝน · {from}–{to}'**
+  String carryWhyMoto(String from, String to);
+
+  /// No description provided for @carryWhyUv.
+  ///
+  /// In th, this message translates to:
+  /// **'UV {uv} · {from}–{to}'**
+  String carryWhyUv(String uv, String from, String to);
+
+  /// No description provided for @carryWhyShade.
+  ///
+  /// In th, this message translates to:
+  /// **'แดดแรงมาก กางร่มเดิน · {from}–{to}'**
+  String carryWhyShade(String from, String to);
+
+  /// No description provided for @carryWhyHeat.
+  ///
+  /// In th, this message translates to:
+  /// **'รู้สึกเหมือน {c}° ดื่มบ่อย ๆ'**
+  String carryWhyHeat(String c);
+
+  /// No description provided for @carryWhyShoes.
+  ///
+  /// In th, this message translates to:
+  /// **'น้ำขังบนถนน · {from}–{to}'**
+  String carryWhyShoes(String from, String to);
+
+  /// No description provided for @eventsAllDays.
+  ///
+  /// In th, this message translates to:
+  /// **'ทุกวัน'**
+  String get eventsAllDays;
+
+  /// No description provided for @eventsNoneOn.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่มีอีเวนต์วันนี้'**
+  String get eventsNoneOn;
+
+  /// No description provided for @calPrev.
+  ///
+  /// In th, this message translates to:
+  /// **'เดือนก่อน'**
+  String get calPrev;
+
+  /// No description provided for @calNext.
+  ///
+  /// In th, this message translates to:
+  /// **'เดือนถัดไป'**
+  String get calNext;
+
+  /// No description provided for @calMonth.
+  ///
+  /// In th, this message translates to:
+  /// **'{month, select, 1{มกราคม} 2{กุมภาพันธ์} 3{มีนาคม} 4{เมษายน} 5{พฤษภาคม} 6{มิถุนายน} 7{กรกฎาคม} 8{สิงหาคม} 9{กันยายน} 10{ตุลาคม} 11{พฤศจิกายน} 12{ธันวาคม} other{}} {year}'**
+  String calMonth(String month, String year);
+
+  /// No description provided for @dayToday.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้'**
+  String get dayToday;
+
+  /// No description provided for @dayTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'พรุ่งนี้'**
+  String get dayTomorrow;
+
+  /// No description provided for @eventsCalendar.
+  ///
+  /// In th, this message translates to:
+  /// **'ดูปฏิทิน'**
+  String get eventsCalendar;
+
+  /// No description provided for @planTitleToday.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้อีก {count} นัด'**
+  String planTitleToday(String count);
+
+  /// No description provided for @planTitleFree.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้ไม่มีนัดแล้ว'**
+  String get planTitleFree;
+
+  /// No description provided for @planToday.
+  ///
+  /// In th, this message translates to:
+  /// **'แผนต่อจากนี้'**
+  String get planToday;
+
+  /// No description provided for @planTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'พรุ่งนี้'**
+  String get planTomorrow;
+
+  /// No description provided for @planBring.
+  ///
+  /// In th, this message translates to:
+  /// **'พกไปด้วย'**
+  String get planBring;
+
+  /// No description provided for @planWeatherNow.
+  ///
+  /// In th, this message translates to:
+  /// **'อากาศตอนนี้'**
+  String get planWeatherNow;
+
+  /// No description provided for @planRainAt.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝน {pct}%'**
+  String planRainAt(String pct);
+
   /// No description provided for @verdictCantDecide.
   ///
   /// In th, this message translates to:
@@ -2222,341 +2480,11 @@ abstract class AppLocalizations {
   /// **'ดูปัจจัยที่ใช้ตัดสิน ({count})'**
   String verdictShowFactors(int count);
 
-  /// No description provided for @floodSetHomeTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ตั้งบ้านเพื่อดูความเสี่ยงน้ำท่วมหน้า⁠บ้าน'**
-  String get floodSetHomeTitle;
-
-  /// No description provided for @floodSetHomeMsg.
-  ///
-  /// In th, this message translates to:
-  /// **'แอปจะดูระดับคลองใกล้บ้าน จุดน้ำท่วมของ กทม. และรายงานจากเพื่อนบ้าน แล้วเตือนแม้ไม่ได้เปิดแอป'**
-  String get floodSetHomeMsg;
-
-  /// No description provided for @floodUseLocation.
-  ///
-  /// In th, this message translates to:
-  /// **'ใช้ตำแหน่งตอนนี้'**
-  String get floodUseLocation;
-
-  /// No description provided for @floodSearch.
-  ///
-  /// In th, this message translates to:
-  /// **'ค้นหา'**
-  String get floodSearch;
-
-  /// No description provided for @floodReadError.
-  ///
-  /// In th, this message translates to:
-  /// **'อ่านระดับน้ำไม่ได้'**
-  String get floodReadError;
-
-  /// No description provided for @floodReadErrorMsg.
-  ///
-  /// In th, this message translates to:
-  /// **'เชื่อมต่อ ThaiWater ผ่านเซิร์ฟเวอร์ไม่ได้ ถ้าน้ำขึ้นเร็วให้ยกของขึ้นที่สูงไว้ก่อน'**
-  String get floodReadErrorMsg;
-
-  /// No description provided for @floodRetry.
-  ///
-  /// In th, this message translates to:
-  /// **'ลองอีกครั้ง'**
-  String get floodRetry;
-
-  /// No description provided for @floodModeTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'โหมดน้ำท่วม'**
-  String get floodModeTitle;
-
-  /// No description provided for @floodHome.
-  ///
-  /// In th, this message translates to:
-  /// **'บ้าน'**
-  String get floodHome;
-
-  /// No description provided for @floodSameQuestion.
-  ///
-  /// In th, this message translates to:
-  /// **'คำถามเดิม ระดับใหม่'**
-  String get floodSameQuestion;
-
-  /// No description provided for @floodNoHome.
-  ///
-  /// In th, this message translates to:
-  /// **'ยังไม่ได้ตั้งบ้าน'**
-  String get floodNoHome;
-
   /// No description provided for @floodDoNow.
   ///
   /// In th, this message translates to:
   /// **'ทำตอนนี้ เรียงตามลำดับ'**
   String get floodDoNow;
-
-  /// No description provided for @floodPrepare.
-  ///
-  /// In th, this message translates to:
-  /// **'เตรียมไว้ก่อน'**
-  String get floodPrepare;
-
-  /// No description provided for @floodSpotsTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'จุดเสี่ยงน้ำท่วม กทม. ใกล้บ้าน'**
-  String get floodSpotsTitle;
-
-  /// No description provided for @floodNoSpots.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่มีจุดเสี่ยงใน 2 กม.'**
-  String get floodNoSpots;
-
-  /// No description provided for @floodNoSpotsMsg.
-  ///
-  /// In th, this message translates to:
-  /// **'บ้านไม่อยู่ใกล้จุดน้ำท่วมซ้ำซากที่ กทม. ประกาศไว้'**
-  String get floodNoSpotsMsg;
-
-  /// No description provided for @floodFromHome.
-  ///
-  /// In th, this message translates to:
-  /// **'ห่างบ้าน {meters} ม.'**
-  String floodFromHome(int meters);
-
-  /// No description provided for @floodNeighborsTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'เพื่อนบ้านในซอย'**
-  String get floodNeighborsTitle;
-
-  /// No description provided for @floodNeighborsDanger.
-  ///
-  /// In th, this message translates to:
-  /// **'11 คนได้รับเตือนเดียวกัน'**
-  String get floodNeighborsDanger;
-
-  /// No description provided for @floodNeighborsWatch.
-  ///
-  /// In th, this message translates to:
-  /// **'3 คนรายงานน้ำขังใน 20 นาที'**
-  String get floodNeighborsWatch;
-
-  /// No description provided for @floodNeighborsNote.
-  ///
-  /// In th, this message translates to:
-  /// **'คนที่ไม่มีสมาร์ทโฟนได้รับข้อความทาง LINE / SMS หรือโทรอ่านให้ฟัง'**
-  String get floodNeighborsNote;
-
-  /// No description provided for @floodStepSemantics.
-  ///
-  /// In th, this message translates to:
-  /// **'ขั้นที่ {order} {text}'**
-  String floodStepSemantics(int order, String text);
-
-  /// No description provided for @floodNearbyTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'รายงานน้ำท่วมใกล้ฉัน'**
-  String get floodNearbyTitle;
-
-  /// No description provided for @floodNearbyButton.
-  ///
-  /// In th, this message translates to:
-  /// **'ดูรายงานน้ำท่วมใกล้ฉัน'**
-  String get floodNearbyButton;
-
-  /// No description provided for @floodHereNow.
-  ///
-  /// In th, this message translates to:
-  /// **'ตำแหน่งตอนนี้'**
-  String get floodHereNow;
-
-  /// No description provided for @floodAround.
-  ///
-  /// In th, this message translates to:
-  /// **'รอบ {where}'**
-  String floodAround(String where);
-
-  /// No description provided for @floodNoReports.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่มีรายงานใน 500 ม.'**
-  String get floodNoReports;
-
-  /// No description provided for @floodNoReportsMsg.
-  ///
-  /// In th, this message translates to:
-  /// **'ยังไม่มีใครรายงานน้ำขังแถวนี้ใน 24 ชั่วโมง'**
-  String get floodNoReportsMsg;
-
-  /// No description provided for @floodWaterDepth.
-  ///
-  /// In th, this message translates to:
-  /// **'น้ำ {min}–{max} ซม.'**
-  String floodWaterDepth(int min, int max);
-
-  /// No description provided for @floodCarPassable.
-  ///
-  /// In th, this message translates to:
-  /// **'รถยนต์ {status}'**
-  String floodCarPassable(String status);
-
-  /// No description provided for @floodOtherSpot.
-  ///
-  /// In th, this message translates to:
-  /// **'ดูจุดอื่น'**
-  String get floodOtherSpot;
-
-  /// No description provided for @reportCameraError.
-  ///
-  /// In th, this message translates to:
-  /// **'เปิดกล้องไม่ได้ ลองเลือกจากคลังภาพแทน'**
-  String get reportCameraError;
-
-  /// No description provided for @reportGalleryError.
-  ///
-  /// In th, this message translates to:
-  /// **'เปิดคลังภาพไม่ได้ ตรวจสิทธิ์รูปภาพในตั้งค่าเครื่อง'**
-  String get reportGalleryError;
-
-  /// No description provided for @reportTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'แจ้งน้ำท่วม'**
-  String get reportTitle;
-
-  /// No description provided for @reportSubtitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ถ่ายรูปน้ำบนถนน บอกคนที่กำลังจะผ่าน'**
-  String get reportSubtitle;
-
-  /// No description provided for @reportTakePhoto.
-  ///
-  /// In th, this message translates to:
-  /// **'ถ่ายรูป'**
-  String get reportTakePhoto;
-
-  /// No description provided for @reportFromGallery.
-  ///
-  /// In th, this message translates to:
-  /// **'จากคลังภาพ'**
-  String get reportFromGallery;
-
-  /// No description provided for @reportFailed.
-  ///
-  /// In th, this message translates to:
-  /// **'ส่งรายงานไม่สำเร็จ'**
-  String get reportFailed;
-
-  /// No description provided for @reportFailedMsg.
-  ///
-  /// In th, this message translates to:
-  /// **'เชื่อมต่อเซิร์ฟเวอร์ไม่ได้ รูปยังอยู่ในเครื่อง ส่งใหม่ได้เลย'**
-  String get reportFailedMsg;
-
-  /// No description provided for @reportResend.
-  ///
-  /// In th, this message translates to:
-  /// **'ส่งอีกครั้ง'**
-  String get reportResend;
-
-  /// No description provided for @reportAnalyzing.
-  ///
-  /// In th, this message translates to:
-  /// **'Gemini กำลังดูภาพ ประเมินระดับน้ำเทียบกับล้อรถและขอบทาง…'**
-  String get reportAnalyzing;
-
-  /// No description provided for @reportAnalyzeHint.
-  ///
-  /// In th, this message translates to:
-  /// **'Gemini จะประเมินระดับน้ำจากภาพ แล้วเตือนคนที่เส้นทางผ่านจุดนี้ในรัศมี 300 ม.'**
-  String get reportAnalyzeHint;
-
-  /// No description provided for @reportSeeHome.
-  ///
-  /// In th, this message translates to:
-  /// **'ดูสถานการณ์ที่บ้าน'**
-  String get reportSeeHome;
-
-  /// No description provided for @reportLocating.
-  ///
-  /// In th, this message translates to:
-  /// **'กำลังหาตำแหน่ง…'**
-  String get reportLocating;
-
-  /// No description provided for @reportUsingGps.
-  ///
-  /// In th, this message translates to:
-  /// **'ใช้ GPS ของเครื่อง'**
-  String get reportUsingGps;
-
-  /// No description provided for @reportGpsDetail.
-  ///
-  /// In th, this message translates to:
-  /// **'GPS · {lat}, {lng} · {time}'**
-  String reportGpsDetail(String lat, String lng, String time);
-
-  /// No description provided for @reportFallbackDetail.
-  ///
-  /// In th, this message translates to:
-  /// **'{note} · ใช้ตำแหน่งสำรองของเดโม'**
-  String reportFallbackDetail(String note);
-
-  /// No description provided for @reportRetryGps.
-  ///
-  /// In th, this message translates to:
-  /// **'ลองหา GPS'**
-  String get reportRetryGps;
-
-  /// No description provided for @reportDepthSemantics.
-  ///
-  /// In th, this message translates to:
-  /// **'น้ำสูงประมาณ {min} ถึง {max} เซนติเมตร'**
-  String reportDepthSemantics(int min, int max);
-
-  /// No description provided for @reportSeenByGemini.
-  ///
-  /// In th, this message translates to:
-  /// **'Gemini ดูภาพแล้ว'**
-  String get reportSeenByGemini;
-
-  /// No description provided for @reportDepth.
-  ///
-  /// In th, this message translates to:
-  /// **'น้ำสูง {min}–{max} ซม.'**
-  String reportDepth(int min, int max);
-
-  /// No description provided for @reportNotified.
-  ///
-  /// In th, this message translates to:
-  /// **'แจ้งคน {count} คนที่กำลังจะผ่านจุดนี้'**
-  String reportNotified(int count);
-
-  /// No description provided for @reportCorroborated.
-  ///
-  /// In th, this message translates to:
-  /// **'ยืนยันกับอีก {count} รายงานในรัศมี 300 ม.'**
-  String reportCorroborated(int count);
-
-  /// No description provided for @reportDemoNumbers.
-  ///
-  /// In th, this message translates to:
-  /// **'จำนวนคนที่แจ้งเตือนเป็นตัวเลขจำลองสำหรับเดโม'**
-  String get reportDemoNumbers;
-
-  /// No description provided for @reportFrameHint.
-  ///
-  /// In th, this message translates to:
-  /// **'ถ่ายให้เห็นล้อรถหรือขอบทาง'**
-  String get reportFrameHint;
-
-  /// No description provided for @reportNoPhoto.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่มีภาพ · ผลตัวอย่าง'**
-  String get reportNoPhoto;
 
   /// No description provided for @settingsTitle.
   ///
@@ -2887,18 +2815,6 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ประเมินความเสี่ยง'**
   String get verdictToolEvaluate;
-
-  /// No description provided for @reportSampleResult.
-  ///
-  /// In th, this message translates to:
-  /// **'ผลประเมินตัวอย่าง ยังไม่ได้วิเคราะห์ภาพด้วย AI'**
-  String get reportSampleResult;
-
-  /// No description provided for @reportRejectedTitle.
-  ///
-  /// In th, this message translates to:
-  /// **'ใช้ภาพนี้ไม่ได้'**
-  String get reportRejectedTitle;
 }
 
 class _AppLocalizationsDelegate

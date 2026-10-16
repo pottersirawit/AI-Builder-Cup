@@ -13,7 +13,7 @@ Json fixture(String name) =>
 void main() {
   test('trips fixture parses calendar and gmail trips', () {
     final trips = Trip.listFromJson(fixture('trips'));
-    expect(trips, hasLength(2));
+    expect(trips, hasLength(11));
     final dinner = trips.first;
     expect(dinner.id, 'cal-dinner');
     expect(dinner.source, 'calendar');
@@ -22,6 +22,7 @@ void main() {
     expect(hhmm(dinner.arriveBy!), '18:30');
     expect(dinner.mode, TravelMode.car);
     expect(trips[1].source, 'gmail');
+    expect(trips.where((t) => t.unresolved).single.id, 'cal-dentist');
   });
 
   test('car decision fixture parses every contract field', () {

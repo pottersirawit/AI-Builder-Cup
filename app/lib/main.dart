@@ -79,7 +79,7 @@ class FonTokMaiApp extends StatefulWidget {
 
 class _FonTokMaiAppState extends State<FonTokMaiApp> {
   final _nav = GlobalKey<NavigatorState>();
-  static final _light = buildTheme();
+  static final _night = buildTheme(night: true);
   static final _flood = buildTheme(flood: true);
 
   @override
@@ -165,19 +165,16 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
             GlobalCupertinoLocalizations.delegate,
           ],
           debugShowCheckedModeBanner: false,
-          theme: widget.state.flood ? _flood : _light,
+          theme: widget.state.flood ? _flood : _night,
           themeAnimationDuration: Motion.sky,
           builder: (context, child) => MediaQuery.withClampedTextScaling(
             maxScaleFactor: 2,
             child: child!,
           ),
           home: _Root(
-            initialTab: switch (l?.screen) {
-              'report' || 'report_result' => ShellTab.report,
-              'home_tab' || 'flood_nohome' => ShellTab.home,
-              _ => ShellTab.board,
-            },
-            autoSubmitReport: l?.screen == 'report_result',
+            initialTab: l?.screen == 'events'
+                ? ShellTab.events
+                : ShellTab.summary,
           ),
         ),
       ),
@@ -187,12 +184,11 @@ class _FonTokMaiAppState extends State<FonTokMaiApp> {
 
 /// First launch shows onboarding; after it (or a skip) the tabs.
 class _Root extends StatelessWidget {
-  const _Root({required this.initialTab, required this.autoSubmitReport});
+  const _Root({required this.initialTab});
   final ShellTab initialTab;
-  final bool autoSubmitReport;
 
   @override
   Widget build(BuildContext context) => AppScope.placesOf(context).onboarded
-      ? Shell(initialTab: initialTab, autoSubmitReport: autoSubmitReport)
+      ? Shell(initialTab: initialTab)
       : const OnboardingScreen();
 }

@@ -153,7 +153,7 @@ class SettingsScreen extends StatelessWidget {
                 detail: l.settingsCalendarDetail,
                 account: _accountLabel(l, store, store.calendarAccount),
                 comingSoon: false,
-                onConnect: () => _promptOAuth(
+                onConnect: () => promptOAuth(
                   context,
                   service: OAuthService.calendar,
                   store: store,
@@ -167,7 +167,7 @@ class SettingsScreen extends StatelessWidget {
                 detail: l.settingsGmailHint,
                 account: _accountLabel(l, store, store.gmailAccount),
                 comingSoon: false,
-                onConnect: () => _promptOAuth(
+                onConnect: () => promptOAuth(
                   context,
                   service: OAuthService.gmail,
                   store: store,
@@ -265,7 +265,8 @@ String _accountLabel(AppLocalizations l, PlacesStore store, String account) {
   return '$account · ${l.placesConnected}';
 }
 
-Future<void> _promptOAuth(
+/// Asks for the Google account, then opens Google's consent page.
+Future<void> promptOAuth(
   BuildContext context, {
   required OAuthService service,
   required PlacesStore store,
@@ -278,11 +279,11 @@ Future<void> _promptOAuth(
 
   final defaultEmail = isCalendar
       ? (store.calendarAccount.contains('demo')
-          ? 'the32069@gmail.com'
-          : store.calendarAccount)
+            ? 'the32069@gmail.com'
+            : store.calendarAccount)
       : (store.gmailAccount.contains('demo')
-          ? 'the32069@gmail.com'
-          : store.gmailAccount);
+            ? 'the32069@gmail.com'
+            : store.gmailAccount);
   final emailController = TextEditingController(text: defaultEmail);
 
   await showModalBottomSheet<void>(
@@ -392,11 +393,11 @@ Future<void> _promptOAuth(
                     Text(
                       isCalendar
                           ? (isThai
-                              ? '• ตรวจสอบวัน เวลา และสถานที่นัดหมาย เพื่อคำนวณความเสี่ยงฝนตกและน้ำท่วมล่วงหน้า\n• ปลอดภัยและเป็นส่วนตัว: ดูเฉพาะกำหนดการเดินทาง ไม่มีการแก้ไขหรือลบข้อมูลในปฏิทิน\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
-                              : '• Checks upcoming event times and locations to calculate rain and flood risk before departure\n• Private and secure: Only reads travel schedules, never modifies or deletes your events\n• Processed on your device for route planning, never permanently stored on servers')
+                                ? '• ตรวจสอบวัน เวลา และสถานที่นัดหมาย เพื่อคำนวณความเสี่ยงฝนตกและน้ำท่วมล่วงหน้า\n• ปลอดภัยและเป็นส่วนตัว: ดูเฉพาะกำหนดการเดินทาง ไม่มีการแก้ไขหรือลบข้อมูลในปฏิทิน\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
+                                : '• Checks upcoming event times and locations to calculate rain and flood risk before departure\n• Private and secure: Only reads travel schedules, never modifies or deletes your events\n• Processed on your device for route planning, never permanently stored on servers')
                           : (isThai
-                              ? '• ตรวจสอบอีเมลยืนยันการจองตั๋วหรือนัดหมาย เพื่อแนะนำการเดินทางล่วงหน้าอัตโนมัติ\n• ปลอดภัยและเป็นส่วนตัว: ค้นหาเฉพาะข้อมูลการเดินทาง ไม่อ่านอีเมลส่วนตัวอื่น ๆ\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
-                              : '• Checks travel or booking confirmations to proactively suggest safe transit routes\n• Private and secure: Only searches travel details, never reads your personal messages\n• Processed on your device for route planning, never permanently stored on servers'),
+                                ? '• ตรวจสอบอีเมลยืนยันการจองตั๋วหรือนัดหมาย เพื่อแนะนำการเดินทางล่วงหน้าอัตโนมัติ\n• ปลอดภัยและเป็นส่วนตัว: ค้นหาเฉพาะข้อมูลการเดินทาง ไม่อ่านอีเมลส่วนตัวอื่น ๆ\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
+                                : '• Checks travel or booking confirmations to proactively suggest safe transit routes\n• Private and secure: Only searches travel details, never reads your personal messages\n• Processed on your device for route planning, never permanently stored on servers'),
                       style: textTheme.bodySmall?.copyWith(
                         color: scheme.onSurfaceVariant,
                         height: 1.5,
@@ -456,9 +457,7 @@ Future<void> _promptOAuth(
                       email: selectedEmail,
                     );
                   } else {
-                    await store.connectGmail(
-                      email: selectedEmail,
-                    );
+                    await store.connectGmail(email: selectedEmail);
                   }
 
                   if (context.mounted) {

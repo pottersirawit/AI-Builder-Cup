@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:http/http.dart' as http;
 
+import 'events.dart' show bangkokDay;
 import 'models.dart';
 import 'places.dart';
 
@@ -60,21 +61,37 @@ class FonTokMaiApi {
     () async => Trip.listFromJson(await _fixture('trips')),
   );
 
-  Future<ApiResult<List<Trip>>> syncTrips({String? email}) => _withFallback(
-    () async {
-      final res = await _get(
-        '/v1/trips/sync',
-        email == null ? null : {'email': email},
-      );
-      return Trip.listFromJson(res);
-    },
-    () async => Trip.listFromJson(await _fixture('trips')),
-  );
+  Future<ApiResult<List<Trip>>> syncTrips({String? email}) =>
+      _withFallback(() async {
+        final res = await _get(
+          '/v1/trips/sync',
+          email == null ? null : {'email': email},
+        );
+        return Trip.listFromJson(res);
+      }, () async => Trip.listFromJson(await _fixture('trips')));
 
   Future<ApiResult<Decision>> decide(DecideRequest req) => _withFallback(
     () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),
     () async => Decision.fromJson(await _fixture(sampleDecisionName(req))),
   );
+
+  /// The next 12 hours of weather at [lat],[lng]; without them, the
+  /// server's demo home. The sample day is moved onto today when live.
+  Future<ApiResult<Outlook>> outlook({double? lat, double? lng}) =>
+      _withFallback(
+        () async => Outlook.fromJson(
+          await _get(
+            '/v1/outlook',
+            lat == null || lng == null ? null : {'lat': '$lat', 'lng': '$lng'},
+          ),
+        ),
+        () async => sampleOutlook(
+          Outlook.fromJson(await _fixture('outlook')),
+          demoClock?.call() == null
+              ? DateTime.now()
+              : DateTime.parse(demoClock!.call()!),
+        ),
+      );
 
   /// Flood status at [home]; without it, the server's demo home.
   Future<ApiResult<HomeStatus>> homeStatus({SavedPlace? home}) => _withFallback(
@@ -308,4 +325,24 @@ String sampleHomeStatusName(String? demoClock, {double? lat, double? lng}) {
   if (t == null) return 'home_status_watch';
   final hour = t.toUtc().add(const Duration(hours: 7)).hour;
   return hour >= 21 ? 'home_status_danger' : 'home_status_watch';
+}
+
+/// The bundled weather day, re-dated onto [now]'s Bangkok date and cut to
+/// the 12 hours from [now]'s hour.
+@visibleForTesting
+Outlook sampleOutlook(Outlook day, DateTime now) {
+  final first = day.hours.first.time;
+  final shift = bangkokDay(now).difference(bangkokDay(first));
+  final hours = [
+    for (final h in day.hours)
+      if (!h.time.add(shift).add(const Duration(hours: 1)).isBefore(now))
+        h.shifted(shift),
+  ].take(12).toList();
+  final all = hours.isEmpty ? [day.hours.last.shifted(shift)] : hours;
+  return Outlook(
+    now: all.first,
+    hours: all,
+    sunset: day.sunset?.add(shift),
+    sources: day.sources,
+  );
 }
