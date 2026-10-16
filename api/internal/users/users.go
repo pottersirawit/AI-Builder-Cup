@@ -24,6 +24,7 @@ type UserTrip struct {
 // UserStore manages user profiles, trips, and cached risk states.
 type UserStore interface {
 	GetTrip(ctx context.Context, uid, tripID string) (UserTrip, error)
+	FindTripByID(ctx context.Context, tripID string) (UserTrip, error)
 	UpsertTrip(ctx context.Context, ut UserTrip) error
 	ListTrips(ctx context.Context, uid string) ([]UserTrip, error)
 	UpdateCachedAdvisory(ctx context.Context, uid, tripID string, verdict decision.Verdict, risk decision.Risk, notifiedAt time.Time) error
@@ -51,6 +52,17 @@ func (m *MemoryUserStore) GetTrip(_ context.Context, uid, tripID string) (UserTr
 		return UserTrip{}, fmt.Errorf("trip %s not found for user %s", tripID, uid)
 	}
 	return ut, nil
+}
+
+func (m *MemoryUserStore) FindTripByID(_ context.Context, tripID string) (UserTrip, error) {
+	m.mu.RLock()
+	defer m.mu.RUnlock()
+	for _, ut := range m.trips {
+		if ut.Trip.ID == tripID {
+			return ut, nil
+		}
+	}
+	return UserTrip{}, fmt.Errorf("trip %s not found in store", tripID)
 }
 
 func (m *MemoryUserStore) UpsertTrip(_ context.Context, ut UserTrip) error {

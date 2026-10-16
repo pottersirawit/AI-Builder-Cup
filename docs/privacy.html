@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Privacy Policy - Fontokmai (ฝนตกไหม)</title>
+  <style>
+    :root {
+      --bg: #0b1120;
+      --card-bg: #1e293b;
+      --text: #f8fafc;
+      --text-muted: #94a3b8;
+      --primary: #0284c7;
+      --accent: #38bdf8;
+      --border: #334155;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      background-color: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+      padding: 0 1.5rem;
+    }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 3rem 0;
+    }
+    header {
+      margin-bottom: 2.5rem;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 1.5rem;
+    }
+    h1 {
+      font-size: 2.25rem;
+      font-weight: 800;
+      margin-bottom: 0.5rem;
+    }
+    .date {
+      color: var(--text-muted);
+      font-size: 0.875rem;
+    }
+    section {
+      margin-bottom: 2rem;
+    }
+    h2 {
+      font-size: 1.35rem;
+      color: var(--accent);
+      margin-bottom: 0.75rem;
+    }
+    p, ul {
+      color: var(--text-muted);
+      margin-bottom: 1rem;
+      font-size: 0.95rem;
+    }
+    ul {
+      padding-left: 1.5rem;
+    }
+    li {
+      margin-bottom: 0.5rem;
+    }
+    .callout {
+      background: rgba(2, 132, 199, 0.1);
+      border-left: 4px solid var(--primary);
+      padding: 1rem 1.25rem;
+      border-radius: 4px;
+      margin: 1.5rem 0;
+    }
+    .callout p {
+      color: #e2e8f0;
+      margin-bottom: 0;
+    }
+    footer {
+      border-top: 1px solid var(--border);
+      padding-top: 2rem;
+      text-align: center;
+      color: var(--text-muted);
+      font-size: 0.875rem;
+      margin-top: 3rem;
+    }
+    footer a {
+      color: var(--accent);
+      text-decoration: none;
+      margin: 0 0.75rem;
+    }
+    footer a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Privacy Policy</h1>
+      <p class="date">Last updated: October 16, 2026 &bull; Fontokmai (ฝนตกไหม)</p>
+    </header>
+
+    <section>
+      <h2>1. Overview</h2>
+      <p>
+        Fontokmai ("ฝนตกไหม", "we", "our", or "the app") provides weather resilience and flood commute advisory services for Bangkok. This Privacy Policy details our practices concerning data collection, usage, and user protection.
+      </p>
+    </section>
+
+    <section>
+      <h2>2. Google User Data & Google Calendar Access</h2>
+      <p>
+        Fontokmai offers an optional feature that allows users to connect their Google Calendar account to anticipate commute schedules.
+      </p>
+      <ul>
+        <li><strong>OAuth Scope Requested:</strong> <code>https://www.googleapis.com/auth/calendar.readonly</code></li>
+        <li><strong>Specific Data Accessed:</strong> We access strictly read-only event timing (start/end timestamp) and event destination location strings for upcoming calendar entries. We do not access attendee lists, event descriptions, attachments, or private notes.</li>
+        <li><strong>Purpose of Access:</strong> Calendar event locations and times are used solely to determine your upcoming route and departure window, correlating them with real-time Bangkok Metropolitan Administration (BMA) flood sensors and weather forecasts to notify you of potential travel disruptions.</li>
+      </ul>
+
+      <div class="callout">
+        <p><strong>Google API Limited Use Disclosure:</strong> Fontokmai's use and transfer to any other app of information received from Google APIs will adhere to the <a href="https://developers.google.com/terms/api-services-user-data-policy" target="_blank" rel="noopener" style="color: #38bdf8;">Google API Services User Data Policy</a>, including the <strong>Limited Use</strong> requirements.</p>
+      </div>
+    </section>
+
+    <section>
+      <h2>3. Data Retention & Storage</h2>
+      <p>
+        We practice strict data minimization:
+      </p>
+      <ul>
+        <li><strong>In-Memory Processing:</strong> Calendar data and route coordinates are processed ephemerally in-memory during your active planning session.</li>
+        <li><strong>No Persistent Database Storage:</strong> Your calendar events, personal identifiers, and past locations are never permanently written to backend databases or disks.</li>
+        <li><strong>Zero Data Selling:</strong> We never sell, rent, commercialize, or share your Google user data or personal information with third parties, advertisers, or data brokers.</li>
+      </ul>
+    </section>
+
+    <section>
+      <h2>4. User Control & Revocation of Access</h2>
+      <p>
+        You have complete control over your Google account permissions at all times. You can disconnect calendar access within the app settings or immediately revoke Fontokmai's access through your Google Account Security Dashboard:
+      </p>
+      <p>
+        <a href="https://myaccount.google.com/permissions" target="_blank" rel="noopener" style="color: var(--accent);">https://myaccount.google.com/permissions</a>
+      </p>
+    </section>
+
+    <section>
+      <h2>5. Contact Us</h2>
+      <p>
+        If you have any questions or inquiries regarding this Privacy Policy or data processing practices, please contact:
+      </p>
+      <p>
+        <strong>Developer Contact:</strong> <a href="mailto:the32069@gmail.com" style="color: var(--accent);">the32069@gmail.com</a><br>
+        <strong>Project Repository:</strong> <a href="https://github.com/pottersirawit/AI-Builder-Cup" target="_blank" rel="noopener" style="color: var(--accent);">github.com/pottersirawit/AI-Builder-Cup</a>
+      </p>
+    </section>
+
+    <footer>
+      <p>&copy; 2026 Fontokmai (ฝนตกไหม). All rights reserved.</p>
+      <p style="margin-top: 0.75rem;">
+        <a href="index.html">Home</a>
+        <a href="privacy.html">Privacy Policy</a>
+      </p>
+    </footer>
+  </div>
+</body>
+</html>

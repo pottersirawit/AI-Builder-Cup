@@ -70,7 +70,12 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /v1/healthz", healthHandler)
 	mux.HandleFunc("GET /health", healthHandler)
 	mux.HandleFunc("GET /v1/health", healthHandler)
+	mux.HandleFunc("GET /{$}", s.homePage)
+	mux.HandleFunc("GET /privacy", s.privacyPolicy)
+	mux.HandleFunc("GET /oauth2callback", s.oauth2Callback)
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
+	mux.HandleFunc("GET /v1/trips/sync", s.withClock(s.syncTrips))
+	mux.HandleFunc("POST /v1/trips/sync", s.withClock(s.syncTrips))
 	mux.HandleFunc("GET /v1/places", s.withClock(s.places))
 	mux.Handle("POST /v1/decide", s.Limits.rateLimit("decide", s.Limits.decideRPM(), s.Limits.limitBody(s.withClock(s.decide))))
 	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
@@ -111,7 +116,24 @@ func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) h
 }
 
 func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	trips := s.Planner.Trips(rc.now)
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		email = r.URL.Query().Get("uid")
+	}
+
+	var trips []domain.Trip
+	if s.UserStore != nil && email != "" {
+		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil && len(uTrips) > 0 {
+			for _, ut := range uTrips {
+				trips = append(trips, ut.Trip)
+			}
+		}
+	}
+
+	if len(trips) == 0 && s.Planner != nil && s.Planner.Trips != nil {
+		trips = s.Planner.Trips(rc.now)
+	}
+
 	if rc.lang == domain.LangEN {
 		localized := make([]domain.Trip, len(trips))
 		for i, t := range trips {
@@ -120,6 +142,50 @@ func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		trips = localized
 	}
 	writeJSON(w, http.StatusOK, map[string]any{"trips": trips})
+}
+
+func (s *Server) syncTrips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
+	email := r.URL.Query().Get("email")
+	if email == "" {
+		email = r.URL.Query().Get("uid")
+	}
+	if email == "" {
+		email = "the32069@gmail.com"
+	}
+
+	tokenStoreMu.RLock()
+	tok, hasTok := tokenStore[email]
+	tokenStoreMu.RUnlock()
+
+	if hasTok && tok != nil && tok.AccessToken != "" {
+		_ = s.SyncUserWorkspaceData(r.Context(), email, tok.AccessToken, rc.now)
+	}
+
+	var trips []domain.Trip
+	if s.UserStore != nil {
+		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil && len(uTrips) > 0 {
+			for _, ut := range uTrips {
+				trips = append(trips, ut.Trip)
+			}
+		}
+	}
+	if len(trips) == 0 && s.Planner != nil && s.Planner.Trips != nil {
+		trips = s.Planner.Trips(rc.now)
+	}
+
+	if rc.lang == domain.LangEN {
+		localized := make([]domain.Trip, len(trips))
+		for i, t := range trips {
+			localized[i] = scenario.LocalizeTrip(t, rc.lang)
+		}
+		trips = localized
+	}
+	writeJSON(w, http.StatusOK, map[string]any{
+		"synced": true,
+		"email":  email,
+		"count":  len(trips),
+		"trips":  trips,
+	})
 }
 
 // places lists the saved places a question can name, and which one the user
@@ -158,6 +224,24 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
+	if tripReq.Trip != nil && s.UserStore != nil {
+		email := req.Email
+		if email == "" {
+			email = r.URL.Query().Get("email")
+		}
+		if email == "" {
+			email = "the32069@gmail.com"
+		}
+		_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+			UID:       email,
+			Trip:      *tripReq.Trip,
+			UpdatedAt: time.Now(),
+		})
+	} else if tripReq.Trip == nil && tripReq.TripID != "" && s.UserStore != nil {
+		if ut, err := s.UserStore.FindTripByID(r.Context(), tripReq.TripID); err == nil {
+			tripReq.Trip = &ut.Trip
+		}
+	}
 	sess, err := s.Planner.Open(r.Context(), rc.prov, rc.now, tripReq)
 	if errors.Is(err, planner.ErrBadTrip) {
 		writeError(w, http.StatusBadRequest, err.Error())
@@ -167,10 +251,7 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	sources := []string{rc.prov.Weather.Name(), rc.prov.Routes.Name(), rc.prov.Canals.Name(), "BMA flood spots"}
-	if tripReq.Origin != nil {
-		sources = append([]string{rc.lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location")}, sources...)
-	}
+	sources := sess.SourcesUsed()
 	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, sources)
 	var needs *agent.NeedsPlace
 	switch {

@@ -65,16 +65,25 @@ class PlacesStore extends ChangeNotifier {
   static const _kCalendarHint = 'profile.calendar_hint_dismissed';
   static const _kLocationAsked = 'profile.location_asked';
   static const _kManualLocation = 'profile.manual_location';
+  static const _kCalendarEmail = 'profile.calendar_email';
+  static const _kGmailEmail = 'profile.gmail_email';
+  static const _kCalendarState = 'profile.calendar_state';
+  static const _kGmailState = 'profile.gmail_state';
+  static const _kCachedTrips = 'profile.cached_trips';
 
   final SharedPreferences _prefs;
 
   List<SavedPlace> _places = [];
+  List<Trip> _cachedTrips = [];
   PlaceCandidate? _manualLocation;
   bool _onboarded = false;
   bool _demo = false;
   bool _calendarHintDismissed = false;
   bool _locationAsked = false;
   LinkState _calendar = LinkState.notConnected;
+  LinkState _gmail = LinkState.notConnected;
+  String? _calendarEmail;
+  String? _gmailEmail;
 
   bool get _initialized => _prefs.containsKey(_kOnboarded);
 
@@ -111,7 +120,38 @@ class PlacesStore extends ChangeNotifier {
     _demo = _prefs.getBool(_kDemo) ?? false;
     _calendarHintDismissed = _prefs.getBool(_kCalendarHint) ?? false;
     _locationAsked = _prefs.getBool(_kLocationAsked) ?? false;
-    _calendar = _demo ? LinkState.connected : LinkState.notConnected;
+    _calendarEmail = _prefs.getString(_kCalendarEmail);
+    _gmailEmail = _prefs.getString(_kGmailEmail);
+
+    final savedCalState = _prefs.getString(_kCalendarState);
+    if (savedCalState == LinkState.connected.name || (_calendarEmail != null && _calendarEmail!.isNotEmpty)) {
+      _calendar = LinkState.connected;
+    } else if (_demo) {
+      _calendar = LinkState.connected;
+    } else {
+      _calendar = LinkState.notConnected;
+    }
+
+    final savedGmailState = _prefs.getString(_kGmailState);
+    if (savedGmailState == LinkState.connected.name || (_gmailEmail != null && _gmailEmail!.isNotEmpty)) {
+      _gmail = LinkState.connected;
+    } else if (_demo) {
+      _gmail = LinkState.connected;
+    } else {
+      _gmail = LinkState.notConnected;
+    }
+
+    final rawTrips = _prefs.getString(_kCachedTrips);
+    if (rawTrips != null) {
+      try {
+        final list = jsonDecode(rawTrips) as List;
+        _cachedTrips = list.map((x) => Trip.fromJson(x as Json)).toList();
+      } catch (_) {
+        _cachedTrips = [];
+      }
+    } else {
+      _cachedTrips = [];
+    }
   }
 
   void _write() {
@@ -123,7 +163,33 @@ class PlacesStore extends ChangeNotifier {
     _prefs.setBool(_kDemo, _demo);
     _prefs.setBool(_kCalendarHint, _calendarHintDismissed);
     _prefs.setBool(_kLocationAsked, _locationAsked);
+    _prefs.setString(_kCalendarState, _calendar.name);
+    _prefs.setString(_kGmailState, _gmail.name);
+    if (_calendarEmail != null) {
+      _prefs.setString(_kCalendarEmail, _calendarEmail!);
+    } else {
+      _prefs.remove(_kCalendarEmail);
+    }
+    if (_gmailEmail != null) {
+      _prefs.setString(_kGmailEmail, _gmailEmail!);
+    } else {
+      _prefs.remove(_kGmailEmail);
+    }
+    if (_cachedTrips.isNotEmpty) {
+      _prefs.setString(
+        _kCachedTrips,
+        jsonEncode([for (final t in _cachedTrips) t.toJson()]),
+      );
+    } else {
+      _prefs.remove(_kCachedTrips);
+    }
     notifyListeners();
+  }
+
+  List<Trip> get cachedTrips => List.unmodifiable(_cachedTrips);
+  void setCachedTrips(List<Trip> trips) {
+    _cachedTrips = trips;
+    _write();
   }
 
   PlaceCandidate? get manualLocation => _manualLocation;
@@ -249,6 +315,9 @@ class PlacesStore extends ChangeNotifier {
     _demo = true;
     _onboarded = true;
     _calendar = LinkState.connected;
+    _gmail = LinkState.connected;
+    _calendarEmail = 'miw.demo@gmail.com';
+    _gmailEmail = 'miw.demo@gmail.com';
     _calendarHintDismissed = false;
     _write();
   }
@@ -261,6 +330,15 @@ class PlacesStore extends ChangeNotifier {
     _demo = false;
     _onboarded = false;
     _calendar = LinkState.notConnected;
+    _gmail = LinkState.notConnected;
+    _calendarEmail = null;
+    _gmailEmail = null;
+    _cachedTrips = [];
+    _prefs.remove(_kCalendarState);
+    _prefs.remove(_kGmailState);
+    _prefs.remove(_kCalendarEmail);
+    _prefs.remove(_kGmailEmail);
+    _prefs.remove(_kCachedTrips);
     _calendarHintDismissed = false;
     _locationAsked = false;
     _write();
@@ -282,31 +360,86 @@ class PlacesStore extends ChangeNotifier {
 
   LinkState get calendar => _calendar;
 
-  /// Synthetic demo account; labelled as such wherever it is shown.
-  String get calendarAccount => 'miw.demo@gmail.com';
+  /// Account email associated with the calendar.
+  String get calendarAccount =>
+      _calendarEmail ?? (_demo ? 'miw.demo@gmail.com' : 'the32069@gmail.com');
 
-  /// OAuth is stubbed: only the demo profile can connect.
+  /// OAuth is stubbed: only the demo profile can connect by default without allowLive.
   bool get canConnectCalendar => _demo;
 
   Future<void> connectCalendar({
     Duration delay = const Duration(milliseconds: 1200),
+    bool allowLive = false,
+    String? email,
   }) async {
-    if (!canConnectCalendar || _calendar == LinkState.connecting) return;
+    if ((!canConnectCalendar && !allowLive) || _calendar == LinkState.connecting) return;
     _calendar = LinkState.connecting;
+    if (email != null && email.isNotEmpty) {
+      _calendarEmail = email;
+    } else if (_calendarEmail == null && !_demo) {
+      _calendarEmail = 'the32069@gmail.com';
+    }
+    _write();
     notifyListeners();
     await Future<void>.delayed(delay);
     _calendar = LinkState.connected;
+    _write();
     notifyListeners();
   }
 
   void disconnectCalendar() {
     _calendar = LinkState.notConnected;
+    _calendarEmail = null;
+    _cachedTrips.removeWhere((t) => t.source == 'calendar');
+    _prefs.remove(_kCalendarState);
+    _prefs.remove(_kCalendarEmail);
+    _write();
+    notifyListeners();
+  }
+
+  LinkState get gmail => _gmail;
+  String get gmailAccount =>
+      _gmailEmail ?? (_demo ? 'miw.demo@gmail.com' : 'the32069@gmail.com');
+  bool get canConnectGmail => true;
+
+  Future<void> connectGmail({
+    Duration delay = const Duration(milliseconds: 1200),
+    String? email,
+  }) async {
+    if (_gmail == LinkState.connecting) return;
+    _gmail = LinkState.connecting;
+    if (email != null && email.isNotEmpty) {
+      _gmailEmail = email;
+    } else if (_gmailEmail == null && !_demo) {
+      _gmailEmail = 'the32069@gmail.com';
+    }
+    _write();
+    notifyListeners();
+    await Future<void>.delayed(delay);
+    _gmail = LinkState.connected;
+    _write();
+    notifyListeners();
+  }
+
+  void disconnectGmail() {
+    _gmail = LinkState.notConnected;
+    _gmailEmail = null;
+    _cachedTrips.removeWhere((t) => t.source == 'gmail');
+    _prefs.remove(_kGmailState);
+    _prefs.remove(_kGmailEmail);
+    _write();
     notifyListeners();
   }
 
   @visibleForTesting
   set calendarForTest(LinkState v) {
     _calendar = v;
+    notifyListeners();
+  }
+
+  @visibleForTesting
+  set gmailForTest(LinkState v) {
+    _gmail = v;
     notifyListeners();
   }
 }

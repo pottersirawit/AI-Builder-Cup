@@ -9,6 +9,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/reports"
@@ -28,7 +29,16 @@ func newPlanner(t *testing.T) *Planner {
 }
 
 func scenarioProviders() Providers {
-	return Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	return Providers{
+		Weather:     scenario.Weather{},
+		Routes:      scenario.Routes{},
+		Canals:      scenario.Canals{},
+		Reports:     reports.NewMemoryStore(scenario.SeedReports()...),
+		WeatherNext: scenario.WeatherNext{},
+		BMAFlood:    scenario.BMAFlood{},
+		BMATidal:    scenario.BMATidal{},
+		Hotlines:    scenario.DirectoryHotlines{},
+	}
 }
 
 func TestNewSessionTrips(t *testing.T) {
@@ -327,3 +337,96 @@ func TestGetTripSanitisesUntrustedTitle(t *testing.T) {
 		t.Errorf("title not sanitised: %q", got)
 	}
 }
+
+type mockWeatherNext struct {
+	gust float64
+	temp float64
+	err  error
+}
+
+func (m mockWeatherNext) Name() string { return "MockWeatherNext" }
+func (m mockWeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (float64, float64, error) {
+	return m.gust, m.temp, m.err
+}
+
+func TestWeatherNextHighWindGustElevatesMotorbikeRisk(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+	prov.WeatherNext = mockWeatherNext{gust: 52.0, temp: 31.0}
+
+	s, err := p.NewSession(context.Background(), prov, at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	in, err := s.Input(at(16, 10), domain.ModeMoto)
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	if in.WindGustKMH != 52.0 {
+		t.Fatalf("expected WindGustKMH = 52.0, got %v", in.WindGustKMH)
+	}
+
+	base, err := s.Baseline(at(16, 10), domain.ModeMoto)
+	if err != nil {
+		t.Fatal(err)
+	}
+	motoEval, ok := base.Evals[domain.ModeMoto]
+	if !ok {
+		t.Fatal("expected motorbike eval in baseline")
+	}
+
+	if motoEval.Risk != decision.RiskHigh {
+		t.Fatalf("expected HIGH motorbike risk with 52km/h wind gusts, got %v", motoEval.Risk)
+	}
+}
+
+func TestSourcesUsed_DynamicAttribution(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+
+	gps := domain.Place{NameTH: "ตำแหน่งปัจจุบัน", Lat: 13.7466, Lng: 100.5393}
+	s, err := p.Open(context.Background(), prov, at(16, 10), TripRequest{
+		Origin:      &gps,
+		Destination: &scenario.Home,
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	sources := s.SourcesUsed()
+	if len(sources) == 0 {
+		t.Fatal("expected non-empty sources")
+	}
+
+	// First source should be GPS
+	if sources[0] != "GPS ตำแหน่งปัจจุบัน" {
+		t.Errorf("expected first source to be GPS, got %q", sources[0])
+	}
+
+	// Must contain BMA flood spots, BMA Road Flood Sensors, BMA Canal Flow & Tidal Map, and WeatherNext
+	joined := strings.Join(sources, ",")
+	for _, want := range []string{
+		"BMA flood spots",
+		"BMA Road Flood Sensors",
+		"BMA Canal Flow & Tidal Map",
+		"Google DeepMind WeatherNext 3",
+		"สายด่วนฉุกเฉิน",
+	} {
+		if !strings.Contains(joined, want) {
+			t.Errorf("sources %v should contain %q", sources, want)
+		}
+	}
+
+	contacts := s.EmergencyContacts()
+	if len(contacts) < 4 {
+		t.Fatalf("expected at least 4 emergency hotlines, got %d", len(contacts))
+	}
+	if contacts[0].Number != "1784" {
+		t.Errorf("expected 1784 DDPM as primary rescue hotline, got %s", contacts[0].Number)
+	}
+}
+
+
+

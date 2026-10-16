@@ -319,3 +319,118 @@ var HomeProfile = struct {
 	SandbagPointEN string
 }{Home, HomeFloodLevelM, "ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม.", "สำนักงานเขตจตุจักร เปิดถึงเที่ยงคืน",
 	"the Central Ladprao car park (1.2 km)", "Chatuchak District Office (open until midnight)"}
+
+// WeatherNext replays scenario WeatherNext 3 telemetry (5km grid wind gust and temperature).
+type WeatherNext struct{}
+
+func (WeatherNext) Name() string { return "Google DeepMind WeatherNext 3 (scenario)" }
+
+func (WeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (maxGust float64, maxTemp float64, err error) {
+	return 25.0, 32.0, nil
+}
+
+// BMAFlood replays scenario BMA road flood sensors along commuter routes.
+type BMAFlood struct{}
+
+func (BMAFlood) Name() string { return "BMA Road Flood Sensors (scenario)" }
+
+func (BMAFlood) SensorsNearRoute(polyline []domain.LatLng, radiusM float64) ([]domain.RoadFloodSensor, error) {
+	scenarioSensors := []domain.RoadFloodSensor{
+		{
+			Code:      "TN.DDG.01",
+			NameTH:    "อุโมงค์ทางลอดดินแดง",
+			NameEN:    "Din Daeng Underpass Tunnel",
+			Lat:       13.76391,
+			Lng:       100.54820,
+			DepthCM:   12.0,
+			UpdatedAt: time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok),
+		},
+		{
+			Code:      "FL.RTC.01",
+			NameTH:    "ถนนรัชดาภิเษก หน้าศาลอาญา",
+			NameEN:    "Ratchadapisek Rd (Criminal Court)",
+			Lat:       13.8165,
+			Lng:       100.5750,
+			DepthCM:   18.0,
+			UpdatedAt: time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok),
+		},
+	}
+	var out []domain.RoadFloodSensor
+	for _, s := range scenarioSensors {
+		if geo.DistanceToPolylineM(s.Point(), polyline) <= radiusM {
+			out = append(out, s)
+		}
+	}
+	return out, nil
+}
+
+// BMATidal replays scenario BMA KlongMap high tide telemetry.
+type BMATidal struct{}
+
+func (BMATidal) Name() string { return "BMA Canal Flow & Tidal Map (scenario)" }
+
+func (BMATidal) TidalStatus(_ context.Context, at time.Time) (domain.TidalReading, error) {
+	return domain.TidalReading{
+		HighTideM:    1.09,
+		HighTideTime: at,
+		LowTideM:     -0.41,
+		SurgeRisk:    "high",
+	}, nil
+}
+
+// DirectoryHotlines provides verified emergency contact helplines for flood rescue, medical, road, and electricity assistance.
+type DirectoryHotlines struct{}
+
+func (DirectoryHotlines) Name() string { return "สายด่วนฉุกเฉิน (ปภ. 1784 / สพฉ. 1669)" }
+
+func (DirectoryHotlines) EmergencyContacts() []domain.EmergencyContact {
+	return []domain.EmergencyContact{
+		{
+			AgencyTH:  "กรมป้องกันและบรรเทาสาธารณภัย (ปภ.)",
+			AgencyEN:  "Disaster Prevention & Mitigation (DDPM)",
+			Number:    "1784",
+			PurposeTH: "ขอความช่วยเหลือ/อพยพ เหตุน้ำท่วม ตลอด 24 ชม.",
+			PurposeEN: "Flood rescue & evacuation assistance (24/7)",
+			LineID:    "@1784DDPM",
+		},
+		{
+			AgencyTH:  "สถาบันการแพทย์ฉุกเฉินแห่งชาติ (สพฉ.)",
+			AgencyEN:  "National Emergency Medical Services (EMS)",
+			Number:    "1669",
+			PurposeTH: "เจ็บป่วยฉุกเฉิน อุบัติเหตุ กู้ชีพเร่งด่วน",
+			PurposeEN: "Life-threatening medical emergencies & ambulance",
+		},
+		{
+			AgencyTH:  "กรมทางหลวง",
+			AgencyEN:  "Department of Highways",
+			Number:    "1586",
+			PurposeTH: "สอบถามเส้นทางน้ำท่วม ทางเบี่ยงทางหลวง",
+			PurposeEN: "Highway flood road conditions & detours",
+		},
+		{
+			AgencyTH:  "กรมทางหลวงชนบท",
+			AgencyEN:  "Department of Rural Roads",
+			Number:    "1146",
+			PurposeTH: "สอบถามเส้นทางถนนชนบทและสายรอง",
+			PurposeEN: "Rural road flood advisories & detours",
+		},
+		{
+			AgencyTH:  "การไฟฟ้านครหลวง (กทม.-นนทบุรี-สมุทรปราการ)",
+			AgencyEN:  "Metropolitan Electricity Authority (MEA)",
+			Number:    "1130",
+			PurposeTH: "ไฟฟ้ารั่ว ไฟดับ เสาไฟล้ม น้ำท่วมหม้อแปลง",
+			PurposeEN: "Electrical hazards, power outages & flooded equipment",
+			LineID:    "@meathailand",
+		},
+		{
+			AgencyTH:  "การไฟฟ้าส่วนภูมิภาค (ต่างจังหวัด)",
+			AgencyEN:  "Provincial Electricity Authority (PEA)",
+			Number:    "1129",
+			PurposeTH: "แจ้งเหตุไฟฟ้าขัดข้อง เหตุด่วนไฟฟ้าต่างจังหวัด",
+			PurposeEN: "Provincial electrical hazards & power outages",
+		},
+	}
+}
+
+
+

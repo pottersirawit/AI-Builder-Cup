@@ -24,10 +24,14 @@ import (
 
 // Providers are the data sources for one request (scenario or live).
 type Providers struct {
-	Weather domain.WeatherProvider
-	Routes  domain.RouteProvider
-	Canals  domain.CanalProvider
-	Reports domain.ReportStore
+	Weather     domain.WeatherProvider
+	Routes      domain.RouteProvider
+	Canals      domain.CanalProvider
+	Reports     domain.ReportStore
+	WeatherNext domain.WeatherNextProvider
+	BMAFlood    domain.RoadFloodProvider
+	BMATidal    domain.TidalProvider
+	Hotlines    domain.HotlineProvider
 }
 
 // Planner holds static data shared by all requests.
@@ -185,6 +189,10 @@ type Session struct {
 	rain    []domain.RainSample
 	rainSet bool
 	calls   []Call
+
+	usedWeatherNext bool
+	usedBMAFlood    bool
+	usedTidal       bool
 }
 
 // TripRequest is what a decision request says about the trip.
@@ -197,6 +205,10 @@ type TripRequest struct {
 	Places []domain.SavedPlace
 	// Lang is the language of the trip titles and decision text; zero is Thai.
 	Lang domain.Lang
+	// Trip, when set, is the exact trip passed by the client or resolved from user storage.
+	Trip *domain.Trip
+	// Email of the authenticated user.
+	Email string
 }
 
 func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time, tripID string) (*Session, error) {
@@ -215,6 +227,18 @@ func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req T
 
 func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
 	s := &Session{Lang: req.Lang, ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}, places: req.Places, origin: req.Origin}
+
+	if req.Trip != nil {
+		s.Trip = *req.Trip
+		if s.Trip.Origin.Lat == 0 && s.Trip.Origin.Lng == 0 && req.Origin != nil {
+			s.Trip.Origin = *req.Origin
+		}
+		if s.Trip.Destination.Lat == 0 && s.Trip.Destination.Lng == 0 && req.Destination != nil {
+			s.Trip.Destination = *req.Destination
+		}
+		return s, nil
+	}
+
 	switch {
 	case req.Destination != nil && req.Origin == nil:
 		return nil, fmt.Errorf("%w: destination needs an origin", ErrBadTrip)
@@ -400,10 +424,28 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	if err != nil {
 		return decision.Input{}, err
 	}
+	var windGustKMH float64
+	if s.prov.WeatherNext != nil && len(road.Polyline) > 0 {
+		if g, _, err := s.prov.WeatherNext.PeakConditionsAlongRoute(road.Polyline); err == nil {
+			windGustKMH = g
+			s.usedWeatherNext = true
+		}
+	}
+	if s.prov.BMAFlood != nil && len(road.Polyline) > 0 {
+		if sensors, err := s.prov.BMAFlood.SensorsNearRoute(road.Polyline, 250); err == nil && len(sensors) > 0 {
+			s.usedBMAFlood = true
+		}
+	}
+	if s.prov.BMATidal != nil {
+		if _, err := s.prov.BMATidal.TidalStatus(s.ctx, depart); err == nil {
+			s.usedTidal = true
+		}
+	}
 	in := decision.Input{
 		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: s.Trip.ArriveBy, Mode: mode,
 		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
 		Rain: rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,
+		WindGustKMH: windGustKMH,
 	}
 	from, to := s.Trip.Origin.Point(), s.Trip.Destination.Point()
 	if tt, ok := s.prov.Routes.(domain.TravelTimer); ok {
@@ -429,6 +471,46 @@ func (s *Session) Baseline(depart time.Time, mode domain.Mode) (decision.Result,
 		return decision.Result{}, err
 	}
 	return decision.Decide(in), nil
+}
+
+// SourcesUsed returns the human-readable names of data sources configured in Providers
+// and actively queried during the route evaluation.
+func (s *Session) SourcesUsed() []string {
+	var out []string
+	if s.origin != nil {
+		out = append(out, s.Lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location"))
+	}
+	if s.prov.Weather != nil {
+		out = append(out, s.prov.Weather.Name())
+	}
+	if s.prov.Routes != nil {
+		out = append(out, s.prov.Routes.Name())
+	}
+	if s.prov.Canals != nil {
+		out = append(out, s.prov.Canals.Name())
+	}
+	out = append(out, "BMA flood spots")
+	if s.prov.WeatherNext != nil {
+		out = append(out, s.prov.WeatherNext.Name())
+	}
+	if s.prov.BMAFlood != nil {
+		out = append(out, s.prov.BMAFlood.Name())
+	}
+	if s.prov.BMATidal != nil {
+		out = append(out, s.prov.BMATidal.Name())
+	}
+	if s.prov.Hotlines != nil {
+		out = append(out, s.prov.Hotlines.Name())
+	}
+	return out
+}
+
+// EmergencyContacts returns official emergency helplines from the hotline provider.
+func (s *Session) EmergencyContacts() []domain.EmergencyContact {
+	if s.prov.Hotlines != nil {
+		return s.prov.Hotlines.EmergencyContacts()
+	}
+	return nil
 }
 
 // ---- tools ----

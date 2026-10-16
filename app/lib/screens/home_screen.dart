@@ -70,18 +70,34 @@ class _HomeScreenState extends State<HomeScreen> {
     });
     unawaited(_refreshLocation());
     try {
+      if (_trips.isEmpty && store.cachedTrips.isNotEmpty) {
+        _trips = store.cachedTrips;
+      }
       final homeF = home == null
           ? null
           : api.homeStatus(home: store.demoProfile ? null : home);
-      final tripsR = store.calendar == LinkState.connected
-          ? await api.trips()
+      final isWorkspaceConnected =
+          store.calendar == LinkState.connected ||
+          store.gmail == LinkState.connected;
+      final email = store.calendar == LinkState.connected
+          ? store.calendarAccount
+          : store.gmailAccount;
+      final tripsR = isWorkspaceConnected
+          ? await api.trips(email: email)
           : null;
       final homeR = await homeF;
       if (!mounted) return;
       state
         ..markSample((tripsR?.isSample ?? false) || (homeR?.isSample ?? false))
         ..homeLevel = homeR?.data.level ?? HomeLevel.normal;
-      final trips = tripsR?.data ?? const <Trip>[];
+      final trips = (tripsR?.data != null && tripsR!.data.isNotEmpty)
+          ? tripsR.data
+          : (isWorkspaceConnected && store.cachedTrips.isNotEmpty
+              ? store.cachedTrips
+              : (tripsR?.data ?? const <Trip>[]));
+      if (tripsR?.data != null && tripsR!.data.isNotEmpty) {
+        store.setCachedTrips(tripsR.data);
+      }
       final now = state.now();
       final resolved = trips.where((t) => !t.unresolved).toList();
       final headsHomeToday =
@@ -101,6 +117,7 @@ class _HomeScreenState extends State<HomeScreen> {
           : null;
       final top =
           resolved.where((t) => t.source == 'calendar').firstOrNull ??
+          resolved.where((t) => t.source == 'gmail').firstOrNull ??
           routine ??
           resolved.firstOrNull;
       _ctrl?.dispose();
@@ -149,11 +166,20 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// Server trips go by id; the app's own trips send their endpoints.
-  DecideRequest _requestFor(Trip t) =>
-      t.source == 'routine' || t.source == 'app'
-      ? DecideRequest(origin: t.origin, destination: t.destination)
-      : DecideRequest(tripId: t.id);
+  /// Sends full trip details with endpoints and identity for precise planning.
+  DecideRequest _requestFor(Trip t) {
+    final store = AppScope.readPlaces(context);
+    final email = store.calendar == LinkState.connected
+        ? store.calendarAccount
+        : (store.gmail == LinkState.connected ? store.gmailAccount : null);
+    return DecideRequest(
+      tripId: t.id,
+      origin: t.origin,
+      destination: t.destination,
+      trip: t,
+      email: email,
+    );
+  }
 
   void _push(Widget screen) => Navigator.of(
     context,
@@ -455,7 +481,8 @@ class _HomeScreenState extends State<HomeScreen> {
           onDismiss: store.dismissCalendarHint,
         ),
       if (!_loading &&
-          store.calendar == LinkState.connected &&
+          (store.calendar == LinkState.connected ||
+              store.gmail == LinkState.connected) &&
           !_hasCalendarSoon(now))
         Notice(icon: Symbols.event_busy_rounded, text: l.homeNoCalendarSoon),
     ];
@@ -746,7 +773,7 @@ class _HomeScreenState extends State<HomeScreen> {
 
   bool _hasCalendarSoon(DateTime now) => _trips.any(
     (x) =>
-        x.source == 'calendar' &&
+        (x.source == 'calendar' || x.source == 'gmail') &&
         !x.unresolved &&
         x.arriveBy != null &&
         x.arriveBy!.isAfter(now) &&

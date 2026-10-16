@@ -29,6 +29,10 @@ type Request struct {
 	// Places are the user's saved places; questions resolve against them
 	// instead of the demo user's. An empty list means none saved.
 	Places []domain.SavedPlace `json:"places"`
+	// Trip is an explicit trip passed from the client (e.g. from synced Calendar or Gmail).
+	Trip *domain.Trip `json:"trip,omitempty"`
+	// Email is the user email identifier for stored trips and credentials.
+	Email string `json:"email,omitempty"`
 }
 
 // NeedsPlace is the answer to a question that names somewhere the server
@@ -72,7 +76,7 @@ func (r Request) TripRequest() (planner.TripRequest, error) {
 // "(district)" suffix) and, for home and work, the usual words for them.
 // Default labels are written in lang.
 func (r Request) TripRequestFor(lang domain.Lang) (planner.TripRequest, error) {
-	tr := planner.TripRequest{TripID: r.TripID, Lang: lang}
+	tr := planner.TripRequest{TripID: r.TripID, Lang: lang, Trip: r.Trip, Email: r.Email}
 	for _, end := range []struct {
 		p    *domain.Place
 		dst  **domain.Place
@@ -141,6 +145,8 @@ type Response struct {
 	// Explanation details why the mode/time was chosen, factors evaluated,
 	// and flood-avoidance route optimization advice.
 	Explanation decision.Explanation `json:"explanation"`
+	// EmergencyContacts are official government disaster helplines when danger risk is elevated.
+	EmergencyContacts []domain.EmergencyContact `json:"emergency_contacts,omitempty"`
 	// Model is the Gemini model that answered; empty on the deterministic fallback.
 	Model string `json:"model,omitempty"`
 	// LatencyMS is how long the whole Decide call took.
@@ -229,7 +235,8 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		LeaveBy: baseline.LeaveBy, Confidence: baseline.Confidence,
 		RainTimeline: baseline.RainTimeline, ModeOptions: baseline.ModeOptions, FloodSpots: baseline.FloodSpots,
 		Sources: sources, GeneratedBy: "fallback", DepartAt: depart, Mode: mode, Trip: s.Trip,
-		Explanation: baseline.Explanation,
+		Explanation:       baseline.Explanation,
+		EmergencyContacts: s.EmergencyContacts(),
 	}
 	if resp.FloodSpots == nil {
 		resp.FloodSpots = []decision.FloodSpot{}

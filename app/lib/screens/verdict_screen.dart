@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
@@ -263,6 +264,39 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       value: d.confidence,
                       color: scheme.onSurface,
                     ),
+                    if (d.emergencyContacts.isNotEmpty) ...[
+                      const SizedBox(height: Space.x4),
+                      Text(
+                        l.isThai ? 'สายด่วนขอความช่วยเหลือฉุกเฉิน' : 'Emergency Assistance Helplines',
+                        style: t.titleSmall?.copyWith(color: scheme.error),
+                      ),
+                      const SizedBox(height: Space.x2),
+                      Wrap(
+                        spacing: Space.x2,
+                        runSpacing: Space.x2,
+                        children: [
+                          for (final contact in d.emergencyContacts)
+                            ActionChip(
+                              avatar: const Icon(Symbols.phone_in_talk_rounded, size: 16),
+                              label: Text('${contact.number} ${l.isThai ? contact.agencyTh : contact.agencyEn}'),
+                              onPressed: () {
+                                Clipboard.setData(ClipboardData(text: contact.number));
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  SnackBar(
+                                    content: Text(
+                                      l.isThai
+                                          ? 'คัดลอกเบอร์ ${contact.number} (${contact.purposeTh}) แล้ว'
+                                          : 'Copied ${contact.number} (${contact.purposeEn}) to clipboard',
+                                    ),
+                                    duration: const Duration(seconds: 2),
+                                  ),
+                                );
+                              },
+                              visualDensity: VisualDensity.compact,
+                            ),
+                        ],
+                      ),
+                    ],
                     const SizedBox(height: Space.x4),
                     Text(l.verdictSources, style: t.titleSmall),
                     const SizedBox(height: Space.x2),
@@ -273,9 +307,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
                         for (final s in d.sources)
                           Chip(
                             avatar: Icon(
-                              s.contains('GPS') || s.contains('ตำแหน่ง')
-                                  ? Symbols.my_location_rounded
-                                  : Symbols.database_rounded,
+                              _sourceIcon(s),
                               size: 16,
                             ),
                             label: Text(
@@ -518,3 +550,23 @@ class _TraceStep extends StatelessWidget {
     );
   }
 }
+
+IconData _sourceIcon(String s) {
+  if (s.contains('GPS') || s.contains('ตำแหน่ง')) {
+    return Symbols.my_location_rounded;
+  }
+  if (s.contains('Road Flood') || s.contains('Sensor') || s.contains('เซ็นเซอร์')) {
+    return Symbols.sensors_rounded;
+  }
+  if (s.contains('WeatherNext') || s.contains('Wind')) {
+    return Symbols.air_rounded;
+  }
+  if (s.contains('Tidal') || s.contains('Canal') || s.contains('คลอง')) {
+    return Symbols.waves_rounded;
+  }
+  if (s.contains('สายด่วน') || s.contains('Hotline') || s.contains('1784')) {
+    return Symbols.phone_in_talk_rounded;
+  }
+  return Symbols.database_rounded;
+}
+

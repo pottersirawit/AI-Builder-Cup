@@ -166,7 +166,7 @@ func runCase(ctx context.Context, g *agent.Gemini, p *planner.Planner, c Case, o
 		res.Err = err.Error()
 		return res
 	}
-	sources := []string{prov.Weather.Name(), prov.Routes.Name(), prov.Canals.Name(), "BMA flood spots"}
+	sources := s.SourcesUsed()
 	start := time.Now()
 	resp, err := agent.Decide(ctx, g, s, c.Req, sources)
 	res.LatencyMS = time.Since(start).Milliseconds()

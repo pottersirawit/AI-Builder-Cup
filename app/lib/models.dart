@@ -115,6 +115,17 @@ class Trip {
   /// The event's location as written, when the server could not place it.
   final String? locationTextTh;
   bool get unresolved => locationTextTh != null;
+
+  Json toJson() => {
+    'id': id,
+    'title_th': titleTh,
+    'source': source,
+    'origin': origin.toJson(),
+    'destination': destination.toJson(),
+    if (arriveBy != null) 'arrive_by': arriveBy!.toIso8601String(),
+    'mode': mode.wire,
+    if (locationTextTh != null) 'location_text_th': locationTextTh,
+  };
 }
 
 class RainPoint {
@@ -239,6 +250,7 @@ class Decision {
     this.trip,
     this.needsPlace,
     this.explanation,
+    this.emergencyContacts = const [],
   });
 
   factory Decision.fromJson(Json j) {
@@ -272,6 +284,9 @@ class Decision {
       explanation: j['explanation'] == null
           ? null
           : DecisionExplanation.fromJson(j['explanation'] as Json),
+      emergencyContacts: (j['emergency_contacts'] as List? ?? const [])
+          .map((c) => EmergencyContact.fromJson(c as Json))
+          .toList(),
     );
   }
 
@@ -317,6 +332,36 @@ class Decision {
 
   /// Transparent explanation on why chosen, factors, and flood-avoidance route advice.
   final DecisionExplanation? explanation;
+
+  /// Official emergency hotlines during severe flood and weather hazards.
+  final List<EmergencyContact> emergencyContacts;
+}
+
+class EmergencyContact {
+  const EmergencyContact({
+    required this.agencyTh,
+    required this.agencyEn,
+    required this.number,
+    required this.purposeTh,
+    required this.purposeEn,
+    this.lineId,
+  });
+
+  final String agencyTh;
+  final String agencyEn;
+  final String number;
+  final String purposeTh;
+  final String purposeEn;
+  final String? lineId;
+
+  factory EmergencyContact.fromJson(Json j) => EmergencyContact(
+        agencyTh: _str(j['agency_th']),
+        agencyEn: _str(j['agency_en']),
+        number: _str(j['number']),
+        purposeTh: _str(j['purpose_th']),
+        purposeEn: _str(j['purpose_en']),
+        lineId: j['line_id'] as String?,
+      );
 }
 
 /// Body of POST /v1/decide. The main input is [tripId], an ad-hoc
@@ -332,6 +377,8 @@ class DecideRequest {
     this.origin,
     this.destination,
     this.places = const [],
+    this.trip,
+    this.email,
   });
   final String? tripId;
 
@@ -342,12 +389,16 @@ class DecideRequest {
   final Place? origin;
   final Place? destination;
   final List<SavedPlace> places;
+  final Trip? trip;
+  final String? email;
 
   DecideRequest copyWith({
     String? departAt,
     TravelMode? mode,
     Place? destination,
     List<SavedPlace>? places,
+    Trip? trip,
+    String? email,
   }) => DecideRequest(
     tripId: tripId,
     departAt: departAt ?? this.departAt,
@@ -356,6 +407,8 @@ class DecideRequest {
     origin: origin,
     destination: destination ?? this.destination,
     places: places ?? this.places,
+    trip: trip ?? this.trip,
+    email: email ?? this.email,
   );
 
   Json toJson() => {
@@ -366,6 +419,8 @@ class DecideRequest {
     if (origin != null) 'origin': origin!.toJson(),
     if (destination != null) 'destination': destination!.toJson(),
     if (places.isNotEmpty) 'places': [for (final p in places) p.toWire()],
+    if (trip != null) 'trip': trip!.toJson(),
+    if (email != null) 'email': email,
   };
 }
 
