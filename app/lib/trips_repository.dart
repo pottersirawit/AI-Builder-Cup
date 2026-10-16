@@ -107,7 +107,11 @@ class TripsRepository extends ChangeNotifier {
       tripsR = !connected
           ? null
           : await (sync
-                ? _api.syncTrips(email: account, sample: demo)
+                ? _api.syncTrips(
+                    email: account,
+                    sample: demo,
+                    home: demo ? null : savedHome,
+                  )
                 : _api.trips(email: account, sample: demo));
     } catch (e) {
       tripsError = e;

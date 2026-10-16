@@ -71,20 +71,29 @@ class FonTokMaiApi {
   Future<ApiResult<List<Trip>>> trips({String? email, bool sample = true}) =>
       _tripsFrom('/v1/trips', email, sample);
 
-  /// Pulls Calendar and Gmail again, then the trips; see [trips].
+  /// Pulls Calendar and Gmail again, then the trips; see [trips]. Synced
+  /// trips start from [home]; without it the server starts them downtown.
   Future<ApiResult<List<Trip>>> syncTrips({
     String? email,
     bool sample = true,
-  }) => _tripsFrom('/v1/trips/sync', email, sample);
+    SavedPlace? home,
+  }) => _tripsFrom('/v1/trips/sync', email, sample, {
+    if (home != null) ...{
+      'home_lat': '${home.lat}',
+      'home_lng': '${home.lng}',
+      'home_name': home.nameTh,
+    },
+  });
 
   Future<ApiResult<List<Trip>>> _tripsFrom(
     String path,
     String? email,
-    bool sample,
-  ) async {
-    Future<List<Trip>> live() async => Trip.listFromJson(
-      await _get(path, email == null ? null : {'email': email}),
-    );
+    bool sample, [
+    Map<String, String> extra = const {},
+  ]) async {
+    final query = {if (email != null) 'email': email, ...extra};
+    Future<List<Trip>> live() async =>
+        Trip.listFromJson(await _get(path, query.isEmpty ? null : query));
     if (!sample) return ApiResult(await live(), isSample: false);
     return _withFallback(
       live,

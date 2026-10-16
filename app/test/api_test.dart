@@ -71,6 +71,41 @@ void main() {
     },
   );
 
+  test('syncTrips sends the saved home as the trips\' origin', () async {
+    late Uri sent;
+    final api = FonTokMaiApi(
+      baseUrl: 'http://api.test',
+      client: MockClient((req) async {
+        sent = req.url;
+        return http.Response('{"trips":[]}', 200);
+      }),
+    );
+
+    await api.syncTrips(
+      email: 'owner@example.com',
+      sample: false,
+      home: const SavedPlace(
+        id: 'home',
+        kind: PlaceKind.home,
+        labelTh: 'บ้าน',
+        nameTh: 'คอนโดอารีย์',
+        lat: 13.7797,
+        lng: 100.5446,
+      ),
+    );
+
+    expect(sent.path, '/v1/trips/sync');
+    expect(sent.queryParameters, {
+      'email': 'owner@example.com',
+      'home_lat': '13.7797',
+      'home_lng': '100.5446',
+      'home_name': 'คอนโดอารีย์',
+    });
+
+    await api.syncTrips(email: 'owner@example.com', sample: false);
+    expect(sent.queryParameters, {'email': 'owner@example.com'});
+  });
+
   test('falls back on a server error too', () async {
     final api = FonTokMaiApi(
       baseUrl: 'http://api.test',
