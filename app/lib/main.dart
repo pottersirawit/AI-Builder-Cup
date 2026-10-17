@@ -42,6 +42,7 @@ Future<void> main() async {
     baseUrl: resolveApiBaseUrl(),
     demoClock: () => state.demoClock,
     language: () => state.locale.languageCode,
+    allowSample: () => places.demoProfile,
   );
   runApp(
     FonTokMaiApp(

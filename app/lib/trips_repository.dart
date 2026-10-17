@@ -108,7 +108,10 @@ class TripsRepository extends ChangeNotifier {
         : (savedHome == null || _places.demoProfile
               ? null
               : (lat: savedHome.lat, lng: savedHome.lng));
-    final outlookF = _api.outlook(lat: at?.lat, lng: at?.lng);
+    // Caught now: it can fail while the trips are still loading.
+    final outlookF = _api
+        .outlook(lat: at?.lat, lng: at?.lng)
+        .then<ApiResult<Outlook>?>((r) => r, onError: (_) => null);
     // Only มิว's demo profile may fill in with sample trips; a real account
     // shows the error and Retry instead.
     final demo = _places.demoProfile;
@@ -130,13 +133,10 @@ class TripsRepository extends ChangeNotifier {
     // Weather and the home's flood status stand on their own: the page
     // keeps them when the events fail, and keeps the last ones when they do.
     ApiResult<HomeStatus>? homeR;
-    ApiResult<Outlook>? outlookR;
     try {
       homeR = await homeF;
     } catch (_) {}
-    try {
-      outlookR = await outlookF;
-    } catch (_) {}
+    final outlookR = await outlookF;
     if (seq != _seq || _disposed) return;
     _state.markSample(
       (tripsR?.isSample ?? false) || (homeR?.isSample ?? false),

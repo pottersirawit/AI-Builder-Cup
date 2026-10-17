@@ -32,7 +32,7 @@ class OAuthStatus {
 
 /// Client for API contract v0 plus the v1 places additions. Calls fall back to
 /// `assets/fixtures/*.json` when the backend fails, so the app always demos;
-/// a real account's trips never do.
+/// a real account's trips, plans and weather never do.
 class FonTokMaiApi {
   FonTokMaiApi({
     required this.baseUrl,
@@ -40,6 +40,7 @@ class FonTokMaiApi {
     AssetBundle? bundle,
     this.demoClock,
     this.language,
+    this.allowSample,
     this.timeout = const Duration(seconds: 45),
   }) : _client = client ?? http.Client(),
        _bundle = bundle ?? rootBundle;
@@ -54,6 +55,12 @@ class FonTokMaiApi {
 
   /// Returns the app language code (`th` or `en`) the server should answer in.
   final String Function()? language;
+
+  /// Whether a failed plan or forecast may answer with มิว's sample day;
+  /// only her demo profile may. Null allows it.
+  final bool Function()? allowSample;
+
+  bool get _sampleAllowed => allowSample?.call() ?? true;
 
   Map<String, String> get _headers {
     final clock = demoClock?.call();
@@ -96,10 +103,10 @@ class FonTokMaiApi {
     final query = {if (email != null) 'email': email, ...extra};
     Future<List<Trip>> live() async =>
         Trip.listFromJson(await _get(path, query.isEmpty ? null : query));
-    if (!sample) return ApiResult(await live(), isSample: false);
     return _withFallback(
       live,
       () async => Trip.listFromJson(await _fixture('trips')),
+      sample: sample,
     );
   }
 
@@ -110,6 +117,7 @@ class FonTokMaiApi {
   Future<ApiResult<Decision>> decide(DecideRequest req) => _withFallback(
     () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),
     () async => Decision.fromJson(await _fixture(sampleDecisionName(req))),
+    sample: _sampleAllowed,
   );
 
   /// The next 12 hours of weather at [lat],[lng]; without them, the
@@ -128,6 +136,7 @@ class FonTokMaiApi {
               ? DateTime.now()
               : DateTime.parse(demoClock!.call()!),
         ),
+        sample: _sampleAllowed,
       );
 
   /// Flood status at [home]; without it, the server's demo home.
@@ -218,13 +227,15 @@ class FonTokMaiApi {
 
   Future<ApiResult<T>> _withFallback<T>(
     Future<T> Function() live,
-    Future<T> Function() sample,
-  ) async {
+    Future<T> Function() fixture, {
+    bool sample = true,
+  }) async {
+    if (!sample) return ApiResult(await live(), isSample: false);
     try {
       return ApiResult(await live(), isSample: false);
     } catch (e) {
       debugPrint('fontokmai: backend unavailable ($e), using sample data');
-      return ApiResult(await sample(), isSample: true);
+      return ApiResult(await fixture(), isSample: true);
     }
   }
 

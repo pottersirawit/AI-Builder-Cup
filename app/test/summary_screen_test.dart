@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:http/http.dart' as http;
 import 'package:fontokmai/design/design.dart';
 import 'package:fontokmai/screens/plan_cards.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
@@ -288,11 +292,67 @@ void main() {
       '2026-09-29T13:10:00+07:00',
       height: 2400,
       places: (await emptyStore())..connectGoogle('owner@example.com'),
+      respond: (req) => req.url.path == '/v1/outlook'
+          ? jsonResponse(
+              jsonDecode(
+                File('assets/fixtures/outlook.json').readAsStringSync(),
+              ),
+            )
+          : null,
     );
 
     expect(find.text('โหลดอีเวนต์ไม่ได้'), findsOneWidget);
     expect(find.text('วันนี้ไม่มีนัดแล้ว'), findsNothing);
     expect(find.byType(WeatherPeek), findsOneWidget);
+  });
+
+  testWidgets('a real account whose plan fails never shows มิว\'s reasoning', (
+    tester,
+  ) async {
+    Map<String, Object> trip(String id, String title, String at) => {
+      'id': id,
+      'title_th': title,
+      'source': 'calendar',
+      'origin': {'name_th': 'Condo Ari', 'lat': 13.7797, 'lng': 100.5446},
+      'destination': {
+        'name_th': 'Samyan Mitrtown',
+        'lat': 13.7337,
+        'lng': 100.5288,
+      },
+      'arrive_by': at,
+      'mode': 'car',
+    };
+    await pumpApp(
+      tester,
+      '2026-09-30T08:00:00+07:00',
+      height: 2400,
+      places: (await emptyStore())..connectGoogle('owner.real@gmail.com'),
+      respond: (req) => switch (req.url.path) {
+        '/v1/decide' => http.Response('decide failed', 502),
+        final p when p.startsWith('/v1/trips') => jsonResponse({
+          'trips': [
+            trip(
+              'cal-team',
+              'AI Cup team meeting',
+              '2026-09-30T10:00:00+07:00',
+            ),
+            trip(
+              'cal-lunch',
+              'Lunch with the team',
+              '2026-09-30T12:00:00+07:00',
+            ),
+          ],
+        }),
+        _ => null,
+      },
+    );
+
+    expect(find.text('AI Cup team meeting'), findsWidgets);
+    expect(find.text('ยังคำนวณเวลาออกไม่ได้'), findsOneWidget);
+    expect(find.textContaining('พระราม 4'), findsNothing);
+    expect(find.textContaining('18:30'), findsNothing);
+    expect(find.byType(SampleBadge), findsNothing);
+    await tester.pump(const Duration(minutes: 1));
   });
 
   testWidgets('an online meeting left today is not "nothing else today"', (

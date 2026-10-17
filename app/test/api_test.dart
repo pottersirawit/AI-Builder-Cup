@@ -71,6 +71,26 @@ void main() {
     },
   );
 
+  test(
+    'a real account\'s plan and weather never fall back to มิว\'s',
+    () async {
+      final api = FonTokMaiApi(
+        baseUrl: 'http://api.test',
+        allowSample: () => false,
+        client: MockClient((_) async => http.Response('decide failed', 502)),
+      );
+
+      await expectLater(
+        api.decide(const DecideRequest(tripId: 'cal-owner')),
+        throwsA(isA<http.ClientException>()),
+      );
+      await expectLater(
+        api.outlook(lat: 13.78, lng: 100.54),
+        throwsA(isA<http.ClientException>()),
+      );
+    },
+  );
+
   test('syncTrips sends the saved home as the trips\' origin', () async {
     late Uri sent;
     final api = FonTokMaiApi(

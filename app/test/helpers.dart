@@ -54,10 +54,12 @@ Future<AppState> pumpApp(
 
   // Most widget tests read the Thai copy; English ones switch explicitly.
   final state = AppState(demoClock: clock, locale: const Locale('th'));
+  final store = places ??= await demoStore();
   final api = FonTokMaiApi(
     baseUrl: 'http://offline.test',
     demoClock: () => state.demoClock,
     language: () => state.locale.languageCode,
+    allowSample: () => store.demoProfile,
     client: MockClient((req) async {
       if (req.url.path == '/v1/decide') decideLog?.add(req.body);
       final wait = latency?.call(req);
@@ -68,7 +70,6 @@ Future<AppState> pumpApp(
     }),
     bundle: _DiskBundle(),
   );
-  places ??= await demoStore();
   final link = GoogleLink(
     api: api,
     places: places,
