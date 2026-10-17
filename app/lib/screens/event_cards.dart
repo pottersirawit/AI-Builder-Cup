@@ -9,30 +9,13 @@ import '../models.dart';
 import '../time_th.dart';
 import '../trips_repository.dart';
 
-/// Hides [trip] from the user's events and offers a SnackBar action to undo.
+/// Hides [trip] from the user's events.
 void dismissTripWithUndo(
   BuildContext context,
   TripsRepository repo,
   Trip trip,
 ) {
-  final l = context.l10n;
-  final messenger = ScaffoldMessenger.of(context);
   repo.dismissTrip(trip.id);
-  messenger
-    ..hideCurrentSnackBar()
-    ..showSnackBar(
-      SnackBar(
-        content: Text(
-          l.isThai
-              ? 'ซ่อน “${trip.titleTh}” แล้ว'
-              : 'Removed “${trip.titleTh}”',
-        ),
-        action: SnackBarAction(
-          label: l.isThai ? 'เลิกทำ' : 'Undo',
-          onPressed: () => repo.restoreTrip(trip.id),
-        ),
-      ),
-    );
 }
 
 /// "อีก 2 ชม. 20 นาที": time until an event starts.
