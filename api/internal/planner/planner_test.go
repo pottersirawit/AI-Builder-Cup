@@ -571,3 +571,73 @@ func TestOpenSkipsTripsWithNoTravelByDefault(t *testing.T) {
 		t.Fatalf("got %v, %v; want cal-dinner", s, err)
 	}
 }
+
+func TestSourcesUsedReflectsActualToolCallsAndOrigin(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+
+	// 1. Saved-place origin (Silom -> Home, Calendar trip) without calling get_canal_levels
+	s, err := p.NewSession(context.Background(), prov, at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Baseline(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	sourcesBeforeCanals := strings.Join(s.SourcesUsed(), " | ")
+	if strings.Contains(sourcesBeforeCanals, "GPS") {
+		t.Errorf("non-GPS origin should not include GPS source, got: %s", sourcesBeforeCanals)
+	}
+	if !strings.Contains(sourcesBeforeCanals, "Google Calendar") {
+		t.Errorf("calendar trip should include Google Calendar source, got: %s", sourcesBeforeCanals)
+	}
+	if strings.Contains(sourcesBeforeCanals, "ThaiWater") {
+		t.Errorf("ThaiWater should not be listed before get_canal_levels is called, got: %s", sourcesBeforeCanals)
+	}
+
+	// 2. Calling get_canal_levels adds ThaiWater
+	if _, err := s.Call("get_canal_levels", nil); err != nil {
+		t.Fatal(err)
+	}
+	sourcesAfterCanals := strings.Join(s.SourcesUsed(), " | ")
+	if !strings.Contains(sourcesAfterCanals, "ThaiWater") {
+		t.Errorf("ThaiWater should be listed after get_canal_levels is called, got: %s", sourcesAfterCanals)
+	}
+}
+
+func TestToolCallsPopulateCategoryAndSensorInputs(t *testing.T) {
+	p := newPlanner(t)
+	s, err := p.NewSession(context.Background(), scenarioProviders(), at(18, 0), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	in, err := s.Input(at(18, 0), domain.ModeCar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if in.TempC <= 0 {
+		t.Errorf("expected positive TempC from WeatherNext, got %v", in.TempC)
+	}
+	if len(in.RoadSensors) == 0 {
+		t.Errorf("expected RoadSensors from BMAFlood provider to be wired into decision.Input")
+	}
+	if in.Tidal == nil {
+		t.Errorf("expected Tidal reading from BMATidal provider to be wired into decision.Input")
+	}
+
+	_, _ = s.Call("get_trip", nil)
+	_, _ = s.Call("get_flood_spots_on_route", map[string]any{"depart_at": "18:00"})
+	_, _ = s.Call("evaluate_departure", map[string]any{"mode": "car", "depart_at": "18:00"})
+
+	wantCats := map[string]string{
+		"get_trip":                 "data",
+		"get_flood_spots_on_route": "data_rule",
+		"evaluate_departure":       "rule",
+	}
+	for _, c := range s.Calls() {
+		if want, ok := wantCats[c.Tool]; ok && c.Category != want {
+			t.Errorf("tool %s: Category = %q, want %q", c.Tool, c.Category, want)
+		}
+	}
+}
+

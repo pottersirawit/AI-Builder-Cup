@@ -595,16 +595,16 @@ func (BMAFlood) SensorsNearRoute(polyline []domain.LatLng, radiusM float64) ([]d
 			Lat:       13.76391,
 			Lng:       100.54820,
 			DepthCM:   12.0,
-			UpdatedAt: time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok),
+			UpdatedAt: time.Date(2026, 9, 29, 18, 0, 0, 0, domain.Bangkok),
 		},
 		{
 			Code:      "FL.RTC.01",
 			NameTH:    "ถนนรัชดาภิเษก หน้าศาลอาญา",
 			NameEN:    "Ratchadapisek Rd (Criminal Court)",
-			Lat:       13.8165,
-			Lng:       100.5750,
+			Lat:       13.8135,
+			Lng:       100.5758,
 			DepthCM:   18.0,
-			UpdatedAt: time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok),
+			UpdatedAt: time.Date(2026, 9, 29, 18, 0, 0, 0, domain.Bangkok),
 		},
 	}
 	var out []domain.RoadFloodSensor

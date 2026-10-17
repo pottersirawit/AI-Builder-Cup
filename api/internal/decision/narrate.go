@@ -149,9 +149,39 @@ func buildExplanation(in Input, res Result) Explanation {
 		exp.FactorsTH = append(exp.FactorsTH, "ระดับน้ำท่วมขัง: ไม่พบจุดน้ำท่วมขังสะสมบนเส้นทาง")
 	}
 
-	// Wind factor (if relevant)
+	// Wind & WeatherNext 3 atmospheric factor
 	if e.WindGustKMH >= motoWindGustCautionKMH {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("แรงลม: ลมกระโชกสูงสุด %.0f กม./ชม. (เกณฑ์เฝ้าระวังมอเตอร์ไซค์ %.0f กม./ชม.)", e.WindGustKMH, motoWindGustThresholdKMH))
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("แรงลม (WeatherNext 3): ลมกระโชกสูงสุด %.0f กม./ชม. (เกณฑ์เฝ้าระวังมอเตอร์ไซค์ %.0f กม./ชม.)", e.WindGustKMH, motoWindGustThresholdKMH))
+	} else if e.WindGustKMH >= 1 && in.TempC >= 1 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("สภาพอากาศ (WeatherNext 3): ลมสูงสุด %.0f กม./ชม. อุณหภูมิ %.1f °C บนเส้นทาง", e.WindGustKMH, in.TempC))
+	} else if e.WindGustKMH >= 1 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("แรงลม (WeatherNext 3): ลมสูงสุด %.0f กม./ชม. บนเส้นทาง", e.WindGustKMH))
+	}
+
+	// BMA Road Flood Sensors factor
+	if len(in.RoadSensors) > 0 {
+		maxSensor := 0.0
+		for _, rs := range in.RoadSensors {
+			for t := e.Depart; t.Before(e.Arrive); t = t.Add(step) {
+				if d := sensorDepthCM(rs, t); d > maxSensor {
+					maxSensor = d
+				}
+			}
+		}
+		if maxSensor >= 1 {
+			exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("เซนเซอร์วัดน้ำท่วมถนน กทม.: พบ %d จุดบนเส้นทาง (ระดับน้ำสูงสุด %.0f ซม.)", len(in.RoadSensors), maxSensor))
+		} else {
+			exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("เซนเซอร์วัดน้ำท่วมถนน กทม.: ตรวจแล้ว %d จุดบนเส้นทาง ยังไม่มีน้ำท่วมขัง", len(in.RoadSensors)))
+		}
+	}
+
+	// BMA Canal Flow & Tidal backwater factor
+	if in.Tidal != nil && in.Tidal.HighTideM > 0 {
+		surgeTH := map[string]string{"high": "สูง", "medium": "ปานกลาง", "low": "ต่ำ"}[in.Tidal.SurgeRisk]
+		if surgeTH == "" {
+			surgeTH = "ต่ำ"
+		}
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("น้ำทะเลหนุนและการระบายน้ำคลอง กทม.: ระดับน้ำขึ้นสูงสุด %.2f ม.รทก. (ความเสี่ยงน้ำหนุน%s)", in.Tidal.HighTideM, surgeTH))
 	}
 
 	// Deadline / Travel time factor

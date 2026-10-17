@@ -225,6 +225,7 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 				Reasoning: []planner.Call{
 					{
 						Tool:      "guardrail_unrelated_question",
+						Category:  planner.ToolCategory("guardrail_unrelated_question"),
 						SummaryTH: intent.Summary(s.Lang),
 					},
 				},
@@ -262,7 +263,7 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		if by == "fallback" {
 			tool = "parse_question_fallback"
 		}
-		preface = append(preface, planner.Call{Tool: tool, SummaryTH: intent.Summary(s.Lang)})
+		preface = append(preface, planner.Call{Tool: tool, Category: planner.ToolCategory(tool), SummaryTH: intent.Summary(s.Lang)})
 	}
 	if activity == nil && req.Activity != nil && validActivityKind(req.Activity.Kind) && strings.TrimSpace(req.QuestionTH) == "" {
 		// A slider or mode follow-up resends the day out without the question.
@@ -276,6 +277,12 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 	baseline, err := s.Baseline(depart, mode)
 	if err != nil {
 		return Response{}, err
+	}
+	resolveSources := func() []string {
+		if len(sources) > 0 {
+			return sources
+		}
+		return s.SourcesUsed()
 	}
 	resp := Response{
 		Verdict: baseline.Verdict, HeadlineTH: baseline.HeadlineTH, SummaryTH: baseline.SummaryTH,
@@ -301,7 +308,11 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		cacheKey := decideCacheKey(s, depart, mode, req.QuestionTH, baseline)
 		if cached, ok := g.GetCached(cacheKey); ok {
 			if cResp, ok := cached.(Response); ok {
-				cResp.Sources = sources
+				if len(sources) > 0 {
+					cResp.Sources = sources
+				} else if len(cResp.Sources) == 0 {
+					cResp.Sources = s.SourcesUsed()
+				}
 				cResp.Reasoning = append([]planner.Call(nil), cResp.Reasoning...)
 				return cResp, nil
 			}
@@ -311,6 +322,7 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 			applyAgent(&resp, out, baseline, s)
 			resp.Model = out.model
 			resp.Reasoning = append(preface, resp.Reasoning...)
+			resp.Sources = resolveSources()
 			g.SetCached(cacheKey, resp, decideCacheTTL)
 			return resp, nil
 		}
@@ -333,6 +345,7 @@ func decide(ctx context.Context, g *Gemini, s *planner.Session, req Request, sou
 		resp.HeadlineTH = s.Lang.Pick("ข้อมูลอาจไม่ถูกต้อง 100%", "Data might not be 100% accurate")
 	}
 	resp.Reasoning = append(preface, s.Calls()...)
+	resp.Sources = resolveSources()
 	return resp, nil
 }
 
@@ -620,6 +633,7 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 		}
 		resp.Reasoning = append([]planner.Call{{
 			Tool:      "guardrail_unrelated_question",
+			Category:  planner.ToolCategory("guardrail_unrelated_question"),
 			SummaryTH: s.Lang.Pick("ระบบปฏิเสธคำถามที่ไม่เกี่ยวกับการเดินทาง", "Refused request unrelated to travel"),
 		}}, resp.Reasoning...)
 		return
@@ -627,7 +641,7 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 	var steps []planner.Call
 	kept := false // Gemini's text is in resp
 	if decision.Verdict(out.Verdict) != baseline.Verdict {
-		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool,
+		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool, Category: planner.ToolCategory(GuardrailVerdictTool),
 			SummaryTH: verdictGuardSummary(s.Lang, out.Verdict, baseline.Verdict)})
 	} else {
 		if out.HeadlineTH != "" && out.SummaryTH != "" {
@@ -645,7 +659,7 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 	}
 	if kept && Contradicts(resp.HeadlineTH+"\n"+resp.SummaryTH+"\n"+resp.Explanation.ReasonWhyTH, baseline.Verdict) {
 		resp.HeadlineTH, resp.SummaryTH, resp.Explanation = baseline.HeadlineTH, baseline.SummaryTH, baseline.Explanation
-		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool, SummaryTH: contradictionSummary(s.Lang)})
+		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool, Category: planner.ToolCategory(GuardrailVerdictTool), SummaryTH: contradictionSummary(s.Lang)})
 	}
 	invented, numbers := groundText(resp, baseline, s)
 
@@ -658,11 +672,11 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 		}
 	}
 	if len(invented) > 0 {
-		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailTool,
+		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailTool, Category: planner.ToolCategory(GuardrailTool),
 			SummaryTH: guardrailSummary(s.Lang, invented)})
 	}
 	if len(numbers) > 0 {
-		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailNumbersTool,
+		resp.Reasoning = append(resp.Reasoning, planner.Call{Tool: GuardrailNumbersTool, Category: planner.ToolCategory(GuardrailNumbersTool),
 			SummaryTH: numbersGuardSummary(s.Lang, numbers)})
 	}
 	resp.Reasoning = append(resp.Reasoning, steps...)
@@ -679,6 +693,7 @@ func groundText(resp *Response, baseline decision.Result, s *planner.Session) (t
 		facts = append(facts, c.SummaryTH)
 	}
 	g.AddFacts(facts...)
+	g.AddToolCalls(s)
 	e, base := &resp.Explanation, baseline.Explanation
 	// bad is true when texts quote an ungrounded time or number.
 	bad := func(texts ...string) bool {

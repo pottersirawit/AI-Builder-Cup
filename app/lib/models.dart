@@ -383,11 +383,33 @@ class FloodSpot {
 }
 
 class ReasoningStep {
-  const ReasoningStep(this.tool, this.summaryTh);
-  factory ReasoningStep.fromJson(Json j) =>
-      ReasoningStep(_str(j['tool']), _str(j['summary_th']));
+  const ReasoningStep(this.tool, this.summaryTh, [this.category = '']);
+  factory ReasoningStep.fromJson(Json j) => ReasoningStep(
+    _str(j['tool']),
+    _str(j['summary_th']),
+    _str(j['category']),
+  );
   final String tool;
   final String summaryTh;
+  final String category;
+
+  String get effectiveCategory {
+    if (category.isNotEmpty) return category;
+    return switch (tool) {
+      'parse_question' || 'synthesize_decision' => 'ai',
+      'get_trip' ||
+      'get_route' ||
+      'get_rain_along_route' ||
+      'get_canal_levels' => 'data',
+      'get_community_reports' => 'data_ai',
+      'get_flood_spots_on_route' => 'data_rule',
+      'evaluate_departure' ||
+      'deterministic_baseline' ||
+      'synthesize_decision_fallback' => 'rule',
+      final t when t.startsWith('guardrail') => 'rule',
+      _ => 'data',
+    };
+  }
 }
 
 class DecisionExplanation {
@@ -445,9 +467,11 @@ class Decision {
   factory Decision.fromJson(Json j) {
     final rawSources = (j['sources'] as List? ?? const []).cast<String>();
     final trip = j['trip'] == null ? null : Trip.fromJson(j['trip'] as Json);
+    final originName = (trip?.origin.nameTh ?? '').toLowerCase();
     final hasGpsOrigin =
         trip?.origin.nameTh.contains('ตำแหน่ง') == true ||
-        (trip != null && trip.source == 'app');
+        originName.contains('current location') ||
+        originName.contains('gps');
     final sources = [
       if (hasGpsOrigin &&
           !rawSources.any((s) => s.contains('GPS') || s.contains('ตำแหน่ง')))

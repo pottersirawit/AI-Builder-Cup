@@ -330,8 +330,7 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusNotFound, err.Error())
 		return
 	}
-	sources := sess.SourcesUsed()
-	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, sources)
+	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, nil)
 	var needs *agent.NeedsPlace
 	var activity *agent.NeedsActivity
 	switch {

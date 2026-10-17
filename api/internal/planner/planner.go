@@ -166,10 +166,32 @@ func goTo(lang domain.Lang, name string) string {
 }
 
 // Call is one tool invocation, as shown in the "Gemini คิดแบบนี้" trace.
+// Category classifies the step: "data", "rule", "ai", "data_rule", or "data_ai".
 type Call struct {
 	Tool      string         `json:"tool"`
+	Category  string         `json:"category,omitempty"`
 	Args      map[string]any `json:"-"`
 	SummaryTH string         `json:"summary_th"`
+}
+
+// ToolCategory returns the classification category for a reasoning step tool name.
+func ToolCategory(tool string) string {
+	switch tool {
+	case "parse_question":
+		return "ai"
+	case "parse_question_fallback", "evaluate_departure",
+		"guardrail_times", "guardrail_numbers", "guardrail_verdict",
+		"guardrail_unrelated_question", "guardrail_accuracy_disclaimer":
+		return "rule"
+	case "get_flood_spots_on_route":
+		return "data_rule"
+	case "get_community_reports":
+		return "data_ai"
+	case "get_trip", "get_route", "get_rain_along_route", "get_canal_levels":
+		return "data"
+	default:
+		return "data"
+	}
 }
 
 // Session is one decision: a trip, a clock reading, cached provider results
@@ -196,6 +218,12 @@ type Session struct {
 	rainSet   bool
 	calls     []Call
 
+	inputCalled     bool
+	usedWeather     bool
+	usedRoutes      bool
+	usedCanals      bool
+	usedSpots       bool
+	usedReports     bool
 	usedWeatherNext bool
 	usedBMAFlood    bool
 	usedTidal       bool
@@ -333,6 +361,7 @@ func (s *Session) PlanTo(placeID string) error {
 	s.Trip = scenario.LocalizeTrip(t, s.Lang)
 	s.routes, s.inputs, s.baselines = map[string]domain.Route{}, map[string]decision.Input{}, map[string]decision.Result{}
 	s.rain, s.rainSet = nil, false
+	s.inputCalled, s.usedWeather, s.usedRoutes, s.usedCanals, s.usedSpots, s.usedReports, s.usedWeatherNext, s.usedBMAFlood, s.usedTidal = false, false, false, false, false, false, false, false, false
 	return nil
 }
 
@@ -385,12 +414,14 @@ func (s *Session) ResetCalls() { s.calls = nil }
 func (s *Session) route(mode domain.Mode, depart time.Time) (domain.Route, error) {
 	key := string(mode) + depart.Format(time.RFC3339)
 	if r, ok := s.routes[key]; ok {
+		s.usedRoutes = true
 		return r, nil
 	}
 	r, err := s.prov.Routes.Route(s.ctx, s.Trip.Origin.Point(), s.Trip.Destination.Point(), mode, depart)
 	if err != nil {
 		return domain.Route{}, err
 	}
+	s.usedRoutes = true
 	s.routes[key] = r
 	return r, nil
 }
@@ -399,6 +430,7 @@ func (s *Session) route(mode domain.Mode, depart time.Time) (domain.Route, error
 // sampled at the middle of the road route.
 func (s *Session) rainSeries(road domain.Route) ([]domain.RainSample, error) {
 	if s.rainSet {
+		s.usedWeather = true
 		return s.rain, nil
 	}
 	mid := s.Trip.Origin.Point()
@@ -409,6 +441,7 @@ func (s *Session) rainSeries(road domain.Route) ([]domain.RainSample, error) {
 	if err != nil {
 		return nil, err
 	}
+	s.usedWeather = true
 	s.rain, s.rainSet = r, true
 	return r, nil
 }
@@ -431,11 +464,18 @@ func (s *Session) reportsNear(road domain.Route) ([]domain.Report, error) {
 			out = append(out, r)
 		}
 	}
+	for _, r := range out {
+		if decision.UsableReport(r) {
+			s.usedReports = true
+			break
+		}
+	}
 	return out, nil
 }
 
 // Input assembles the deterministic engine input for one departure.
 func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, error) {
+	s.inputCalled = true
 	key := string(mode) + "|" + depart.In(domain.Bangkok).Format(time.RFC3339)
 	if s.inputs != nil {
 		if in, ok := s.inputs[key]; ok {
@@ -454,20 +494,25 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	if err != nil {
 		return decision.Input{}, err
 	}
-	var windGustKMH float64
+	var windGustKMH, tempC float64
 	if s.prov.WeatherNext != nil && len(road.Polyline) > 0 {
-		if g, _, err := s.prov.WeatherNext.PeakConditionsAlongRoute(road.Polyline); err == nil {
+		if g, t, err := s.prov.WeatherNext.PeakConditionsAlongRoute(road.Polyline); err == nil {
 			windGustKMH = g
+			tempC = t
 			s.usedWeatherNext = true
 		}
 	}
+	var roadSensors []domain.RoadFloodSensor
 	if s.prov.BMAFlood != nil && len(road.Polyline) > 0 {
-		if sensors, err := s.prov.BMAFlood.SensorsNearRoute(road.Polyline, 250); err == nil && len(sensors) > 0 {
+		if sensors, err := s.prov.BMAFlood.SensorsNearRoute(road.Polyline, reports.NotifyRadiusM); err == nil {
+			roadSensors = sensors
 			s.usedBMAFlood = true
 		}
 	}
+	var tidalReading *domain.TidalReading
 	if s.prov.BMATidal != nil {
-		if _, err := s.prov.BMATidal.TidalStatus(s.ctx, depart); err == nil {
+		if td, err := s.prov.BMATidal.TidalStatus(s.ctx, depart); err == nil {
+			tidalReading = &td
 			s.usedTidal = true
 		}
 	}
@@ -483,12 +528,15 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	if s.Trip.AllDay {
 		arriveBy = time.Time{}
 	}
+	spotsOnRoute := floodspot.OnRoute(s.p.Spots, road.Polyline)
+	s.usedSpots = true
 	in := decision.Input{
 		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: arriveBy, Mode: mode,
 		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
 		Routes: routesByMode,
-		Rain:   rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,
-		WindGustKMH: windGustKMH,
+		Rain:   rain, Spots: spotsOnRoute, Reports: reps,
+		RoadSensors: roadSensors, Tidal: tidalReading,
+		WindGustKMH: windGustKMH, TempC: tempC,
 	}
 	from, to := s.Trip.Origin.Point(), s.Trip.Destination.Point()
 	if tt, ok := s.prov.Routes.(domain.TravelTimer); ok {
@@ -527,31 +575,48 @@ func (s *Session) Baseline(depart time.Time, mode domain.Mode) (decision.Result,
 	return res, nil
 }
 
-// SourcesUsed returns the human-readable names of data sources configured in Providers
-// and actively queried during the route evaluation.
+func isGPSOrigin(p domain.Place) bool {
+	low := strings.ToLower(strings.TrimSpace(p.NameTH))
+	return low == "" || strings.Contains(p.NameTH, "ตำแหน่ง") || strings.Contains(low, "current location") || strings.Contains(low, "gps")
+}
+
+// SourcesUsed returns the human-readable names of data sources that were
+// actually queried during the session's route evaluation.
 func (s *Session) SourcesUsed() []string {
-	var out []string
-	if s.origin != nil {
-		out = append(out, s.Lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location"))
+	if !s.inputCalled && len(s.calls) == 0 {
+		_, _ = s.Input(s.Now, s.Trip.Mode)
 	}
-	if s.prov.Weather != nil {
+	var out []string
+	if s.origin != nil && isGPSOrigin(s.Trip.Origin) {
+		out = append(out, s.Lang.Pick("GPS ตำแหน่งปัจจุบัน", "GPS current location"))
+	} else if s.Trip.Source == "calendar" {
+		out = append(out, "Google Calendar")
+	} else if s.Trip.Source == "gmail" {
+		out = append(out, "Gmail")
+	}
+	if s.usedWeather && s.prov.Weather != nil {
 		out = append(out, s.prov.Weather.Name())
 	}
-	if s.prov.Routes != nil {
+	if s.usedRoutes && s.prov.Routes != nil {
 		out = append(out, s.prov.Routes.Name())
 	}
-	if s.prov.Canals != nil {
+	if s.usedCanals && s.prov.Canals != nil {
 		out = append(out, s.prov.Canals.Name())
 	}
-	out = append(out, "BMA flood spots")
-	if s.prov.WeatherNext != nil {
+	if s.usedSpots {
+		out = append(out, "BMA flood spots")
+	}
+	if s.usedWeatherNext && s.prov.WeatherNext != nil {
 		out = append(out, s.prov.WeatherNext.Name())
 	}
-	if s.prov.BMAFlood != nil {
+	if s.usedBMAFlood && s.prov.BMAFlood != nil {
 		out = append(out, s.prov.BMAFlood.Name())
 	}
-	if s.prov.BMATidal != nil {
+	if s.usedTidal && s.prov.BMATidal != nil {
 		out = append(out, s.prov.BMATidal.Name())
+	}
+	if s.usedReports {
+		out = append(out, s.Lang.Pick("รายงานน้ำท่วมจากผู้ใช้ (Gemini Vision)", "Community flood reports (Gemini Vision)"))
 	}
 	if s.prov.Hotlines != nil {
 		out = append(out, scenario.Text(s.prov.Hotlines.Name(), s.Lang))
@@ -623,7 +688,7 @@ func (s *Session) Call(name string, args map[string]any) (map[string]any, error)
 	if err != nil {
 		out, summary = map[string]any{"error": err.Error()}, s.Lang.Pick("เรียกข้อมูลไม่สำเร็จ: ", "Could not fetch the data: ")+err.Error()
 	}
-	s.calls = append(s.calls, Call{Tool: name, Args: args, SummaryTH: summary})
+	s.calls = append(s.calls, Call{Tool: name, Category: ToolCategory(name), Args: args, SummaryTH: summary})
 	return out, err
 }
 
@@ -716,6 +781,10 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		return map[string]any{"samples": samples, "source": s.prov.Weather.Name()}, summary, nil
 
 	case "get_flood_spots_on_route":
+		in, err := s.Input(depart, mode)
+		if err != nil {
+			return nil, "", err
+		}
 		res, err := s.Baseline(depart, mode)
 		if err != nil {
 			return nil, "", err
@@ -729,13 +798,14 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 				summary += fmt.Sprintf(s.Lang.Pick(" ออก %s ยังไม่มีน้ำขัง", ", no standing water if you leave at %s"), hhmm(depart))
 			}
 		}
-		return map[string]any{"depart_at": depart.Format(time.RFC3339), "flood_spots": res.FloodSpots, "source": "BMA flood spots"}, summary, nil
+		return map[string]any{"depart_at": depart.Format(time.RFC3339), "flood_spots": res.FloodSpots, "road_sensors": in.RoadSensors, "source": "BMA flood spots"}, summary, nil
 
 	case "get_canal_levels":
 		canals, err := s.prov.Canals.Canals(s.ctx, s.Trip.Destination.Point(), s.Now)
 		if err != nil {
 			return nil, "", err
 		}
+		s.usedCanals = true
 		if len(canals) > 3 {
 			canals = canals[:3]
 		}
@@ -748,7 +818,14 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 			}
 			summary = fmt.Sprintf(s.Lang.Pick("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", "%s at %.1f m, bank at %.1f m (%.0f cm below the bank)"), name, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
 		}
-		return map[string]any{"canals": canals}, summary, nil
+		out := map[string]any{"canals": canals}
+		if s.prov.BMATidal != nil {
+			if td, err := s.prov.BMATidal.TidalStatus(s.ctx, depart); err == nil {
+				s.usedTidal = true
+				out["tidal"] = td
+			}
+		}
+		return out, summary, nil
 
 	case "get_community_reports":
 		road, err := s.route(domain.ModeCar, s.Now)
@@ -759,6 +836,7 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		if err != nil {
 			return nil, "", err
 		}
+		s.usedReports = true
 		summary := s.Lang.Pick("ยังไม่มีรายงานน้ำท่วมจากผู้ใช้บนเส้นทางในชั่วโมงที่ผ่านมา", "No flood reports from users on the route in the past hour")
 		if len(reps) > 0 {
 			last := reps[len(reps)-1]
