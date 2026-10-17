@@ -54,6 +54,9 @@ func narrateEN(in Input, res Result) (headline, summary string, exp Explanation)
 		later := EvaluateMode(in, in.Mode, *res.WaitUntil)
 		parts = append(parts, fmt.Sprintf("%s, you would hit %s.", when, hazardEN(e)))
 		parts = append(parts, fmt.Sprintf("Leaving at %s, you arrive%s around %s%s.", hhmm(later.Depart), atEN(in.DestinationTH), hhmm(later.Arrive), deadlineEN(in, later)))
+		if tr, ok := trainNow(in, res); ok {
+			parts = append(parts, fmt.Sprintf("Or take BTS / MRT now and arrive around %s%s.", hhmm(tr.Arrive), deadlineEN(in, tr)))
+		}
 	case DontGo:
 		headline = "Don't leave yet"
 		parts = append(parts, fmt.Sprintf("%s, you would hit %s.", when, hazardEN(e)))

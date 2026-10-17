@@ -52,6 +52,9 @@ func narrate(in Input, res Result) (headline, summary string, exp Explanation) {
 		later := EvaluateMode(in, in.Mode, *res.WaitUntil)
 		parts = append(parts, fmt.Sprintf("%s จะเจอ%s", when, hazardTH(e)))
 		parts = append(parts, fmt.Sprintf("ออก %s ถึง%sราว %s%s", hhmm(later.Depart), in.DestinationTH, hhmm(later.Arrive), deadlineTH(in, later)))
+		if tr, ok := trainNow(in, res); ok {
+			parts = append(parts, fmt.Sprintf("หรือนั่งรถไฟฟ้าไปตอนนี้ ถึงราว %s%s", hhmm(tr.Arrive), deadlineTH(in, tr)))
+		}
 	case DontGo:
 		headline = "อย่าเพิ่งออก"
 		parts = append(parts, fmt.Sprintf("%s จะเจอ%s", when, hazardTH(e)))
@@ -299,4 +302,18 @@ func nonEmpty(ss []string) []string {
 		}
 	}
 	return out
+}
+
+// trainNow is the train's trip when the asked mode must wait but the train
+// can go now: the app then puts the train first, so the summary offers it.
+func trainNow(in Input, res Result) (Eval, bool) {
+	if in.Mode == domain.ModeTransit {
+		return Eval{}, false
+	}
+	for _, o := range res.ModeOptions {
+		if o.Mode == domain.ModeTransit && o.Verdict == LeaveNow {
+			return res.Evals[domain.ModeTransit], true
+		}
+	}
+	return Eval{}, false
 }

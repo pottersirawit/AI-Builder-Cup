@@ -443,7 +443,7 @@ func TestOnlyUsableReportsCount(t *testing.T) {
 
 func TestRainFactorSaysRainingNowMidStorm(t *testing.T) {
 	for _, tt := range []struct {
-		lang         domain.Lang
+		lang        domain.Lang
 		now, starts string
 	}{{domain.LangTH, "กำลังตก", "เริ่มตก"}, {domain.LangEN, "raining on your route now", "starts on your route"}} {
 		in := heroInput(t, at(18, 52), at(18, 52), domain.ModeCar)
@@ -506,5 +506,25 @@ func TestLeaveByReasonFollowsWhatEndsTheWindow(t *testing.T) {
 	rainy.Lang = domain.LangEN
 	if r := Decide(rainy).Explanation.ReasonWhyTH; !strings.Contains(r, "rain") {
 		t.Errorf("hero leave-by is set by the 17:30 rain, English reason should say so: %q", r)
+	}
+}
+
+// The app shows the train when the asked mode must wait but the train can go;
+// the summary says so instead of only the wait.
+func TestWaitSummaryOffersTheTrainWhenItCanGo(t *testing.T) {
+	for _, tt := range []struct {
+		lang  domain.Lang
+		train string
+	}{{domain.LangTH, "รถไฟฟ้า"}, {domain.LangEN, "BTS / MRT"}} {
+		in := dryInput(tt.lang, time.Time{})
+		in.Mode, in.Rain = domain.ModeMoto, []domain.RainSample{{Time: at(8, 0), MMPerHr: 2}}
+		res := Decide(in)
+		transit := res.ModeOptions[slices.IndexFunc(res.ModeOptions, func(o ModeOption) bool { return o.Mode == domain.ModeTransit })]
+		if res.Verdict != Wait || transit.Verdict != LeaveNow {
+			t.Fatalf("%s: setup got %s with transit %s, want wait and transit leave_now", tt.lang, res.Verdict, transit.Verdict)
+		}
+		if !strings.Contains(res.SummaryTH, tt.train) {
+			t.Errorf("%s: wait summary should offer the train: %q", tt.lang, res.SummaryTH)
+		}
 	}
 }
