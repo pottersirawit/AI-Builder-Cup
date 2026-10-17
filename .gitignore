@@ -43,3 +43,6 @@ Thumbs.db
 *.log
 .scratch/
 .agents/teamwork/
+
+# Firebase CLI cache
+.firebase/
