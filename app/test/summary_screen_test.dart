@@ -874,7 +874,59 @@ void main() {
       expect(rect.height, lessThan(700));
     },
   );
+
+  testWidgets(
+    'user can dismiss event cards across Events and Summary tabs, undo, and keep dismissed events hidden after refresh',
+    (tester) async {
+      final store = await demoStore();
+      await pumpApp(
+        tester,
+        '2026-09-29T13:10:00+07:00',
+        height: 2400,
+        places: store,
+      );
+
+      // 1. Dismiss an Up Next card on Summary tab and Undo
+      expect(find.byKey(const ValueKey('next-cal-dinner')), findsOneWidget);
+      await tapAndSettle(
+        tester,
+        find.byKey(const ValueKey('dismiss-next-cal-dinner')),
+      );
+      expect(find.byKey(const ValueKey('next-cal-dinner')), findsNothing);
+      expect(store.isTripDismissed('cal-dinner'), isTrue);
+
+      // Tap Undo ('เลิกทำ') on the SnackBar
+      await tapAndSettle(tester, find.text('เลิกทำ'));
+      expect(find.byKey(const ValueKey('next-cal-dinner')), findsOneWidget);
+      expect(store.isTripDismissed('cal-dinner'), isFalse);
+
+      // 2. Dismiss Hero card on Summary tab -> next event ('cal-dinner') becomes Hero
+      expect(find.byKey(const ValueKey('hero-cal-client')), findsOneWidget);
+      await tapAndSettle(
+        tester,
+        find.byKey(const ValueKey('dismiss-hero-cal-client')),
+      );
+      expect(find.byKey(const ValueKey('hero-cal-client')), findsNothing);
+      expect(find.byKey(const ValueKey('hero-cal-dinner')), findsOneWidget);
+
+      // 3. Switch to Events tab and dismiss an event ticket ('cal-gym')
+      await tapAndSettle(tester, find.text('อีเวนต์'));
+      expect(find.byKey(const ValueKey('event-cal-gym')), findsOneWidget);
+      await tapAndSettle(
+        tester,
+        find.byKey(const ValueKey('dismiss-event-cal-gym')),
+      );
+      expect(find.byKey(const ValueKey('event-cal-gym')), findsNothing);
+
+      // 4. Refresh events -> dismissed events stay hidden
+      await tapAndSettle(tester, find.byTooltip('รีเฟรช'));
+      expect(find.byKey(const ValueKey('event-cal-client')), findsNothing);
+      expect(find.byKey(const ValueKey('event-cal-gym')), findsNothing);
+      expect(find.byKey(const ValueKey('event-cal-dinner')), findsOneWidget);
+    },
+  );
 }
+
 
 
 

@@ -243,6 +243,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 mode: plan?.best?.mode,
                 departAt: ctrl?.departAt,
               ),
+        onDismiss: () => dismissTripWithUndo(context, repo, next),
         onRetry: ctrl?.load,
         onResolvePlace: () => _resolveTrip(next),
       );
@@ -412,6 +413,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                       now: now,
                                       plan: _planFor(t, now),
                                       weather: outlook,
+                                      onDismiss: () => dismissTripWithUndo(
+                                        context,
+                                        repo,
+                                        t,
+                                      ),
                                       onTap: t.unresolved
                                           ? () => _resolveTrip(t)
                                           : (t.travels ||

@@ -156,12 +156,14 @@ class UpNextCard extends StatelessWidget {
     this.plan,
     this.weather,
     this.onTap,
+    this.onDismiss,
   });
   final Trip trip;
   final DateTime now;
   final LeavePlan? plan;
   final Outlook? weather;
   final VoidCallback? onTap;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -249,18 +251,41 @@ class UpNextCard extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Wrap(
-                    spacing: Space.x2,
-                    runSpacing: Space.x1,
-                    crossAxisAlignment: WrapCrossAlignment.center,
+                  Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        when,
-                        style: tabular(
-                          t.labelLarge!,
-                        ).copyWith(color: const Color(0xFF8AB4FF)),
+                      Expanded(
+                        child: Wrap(
+                          spacing: Space.x2,
+                          runSpacing: Space.x1,
+                          crossAxisAlignment: WrapCrossAlignment.center,
+                          children: [
+                            Text(
+                              when,
+                              style: tabular(
+                                t.labelLarge!,
+                              ).copyWith(color: const Color(0xFF8AB4FF)),
+                            ),
+                            if (w != null) WeatherTag(hour: w),
+                          ],
+                        ),
                       ),
-                      if (w != null) WeatherTag(hour: w),
+                      if (onDismiss != null)
+                        SizedBox(
+                          width: 24,
+                          height: 20,
+                          child: IconButton(
+                            key: ValueKey('dismiss-next-${trip.id}'),
+                            onPressed: onDismiss,
+                            visualDensity: VisualDensity.compact,
+                            padding: EdgeInsets.zero,
+                            icon: Icon(
+                              Symbols.close_rounded,
+                              size: 16,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                          ),
+                        ),
                     ],
                   ),
                   const SizedBox(height: Space.x1),

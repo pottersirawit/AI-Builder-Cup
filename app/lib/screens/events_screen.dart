@@ -284,6 +284,7 @@ class _EventsScreenState extends State<EventsScreen> {
       trip: trip,
       plan: plan,
       deciding: plan == null && repo.awaitsDecision(trip, now),
+      onDismiss: () => dismissTripWithUndo(context, repo, trip),
       onTap: trip.unresolved
           ? () => _resolve(trip)
           : canOpen
@@ -304,6 +305,7 @@ class EventTicket extends StatelessWidget {
     this.plan,
     this.deciding = false,
     this.onTap,
+    this.onDismiss,
   });
   final Trip trip;
   final LeavePlan? plan;
@@ -312,6 +314,7 @@ class EventTicket extends StatelessWidget {
   /// does not grow when it lands.
   final bool deciding;
   final VoidCallback? onTap;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -370,6 +373,22 @@ class EventTicket extends StatelessWidget {
                   ],
                 ),
               ),
+              if (onDismiss != null)
+                IconButton(
+                  key: ValueKey('dismiss-event-${trip.id}'),
+                  onPressed: onDismiss,
+                  visualDensity: VisualDensity.compact,
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(
+                    minWidth: 32,
+                    minHeight: 32,
+                  ),
+                  icon: Icon(
+                    Symbols.close_rounded,
+                    size: 18,
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
               if (onTap != null)
                 Icon(
                   Symbols.chevron_right_rounded,

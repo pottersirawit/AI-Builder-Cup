@@ -30,7 +30,18 @@ class TripsRepository extends ChangeNotifier {
   static const decideAhead = Duration(hours: 24);
 
   List<Trip> _trips = const [];
-  List<Trip> get trips => _trips;
+  List<Trip> get trips =>
+      _trips.where((t) => !_places.isTripDismissed(t.id)).toList();
+
+  void dismissTrip(String tripId) {
+    _places.dismissTrip(tripId);
+    _notify();
+  }
+
+  void restoreTrip(String tripId) {
+    _places.restoreTrip(tripId);
+    _notify();
+  }
 
   HomeStatus? _home;
 
@@ -186,8 +197,9 @@ class TripsRepository extends ChangeNotifier {
   /// answer yet. The next event is skipped: its controller decides it.
   Future<void> decideSoon() async {
     final now = _state.now();
-    final next = nextEvent(_trips, now);
-    final due = upcoming(_trips, now).where(
+    final current = trips;
+    final next = nextEvent(current, now);
+    final due = upcoming(current, now).where(
       (t) =>
           t.id != next?.id &&
           t.travels &&

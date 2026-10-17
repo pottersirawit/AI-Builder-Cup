@@ -66,11 +66,13 @@ class PlacesStore extends ChangeNotifier {
   static const _kCalendarState = 'profile.calendar_state';
   static const _kGmailState = 'profile.gmail_state';
   static const _kCachedTrips = 'profile.cached_trips';
+  static const _kDismissedTrips = 'profile.dismissed_trips';
 
   final SharedPreferences _prefs;
 
   List<SavedPlace> _places = [];
   List<Trip> _cachedTrips = [];
+  Set<String> _dismissedTripIds = {};
   PlaceCandidate? _manualLocation;
   bool _onboarded = false;
   bool _demo = false;
@@ -138,6 +140,9 @@ class PlacesStore extends ChangeNotifier {
     } else {
       _cachedTrips = [];
     }
+
+    final rawDismissed = _prefs.getStringList(_kDismissedTrips);
+    _dismissedTripIds = rawDismissed != null ? {...rawDismissed} : {};
   }
 
   void _write() {
@@ -169,6 +174,11 @@ class PlacesStore extends ChangeNotifier {
     } else {
       _prefs.remove(_kCachedTrips);
     }
+    if (_dismissedTripIds.isNotEmpty) {
+      _prefs.setStringList(_kDismissedTrips, _dismissedTripIds.toList());
+    } else {
+      _prefs.remove(_kDismissedTrips);
+    }
     notifyListeners();
   }
 
@@ -179,6 +189,22 @@ class PlacesStore extends ChangeNotifier {
   void setCachedTrips(List<Trip> trips) {
     _cachedTrips = trips;
     _write();
+  }
+
+  Set<String> get dismissedTripIds => Set.unmodifiable(_dismissedTripIds);
+
+  bool isTripDismissed(String id) => _dismissedTripIds.contains(id);
+
+  void dismissTrip(String id) {
+    if (_dismissedTripIds.add(id)) {
+      _write();
+    }
+  }
+
+  void restoreTrip(String id) {
+    if (_dismissedTripIds.remove(id)) {
+      _write();
+    }
   }
 
   PlaceCandidate? get manualLocation => _manualLocation;
@@ -323,11 +349,13 @@ class PlacesStore extends ChangeNotifier {
     _calendarEmail = null;
     _gmailEmail = null;
     _cachedTrips = [];
+    _dismissedTripIds.clear();
     _prefs.remove(_kCalendarState);
     _prefs.remove(_kGmailState);
     _prefs.remove(_kCalendarEmail);
     _prefs.remove(_kGmailEmail);
     _prefs.remove(_kCachedTrips);
+    _prefs.remove(_kDismissedTrips);
     _calendarHintDismissed = false;
     _locationAsked = false;
     _write();
