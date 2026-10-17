@@ -94,6 +94,8 @@ func buildExplanationEN(in Input, res Result) Explanation {
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s).", hhmm(*res.LeaveBy), mode)
 		case e.Late():
 			exp.ReasonWhyTH = fmt.Sprintf("The route is passable by %s, but you would arrive %d min past your %s appointment.", mode, e.LateMinutes, hhmm(in.ArriveBy))
+		case in.Mode == domain.ModeTransit && e.MaxRainMM >= rainLight:
+			exp.ReasonWhyTH = "Trains run as normal in the rain and stay clear of flooded roads. Bring an umbrella for the walk to and from the station."
 		default:
 			exp.ReasonWhyTH = fmt.Sprintf("Conditions on your route are safe right now: no heavy rain and no standing water in the way. You can head out by %s.", mode)
 		}
@@ -130,6 +132,8 @@ func buildExplanationEN(in Input, res Result) Explanation {
 
 	if res.RainOnset != nil && !res.RainOnset.After(in.Now) {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: raining on your route now (peak %.0f mm/h)", e.MaxRainMM))
+	} else if res.RainOnset != nil && e.MaxRainMM < rainLight {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: starts on your route around %s, after you arrive", hhmm(*res.RainOnset)))
 	} else if res.RainOnset != nil {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: starts on your route around %s (peak %.0f mm/h)", hhmm(*res.RainOnset), e.MaxRainMM))
 	} else if e.MaxRainMM >= rainLight {

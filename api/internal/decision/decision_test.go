@@ -583,3 +583,22 @@ func TestSwitchReasonBlamesWaterOnlyPastItsLimit(t *testing.T) {
 		}
 	}
 }
+
+// Lines under the answer never contradict the rain they sit next to.
+func TestRainLinesMatchTheRain(t *testing.T) {
+	for _, lang := range []domain.Lang{domain.LangTH, domain.LangEN} {
+		later := dryInput(lang, time.Time{})
+		later.Rain = []domain.RainSample{{Time: at(10, 0), MMPerHr: 20}}
+		for _, f := range Decide(later).Explanation.FactorsTH {
+			if strings.Contains(f, " 0 ") {
+				t.Errorf("%s: rain after arrival quotes a 0 peak: %q", lang, f)
+			}
+		}
+		train := dryInput(lang, time.Time{})
+		train.Mode, train.Rain = domain.ModeTransit, []domain.RainSample{{Time: at(8, 0), MMPerHr: 40}}
+		res := Decide(train)
+		if r := res.Explanation.ReasonWhyTH; res.Verdict != LeaveNow || strings.Contains(r, "no heavy rain") || strings.Contains(r, "ฝนไม่หนัก") {
+			t.Errorf("%s: train in 40 mm/h: %s %q", lang, res.Verdict, r)
+		}
+	}
+}
