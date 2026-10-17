@@ -222,6 +222,140 @@ func TestAllDayCalendarEvent_WithoutLocation(t *testing.T) {
 	}
 }
 
+func TestOnlineMeetingWithLocationIsOnsite(t *testing.T) {
+	ctx := context.Background()
+	geo := &stubGeocoder{known: map[string]geocode.Place{
+		"ไบเทค บางนา": {NameTH: "ไบเทค บางนา", Lat: 13.6700, Lng: 100.6100},
+	}}
+
+	t.Run("google meet link AND resolved physical location is onsite", func(t *testing.T) {
+		item := calItem("evt_hybrid", "Quarterly Review", "ไบเทค บางนา", "2026-10-16T10:00:00+07:00", "2026-10-16T11:00:00+07:00")
+		item.HangoutLink = "https://meet.google.com/abc-defg-hij"
+		item.ConferenceData = json.RawMessage(`{"conferenceId":"abc-defg-hij"}`)
+
+		trip := ConvertCalendarEventToTrip(ctx, item, geo, scenario.Places)
+		if trip.Virtual {
+			t.Errorf("trip.Virtual = true, want false (onsite when both Meet link and physical location exist)")
+		}
+		if !trip.Destination.Resolved() || trip.Destination.Lat != 13.6700 {
+			t.Errorf("trip.Destination = %+v, want resolved ไบเทค บางนา", trip.Destination)
+		}
+	})
+
+	t.Run("google meet link AND unresolved physical location is onsite unresolved", func(t *testing.T) {
+		item := calItem("evt_hybrid_unres", "Workshop", "อาคารลับ ชั้น 9", "2026-10-16T14:00:00+07:00", "2026-10-16T15:00:00+07:00")
+		item.HangoutLink = "https://meet.google.com/xyz-uvwx-rst"
+
+		trip := ConvertCalendarEventToTrip(ctx, item, geo, scenario.Places)
+		if trip.Virtual {
+			t.Errorf("trip.Virtual = true, want false when physical location text is present")
+		}
+		if trip.LocationTextTH != "อาคารลับ ชั้น 9" {
+			t.Errorf("trip.LocationTextTH = %q, want อาคารลับ ชั้น 9", trip.LocationTextTH)
+		}
+	})
+
+	t.Run("google meet link AND location inferred from event name is onsite with inferred_place", func(t *testing.T) {
+		item := calItem("evt_hybrid_title", "ประชุมทีมที่สยามพารากอน", "", "2026-10-16T10:00:00+07:00", "2026-10-16T11:00:00+07:00")
+		item.HangoutLink = "https://meet.google.com/abc-defg-hij"
+
+		trip := ConvertCalendarEventToTrip(ctx, item, geo, scenario.Places)
+		if trip.Virtual {
+			t.Errorf("trip.Virtual = true, want false when location is inferred from event title")
+		}
+		if !trip.InferredPlace {
+			t.Errorf("trip.InferredPlace = false, want true")
+		}
+		if !trip.Destination.Resolved() {
+			t.Errorf("trip.Destination = %+v, want resolved Siam", trip.Destination)
+		}
+	})
+}
+
+func TestCalendarEventInfersLocationFromEventName(t *testing.T) {
+	ctx := context.Background()
+	geo := &stubGeocoder{known: map[string]geocode.Place{
+		"เซ็นทรัลเวิลด์": {NameTH: "เซ็นทรัลเวิลด์", Lat: 13.7466, Lng: 100.5393},
+		"ไบเทค บางนา":   {NameTH: "ไบเทค บางนา", Lat: 13.6700, Lng: 100.6100},
+	}}
+
+	t.Run("timed event infers location phrase from title and marks InferredPlace", func(t *testing.T) {
+		item := calItem("evt_infer_timed", "นัดกินข้าวที่เซ็นทรัลเวิลด์", "", "2026-10-16T18:00:00+07:00", "2026-10-16T20:00:00+07:00")
+		trip := ConvertCalendarEventToTrip(ctx, item, geo, scenario.Places)
+		if !trip.InferredPlace {
+			t.Errorf("trip.InferredPlace = false, want true")
+		}
+		if !trip.Destination.Resolved() || trip.Destination.Lat != 13.7466 {
+			t.Errorf("trip.Destination = %+v, want resolved เซ็นทรัลเวิลด์", trip.Destination)
+		}
+	})
+
+	t.Run("all-day event infers location phrase from title and marks InferredPlace", func(t *testing.T) {
+		item := googleCalendarItem{ID: "evt_infer_allday", Summary: "งานแฟร์ที่ไบเทค บางนา", Location: ""}
+		item.Start.Date, item.End.Date = "2026-10-20", "2026-10-21"
+		trip := ConvertCalendarEventToTrip(ctx, item, geo, scenario.Places)
+		if !trip.AllDay {
+			t.Errorf("trip.AllDay = false, want true")
+		}
+		if !trip.InferredPlace {
+			t.Errorf("trip.InferredPlace = false, want true")
+		}
+		if !trip.Destination.Resolved() || trip.Destination.Lat != 13.6700 {
+			t.Errorf("trip.Destination = %+v, want resolved ไบเทค บางนา", trip.Destination)
+		}
+	})
+}
+
+func TestSyncPreservesConfirmedTripLocationAcrossSync(t *testing.T) {
+	s := newTestServer(t, false)
+	allDayItem := googleCalendarItem{ID: "evt_allday_persist", Summary: "เที่ยวงานหนังสือ", Location: ""}
+	allDayItem.Start.Date, allDayItem.End.Date = "2026-10-20", "2026-10-21"
+	g := &fakeGoogle{
+		email:  "persist.owner@example.com",
+		events: []googleCalendarItem{allDayItem},
+	}
+	g.start(t, s)
+	storeToken(t, g.email, userToken{AccessToken: "at-1"})
+	h := s.Handler()
+
+	// 1. Initial sync: all-day event has no resolved location
+	trips := syncedTrips(t, h, "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	initial := trips["cal-evt_allday_persist"]
+	if initial.Destination.Resolved() {
+		t.Fatalf("initial all-day event should not be resolved: %+v", initial)
+	}
+
+	// 2. User confirms/saves location for the all-day event via /v1/decide (or UserStore)
+	savedTrip := initial
+	savedTrip.Destination = domain.Place{NameTH: "ศูนย์การประชุมแห่งชาติสิริกิติ์", Lat: 13.7230, Lng: 100.5600}
+	savedTrip.LocationTextTH = ""
+	savedTrip.InferredPlace = false
+	decBody, _ := json.Marshal(map[string]any{
+		"trip_id": savedTrip.ID,
+		"email":   g.email,
+		"trip":    savedTrip,
+	})
+	rDec := httptest.NewRequest("POST", "/v1/decide", bytes.NewReader(decBody))
+	wDec := httptest.NewRecorder()
+	h.ServeHTTP(wDec, rDec)
+	if wDec.Code != http.StatusOK {
+		t.Fatalf("POST /v1/decide returned %d: %s", wDec.Code, wDec.Body.String())
+	}
+
+	// 3. Subsequent sync preserves the saved location on the all-day event
+	afterSync := syncedTrips(t, h, "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	persisted := afterSync["cal-evt_allday_persist"]
+	if !persisted.AllDay {
+		t.Errorf("persisted.AllDay = false, want true")
+	}
+	if !persisted.Destination.Resolved() || persisted.Destination.NameTH != "ศูนย์การประชุมแห่งชาติสิริกิติ์" {
+		t.Errorf("persisted.Destination = %+v, want ศูนย์การประชุมแห่งชาติสิริกิติ์", persisted.Destination)
+	}
+	if persisted.InferredPlace {
+		t.Errorf("persisted.InferredPlace = true, want false after confirmation")
+	}
+}
+
 
 func TestCalendarEventEndsAt(t *testing.T) {
 	item := calItem("evt_end", "กินข้าวกับเพื่อน", "สยามพารากอน", "2026-10-16T12:30:00+07:00", "2026-10-16T13:45:00+07:00")

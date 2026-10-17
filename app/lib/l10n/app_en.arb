@@ -1295,5 +1295,15 @@
       }
     }
   },
-  "verdictAccuracyDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling."
+  "verdictAccuracyDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.",
+  "eventsInferredPlacePrompt": "AI suggested place: {place}",
+  "@eventsInferredPlacePrompt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsConfirmPlace": "Confirm place",
+  "eventsChangePlace": "Change"
 }

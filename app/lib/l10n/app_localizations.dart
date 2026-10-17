@@ -3049,6 +3049,24 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
   String get verdictAccuracyDisclaimer;
+
+  /// No description provided for @eventsInferredPlacePrompt.
+  ///
+  /// In th, this message translates to:
+  /// **'AI แนะนำสถานที่: {place}'**
+  String eventsInferredPlacePrompt(String place);
+
+  /// No description provided for @eventsConfirmPlace.
+  ///
+  /// In th, this message translates to:
+  /// **'ยืนยันสถานที่'**
+  String get eventsConfirmPlace;
+
+  /// No description provided for @eventsChangePlace.
+  ///
+  /// In th, this message translates to:
+  /// **'เปลี่ยน'**
+  String get eventsChangePlace;
 }
 
 class _AppLocalizationsDelegate

@@ -118,21 +118,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final saved = await pickPlace(
       context,
       kind: PlaceKind.other,
-      initialQuery: t.locationTextTh,
+      initialQuery: t.locationTextTh ?? inferPlaceQueryFromTitle(t.titleTh),
     );
     if (saved == null || !mounted) return;
-    _openTrip(
-      Trip(
-        id: 'app-${t.id}',
-        titleTh: t.titleTh,
-        source: 'app',
-        origin: t.origin,
-        destination: saved.asPlace,
-        arriveBy: t.arriveBy,
-        endsAt: t.endsAt,
-        mode: t.mode,
-      ),
-    );
+    final updated = await widget.repo.saveTripDestination(t, saved.asPlace);
+    if (!mounted) return;
+    _openTrip(updated);
   }
 
   Future<void> _calibrateLocation() async {

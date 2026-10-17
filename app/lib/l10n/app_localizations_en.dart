@@ -1793,4 +1793,15 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get verdictAccuracyDisclaimer =>
       'AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.';
+
+  @override
+  String eventsInferredPlacePrompt(String place) {
+    return 'AI suggested place: $place';
+  }
+
+  @override
+  String get eventsConfirmPlace => 'Confirm place';
+
+  @override
+  String get eventsChangePlace => 'Change';
 }

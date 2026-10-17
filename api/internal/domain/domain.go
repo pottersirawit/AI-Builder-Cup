@@ -133,6 +133,9 @@ type Trip struct {
 	// LocationTextTH is the event's location as written, kept when Destination
 	// is unresolved so the app can ask the user where it is.
 	LocationTextTH string `json:"location_text_th,omitempty"`
+	// InferredPlace reports whether Destination was inferred from the event title
+	// rather than explicitly set in the event's location field or confirmed by the user.
+	InferredPlace bool `json:"inferred_place,omitempty"`
 	// NoteTH says how the trip was found when that is not obvious, such as an
 	// email Gemini read.
 	NoteTH string `json:"note_th,omitempty"`

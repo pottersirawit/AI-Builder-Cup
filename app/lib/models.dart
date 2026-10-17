@@ -84,6 +84,57 @@ class Place {
   Json toJson() => {'name_th': nameTh, 'lat': lat, 'lng': lng};
 }
 
+const _onlineLocationMarkers = [
+  'ออนไลน์',
+  'online',
+  'meet.google.com',
+  'zoom.us',
+  'teams.microsoft.com',
+  'google meet',
+  'zoom',
+  'teams',
+];
+
+bool _isOnlineLocationText(String? raw) {
+  if (raw == null) return false;
+  final s = raw.trim().toLowerCase();
+  if (s.isEmpty) return false;
+  if (s.startsWith('http://') || s.startsWith('https://')) return true;
+  for (final m in _onlineLocationMarkers) {
+    if (s == m || s.contains(m)) return true;
+  }
+  return false;
+}
+
+const _titleLocationSplitters = [
+  ' ที่ ',
+  'ที่',
+  ' แถว ',
+  'แถว',
+  ' ณ ',
+  ' @ ',
+  '@',
+  ' at ',
+  ' in ',
+];
+
+/// Infers a candidate location query from an event title (e.g.
+/// "นัดกินข้าวที่เซ็นทรัลเวิลด์" -> "เซ็นทรัลเวิลด์"), or null when none is found.
+String? inferPlaceQueryFromTitle(String title) {
+  final lower = title.toLowerCase();
+  for (final sep in _titleLocationSplitters) {
+    final idx = lower.lastIndexOf(sep);
+    if (idx >= 0) {
+      var candidate = title.substring(idx + sep.length).trim();
+      candidate = candidate.replaceAll(RegExp(r'\s*\([^)]*\)\s*$'), '').trim();
+      if (candidate.isNotEmpty && !_isOnlineLocationText(candidate)) {
+        return candidate;
+      }
+    }
+  }
+  return null;
+}
+
 class Trip {
   const Trip({
     required this.id,
@@ -97,6 +148,7 @@ class Trip {
     this.endsAt,
     this.virtual = false,
     this.allDay = false,
+    this.inferredPlace = false,
   });
 
   Trip copyWith({
@@ -108,9 +160,11 @@ class Trip {
     DateTime? arriveBy,
     TravelMode? mode,
     String? locationTextTh,
+    bool clearLocationTextTh = false,
     DateTime? endsAt,
     bool? virtual,
     bool? allDay,
+    bool? inferredPlace,
   }) => Trip(
     id: id ?? this.id,
     titleTh: titleTh ?? this.titleTh,
@@ -119,16 +173,20 @@ class Trip {
     destination: destination ?? this.destination,
     arriveBy: arriveBy ?? this.arriveBy,
     mode: mode ?? this.mode,
-    locationTextTh: locationTextTh ?? this.locationTextTh,
+    locationTextTh: clearLocationTextTh
+        ? null
+        : (locationTextTh ?? this.locationTextTh),
     endsAt: endsAt ?? this.endsAt,
     virtual: virtual ?? this.virtual,
     allDay: allDay ?? this.allDay,
+    inferredPlace: inferredPlace ?? this.inferredPlace,
   );
 
   factory Trip.fromJson(Json j) {
     final dest = j['destination'] as Json?;
-    final virtual = j['virtual'] == true;
+    final rawVirtual = j['virtual'] == true;
     final allDay = j['all_day'] == true;
+    final inferredPlace = j['inferred_place'] == true;
     // (0, 0) is how an unplaced trip comes back from the device cache.
     final resolved =
         dest != null &&
@@ -138,6 +196,14 @@ class Trip {
     final text =
         j['location_text_th'] as String? ?? j['location_th'] as String?;
     final destName = _str(dest?['name_th']).trim();
+    final hasPhysicalLocationText =
+        (text != null &&
+            text.trim().isNotEmpty &&
+            !_isOnlineLocationText(text)) ||
+        (destName.isNotEmpty && !_isOnlineLocationText(destName));
+    // Online meeting with both a Meet link (virtual: true) and a physical
+    // location is treated as onsite.
+    final virtual = rawVirtual && !resolved && !hasPhysicalLocationText;
     final hasLocationText =
         (text != null && text.trim().isNotEmpty) || destName.isNotEmpty;
     final placeless = !resolved && !virtual && (!allDay || hasLocationText);
@@ -156,6 +222,7 @@ class Trip {
       endsAt: DateTime.tryParse(_str(j['ends_at'])),
       virtual: virtual,
       allDay: allDay,
+      inferredPlace: inferredPlace,
     );
   }
 
@@ -188,6 +255,9 @@ class Trip {
   /// An all-day event (a holiday, a trip day): not a departure.
   final bool allDay;
 
+  /// Whether [destination] was inferred by AI from [titleTh] and awaits confirmation.
+  final bool inferredPlace;
+
   /// Whether this event means going somewhere at a time.
   bool get travels => !virtual && !allDay && arriveBy != null;
 
@@ -207,6 +277,7 @@ class Trip {
     if (endsAt != null) 'ends_at': endsAt!.toIso8601String(),
     if (virtual) 'virtual': true,
     if (allDay) 'all_day': true,
+    if (inferredPlace) 'inferred_place': true,
   };
 }
 

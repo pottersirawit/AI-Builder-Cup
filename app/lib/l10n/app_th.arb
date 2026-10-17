@@ -1295,5 +1295,15 @@
       }
     }
   },
-  "verdictAccuracyDisclaimer": "ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง"
+  "verdictAccuracyDisclaimer": "ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง",
+  "eventsInferredPlacePrompt": "AI แนะนำสถานที่: {place}",
+  "@eventsInferredPlacePrompt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsConfirmPlace": "ยืนยันสถานที่",
+  "eventsChangePlace": "เปลี่ยน"
 }

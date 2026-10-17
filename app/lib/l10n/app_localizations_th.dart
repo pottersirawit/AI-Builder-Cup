@@ -1771,4 +1771,15 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get verdictAccuracyDisclaimer =>
       'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
+
+  @override
+  String eventsInferredPlacePrompt(String place) {
+    return 'AI แนะนำสถานที่: $place';
+  }
+
+  @override
+  String get eventsConfirmPlace => 'ยืนยันสถานที่';
+
+  @override
+  String get eventsChangePlace => 'เปลี่ยน';
 }

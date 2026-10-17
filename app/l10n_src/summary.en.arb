@@ -447,5 +447,15 @@
   "stripTitle": "Today at a glance",
   "stripEvent": "Event",
   "stripTravel": "Travel",
-  "stripRain": "Rain"
+  "stripRain": "Rain",
+  "eventsInferredPlacePrompt": "AI suggested place: {place}",
+  "@eventsInferredPlacePrompt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsConfirmPlace": "Confirm place",
+  "eventsChangePlace": "Change"
 }

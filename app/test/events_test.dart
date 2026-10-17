@@ -399,5 +399,64 @@ void main() {
       expect(previousEventFor([e1, e2, e3], e3)?.id, 'e2');
     });
   });
+
+  group('event location customization & hybrid online meetings', () {
+    test('online meeting with resolved destination is treated as onsite', () {
+      final t = Trip.fromJson({
+        'id': 'cal-hybrid',
+        'title_th': 'Quarterly Review (Google Meet)',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.81, 'lng': 100.59},
+        'destination': {'name_th': 'ไบเทค บางนา', 'lat': 13.67, 'lng': 100.61},
+        'arrive_by': '2026-10-17T10:00:00+07:00',
+        'mode': 'car',
+        'virtual': true,
+      });
+      expect(t.virtual, isFalse);
+      expect(t.travels, isTrue);
+      expect(t.destination.resolved, isTrue);
+      expect(t.destination.nameTh, 'ไบเทค บางนา');
+    });
+
+    test('online meeting with unresolved physical location_text_th is onsite unresolved', () {
+      final t = Trip.fromJson({
+        'id': 'cal-hybrid-unres',
+        'title_th': 'Workshop (Google Meet)',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.81, 'lng': 100.59},
+        'destination': {'name_th': 'อาคารลับ ชั้น 9'},
+        'location_text_th': 'อาคารลับ ชั้น 9',
+        'arrive_by': '2026-10-17T14:00:00+07:00',
+        'mode': 'car',
+        'virtual': true,
+      });
+      expect(t.virtual, isFalse);
+      expect(t.unresolved, isTrue);
+      expect(t.locationTextTh, 'อาคารลับ ชั้น 9');
+    });
+
+    test('pure online meeting without physical location stays virtual', () {
+      final t = Trip.fromJson({
+        'id': 'cal-pure-online',
+        'title_th': 'Sprint planning',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.81, 'lng': 100.59},
+        'destination': {'name_th': 'ออนไลน์'},
+        'arrive_by': '2026-10-17T10:00:00+07:00',
+        'mode': 'car',
+        'virtual': true,
+      });
+      expect(t.virtual, isTrue);
+      expect(t.travels, isFalse);
+    });
+
+    test('inferPlaceQueryFromTitle extracts location from event title', () {
+      expect(inferPlaceQueryFromTitle('นัดกินข้าวที่เซ็นทรัลเวิลด์'), 'เซ็นทรัลเวิลด์');
+      expect(inferPlaceQueryFromTitle('ประชุมทีม @ สยามพารากอน'), 'สยามพารากอน');
+      expect(inferPlaceQueryFromTitle('Dinner at Thonglor'), 'Thonglor');
+      expect(inferPlaceQueryFromTitle('คุยเรื่องงบประมาณ'), isNull);
+      expect(inferPlaceQueryFromTitle('Sprint planning'), isNull);
+    });
+  });
 }
 

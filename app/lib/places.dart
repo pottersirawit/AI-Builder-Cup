@@ -67,12 +67,14 @@ class PlacesStore extends ChangeNotifier {
   static const _kGmailState = 'profile.gmail_state';
   static const _kCachedTrips = 'profile.cached_trips';
   static const _kDismissedTrips = 'profile.dismissed_trips';
+  static const _kTripPlaces = 'profile.trip_places';
 
   final SharedPreferences _prefs;
 
   List<SavedPlace> _places = [];
   List<Trip> _cachedTrips = [];
   Set<String> _dismissedTripIds = {};
+  Map<String, Place> _tripPlaces = {};
   PlaceCandidate? _manualLocation;
   bool _onboarded = false;
   bool _demo = false;
@@ -143,6 +145,22 @@ class PlacesStore extends ChangeNotifier {
 
     final rawDismissed = _prefs.getStringList(_kDismissedTrips);
     _dismissedTripIds = rawDismissed != null ? {...rawDismissed} : {};
+
+    final rawTripPlaces = _prefs.getString(_kTripPlaces);
+    if (rawTripPlaces != null) {
+      try {
+        final map = jsonDecode(rawTripPlaces) as Map<String, dynamic>;
+        _tripPlaces = {
+          for (final e in map.entries)
+            if (e.value is Map<String, dynamic>)
+              e.key: Place.fromJson(e.value as Json),
+        };
+      } catch (_) {
+        _tripPlaces = {};
+      }
+    } else {
+      _tripPlaces = {};
+    }
   }
 
   void _write() {
@@ -179,6 +197,16 @@ class PlacesStore extends ChangeNotifier {
     } else {
       _prefs.remove(_kDismissedTrips);
     }
+    if (_tripPlaces.isNotEmpty) {
+      _prefs.setString(
+        _kTripPlaces,
+        jsonEncode({
+          for (final e in _tripPlaces.entries) e.key: e.value.toJson(),
+        }),
+      );
+    } else {
+      _prefs.remove(_kTripPlaces);
+    }
     notifyListeners();
   }
 
@@ -188,6 +216,25 @@ class PlacesStore extends ChangeNotifier {
   /// sample data.
   void setCachedTrips(List<Trip> trips) {
     _cachedTrips = trips;
+    _write();
+  }
+
+  Place? tripPlace(String tripId) => _tripPlaces[tripId];
+
+  void setTripPlace(String tripId, Place place) {
+    _tripPlaces[tripId] = place;
+    _cachedTrips = [
+      for (final t in _cachedTrips)
+        if (t.id == tripId)
+          t.copyWith(
+            destination: place,
+            clearLocationTextTh: true,
+            virtual: false,
+            inferredPlace: false,
+          )
+        else
+          t,
+    ];
     _write();
   }
 
