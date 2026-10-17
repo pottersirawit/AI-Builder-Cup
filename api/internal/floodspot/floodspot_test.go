@@ -88,3 +88,16 @@ func TestShortNameEN(t *testing.T) {
 		t.Errorf("got %q", got)
 	}
 }
+
+func TestNamesInEnglish(t *testing.T) {
+	s := Spot{NameTH: "ถนนรัชดาภิเษก หน้าศาลอาญา", NameEN: "Ratchadaphisek Rd (Criminal Court)"}
+	if s.Name(domain.LangEN) != s.NameEN || s.ShortName(domain.LangEN) != "Ratchadaphisek Rd" {
+		t.Errorf("English: %q / %q", s.Name(domain.LangEN), s.ShortName(domain.LangEN))
+	}
+	if s.Name(domain.LangTH) != s.NameTH || s.ShortName(domain.LangTH) != "รัชดาภิเษก" {
+		t.Errorf("Thai: %q / %q", s.Name(domain.LangTH), s.ShortName(domain.LangTH))
+	}
+	if th := (Spot{NameTH: "ถนนพระราม 4"}); th.Name(domain.LangEN) != "ถนนพระราม 4" || th.ShortName(domain.LangEN) != "พระราม 4" {
+		t.Errorf("a spot without an English name keeps its Thai one: %q", th.Name(domain.LangEN))
+	}
+}

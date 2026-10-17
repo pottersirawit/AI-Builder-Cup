@@ -514,7 +514,7 @@ func (s *Session) SourcesUsed() []string {
 		out = append(out, s.prov.BMATidal.Name())
 	}
 	if s.prov.Hotlines != nil {
-		out = append(out, s.prov.Hotlines.Name())
+		out = append(out, scenario.Text(s.prov.Hotlines.Name(), s.Lang))
 	}
 	return out
 }
@@ -688,7 +688,11 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		summary := s.Lang.Pick("ไม่มีข้อมูลคลองใกล้ปลายทาง", "No canal data near the destination")
 		if len(canals) > 0 {
 			c := canals[0]
-			summary = fmt.Sprintf(s.Lang.Pick("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", "%s at %.1f m, bank at %.1f m (%.0f cm below the bank)"), c.NameTH, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
+			name := c.NameTH
+			if s.Lang == domain.LangEN && c.NameEN != "" {
+				name = c.NameEN
+			}
+			summary = fmt.Sprintf(s.Lang.Pick("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", "%s at %.1f m, bank at %.1f m (%.0f cm below the bank)"), name, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
 		}
 		return map[string]any{"canals": canals}, summary, nil
 

@@ -419,6 +419,19 @@ func TestSourcesUsed_DynamicAttribution(t *testing.T) {
 		}
 	}
 
+	en, err := p.Open(context.Background(), prov, at(16, 10), TripRequest{Origin: &gps, Destination: &scenario.Home, Lang: domain.LangEN})
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, src := range en.SourcesUsed() {
+		if domain.HasThai(src) {
+			t.Errorf("English source %q has Thai in it", src)
+		}
+	}
+	if joined := strings.Join(en.SourcesUsed(), ","); !strings.Contains(joined, "Emergency hotlines (DDPM 1784 / EMS 1669)") {
+		t.Errorf("English sources %s lack the hotlines", joined)
+	}
+
 	contacts := s.EmergencyContacts()
 	if len(contacts) < 4 {
 		t.Fatalf("expected at least 4 emergency hotlines, got %d", len(contacts))
