@@ -1595,7 +1595,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String verdictModeStatusWithProb(int eta, String status, int prob) {
-    return '$eta น. · $status ($prob%)';
+    return '$eta น. · $status (โอกาสฝน $prob%)';
   }
 
   @override

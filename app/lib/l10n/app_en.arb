@@ -1166,7 +1166,7 @@
       }
     }
   },
-  "verdictModeStatusWithProb": "{eta} min · {status} ({prob}%)",
+  "verdictModeStatusWithProb": "{eta} min · {status} ({prob}% chance of rain)",
   "@verdictModeStatusWithProb": {
     "placeholders": {
       "eta": {

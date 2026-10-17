@@ -1166,7 +1166,7 @@
       }
     }
   },
-  "verdictModeStatusWithProb": "{eta} น. · {status} ({prob}%)",
+  "verdictModeStatusWithProb": "{eta} น. · {status} (โอกาสฝน {prob}%)",
   "@verdictModeStatusWithProb": {
     "placeholders": {
       "eta": {

@@ -2741,7 +2741,7 @@ abstract class AppLocalizations {
   /// No description provided for @verdictModeStatusWithProb.
   ///
   /// In th, this message translates to:
-  /// **'{eta} น. · {status} ({prob}%)'**
+  /// **'{eta} น. · {status} (โอกาสฝน {prob}%)'**
   String verdictModeStatusWithProb(int eta, String status, int prob);
 
   /// No description provided for @verdictFloodSpotsTitle.

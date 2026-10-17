@@ -1615,7 +1615,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String verdictModeStatusWithProb(int eta, String status, int prob) {
-    return '$eta min · $status ($prob%)';
+    return '$eta min · $status ($prob% chance of rain)';
   }
 
   @override
