@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
@@ -51,6 +52,22 @@ func setupTest(t *testing.T) (*Evaluator, *users.MemoryUserStore, *notify.Memory
 	}
 
 	return eval, userStore, memNotifier, prov
+}
+
+func TestEvaluator_KeepsTheStoredDeadline(t *testing.T) {
+	eval, userStore, notifier, prov := setupTest(t)
+	ctx := context.Background()
+	trip := scenario.Trips(at(16, 10))[0] // cal-dinner, arrive by 18:30
+	if err := userStore.UpsertTrip(ctx, users.UserTrip{UID: "mew-1", Trip: trip, Places: scenario.Places}); err != nil {
+		t.Fatal(err)
+	}
+	res, err := eval.EvaluateTrip(ctx, prov, at(16, 10), "mew-1", trip.ID, true)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(res.SummaryTH, "ทันนัด 18:30") || !strings.Contains(notifier.Messages[0].SummaryTH, "18:30") {
+		t.Errorf("push should be judged against the 18:30 dinner, got %q", res.SummaryTH)
+	}
 }
 
 func TestEvaluator_ProactiveAlertOnWeatherChange(t *testing.T) {
