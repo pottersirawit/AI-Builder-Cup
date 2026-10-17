@@ -49,6 +49,9 @@ class TripsRepository extends ChangeNotifier {
 
   final Map<String, Decision> _decisions = {};
   final Set<String> _deciding = {};
+
+  /// Trips [decideSoon] found no answer for; nothing is on its way.
+  final Set<String> _unanswered = {};
   int _seq = 0;
   bool _disposed = false;
 
@@ -62,6 +65,14 @@ class TripsRepository extends ChangeNotifier {
       : (_places.gmail == LinkState.connected ? _places.gmailAccount : null);
 
   Decision? decisionFor(String tripId) => _decisions[tripId];
+
+  /// A leave answer for [t] is on its way, so its row can hold the space.
+  bool awaitsDecision(Trip t, DateTime now) =>
+      t.travels &&
+      !t.unresolved &&
+      t.arriveBy!.difference(now) <= decideAhead &&
+      !_decisions.containsKey(t.id) &&
+      !_unanswered.contains(t.id);
 
   /// The summary's controller answered; rows reuse its decision.
   void remember(String tripId, Decision d) {
@@ -116,26 +127,32 @@ class TripsRepository extends ChangeNotifier {
     } catch (e) {
       tripsError = e;
     }
+    // Weather and the home's flood status stand on their own: the page
+    // keeps them when the events fail, and keeps the last ones when they do.
+    ApiResult<HomeStatus>? homeR;
+    ApiResult<Outlook>? outlookR;
     try {
-      final homeR = await homeF;
-      final outlookR = await outlookF;
-      if (seq != _seq || _disposed) return;
-      _state
-        ..markSample((tripsR?.isSample ?? false) || (homeR?.isSample ?? false))
-        ..homeLevel = homeR?.data.level ?? HomeLevel.normal;
-      final fresh = tripsR?.data ?? const <Trip>[];
-      if (fresh.isNotEmpty && !tripsR!.isSample) _places.setCachedTrips(fresh);
-      _trips = fresh.isNotEmpty
-          ? fresh
-          : (connected ? _places.cachedTrips : const []);
+      homeR = await homeF;
+    } catch (_) {}
+    try {
+      outlookR = await outlookF;
+    } catch (_) {}
+    if (seq != _seq || _disposed) return;
+    _state.markSample(
+      (tripsR?.isSample ?? false) || (homeR?.isSample ?? false),
+    );
+    if (homeF == null || homeR != null) {
+      _state.homeLevel = homeR?.data.level ?? HomeLevel.normal;
       _home = homeR?.data;
-      _outlook = outlookR.data;
-      _decisions.removeWhere((id, _) => !_trips.any((t) => t.id == id));
-      _error = tripsError;
-    } catch (e) {
-      if (seq != _seq || _disposed) return;
-      _error = e;
     }
+    final fresh = tripsR?.data ?? const <Trip>[];
+    if (fresh.isNotEmpty && !tripsR!.isSample) _places.setCachedTrips(fresh);
+    _trips = fresh.isNotEmpty
+        ? fresh
+        : (connected ? _places.cachedTrips : const []);
+    _outlook = outlookR?.data ?? _outlook;
+    _decisions.removeWhere((id, _) => !_trips.any((t) => t.id == id));
+    _error = tripsError;
     _loading = false;
     _notify();
   }
@@ -157,6 +174,7 @@ class TripsRepository extends ChangeNotifier {
     );
     for (final t in due.toList()) {
       _deciding.add(t.id);
+      _unanswered.remove(t.id);
       try {
         final r = await _api.decide(
           requestFor(
@@ -164,10 +182,16 @@ class TripsRepository extends ChangeNotifier {
           ).copyWith(departAt: isoBangkok(planDepartFor(t, now)), mode: t.mode),
         );
         if (_disposed) return;
-        if (r.data.needsPlace == null) _decisions[t.id] = r.data;
+        if (r.data.needsPlace == null) {
+          _decisions[t.id] = r.data;
+        } else {
+          _unanswered.add(t.id);
+        }
         _notify();
       } catch (_) {
         // A row without an answer just shows no leave time.
+        _unanswered.add(t.id);
+        _notify();
       } finally {
         _deciding.remove(t.id);
       }

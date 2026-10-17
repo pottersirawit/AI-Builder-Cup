@@ -283,6 +283,7 @@ class _EventsScreenState extends State<EventsScreen> {
       key: ValueKey('event-${trip.id}'),
       trip: trip,
       plan: plan,
+      deciding: plan == null && repo.awaitsDecision(trip, now),
       onTap: trip.unresolved
           ? () => _resolve(trip)
           : trip.travels
@@ -295,9 +296,19 @@ class _EventsScreenState extends State<EventsScreen> {
 /// One event as a glass ticket: date stub, time and title above the
 /// perforation; the place and, when known, the leave-at answer below.
 class EventTicket extends StatelessWidget {
-  const EventTicket({super.key, required this.trip, this.plan, this.onTap});
+  const EventTicket({
+    super.key,
+    required this.trip,
+    this.plan,
+    this.deciding = false,
+    this.onTap,
+  });
   final Trip trip;
   final LeavePlan? plan;
+
+  /// The leave-at answer is on its way: its line is held, so the ticket
+  /// does not grow when it lands.
+  final bool deciding;
   final VoidCallback? onTap;
 
   @override
@@ -368,13 +379,10 @@ class EventTicket extends StatelessWidget {
             Space.x4,
             Space.x3,
           ),
-          child: Wrap(
-            spacing: Space.x3,
-            runSpacing: Space.x2,
-            crossAxisAlignment: WrapCrossAlignment.center,
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
-                mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
                     trip.unresolved
@@ -389,10 +397,7 @@ class EventTicket extends StatelessWidget {
                         : scheme.onSurfaceVariant,
                   ),
                   const SizedBox(width: Space.x1),
-                  ConstrainedBox(
-                    constraints: BoxConstraints(
-                      maxWidth: MediaQuery.sizeOf(context).width * .5,
-                    ),
+                  Flexible(
                     child: Text(
                       trip.unresolved
                           ? l.summarySetPlace
@@ -410,25 +415,51 @@ class EventTicket extends StatelessWidget {
                   ),
                 ],
               ),
-              if (p != null && best != null)
-                Text(
-                  p.kind == LeaveKind.avoid
-                      ? l.eventsAvoid
-                      : l.eventsLeaveAt(
-                          p.time == null || p.kind == LeaveKind.overdue
-                              ? l.summaryLeaveNow
-                              : hhmm(p.time!),
-                          best.mode.label(l),
-                        ),
-                  style: tabular(t.labelLarge!),
+              if (best != null || deciding) ...[
+                const SizedBox(height: Space.x2),
+                ConstrainedBox(
+                  constraints: const BoxConstraints(minHeight: leaveLine),
+                  child: Align(
+                    alignment: Alignment.centerLeft,
+                    child: p == null || best == null
+                        ? Semantics(
+                            label: l.designLoadingAnswer,
+                            child: const Skeleton(width: 140, height: 12),
+                          )
+                        : Row(
+                            children: [
+                              Flexible(
+                                child: Text(
+                                  p.kind == LeaveKind.avoid
+                                      ? l.eventsAvoid
+                                      : l.eventsLeaveAt(
+                                          p.time == null ||
+                                                  p.kind == LeaveKind.overdue
+                                              ? l.summaryLeaveNow
+                                              : hhmm(p.time!),
+                                          best.mode.label(l),
+                                        ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: tabular(t.labelLarge!),
+                                ),
+                              ),
+                              const SizedBox(width: Space.x3),
+                              RiskChip(risk: best.risk, dense: true),
+                            ],
+                          ),
+                  ),
                 ),
-              if (best != null) RiskChip(risk: best.risk, dense: true),
+              ],
             ],
           ),
         ),
       ),
     );
   }
+
+  /// The leave line's height: the answer and its rain chip, on one line.
+  static const double leaveLine = 24;
 }
 
 /// A month of day circles; days with events glow in the CI gradient.
@@ -592,28 +623,87 @@ class MonthCalendar extends StatelessWidget {
   }
 }
 
+/// The list's shape while the first events load: day chips, a day header
+/// and tickets.
 class _ListSkeleton extends StatelessWidget {
   const _ListSkeleton();
 
   @override
-  Widget build(BuildContext context) => Semantics(
-    label: context.l10n.designLoadingAnswer,
-    child: const GlassSurface(
-      padding: EdgeInsets.all(Space.x5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+  Widget build(BuildContext context) {
+    const chip = Skeleton(width: 72, height: 40, radius: Radii.pill);
+    const ticket = GlassTicket(
+      radius: Radii.lg,
+      top: Padding(
+        padding: EdgeInsets.all(Space.x3),
+        child: Row(
+          children: [
+            Skeleton(width: 52, height: 56, radius: Radii.lg),
+            SizedBox(width: Space.x4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Skeleton(width: 56, height: 12),
+                  SizedBox(height: Space.x2),
+                  Skeleton(width: 180, height: 18),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottom: Padding(
+        padding: EdgeInsets.fromLTRB(Space.x4, Space.x3, Space.x4, Space.x3),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Skeleton(width: 140, height: 12),
+            SizedBox(height: Space.x2),
+            SizedBox(
+              height: EventTicket.leaveLine,
+              child: Align(
+                alignment: Alignment.centerLeft,
+                child: Skeleton(width: 120, height: 12),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+    return Semantics(
+      key: const ValueKey('events-skeleton'),
+      label: context.l10n.designLoadingAnswer,
+      child: const Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Skeleton(width: 140, height: 16),
-          SizedBox(height: Space.x4),
-          Skeleton(height: 220, radius: Radii.md),
-          SizedBox(height: Space.x5),
-          Skeleton(height: 64, radius: Radii.md),
+          Row(
+            children: [
+              chip,
+              SizedBox(width: Space.x2),
+              chip,
+              SizedBox(width: Space.x2),
+              chip,
+            ],
+          ),
+          Padding(
+            padding: EdgeInsets.fromLTRB(Space.x1, Space.x6, 0, Space.x3),
+            child: Row(
+              children: [
+                Skeleton(width: 72, height: 22),
+                SizedBox(width: Space.x2),
+                Skeleton(width: 96, height: 14),
+              ],
+            ),
+          ),
+          ticket,
           SizedBox(height: Space.x3),
-          Skeleton(height: 64, radius: Radii.md),
+          ticket,
+          SizedBox(height: Space.x3),
+          ticket,
         ],
       ),
-    ),
-  );
+    );
+  }
 }
 
 /// "ทุกวัน · วันนี้ · พรุ่งนี้ · ส 3 ต.ค.": the days that have events, as

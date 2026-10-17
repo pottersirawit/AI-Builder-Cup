@@ -35,6 +35,7 @@ http.Response jsonResponse(Object body) => http.Response.bytes(
 /// Pumps the app offline (every request falls back to fixtures). [places]
 /// defaults to มิว's demo profile; [respond] can answer a request instead.
 /// [launch] stands in for opening Google; [appBase] is the app's URL.
+/// [latency] holds a request back before it is answered.
 Future<AppState> pumpApp(
   WidgetTester tester,
   String? clock, {
@@ -45,6 +46,7 @@ Future<AppState> pumpApp(
   http.Response? Function(http.Request req)? respond,
   Future<bool> Function(Uri url)? launch,
   Uri? appBase,
+  Duration Function(http.Request req)? latency,
 }) async {
   tester.view.physicalSize = Size(402 * 3, height * 3);
   tester.view.devicePixelRatio = 3;
@@ -58,6 +60,8 @@ Future<AppState> pumpApp(
     language: () => state.locale.languageCode,
     client: MockClient((req) async {
       if (req.url.path == '/v1/decide') decideLog?.add(req.body);
+      final wait = latency?.call(req);
+      if (wait != null) await Future<void>.delayed(wait);
       final r = respond?.call(req);
       if (r != null) return r;
       throw http.ClientException('offline');

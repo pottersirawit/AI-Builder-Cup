@@ -219,21 +219,7 @@ class NextEventCard extends StatelessWidget {
         ],
       );
     } else {
-      body = Semantics(
-        label: l.designLoadingAnswer,
-        child: const Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Skeleton(width: 96, height: 12),
-            SizedBox(height: Space.x2),
-            Skeleton(width: 168, height: 44, radius: Radii.sm),
-            SizedBox(height: Space.x3),
-            Skeleton(height: 12),
-            SizedBox(height: Space.x5),
-            Skeleton(height: 36, radius: Radii.sm),
-          ],
-        ),
-      );
+      body = const LeaveSkeleton();
     }
 
     final top = Padding(
@@ -309,16 +295,124 @@ class NextEventCard extends StatelessWidget {
             Space.x5,
             Space.x5,
           ),
-          child: AnimatedSwitcher(
-            duration: Motion.of(context).d(Motion.flap),
-            child: KeyedSubtree(
-              key: ValueKey(
-                '${p?.kind}-${p?.time}-${p?.best?.mode}-$loading-$failed',
+          child: AnimatedSize(
+            duration: Motion.of(context).d(Motion.rerank),
+            curve: Motion.standard,
+            alignment: Alignment.topCenter,
+            child: AnimatedSwitcher(
+              duration: Motion.of(context).d(Motion.flap),
+              layoutBuilder: (current, previous) => Stack(
+                alignment: Alignment.topLeft,
+                children: [...previous, ?current],
               ),
-              child: body,
+              child: KeyedSubtree(
+                key: ValueKey(
+                  '${p?.kind}-${p?.time}-${p?.best?.mode}-$loading-$failed',
+                ),
+                child: body,
+              ),
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// The leave answer's shape while it is decided: label and time beside the
+/// countdown ring, the reason, the mode, arrival and rain row, then what to
+/// bring. Each line takes the height of the text it stands for, in this
+/// language and text size, so the hero does not jump when the answer lands.
+class LeaveSkeleton extends StatelessWidget {
+  const LeaveSkeleton({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    final c = FonColors.of(context);
+    // Thai script sets taller lines than Latin, so measure in the language.
+    Widget line(TextStyle style, Widget bone, {String? sample}) => Stack(
+      alignment: Alignment.centerLeft,
+      children: [
+        Visibility.maintain(
+          visible: false,
+          child: Text(sample ?? l.summaryLeaveBefore, style: style),
+        ),
+        bone,
+      ],
+    );
+    Widget cell() => Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // The longest caption, which may wrap in a narrow cell.
+        line(
+          t.labelSmall!,
+          const Skeleton(width: 40, height: 10),
+          sample: l.summaryRain,
+        ),
+        const SizedBox(height: Space.x1),
+        line(
+          t.titleSmall!,
+          const Skeleton(width: 72, height: 20),
+          sample: '00:00',
+        ),
+      ],
+    );
+    // A pill's text plus its padding and border.
+    Widget pill(double width) => Padding(
+      padding: const EdgeInsets.symmetric(vertical: Space.x1 + 1),
+      child: line(
+        t.labelLarge!,
+        Skeleton(width: width, height: 20, radius: Radii.pill),
+      ),
+    );
+    return Semantics(
+      label: l.designLoadingAnswer,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    line(t.labelLarge!, const Skeleton(width: 96, height: 12)),
+                    line(
+                      tabular(t.displayLarge!),
+                      const Skeleton(width: 168, height: 64, radius: Radii.sm),
+                      sample: '00:00',
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: Space.x3),
+              const Skeleton(width: 84, height: 84, radius: 42),
+            ],
+          ),
+          const SizedBox(height: Space.x1),
+          line(t.bodyMedium!, const Skeleton(height: 12)),
+          line(t.bodyMedium!, const Skeleton(width: 200, height: 12)),
+          const SizedBox(height: Space.x4),
+          Divider(height: 1, color: c.perforation),
+          const SizedBox(height: Space.x3),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              for (final i in [0, 1, 2]) ...[
+                if (i > 0) const SizedBox(width: Space.x3),
+                Expanded(child: cell()),
+              ],
+            ],
+          ),
+          const SizedBox(height: Space.x4),
+          line(t.labelSmall!, const Skeleton(width: 64, height: 10)),
+          const SizedBox(height: Space.x2),
+          pill(112),
+          const SizedBox(height: Space.x2),
+          pill(96),
+        ],
       ),
     );
   }

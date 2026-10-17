@@ -256,10 +256,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
         )
         .take(_upNextLimit)
         .toList();
-    final todayLeft = upcoming(
-      repo.trips,
-      now,
-    ).where((t) => t.travels && bangkokDay(t.arriveBy!) == today).length;
+    // Online and all-day events still fill the day.
+    final todayLeft = upcoming(repo.trips, now)
+        .where((t) => t.arriveBy != null && bangkokDay(t.arriveBy!) == today)
+        .length;
+    final pending = repo.trips.isEmpty && (repo.loading || repo.error != null);
+    final skeleton = repo.connected && repo.loading && repo.trips.isEmpty;
     final alerts = planAlerts(
       trips: repo.trips,
       now: now,
@@ -276,144 +278,163 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final lowGps = here != null && here.lowAccuracy;
     final outlook = repo.outlook;
 
+    final header = SliverToBoxAdapter(
+      child: SafeArea(
+        bottom: false,
+        child: LargeTitleHeader(
+          onSky: true,
+          eyebrow: dayDate(l, now),
+          title: !repo.connected || pending
+              ? l.summaryTitle
+              : todayLeft == 0
+              ? l.planTitleFree
+              : l.planTitleToday('$todayLeft'),
+          badges: [
+            if (store.demoProfile) const DemoBadge(onField: true),
+            if (state.usingSample) const SampleBadge(onField: true),
+          ],
+          actions: [
+            DemoClockChip(state: state, sky: sky),
+            IconButton(
+              tooltip: l.homeSettings,
+              onPressed: () => _push(const SettingsScreen()),
+              icon: const Icon(Symbols.settings_rounded),
+            ),
+          ],
+        ),
+      ),
+    );
+    final bottomInset = SliverToBoxAdapter(
+      child: SizedBox(height: GlassNavBar.inset(context)),
+    );
+
     return Scaffold(
       backgroundColor: Colors.transparent,
       body: RefreshIndicator(
         onRefresh: widget.onRefresh,
         edgeOffset: MediaQuery.paddingOf(context).top,
-        child: CustomScrollView(
-          slivers: [
-            SliverToBoxAdapter(
-              child: SafeArea(
-                bottom: false,
-                child: LargeTitleHeader(
-                  onSky: true,
-                  eyebrow: dayDate(l, now),
-                  title: !repo.connected
-                      ? l.summaryTitle
-                      : todayLeft == 0
-                      ? l.planTitleFree
-                      : l.planTitleToday('$todayLeft'),
-                  badges: [
-                    if (store.demoProfile) const DemoBadge(onField: true),
-                    if (state.usingSample) const SampleBadge(onField: true),
+        child: AnimatedSwitcher(
+          duration: Motion.of(context).d(const Duration(milliseconds: 250)),
+          child: skeleton
+              ? CustomScrollView(
+                  key: const ValueKey('summary-skeleton'),
+                  slivers: [
+                    header,
+                    _pad(const _SummarySkeleton()),
+                    bottomInset,
                   ],
-                  actions: [
-                    DemoClockChip(state: state, sky: sky),
-                    IconButton(
-                      tooltip: l.homeSettings,
-                      onPressed: () => _push(const SettingsScreen()),
-                      icon: const Icon(Symbols.settings_rounded),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-            if (state.flood && home != null && savedHome != null)
-              _pad(
-                FloodAlertCard(
-                  headline: home.headlineTh,
-                  onWhatToDo: () => showFloodSheet(
-                    context,
-                    status: home,
-                    placeName: savedHome.nameTh,
-                  ),
-                ),
-                bottom: Space.x4,
-              ),
-            _pad(hero),
-            if (lowGps)
-              _pad(
-                Notice(
-                  icon: Symbols.location_searching_rounded,
-                  tone: NoticeTone.warning,
-                  text: l.homeGpsInaccurate(
-                    approxDistance(l, here.accuracyM ?? 1000),
-                  ),
-                  action: TextButton(
-                    onPressed: _calibrateLocation,
-                    child: Text(l.homePinMyself),
-                  ),
-                ),
-                top: Space.x4,
-              ),
-            if (alerts.isNotEmpty)
-              SliverToBoxAdapter(
-                child: _Block(
-                  title: l.alertsTitle,
-                  child: AlertsCard(
-                    alerts: alerts,
-                    onTap: (a) => a.kind == AlertKind.needsPlace
-                        ? _resolveTrip(a.trip)
-                        : _openTrip(
-                            a.trip,
-                            mode: _planFor(a.trip, now)?.best?.mode,
+                )
+              : CustomScrollView(
+                  key: const ValueKey('summary'),
+                  slivers: [
+                    header,
+                    if (state.flood && home != null && savedHome != null)
+                      _pad(
+                        FloodAlertCard(
+                          headline: home.headlineTh,
+                          onWhatToDo: () => showFloodSheet(
+                            context,
+                            status: home,
+                            placeName: savedHome.nameTh,
                           ),
-                  ),
-                ),
-              ),
-            if (upNext.isNotEmpty)
-              SliverToBoxAdapter(
-                child: _Block(
-                  title: l.upNextTitle,
-                  trailing: TextButton(
-                    onPressed: widget.onSeeAll,
-                    child: Text(l.summarySeeAll),
-                  ),
-                  child: SingleChildScrollView(
-                    scrollDirection: Axis.horizontal,
-                    clipBehavior: Clip.none,
-                    child: IntrinsicHeight(
-                      child: Row(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          for (final (i, t) in upNext.indexed) ...[
-                            if (i > 0) const SizedBox(width: Space.x3),
-                            UpNextCard(
-                              key: ValueKey('next-${t.id}'),
-                              trip: t,
-                              now: now,
-                              plan: _planFor(t, now),
-                              weather: outlook,
-                              onTap: t.unresolved
-                                  ? () => _resolveTrip(t)
-                                  : t.travels
-                                  ? () => _openTrip(
-                                      t,
-                                      mode: _planFor(t, now)?.best?.mode,
-                                    )
-                                  : widget.onSeeAll,
-                            ),
-                          ],
-                        ],
+                        ),
+                        bottom: Space.x4,
                       ),
-                    ),
-                  ),
+                    _pad(hero),
+                    if (lowGps)
+                      _pad(
+                        Notice(
+                          icon: Symbols.location_searching_rounded,
+                          tone: NoticeTone.warning,
+                          text: l.homeGpsInaccurate(
+                            approxDistance(l, here.accuracyM ?? 1000),
+                          ),
+                          action: TextButton(
+                            onPressed: _calibrateLocation,
+                            child: Text(l.homePinMyself),
+                          ),
+                        ),
+                        top: Space.x4,
+                      ),
+                    if (alerts.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _Block(
+                          title: l.alertsTitle,
+                          child: AlertsCard(
+                            alerts: alerts,
+                            onTap: (a) => a.kind == AlertKind.needsPlace
+                                ? _resolveTrip(a.trip)
+                                : _openTrip(
+                                    a.trip,
+                                    mode: _planFor(a.trip, now)?.best?.mode,
+                                  ),
+                          ),
+                        ),
+                      ),
+                    if (upNext.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _Block(
+                          title: l.upNextTitle,
+                          trailing: TextButton(
+                            onPressed: widget.onSeeAll,
+                            child: Text(l.summarySeeAll),
+                          ),
+                          child: SingleChildScrollView(
+                            scrollDirection: Axis.horizontal,
+                            clipBehavior: Clip.none,
+                            child: IntrinsicHeight(
+                              child: Row(
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  for (final (i, t) in upNext.indexed) ...[
+                                    if (i > 0) const SizedBox(width: Space.x3),
+                                    UpNextCard(
+                                      key: ValueKey('next-${t.id}'),
+                                      trip: t,
+                                      now: now,
+                                      plan: _planFor(t, now),
+                                      weather: outlook,
+                                      onTap: t.unresolved
+                                          ? () => _resolveTrip(t)
+                                          : t.travels
+                                          ? () => _openTrip(
+                                              t,
+                                              mode: _planFor(
+                                                t,
+                                                now,
+                                              )?.best?.mode,
+                                            )
+                                          : widget.onSeeAll,
+                                    ),
+                                  ],
+                                ],
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    if (todayTrips.isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: _Block(
+                          title: l.stripTitle,
+                          child: DayStrip(
+                            trips: todayTrips,
+                            now: now,
+                            leaveAt: leaveAt,
+                            outlook: outlook,
+                          ),
+                        ),
+                      ),
+                    if (outlook != null)
+                      SliverToBoxAdapter(
+                        child: _Block(
+                          title: l.planWeatherNow,
+                          child: WeatherPeek(outlook: outlook, now: now),
+                        ),
+                      ),
+                    bottomInset,
+                  ],
                 ),
-              ),
-            if (todayTrips.isNotEmpty)
-              SliverToBoxAdapter(
-                child: _Block(
-                  title: l.stripTitle,
-                  child: DayStrip(
-                    trips: todayTrips,
-                    now: now,
-                    leaveAt: leaveAt,
-                    outlook: outlook,
-                  ),
-                ),
-              ),
-            if (outlook != null)
-              SliverToBoxAdapter(
-                child: _Block(
-                  title: l.planWeatherNow,
-                  child: WeatherPeek(outlook: outlook, now: now),
-                ),
-              ),
-            SliverToBoxAdapter(
-              child: SizedBox(height: GlassNavBar.inset(context)),
-            ),
-          ],
         ),
       ),
     );
@@ -474,32 +495,90 @@ class _Block extends StatelessWidget {
   }
 }
 
+/// The hero ticket's shape: date stub, countdown and title above the
+/// perforation, the leave answer below.
 class _HeroSkeleton extends StatelessWidget {
   const _HeroSkeleton();
 
   @override
   Widget build(BuildContext context) => Semantics(
     label: context.l10n.designLoadingAnswer,
-    child: const GlassSurface(
-      padding: EdgeInsets.all(Space.x5),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Skeleton(width: 140, height: 12),
-          SizedBox(height: Space.x3),
-          Skeleton(width: 220, height: 22),
-          SizedBox(height: Space.x2),
-          Skeleton(width: 160, height: 12),
-          SizedBox(height: Space.x5),
-          Skeleton(width: 96, height: 12),
-          SizedBox(height: Space.x2),
-          Skeleton(width: 168, height: 44, radius: Radii.sm),
-          SizedBox(height: Space.x5),
-          Skeleton(height: 36, radius: Radii.sm),
-        ],
+    child: const GlassTicket(
+      top: Padding(
+        padding: EdgeInsets.all(Space.x4),
+        child: Row(
+          children: [
+            Skeleton(width: 64, height: 68, radius: Radii.lg),
+            SizedBox(width: Space.x4),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Skeleton(width: 96, height: 12),
+                  SizedBox(height: Space.x2),
+                  Skeleton(width: 200, height: 20),
+                  SizedBox(height: Space.x2),
+                  Skeleton(width: 140, height: 12),
+                ],
+              ),
+            ),
+          ],
+        ),
+      ),
+      bottom: Padding(
+        padding: EdgeInsets.fromLTRB(Space.x5, Space.x4, Space.x5, Space.x5),
+        child: LeaveSkeleton(),
       ),
     ),
   );
+}
+
+/// The whole page while the first events load: the hero, then where
+/// Before you go, Up next and the weather will be.
+class _SummarySkeleton extends StatelessWidget {
+  const _SummarySkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    Widget block(Widget child, {Key? key}) => Padding(
+      key: key,
+      padding: const EdgeInsets.only(top: Space.x6),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SizedBox(
+            height: Space.target,
+            child: Align(
+              alignment: Alignment.centerLeft,
+              child: Skeleton(width: 120, height: 16),
+            ),
+          ),
+          child,
+        ],
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const _HeroSkeleton(),
+        block(const Skeleton(height: 72, radius: Radii.lg)),
+        block(
+          key: const ValueKey('skeleton-up-next'),
+          const Row(
+            children: [
+              Skeleton(width: 160, height: 96, radius: Radii.lg),
+              SizedBox(width: Space.x3),
+              Skeleton(width: 160, height: 96, radius: Radii.lg),
+            ],
+          ),
+        ),
+        block(
+          key: const ValueKey('skeleton-weather'),
+          const Skeleton(height: 88, radius: Radii.lg),
+        ),
+      ],
+    );
+  }
 }
 
 /// Flood mode's checklist: the home's status and what to do, in order.

@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/design/design.dart';
+import 'package:fontokmai/screens/plan_cards.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
-import 'package:fontokmai/screens/event_cards.dart';
 
 import 'helpers.dart';
 
@@ -45,9 +45,16 @@ void main() {
       reason: 'lunch at Siam ends 12:45, review at Thonglor starts 13:00',
     );
     expect(find.text('ไปรีวิวงานที่ทองหล่อไม่ทัน'), findsOneWidget);
-    expect(find.byKey(const ValueKey('alert-needsPlace-cal-dentist')), findsOneWidget);
+    expect(
+      find.byKey(const ValueKey('alert-needsPlace-cal-dentist')),
+      findsOneWidget,
+    );
     expect(find.text('ออนไลน์ · ไม่ต้องเดินทาง'), findsOneWidget);
-    expect(find.text('Daily standup ที่ออฟฟิศ'), findsOneWidget, reason: 'hero');
+    expect(
+      find.text('Daily standup ที่ออฟฟิศ'),
+      findsOneWidget,
+      reason: 'hero',
+    );
   });
 
   testWidgets('a hot afternoon before a storm: bring rain gear', (
@@ -147,7 +154,11 @@ void main() {
     expect(find.text('วันนี้'), findsWidgets, reason: 'chip and header');
     expect(find.text('29 ก.ย.'), findsOneWidget);
     expect(find.text('ส 3 ต.ค.'), findsOneWidget, reason: 'filter chip');
-    expect(find.text('กันยายน 2026'), findsNothing, reason: 'calendar on demand');
+    expect(
+      find.text('กันยายน 2026'),
+      findsNothing,
+      reason: 'calendar on demand',
+    );
     expect(
       find.text('ออก 16:45 · BTS / MRT'),
       findsOneWidget,
@@ -219,5 +230,150 @@ void main() {
     await scrollThrough();
     await tapAndSettle(tester, find.byTooltip('อีเวนต์'));
     await scrollThrough();
+  });
+
+  testWidgets('while loading, the whole page is a skeleton that fades out', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-29T13:10:00+07:00',
+      height: 2400,
+      latency: (_) => const Duration(seconds: 4),
+    );
+
+    expect(find.byKey(const ValueKey('summary-skeleton')), findsOneWidget);
+    expect(find.byKey(const ValueKey('skeleton-up-next')), findsOneWidget);
+    expect(find.byKey(const ValueKey('skeleton-weather')), findsOneWidget);
+    expect(find.byType(UpNextCard), findsNothing);
+    expect(find.byType(WeatherPeek), findsNothing);
+    expect(find.text('วันนี้ไม่มีนัดแล้ว'), findsNothing);
+
+    await tester.pump(const Duration(seconds: 4));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('summary-skeleton')), findsNothing);
+    expect(find.byType(UpNextCard), findsWidgets);
+    expect(find.byType(WeatherPeek), findsOneWidget);
+    expect(find.text('วันนี้อีก 3 นัด'), findsOneWidget);
+    await tester.pump(const Duration(minutes: 1));
+  });
+
+  testWidgets('the hero keeps its height when the answer lands', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-29T16:10:00+07:00',
+      height: 2400,
+      latency: (req) => req.url.path == '/v1/decide'
+          ? const Duration(seconds: 4)
+          : Duration.zero,
+    );
+    final hero = find.byKey(const ValueKey('hero-cal-dinner'));
+    expect(find.text('16:45'), findsNothing, reason: 'still deciding');
+    final pending = tester.getSize(hero).height;
+
+    await tester.pump(const Duration(seconds: 4));
+    await settle(tester);
+    expect(find.text('16:45'), findsOneWidget);
+    expect(tester.getSize(hero).height, closeTo(pending, 6));
+    await tester.pump(const Duration(minutes: 1));
+  });
+
+  testWidgets('a real account whose events fail keeps the weather', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-29T13:10:00+07:00',
+      height: 2400,
+      places: (await emptyStore())..connectGoogle('owner@example.com'),
+    );
+
+    expect(find.text('โหลดอีเวนต์ไม่ได้'), findsOneWidget);
+    expect(find.text('วันนี้ไม่มีนัดแล้ว'), findsNothing);
+    expect(find.byType(WeatherPeek), findsOneWidget);
+  });
+
+  testWidgets('an online meeting left today is not "nothing else today"', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-30T10:00:00+07:00',
+      height: 2400,
+      places: (await emptyStore())..connectGoogle('owner@example.com'),
+      respond: (req) => req.url.path.startsWith('/v1/trips')
+          ? jsonResponse({
+              'trips': [
+                {
+                  'id': 'cal-sync',
+                  'title_th': 'Team sync',
+                  'source': 'calendar',
+                  'origin': {'name_th': 'Home', 'lat': 13.72, 'lng': 100.53},
+                  'destination': {'name_th': 'Online'},
+                  'arrive_by': '2026-09-30T11:00:00+07:00',
+                  'ends_at': '2026-09-30T11:30:00+07:00',
+                  'mode': 'transit',
+                  'virtual': true,
+                },
+              ],
+            })
+          : null,
+    );
+
+    expect(find.text('Team sync'), findsWidgets);
+    expect(find.text('วันนี้ไม่มีนัดแล้ว'), findsNothing);
+    expect(find.text('วันนี้อีก 1 นัด'), findsOneWidget);
+  });
+
+  testWidgets('the events tab loads as the tickets it will show', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-29T16:10:00+07:00',
+      latency: (_) => const Duration(seconds: 10),
+    );
+    await tapAndSettle(tester, find.text('อีเวนต์'));
+
+    final skeleton = find.byKey(const ValueKey('events-skeleton'));
+    expect(skeleton, findsOneWidget);
+    expect(
+      find.descendant(of: skeleton, matching: find.byType(GlassTicket)),
+      findsNWidgets(3),
+    );
+
+    await tester.pump(const Duration(seconds: 10));
+    await settle(tester);
+    expect(find.byKey(const ValueKey('events-skeleton')), findsNothing);
+    expect(find.byKey(const ValueKey('event-cal-dinner')), findsOneWidget);
+    await tester.pump(const Duration(minutes: 1));
+  });
+
+  testWidgets('an event ticket keeps its height when its leave time lands', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-29T16:10:00+07:00',
+      height: 2400,
+      latency: (req) => req.url.path == '/v1/decide'
+          ? const Duration(seconds: 10)
+          : Duration.zero,
+    );
+    await tapAndSettle(tester, find.text('อีเวนต์'));
+    final ticket = find.byKey(const ValueKey('event-cal-gym'));
+    final leave = find.descendant(
+      of: ticket,
+      matching: find.textContaining('ออก '),
+    );
+    expect(leave, findsNothing, reason: 'still deciding');
+    final pending = tester.getSize(ticket).height;
+
+    await tester.pump(const Duration(minutes: 1));
+    await settle(tester);
+    expect(leave, findsOneWidget);
+    expect(tester.getSize(ticket).height, pending);
   });
 }
