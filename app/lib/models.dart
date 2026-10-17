@@ -6,12 +6,23 @@ typedef Json = Map<String, dynamic>;
 
 double _num(Object? v) => (v as num?)?.toDouble() ?? 0;
 int _int(Object? v) => (v as num?)?.toInt() ?? 0;
-String _str(Object? v) => v as String? ?? '';
-List<Json> _list(Object? v) => (v as List? ?? const []).cast<Json>();
+String _str(Object? v) => v == null ? '' : (v is String ? v : v.toString());
+String? _optStr(Object? v) => v == null ? null : (v is String ? v : v.toString());
+List<Json> _list(Object? v) {
+  if (v is! List) return const [];
+  return v.whereType<Map>().map((m) => m.cast<String, dynamic>()).toList();
+}
 List<String> _strList(Object? v) => (v as List? ?? const [])
     .map((e) => e?.toString() ?? '')
     .where((s) => s.isNotEmpty)
     .toList();
+List<int> _intList(Object? v, {List<int> fallback = const []}) {
+  if (v == null || v is! List) return fallback;
+  return v
+      .map((e) => e is num ? e.toInt() : int.tryParse(e?.toString() ?? ''))
+      .whereType<int>()
+      .toList();
+}
 
 /// Travel mode as named on the wire.
 enum TravelMode {
@@ -194,7 +205,7 @@ class Trip {
         dest['lng'] != null &&
         !(_num(dest['lat']) == 0 && _num(dest['lng']) == 0);
     final text =
-        j['location_text_th'] as String? ?? j['location_th'] as String?;
+        _optStr(j['location_text_th']) ?? _optStr(j['location_th']);
     final destName = _str(dest?['name_th']).trim();
     final hasPhysicalLocationText =
         (text != null &&
@@ -465,7 +476,7 @@ class Decision {
   });
 
   factory Decision.fromJson(Json j) {
-    final rawSources = (j['sources'] as List? ?? const []).cast<String>();
+    final rawSources = _strList(j['sources']);
     final trip = j['trip'] == null ? null : Trip.fromJson(j['trip'] as Json);
     final originName = (trip?.origin.nameTh ?? '').toLowerCase();
     final hasGpsOrigin =
@@ -667,14 +678,13 @@ class ActivityPlan {
     activity: Activity.fromJson(j),
     headlineTh: _str(j['headline_th']),
     checklist: _list(j['checklist']).map(ChecklistItem.fromJson).toList(),
-    weatherNotesTh: (j['weather_notes_th'] as List? ?? const [])
-        .cast<String>(),
+    weatherNotesTh: _strList(j['weather_notes_th']),
     forecast: j['forecast'] == null
         ? null
         : DayForecast.fromJson(j['forecast'] as Json),
     placeTh: _str(j['place_th']),
     askTh: _str(j['ask_th']),
-    suggestionsTh: (j['suggestions_th'] as List? ?? const []).cast<String>(),
+    suggestionsTh: _strList(j['suggestions_th']),
     generatedBy: _str(j['generated_by']),
   );
 
@@ -716,7 +726,7 @@ class EmergencyContact {
     number: _str(j['number']),
     purposeTh: _str(j['purpose_th']),
     purposeEn: _str(j['purpose_en']),
-    lineId: j['line_id'] as String?,
+    lineId: _optStr(j['line_id']),
   );
 }
 
@@ -809,7 +819,7 @@ class FloodReport {
     confidence: _num(j['confidence']),
     descriptionTh: _str(j['description_th']),
     passable: (j['passable'] as Map? ?? const {}).map(
-      (k, v) => MapEntry(TravelMode.parse(k), v as String),
+      (k, v) => MapEntry(TravelMode.parse(k), _str(v)),
     ),
     notifiedUsers: _int(j['notified_users']),
     corroboratingReports: _int(j['corroborating_reports']),
@@ -902,7 +912,7 @@ class HomeStatus {
       headlineTh: _str(j['headline_th']),
       canal: j['canal'] == null ? null : Canal.fromJson(j['canal'] as Json),
       actions: actions,
-      sources: (j['sources'] as List? ?? const []).cast<String>(),
+      sources: _strList(j['sources']),
       summaryTh: _str(j['summary_th']),
       inServiceArea: j['in_service_area'] as bool? ?? true,
       floodSpots: _list(j['flood_spots']).map(FloodSpot.fromJson).toList(),
@@ -970,9 +980,9 @@ class SavedPlace {
     addressTh: _str(j['address_th']),
     lat: _num(j['lat']),
     lng: _num(j['lng']),
-    icon: j['icon'] as String? ?? 'pin',
-    days: (j['days'] as List?)?.cast<int>() ?? defaultWorkDays,
-    leaveTime: j['leave_time'] as String? ?? defaultLeaveTime,
+    icon: _optStr(j['icon']) ?? 'pin',
+    days: _intList(j['days'], fallback: defaultWorkDays),
+    leaveTime: _optStr(j['leave_time']) ?? defaultLeaveTime,
   );
 
   /// ISO weekdays, Monday = 1.
@@ -1062,11 +1072,11 @@ class PlaceCandidate {
 
   factory PlaceCandidate.fromJson(Json j) => PlaceCandidate(
     nameTh: _str(j['name_th']),
-    nameEn: j['name_en'] as String?,
+    nameEn: _optStr(j['name_en']),
     addressTh: _str(j['address_th']),
     lat: _num(j['lat']),
     lng: _num(j['lng']),
-    source: j['source'] as String? ?? 'local',
+    source: _optStr(j['source']) ?? 'local',
     inServiceArea: j['in_service_area'] as bool?,
   );
 
@@ -1192,7 +1202,7 @@ class Outlook {
     now: WeatherHour.fromJson(j['now'] as Json),
     hours: _list(j['hours']).map(WeatherHour.fromJson).toList(),
     sunset: DateTime.tryParse(_str(j['sunset'])),
-    sources: (j['sources'] as List? ?? const []).cast<String>(),
+    sources: _strList(j['sources']),
   );
 
   final WeatherHour now;

@@ -22,17 +22,16 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/extract"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
+	"golang.org/x/text/encoding/charmap"
 )
 
 // ErrScopeNotGranted indicates that the user has not authorized the requested Workspace scope.
 var ErrScopeNotGranted = errors.New("google scope not granted")
 
 const (
-	defaultGoogleClientID     = "945826169258-2npe55rhvgjl26a8mgfod4s9js5bbgpo.apps.googleusercontent.com"
-	defaultGoogleClientSecret = "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"
-	googleTokenURL            = "https://oauth2.googleapis.com/token"
-	googleCalendarEventsURL   = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
-	gmailMessagesURL          = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
+	googleTokenURL          = "https://oauth2.googleapis.com/token"
+	googleCalendarEventsURL = "https://www.googleapis.com/calendar/v3/calendars/primary/events"
+	gmailMessagesURL        = "https://gmail.googleapis.com/gmail/v1/users/me/messages"
 )
 
 type userToken struct {
@@ -82,11 +81,11 @@ func parseClientSecret(raw string) string {
 func getOAuthCredentials() (string, string) {
 	clientID := strings.TrimSpace(os.Getenv("GOOGLE_OAUTH_CLIENT_ID"))
 	if clientID == "" {
-		clientID = defaultGoogleClientID
+		clientID = strings.TrimSpace(os.Getenv("GOOGLE_CLIENT_ID"))
 	}
 	clientSecret := parseClientSecret(os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET"))
 	if clientSecret == "" {
-		clientSecret = defaultGoogleClientSecret
+		clientSecret = parseClientSecret(os.Getenv("GOOGLE_CLIENT_SECRET"))
 	}
 	return clientID, clientSecret
 }
@@ -107,6 +106,7 @@ type googleCalendarListResponse struct {
 
 type googleCalendarItem struct {
 	ID          string `json:"id"`
+	Status      string `json:"status"`
 	Summary     string `json:"summary"`
 	Description string `json:"description"`
 	Location    string `json:"location"`
@@ -219,6 +219,31 @@ func stripHTML(s string) string {
 	return strings.Join(cleaned, "\n")
 }
 
+func (p gmailPart) charset() string {
+	for _, h := range p.Headers {
+		if strings.EqualFold(h.Name, "Content-Type") {
+			lower := strings.ToLower(h.Value)
+			if idx := strings.Index(lower, "charset="); idx != -1 {
+				cs := lower[idx+len("charset="):]
+				cs = strings.Trim(cs, `"' ;`)
+				return cs
+			}
+		}
+	}
+	return "utf-8"
+}
+
+func decodePartBytes(b []byte, charset string) string {
+	cs := strings.ToLower(strings.TrimSpace(charset))
+	if cs == "tis-620" || cs == "windows-874" || cs == "cp874" {
+		decoded, err := charmap.Windows874.NewDecoder().Bytes(b)
+		if err == nil {
+			return string(decoded)
+		}
+	}
+	return string(b)
+}
+
 // plainText is the first text/plain part under p, decoded.
 func (p gmailPart) plainText() string {
 	if p.MimeType == "text/plain" && p.Body.Data != "" {
@@ -227,7 +252,7 @@ func (p gmailPart) plainText() string {
 			b, err = base64.RawURLEncoding.DecodeString(p.Body.Data)
 		}
 		if err == nil {
-			return string(b)
+			return decodePartBytes(b, p.charset())
 		}
 	}
 	for _, c := range p.Parts {
@@ -246,7 +271,7 @@ func (p gmailPart) htmlText() string {
 			b, err = base64.RawURLEncoding.DecodeString(p.Body.Data)
 		}
 		if err == nil {
-			return stripHTML(string(b))
+			return stripHTML(decodePartBytes(b, p.charset()))
 		}
 	}
 	for _, c := range p.Parts {
@@ -546,6 +571,9 @@ func resolveEventPlace(ctx context.Context, query string, geo geocode.Geocoder, 
 func ConvertCalendarEventsToTrips(ctx context.Context, items []googleCalendarItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) []domain.Trip {
 	trips := make([]domain.Trip, 0, len(items))
 	for _, item := range items {
+		if strings.EqualFold(item.Status, "cancelled") {
+			continue
+		}
 		trips = append(trips, ConvertCalendarEventToTrip(ctx, item, geo, savedPlaces))
 	}
 	sort.SliceStable(trips, func(i, j int) bool { return trips[i].ArriveBy.Before(trips[j].ArriveBy) })

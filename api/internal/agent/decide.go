@@ -575,7 +575,7 @@ func runAgent(ctx context.Context, g *Gemini, s *planner.Session, depart time.Ti
 	contents := []*genai.Content{genai.NewContentFromText(user, genai.RoleUser)}
 	for turn := 0; turn < maxAgentTurns; turn++ {
 		turnCfg := *cfg
-		if hasRequiredTools(s.Calls()) {
+		if turn == maxAgentTurns-1 && hasRequiredTools(s.Calls()) {
 			turnCfg.ToolConfig = &genai.ToolConfig{
 				FunctionCallingConfig: &genai.FunctionCallingConfig{
 					Mode: genai.FunctionCallingConfigModeNone,

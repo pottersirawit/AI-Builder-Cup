@@ -118,3 +118,19 @@ func TestGoogleRoutesParsesTransitLegs(t *testing.T) {
 	}
 }
 
+func TestGoogleRoutesParsesFractionalDuration(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"routes":[{"duration":"354.5s","description":"ทางด่วน","polyline":{"encodedPolyline":"_p~iF~ps|U_ulLnnqC"}}]}`))
+	}))
+	defer srv.Close()
+	got, err := GoogleRoutes{APIKey: "k", BaseURL: srv.URL}.Route(context.Background(), scenario.Silom.Point(), scenario.Home.Point(), domain.ModeCar, time.Now())
+	if err != nil {
+		t.Fatalf("unexpected error parsing fractional duration: %v", err)
+	}
+	// 354.5s / 60 = 5.908 min -> rounds to 6 min
+	if got.DurationMin != 6 {
+		t.Fatalf("got DurationMin = %d, want 6", got.DurationMin)
+	}
+}
+
+

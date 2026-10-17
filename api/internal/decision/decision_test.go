@@ -128,8 +128,8 @@ func TestDecideHeroBeats(t *testing.T) {
 			if res.Confidence < 0.4 || res.Confidence > 0.95 {
 				t.Errorf("confidence %v out of range", res.Confidence)
 			}
-			if len(res.ModeOptions) != 3 {
-				t.Errorf("want 3 mode options, got %d", len(res.ModeOptions))
+			if len(res.ModeOptions) != len(domain.AllModes) {
+				t.Errorf("want %d mode options, got %d", len(domain.AllModes), len(res.ModeOptions))
 			}
 		})
 	}
@@ -643,3 +643,52 @@ func TestRainLinesMatchTheRain(t *testing.T) {
 		}
 	}
 }
+
+func TestDepthRiskModeAwareness(t *testing.T) {
+	// 12 cm water:
+	// - Moto stall is 10cm: 12cm >= 10cm -> RiskHigh
+	// - Car stall is 15cm, slow is 5cm: 12cm is between 5 and 15 -> RiskMedium
+	// - Pickup stall is 35cm, slow is 20cm: 12cm < 20cm -> RiskLow
+	if got := depthRisk(12.0, domain.ModeMoto); got != RiskHigh {
+		t.Errorf("depthRisk(12, moto) = %v, want RiskHigh", got)
+	}
+	if got := depthRisk(12.0, domain.ModeCar); got != RiskMedium {
+		t.Errorf("depthRisk(12, car) = %v, want RiskMedium", got)
+	}
+	if got := depthRisk(12.0, domain.ModePickup); got != RiskLow {
+		t.Errorf("depthRisk(12, pickup) = %v, want RiskLow", got)
+	}
+
+	// Pickup clearance thresholds:
+	if stallDepthCM(domain.ModePickup) != 35.0 {
+		t.Errorf("stallDepthCM(ModePickup) = %v, want 35.0", stallDepthCM(domain.ModePickup))
+	}
+	if slowDepthCM(domain.ModePickup) != 20.0 {
+		t.Errorf("slowDepthCM(ModePickup) = %v, want 20.0", slowDepthCM(domain.ModePickup))
+	}
+	if got := depthRisk(25.0, domain.ModePickup); got != RiskMedium {
+		t.Errorf("depthRisk(25, pickup) = %v, want RiskMedium", got)
+	}
+	if got := depthRisk(36.0, domain.ModePickup); got != RiskHigh {
+		t.Errorf("depthRisk(36, pickup) = %v, want RiskHigh", got)
+	}
+}
+
+func TestVerdictFor_DoesNotSuggestPastDeparture(t *testing.T) {
+	now := at(18, 0)
+	in := dryInput(domain.LangTH, now)
+	in.Now = now
+	in.DepartAt = at(17, 0) // departAt is 1 hour in the past
+	in.Mode = domain.ModeCar
+	// Rain between 17:00 and 18:30, clearing at 18:45
+	in.Rain = []domain.RainSample{
+		{Time: at(17, 30), MMPerHr: 30},
+		{Time: at(18, 0), MMPerHr: 25},
+		{Time: at(18, 15), MMPerHr: 20},
+	}
+	res := Decide(in)
+	if res.WaitUntil != nil && res.WaitUntil.Before(now) {
+		t.Fatalf("WaitUntil %v must not be before Now %v", res.WaitUntil, now)
+	}
+}
+

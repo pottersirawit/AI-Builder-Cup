@@ -19,3 +19,25 @@ func TestUnresolvedPlaceHasNoCoordinates(t *testing.T) {
 		t.Errorf("resolved place JSON = %s", b)
 	}
 }
+
+func TestModePickup(t *testing.T) {
+	if !ModePickup.Valid() {
+		t.Error("ModePickup should be valid")
+	}
+	if ModePickup.NameTH() != "รถกระบะ" {
+		t.Errorf("ModePickup.NameTH() = %s, want รถกระบะ", ModePickup.NameTH())
+	}
+	if ModePickup.NameFor(LangEN) != "pickup truck" {
+		t.Errorf("ModePickup.NameFor(LangEN) = %s, want pickup truck", ModePickup.NameFor(LangEN))
+	}
+	found := false
+	for _, m := range AllModes {
+		if m == ModePickup {
+			found = true
+			break
+		}
+	}
+	if !found {
+		t.Error("AllModes should contain ModePickup")
+	}
+}

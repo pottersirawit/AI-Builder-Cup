@@ -171,11 +171,11 @@ func (g GoogleRoutes) Route(ctx context.Context, from, to domain.LatLng, mode do
 		return domain.Route{}, errors.New("routes API returned no route")
 	}
 	r := body.Routes[0]
-	secs, err := strconv.Atoi(strings.TrimSuffix(r.Duration, "s"))
+	secs, err := strconv.ParseFloat(strings.TrimSuffix(r.Duration, "s"), 64)
 	if err != nil {
 		return domain.Route{}, fmt.Errorf("bad duration %q", r.Duration)
 	}
-	route := domain.Route{Mode: mode, Polyline: geo.DecodePolyline(r.Polyline.EncodedPolyline), DurationMin: int(math.Round(float64(secs) / 60)), Source: "Google Routes API"}
+	route := domain.Route{Mode: mode, Polyline: geo.DecodePolyline(r.Polyline.EncodedPolyline), DurationMin: int(math.Round(secs / 60)), Source: "Google Routes API"}
 	if r.Description != "" {
 		route.ViaTH = []string{r.Description}
 	}

@@ -58,10 +58,11 @@ func TestOnlyGeminiEvidenceIsStored(t *testing.T) {
 	tests := []struct {
 		name, flood string
 		wantStored  int
+		wantStatus  int
 		wantBy      string
 	}{
-		{"flood photo is stored", "true", 3, "gemini"},
-		{"non flood photo is not stored", "false", 2, "rejected"},
+		{"flood photo is stored", "true", 3, 201, "gemini"},
+		{"non flood photo is not stored", "false", 2, 400, "rejected"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -69,8 +70,11 @@ func TestOnlyGeminiEvidenceIsStored(t *testing.T) {
 			s.Gemini = &agent.Gemini{Gen: fakeVision{text: fmt.Sprintf(floodJSON, tt.flood)}}
 			h := s.Handler()
 			status, out := postPhoto(t, h, []byte("\xff\xd8\xff\xe0 fake jpeg"), "1.1.1.1")
-			if status != 201 || out["generated_by"] != tt.wantBy {
-				t.Fatalf("status %d %v", status, out)
+			if status != tt.wantStatus {
+				t.Fatalf("status %d, want %d: %v", status, tt.wantStatus, out)
+			}
+			if tt.wantStatus == 201 && out["generated_by"] != tt.wantBy {
+				t.Fatalf("generated_by %v, want %s", out["generated_by"], tt.wantBy)
 			}
 			if n := countReports(t, h); n != tt.wantStored {
 				t.Fatalf("stored %d reports, want %d", n, tt.wantStored)

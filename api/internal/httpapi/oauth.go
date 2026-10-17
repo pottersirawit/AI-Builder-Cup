@@ -159,7 +159,10 @@ func stateKey() []byte {
 		return []byte(k)
 	}
 	_, secret := getOAuthCredentials()
-	return []byte(secret)
+	if secret != "" {
+		return []byte(secret)
+	}
+	return []byte("fontokmai-oauth-state-secret")
 }
 
 func signState(st oauthState) string {

@@ -157,7 +157,7 @@ class FonTokMaiApi {
           Outlook.fromJson(await _fixture('outlook')),
           demoClock?.call() == null
               ? DateTime.now()
-              : DateTime.parse(demoClock!.call()!),
+              : DateTime.tryParse(demoClock!.call()!) ?? DateTime.now(),
         ),
         sample: _sampleAllowed,
       );

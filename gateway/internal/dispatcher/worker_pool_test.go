@@ -8,6 +8,7 @@ import (
 	"io"
 	"net/http"
 	"sync"
+	"sync/atomic"
 	"testing"
 	"time"
 
@@ -482,5 +483,90 @@ func TestWorkerPool_IdempotentStopAndPanicSafety(t *testing.T) {
 		wp.Stop()
 		wg.Wait()
 	})
+
+	t.Run("Stop() drains pending jobs before returning", func(t *testing.T) {
+		mockReply := NewLineReplyClient("")
+		wp := NewWorkerPool(cfg, 50)
+		wp.SetReplyClient(mockReply)
+		wp.Start()
+
+		const jobCount = 20
+		for i := 0; i < jobCount; i++ {
+			enq := wp.EnqueueReply(ReplyJob{
+				ReplyToken: fmt.Sprintf("drain-token-%d", i),
+				UserID:     fmt.Sprintf("user-%d", i),
+				MatchResult: nlp.MatchResult{
+					Intent: nlp.IntentWeather,
+				},
+			})
+			if !enq {
+				t.Fatalf("failed to enqueue job %d", i)
+			}
+		}
+
+		// Stop immediately; it must drain all 20 jobs before returning
+		wp.Stop()
+
+		recs := mockReply.GetRecordedReplies()
+		if len(recs) != jobCount {
+			t.Fatalf("expected all %d jobs to be drained before Stop returned, got %d", jobCount, len(recs))
+		}
+	})
+
+	t.Run("Stop() drains pending alert jobs before returning", func(t *testing.T) {
+		var processedAlerts int64
+		tripper := mockTripper(func(req *http.Request) (*http.Response, error) {
+			atomic.AddInt64(&processedAlerts, 1)
+			return &http.Response{
+				StatusCode: http.StatusOK,
+				Body:       io.NopCloser(bytes.NewBufferString(`{}`)),
+			}, nil
+		})
+
+		alertCfg := &config.Config{
+			WorkerPoolSize:   2,
+			LIFFEndpointURL:  "https://liff.line.me/test",
+			LineChannelToken: "test-token",
+		}
+		wp := NewWorkerPool(alertCfg, 50)
+		wp.httpClient = &http.Client{Transport: tripper}
+		wp.Start()
+
+		const alertCount = 20
+		for i := 0; i < alertCount; i++ {
+			enq := wp.Enqueue(model.AlertDispatchJob{
+				UserID: fmt.Sprintf("alert-user-%d", i),
+				Payload: model.AdvisoryPayload{
+					Title:        "พายุฝน",
+					UrgencyLevel: "CRITICAL",
+				},
+			})
+			if !enq {
+				t.Fatalf("failed to enqueue alert job %d", i)
+			}
+		}
+
+		wp.Stop()
+
+		if atomic.LoadInt64(&processedAlerts) != alertCount {
+			t.Fatalf("expected all %d alert jobs to be drained before Stop returned, got %d", alertCount, atomic.LoadInt64(&processedAlerts))
+		}
+	})
 }
+
+func TestReplyClient_CapsRecordedReplies(t *testing.T) {
+	client := NewLineReplyClient("")
+	for i := 0; i < 150; i++ {
+		_ = client.Reply(context.Background(), fmt.Sprintf("token-%d", i), []map[string]interface{}{{"text": "hello"}})
+	}
+	recs := client.GetRecordedReplies()
+	if len(recs) != 100 {
+		t.Fatalf("expected recorded slice to be capped at 100, got %d", len(recs))
+	}
+	// Last entry should be token-149
+	if recs[99].ReplyToken != "token-149" {
+		t.Errorf("expected last token to be token-149, got %s", recs[99].ReplyToken)
+	}
+}
+
 

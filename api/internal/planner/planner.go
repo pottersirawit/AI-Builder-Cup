@@ -872,6 +872,7 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 }
 
 // ParseTime accepts RFC 3339 or HH:MM on the day of now (Bangkok time).
+// If candidate time is before now.Add(-2*time.Hour), rolls over to the next day.
 func ParseTime(v string, now time.Time) (time.Time, error) {
 	if t, err := time.Parse(time.RFC3339, v); err == nil {
 		return t.In(domain.Bangkok), nil
@@ -879,7 +880,11 @@ func ParseTime(v string, now time.Time) (time.Time, error) {
 	for _, layout := range []string{"15:04", "15.04"} {
 		if t, err := time.ParseInLocation(layout, v, domain.Bangkok); err == nil {
 			n := now.In(domain.Bangkok)
-			return time.Date(n.Year(), n.Month(), n.Day(), t.Hour(), t.Minute(), 0, 0, domain.Bangkok), nil
+			cand := time.Date(n.Year(), n.Month(), n.Day(), t.Hour(), t.Minute(), 0, 0, domain.Bangkok)
+			if cand.Before(n.Add(-2 * time.Hour)) {
+				cand = cand.AddDate(0, 0, 1)
+			}
+			return cand, nil
 		}
 	}
 	return time.Time{}, fmt.Errorf("bad time %q: want RFC 3339 or HH:MM", v)

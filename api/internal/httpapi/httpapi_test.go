@@ -2,18 +2,25 @@ package httpapi
 
 import (
 	"bytes"
+	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
+	"os"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"testing"
 	"time"
 
+	"google.golang.org/genai"
+
 	"github.com/pottersirawit/fontokmai/api/internal/advise"
+	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
@@ -31,6 +38,12 @@ func newServerMode(t *testing.T, demo bool) http.Handler { return newTestServer(
 
 func newTestServer(t *testing.T, demo bool) *Server {
 	t.Helper()
+	if os.Getenv("GOOGLE_OAUTH_CLIENT_ID") == "" && os.Getenv("GOOGLE_CLIENT_ID") == "" {
+		t.Setenv("GOOGLE_OAUTH_CLIENT_ID", "test-client-id.apps.googleusercontent.com")
+	}
+	if os.Getenv("GOOGLE_OAUTH_CLIENT_SECRET") == "" && os.Getenv("GOOGLE_CLIENT_SECRET") == "" {
+		t.Setenv("GOOGLE_OAUTH_CLIENT_SECRET", "test-client-secret")
+	}
 	_, file, _, _ := runtime.Caller(0)
 	spots, err := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
 	if err != nil {
@@ -575,3 +588,80 @@ func TestTripsDemoHeaderNeverGivesRealAccountsScenario(t *testing.T) {
 		}
 	}
 }
+
+func TestPubSubRaw_Base64Decoded(t *testing.T) {
+	s := newTestServer(t, false)
+	h := s.Handler()
+
+	// Base64 encoded JSON IngestRequest: {"title":"นัดกินข้าวที่สยาม","body":"เวลา 19:00"}
+	payloadJSON := `{"title":"นัดกินข้าวที่สยาม","body":"เวลา 19:00"}`
+	encoded := base64.StdEncoding.EncodeToString([]byte(payloadJSON))
+
+	pubSubMsg := fmt.Sprintf(`{"message":{"data":%q,"message_id":"msg-pubsub-1"}}`, encoded)
+	status, out := do(t, h, "POST", "/internal/pubsub/raw", "", bytes.NewBufferString(pubSubMsg), "application/json")
+	if status != http.StatusOK {
+		t.Fatalf("expected status 200, got %d (out: %v)", status, out)
+	}
+	tripID, _ := out["trip_id"].(string)
+	if tripID == "" {
+		t.Fatalf("expected trip_id, got %v", out)
+	}
+	ut, err := s.UserStore.GetTrip(context.Background(), "demo-user", tripID)
+	if err != nil {
+		t.Fatalf("failed to get trip: %v", err)
+	}
+	if ut.Trip.TitleTH != "นัดกินข้าวที่สยาม" {
+		t.Errorf("expected trip TitleTH 'นัดกินข้าวที่สยาม', got %v", ut.Trip.TitleTH)
+	}
+}
+
+type fakeGenWithText struct {
+	text string
+}
+
+func (f fakeGenWithText) GenerateContent(context.Context, string, []*genai.Content, *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+	return &genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Parts: []*genai.Part{{Text: f.text}}}}}}, nil
+}
+
+func TestCreateReport_RejectedReturnsBadRequest(t *testing.T) {
+	// Not a flood scene image should return 400 Bad Request
+	notFloodJSON := `{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":false,"looks_like_screenshot":false,"description_th":"ภาพแมว","passable":{"car":"no","transit":"yes","moto":"no"}}`
+	s := newTestServer(t, false)
+	s.Gemini = &agent.Gemini{Gen: fakeGenWithText{text: notFloodJSON}}
+	h := s.Handler()
+
+	body, ct := multipartReport(t, "13.8130", "100.5760", true)
+	status, out := do(t, h, "POST", "/v1/reports", "", body, ct)
+	if status != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for non-flood photo, got %d (out: %v)", status, out)
+	}
+}
+
+func TestHomeStatus_NilProviders(t *testing.T) {
+	s := newTestServer(t, false)
+	// All live providers nil
+	s.Live = planner.Providers{}
+	h := s.Handler()
+
+	status, out := do(t, h, "GET", "/v1/home-status", "", nil, "")
+	if status != http.StatusOK {
+		t.Fatalf("expected 200 OK with nil providers, got %d (out: %v)", status, out)
+	}
+}
+
+func TestHandleTaskCheck_InvalidPayload(t *testing.T) {
+	h := newServer(t)
+
+	// Missing UID or TripID -> 400
+	status, _ := do(t, h, "POST", "/internal/tasks/check", "", bytes.NewBufferString(`{"uid":""}`), "application/json")
+	if status != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for empty uid, got %d", status)
+	}
+
+	// Malformed JSON -> 400
+	status, _ = do(t, h, "POST", "/internal/tasks/check", "", bytes.NewBufferString(`{not-json}`), "application/json")
+	if status != http.StatusBadRequest {
+		t.Fatalf("expected 400 Bad Request for malformed json, got %d", status)
+	}
+}
+

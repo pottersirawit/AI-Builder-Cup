@@ -23,11 +23,14 @@ const (
 	ModeCar     Mode = "car"
 	ModeTransit Mode = "transit"
 	ModeMoto    Mode = "moto"
+	ModePickup  Mode = "pickup"
 )
 
-var AllModes = []Mode{ModeCar, ModeTransit, ModeMoto}
+var AllModes = []Mode{ModeCar, ModeTransit, ModeMoto, ModePickup}
 
-func (m Mode) Valid() bool { return m == ModeCar || m == ModeTransit || m == ModeMoto }
+func (m Mode) Valid() bool {
+	return m == ModeCar || m == ModeTransit || m == ModeMoto || m == ModePickup
+}
 
 // NameTH is the label shown to the user.
 func (m Mode) NameTH() string {
@@ -36,6 +39,8 @@ func (m Mode) NameTH() string {
 		return "BTS / MRT"
 	case ModeMoto:
 		return "มอเตอร์ไซค์"
+	case ModePickup:
+		return "รถกระบะ"
 	default:
 		return "รถยนต์"
 	}
@@ -52,6 +57,8 @@ func (m Mode) NameFor(l Lang) string {
 		return "BTS / MRT"
 	case ModeMoto:
 		return "motorbike"
+	case ModePickup:
+		return "pickup truck"
 	default:
 		return "car"
 	}

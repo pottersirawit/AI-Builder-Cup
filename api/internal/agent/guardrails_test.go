@@ -505,29 +505,40 @@ func TestParseQuestionUsesFastModelAndCachesIntent(t *testing.T) {
 	}
 }
 
-func TestRunAgentDisablesToolsOnceRequiredToolsCalled(t *testing.T) {
+func TestRunAgentDisablesToolsOnlyOnFinalTurn(t *testing.T) {
 	final := `{"verdict":"leave_now","headline_th":"ออกก่อน 16:45","summary_th":"ออกตอนนี้ทันนัด","confidence":0.87,
 	  "explanation":{"reason_why_th":"ออกตอน 16:10 ยังไม่เจอฝน","factors_th":["ฝน"]}}`
-	fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{
-		reply(
-			call("get_trip", nil),
-			call("get_rain_along_route", nil),
-			call("get_flood_spots_on_route", map[string]any{"mode": "car"}),
-			call("evaluate_departure", map[string]any{"mode": "car"}),
-		),
-		reply(&genai.Part{Text: final}),
-	}}
+	var replies []*genai.GenerateContentResponse
+	replies = append(replies, reply(
+		call("get_trip", nil),
+		call("get_rain_along_route", nil),
+		call("get_flood_spots_on_route", map[string]any{"mode": "car"}),
+		call("evaluate_departure", map[string]any{"mode": "car"}),
+	))
+	for i := 1; i < maxAgentTurns-1; i++ {
+		replies = append(replies, reply(call("get_community_reports", nil)))
+	}
+	replies = append(replies, reply(&genai.Part{Text: final}))
+
+	fake := &scriptedGemini{replies: replies}
 	g := &Gemini{Gen: fake, Model: "gemini-2.5-flash"}
 	resp, err := Decide(context.Background(), g, session(t, at(16, 10)), Request{Mode: "car"}, nil)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if resp.GeneratedBy != "gemini" || len(fake.configs) != 2 {
-		t.Fatalf("expected 2 turns, got %d turns (generated_by=%s)", len(fake.configs), resp.GeneratedBy)
+	if resp.GeneratedBy != "gemini" || len(fake.configs) != maxAgentTurns {
+		t.Fatalf("expected %d turns, got %d turns (generated_by=%s)", maxAgentTurns, len(fake.configs), resp.GeneratedBy)
 	}
-	if fake.configs[1].ToolConfig == nil || fake.configs[1].ToolConfig.FunctionCallingConfig == nil ||
-		fake.configs[1].ToolConfig.FunctionCallingConfig.Mode != genai.FunctionCallingConfigModeNone {
-		t.Fatalf("expected Turn 2 to set FunctionCallingConfigModeNone after all required tools were called, got %+v", fake.configs[1].ToolConfig)
+	for i := 1; i < maxAgentTurns-1; i++ {
+		if fake.configs[i].ToolConfig != nil && fake.configs[i].ToolConfig.FunctionCallingConfig != nil &&
+			fake.configs[i].ToolConfig.FunctionCallingConfig.Mode == genai.FunctionCallingConfigModeNone {
+			t.Fatalf("expected turn %d to allow tool calling, but got ModeNone", i+1)
+		}
+	}
+	finalCfg := fake.configs[maxAgentTurns-1]
+	if finalCfg.ToolConfig == nil || finalCfg.ToolConfig.FunctionCallingConfig == nil ||
+		finalCfg.ToolConfig.FunctionCallingConfig.Mode != genai.FunctionCallingConfigModeNone {
+		t.Fatalf("expected final turn to set ModeNone, got %+v", finalCfg.ToolConfig)
 	}
 }
 

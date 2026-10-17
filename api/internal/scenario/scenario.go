@@ -351,14 +351,14 @@ func (r Routes) Route(_ context.Context, from, to domain.LatLng, mode domain.Mod
 }
 
 func (r Routes) minutes(from, to domain.LatLng, mode domain.Mode, departAt time.Time) int {
-	base := map[domain.Mode]int{domain.ModeCar: 50, domain.ModeMoto: 30, domain.ModeTransit: 40}[mode]
+	base := map[domain.Mode]int{domain.ModeCar: 50, domain.ModeMoto: 30, domain.ModeTransit: 40, domain.ModePickup: 50}[mode]
 	if !isHeroTrip(from, to) {
 		km := geo.HaversineM(from, to) / 1000 * 1.3
-		speed := map[domain.Mode]float64{domain.ModeCar: 22, domain.ModeMoto: 30, domain.ModeTransit: 28}[mode]
+		speed := map[domain.Mode]float64{domain.ModeCar: 22, domain.ModeMoto: 30, domain.ModeTransit: 28, domain.ModePickup: 22}[mode]
 		base = int(math.Round(km/speed*60)) + 10
 	}
 	switch mode {
-	case domain.ModeCar:
+	case domain.ModeCar, domain.ModePickup:
 		return base + (level(traffic, departAt)-1)*10
 	case domain.ModeMoto:
 		return base + (level(traffic, departAt)-1)*5

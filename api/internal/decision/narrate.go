@@ -68,6 +68,8 @@ func clearanceText(m domain.Mode) string {
 	switch m {
 	case domain.ModeCar:
 		return "รถเก๋ง 15 ซม."
+	case domain.ModePickup:
+		return "รถกระบะ 35 ซม."
 	case domain.ModeMoto:
 		return "มอเตอร์ไซค์ 10 ซม."
 	default:

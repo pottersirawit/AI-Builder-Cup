@@ -66,13 +66,6 @@ func (f *BMATidalFetcher) TidalStatus(ctx context.Context, at time.Time) (domain
 	}
 	f.mu.RUnlock()
 
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	if !f.cachedAt.IsZero() && time.Since(f.cachedAt) < f.TTL {
-		return f.cached, nil
-	}
-
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, f.URL, nil)
 	if err != nil {
 		return domain.TidalReading{}, err
@@ -112,8 +105,11 @@ func (f *BMATidalFetcher) TidalStatus(ctx context.Context, at time.Time) (domain
 		SurgeRisk:    surgeRisk,
 	}
 
+	f.mu.Lock()
 	f.cached = reading
 	f.cachedAt = time.Now()
+	f.mu.Unlock()
+
 	return reading, nil
 }
 

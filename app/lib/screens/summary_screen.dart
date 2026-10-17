@@ -98,6 +98,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final d = c?.decision;
     final id = c?.request.tripId;
     if (d != null && id != null && !c!.previewing) widget.repo.remember(id, d);
+    if (!mounted) return;
     setState(() {});
   }
 

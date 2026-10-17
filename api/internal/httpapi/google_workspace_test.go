@@ -20,6 +20,7 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
+	"golang.org/x/text/encoding/charmap"
 	"google.golang.org/genai"
 )
 
@@ -1161,5 +1162,81 @@ func TestSyncReadsGmailDateOnlyInformalEvent(t *testing.T) {
 		t.Errorf("trip.TitleTH = %q, want 'นัดเจอกันที่ BTS ศาลาแดง'", trip.TitleTH)
 	}
 }
+
+func TestGetOAuthCredentials_EnforcesEnvVars(t *testing.T) {
+	t.Setenv("GOOGLE_OAUTH_CLIENT_ID", "")
+	t.Setenv("GOOGLE_OAUTH_CLIENT_SECRET", "")
+	cid, sec := getOAuthCredentials()
+	if cid != "" || sec != "" {
+		t.Fatalf("expected empty credentials when env unset, got cid=%q sec=%q", cid, sec)
+	}
+
+	t.Setenv("GOOGLE_OAUTH_CLIENT_ID", "custom-client-id")
+	t.Setenv("GOOGLE_OAUTH_CLIENT_SECRET", "custom-client-secret")
+	cid, sec = getOAuthCredentials()
+	if cid != "custom-client-id" || sec != "custom-client-secret" {
+		t.Fatalf("expected custom credentials from env, got cid=%q sec=%q", cid, sec)
+	}
+}
+
+func TestConvertCalendarEventsToTrips_FiltersCancelledEvents(t *testing.T) {
+	ctx := context.Background()
+	items := []googleCalendarItem{
+		{
+			ID:      "active-event-1",
+			Status:  "confirmed",
+			Summary: "นัดกินข้าว",
+			Location: "สยาม",
+			Start: struct {
+				DateTime string `json:"dateTime"`
+				Date     string `json:"date"`
+			}{DateTime: "2026-10-18T18:00:00+07:00"},
+		},
+		{
+			ID:      "cancelled-event-2",
+			Status:  "cancelled",
+			Summary: "ยกเลิกนัด",
+			Location: "อโศก",
+			Start: struct {
+				DateTime string `json:"dateTime"`
+				Date     string `json:"date"`
+			}{DateTime: "2026-10-18T19:00:00+07:00"},
+		},
+	}
+
+	trips := ConvertCalendarEventsToTrips(ctx, items, nil, nil)
+	if len(trips) != 1 {
+		t.Fatalf("expected 1 trip, got %d", len(trips))
+	}
+	if trips[0].ID != "cal-active-event-1" {
+		t.Fatalf("expected active trip cal-active-event-1, got %s", trips[0].ID)
+	}
+}
+
+func TestGmailPart_ThaiCharsetDecoding(t *testing.T) {
+	thaiText := "ยืนยันการจองตั๋วเครื่องบิน ดอนเมือง"
+	// Encode in Windows-874 / TIS-620
+	encoded, err := charmap.Windows874.NewEncoder().Bytes([]byte(thaiText))
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	part := gmailPart{
+		MimeType: "text/plain",
+		Headers: []struct {
+			Name  string `json:"name"`
+			Value string `json:"value"`
+		}{
+			{Name: "Content-Type", Value: "text/plain; charset=tis-620"},
+		},
+	}
+	part.Body.Data = base64.URLEncoding.EncodeToString(encoded)
+
+	got := part.plainText()
+	if got != thaiText {
+		t.Fatalf("got %q, want %q", got, thaiText)
+	}
+}
+
 
 

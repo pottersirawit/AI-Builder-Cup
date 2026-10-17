@@ -145,6 +145,36 @@ class _VerdictScreenState extends State<VerdictScreen> {
     }
   }
 
+  Future<void> _onModeTap(TravelMode m) async {
+    if (m == _c.mode) return;
+    try {
+      await _c.setMode(m);
+      if (!mounted) return;
+      if (_c.error != null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(context.l10n.verdictServerError),
+            action: SnackBarAction(
+              label: context.l10n.verdictRetry,
+              onPressed: _c.load,
+            ),
+          ),
+        );
+      }
+    } catch (_) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(context.l10n.verdictServerError),
+          action: SnackBarAction(
+            label: context.l10n.verdictRetry,
+            onPressed: _c.load,
+          ),
+        ),
+      );
+    }
+  }
+
   @override
   void dispose() {
     _c.dispose();
@@ -180,7 +210,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
           )
         : needs != null
         ? NeedsPlacePass(needs: needs, onResolved: _c.resolvePlace)
-        : (_c.error != null && d == null) || d?.unreadable == true
+        : _c.error != null || d?.unreadable == true
         ? Pass(
             sections: [
               PassSection(
@@ -301,7 +331,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ),
           ),
-          if (d != null && !d.refused && !d.unreadable) ...[
+          if (d != null && _c.error == null && !d.refused && !d.unreadable) ...[
             if (d.explanation case final e? when !e.isEmpty)
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),
@@ -327,7 +357,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
                   children: [
                     ModeSegmented(
                       selected: _c.mode,
-                      onChanged: _c.setMode,
+                      onChanged: _onModeTap,
                       status: {
                         for (final o in board)
                           o.mode: ModeStatus(

@@ -267,9 +267,15 @@ class TripController extends ChangeNotifier {
     return load();
   }
 
+  void invalidateDecision() {
+    _decision = null;
+    _notify();
+  }
+
   Future<void> setMode(TravelMode m) {
     if (m == _mode) return Future.value();
     _mode = m;
+    _decision = null;
     return load();
   }
 

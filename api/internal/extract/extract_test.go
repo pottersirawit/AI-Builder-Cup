@@ -528,3 +528,18 @@ func TestWithGemini_CachesResult(t *testing.T) {
 	}
 }
 
+func TestIsAdvertisementOrNewsletter_LegitimateReceiptsAndDiscountsNotBlocked(t *testing.T) {
+	legitimateTexts := []string{
+		"ใบเสร็จรับเงิน ค่าตั๋วเครื่องบินไปเชียงใหม่",
+		"ยืนยันการจองตั๋วภาพยนตร์ รับส่วนลดพิเศษสำหรับสมาชิก",
+		"สิทธิพิเศษเข้างานสัมมนาเทคโนโลยี ณ ศูนย์การประชุมแห่งชาติสิริกิติ์",
+	}
+
+	for _, text := range legitimateTexts {
+		if isAdvertisementOrNewsletter(text) {
+			t.Errorf("expected text %q NOT to be flagged as ad/newsletter", text)
+		}
+	}
+}
+
+

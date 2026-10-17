@@ -131,18 +131,25 @@ func (wp *WorkerPool) EnqueueReply(job ReplyJob) (enqueued bool) {
 
 func (wp *WorkerPool) worker(id int) {
 	defer wp.wg.Done()
+	jobsChan := wp.jobsChan
+	replyJobsChan := wp.replyJobsChan
 	for {
+		if jobsChan == nil && replyJobsChan == nil {
+			return
+		}
 		select {
 		case <-wp.quitChan:
 			return
-		case job, ok := <-wp.jobsChan:
+		case job, ok := <-jobsChan:
 			if !ok {
-				return
+				jobsChan = nil
+				continue
 			}
 			wp.processJob(id, job)
-		case replyJob, ok := <-wp.replyJobsChan:
+		case replyJob, ok := <-replyJobsChan:
 			if !ok {
-				return
+				replyJobsChan = nil
+				continue
 			}
 			wp.processReplyJob(id, replyJob)
 		}
@@ -311,14 +318,14 @@ func (wp *WorkerPool) Stop() {
 	wp.stopOnce.Do(func() {
 		wp.mu.Lock()
 		wp.isStopped = true
-		close(wp.quitChan)
+		close(wp.jobsChan)
+		close(wp.replyJobsChan)
 		wp.mu.Unlock()
 
 		wp.wg.Wait()
 
 		wp.mu.Lock()
-		close(wp.jobsChan)
-		close(wp.replyJobsChan)
+		close(wp.quitChan)
 		wp.mu.Unlock()
 
 		log.Println("[WorkerPool] All workers stopped cleanly.")

@@ -46,14 +46,14 @@ class WeatherNext3Collector:
                 for item in data.get("forecastHours", []):
                     forecasts.append({
                         "timestamp": item.get("forecastTime"),
-                        "temperature_c": item.get("temperature", {}).get("degrees"),
+                        "temperature_c": (item.get("temperature") or {}).get("degrees"),
                         "humidity_pct": item.get("relativeHumidity"),
-                        "heat_index_c": item.get("heatIndex", {}).get("degrees"),
-                        "precipitation_rate_mm_hr": item.get("precipitation", {}).get("qpfQuantity", {}).get("value", 0.0),
-                        "precipitation_probability": item.get("precipitation", {}).get("probability", 0),
-                        "wind_speed_kmh": item.get("wind", {}).get("speed", {}).get("value", 0.0),
-                        "wind_gust_kmh": item.get("wind", {}).get("gust", {}).get("value", 0.0),
-                        "condition": item.get("weatherCondition", {}).get("description", "Clear")
+                        "heat_index_c": (item.get("heatIndex") or {}).get("degrees"),
+                        "precipitation_rate_mm_hr": ((item.get("precipitation") or {}).get("qpfQuantity") or {}).get("value", 0.0),
+                        "precipitation_probability": (item.get("precipitation") or {}).get("probability", 0),
+                        "wind_speed_kmh": ((item.get("wind") or {}).get("speed") or {}).get("value", 0.0),
+                        "wind_gust_kmh": ((item.get("wind") or {}).get("gust") or {}).get("value", 0.0),
+                        "condition": (item.get("weatherCondition") or {}).get("description", "Clear")
                     })
                 return forecasts
         except Exception as e:

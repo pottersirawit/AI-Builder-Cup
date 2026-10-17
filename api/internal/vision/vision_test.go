@@ -36,14 +36,14 @@ func TestAssess(t *testing.T) {
 	}{
 		{"no gemini: hero fallback", nil, "fallback", 25},
 		{"gemini answer", &agent.Gemini{Gen: fakeGen{text: good}}, "gemini", 40},
-		{"gemini error", &agent.Gemini{Gen: fakeGen{err: errors.New("503")}}, "fallback", 25},
+		{"gemini error", &agent.Gemini{Gen: fakeGen{err: errors.New("503")}}, "rejected", 0},
 		{"not a flood scene", gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":false,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
 		{"screenshot", gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":true,"looks_like_screenshot":true,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
 		{"low confidence", gem(`{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.4,"is_flood_scene":true,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
-		{"depth above 150 cm is implausible", gem(`{"depth_cm_min":100,"depth_cm_max":200,"confidence":0.9,"is_flood_scene":true,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "fallback", 25},
-		{"implausible depth", &agent.Gemini{Gen: fakeGen{text: `{"depth_cm_min":50,"depth_cm_max":10,"confidence":0.5,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`}}, "fallback", 25},
-		{"bad passable", &agent.Gemini{Gen: fakeGen{text: `{"depth_cm_min":5,"depth_cm_max":10,"confidence":0.5,"description_th":"x","passable":{"car":"maybe","transit":"yes","moto":"no"}}`}}, "fallback", 25},
-		{"not JSON", &agent.Gemini{Gen: fakeGen{text: "ไม่ทราบ"}}, "fallback", 25},
+		{"depth above 150 cm is implausible", gem(`{"depth_cm_min":100,"depth_cm_max":200,"confidence":0.9,"is_flood_scene":true,"looks_like_screenshot":false,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`), "rejected", 0},
+		{"implausible depth", &agent.Gemini{Gen: fakeGen{text: `{"depth_cm_min":50,"depth_cm_max":10,"confidence":0.5,"description_th":"x","passable":{"car":"no","transit":"yes","moto":"no"}}`}}, "rejected", 0},
+		{"bad passable", &agent.Gemini{Gen: fakeGen{text: `{"depth_cm_min":5,"depth_cm_max":10,"confidence":0.5,"description_th":"x","passable":{"car":"maybe","transit":"yes","moto":"no"}}`}}, "rejected", 0},
+		{"not JSON", &agent.Gemini{Gen: fakeGen{text: "ไม่ทราบ"}}, "rejected", 0},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

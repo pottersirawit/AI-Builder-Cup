@@ -32,9 +32,18 @@ const demoPresets = ['16:10', '18:52', '21:40'];
 
 /// ISO-8601 string with Bangkok offset for [hhmm] on today's Bangkok date.
 String demoClockIso(String hhmm, {DateTime? now}) {
-  final b = (now ?? DateTime.now()).toUtc().add(const Duration(hours: 7));
-  String two(int n) => n.toString().padLeft(2, '0');
-  return '${b.year}-${two(b.month)}-${two(b.day)}T$hhmm:00+07:00';
+  if (hhmm.contains('T') || DateTime.tryParse(hhmm) != null) {
+    return hhmm;
+  }
+  final m = RegExp(r'^(\d{1,2}):(\d{2})$').firstMatch(hhmm.trim());
+  if (m != null) {
+    final b = (now ?? DateTime.now()).toUtc().add(const Duration(hours: 7));
+    String two(int n) => n.toString().padLeft(2, '0');
+    final hh = two(int.parse(m[1]!));
+    final mm = m[2]!;
+    return '${b.year}-${two(b.month)}-${two(b.day)}T$hh:$mm:00+07:00';
+  }
+  return hhmm;
 }
 
 String? initialDemoClock() {

@@ -75,8 +75,8 @@ func destinationsOrTitlesMatch(a, b domain.Trip) bool {
 			return true
 		}
 		// Token overlap (e.g. flight numbers, artist names, event names)
-		tokensA := tokenize(ta)
-		tokensB := tokenize(tb)
+		tokensA := tokenize(a.TitleTH)
+		tokensB := tokenize(b.TitleTH)
 		for _, t1 := range tokensA {
 			if len(t1) < 3 {
 				continue

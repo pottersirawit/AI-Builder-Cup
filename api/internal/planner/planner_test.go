@@ -137,6 +137,14 @@ func TestParseTime(t *testing.T) {
 	if _, err := ParseTime("soon", now); err == nil {
 		t.Error("want error for garbage")
 	}
+
+	// Midnight rollover: when now is late night (23:30), 00:15 should roll over to next day.
+	lateNight := time.Date(2026, 9, 29, 23, 30, 0, 0, domain.Bangkok)
+	nextDayMidnight := time.Date(2026, 9, 30, 0, 15, 0, 0, domain.Bangkok)
+	got, err := ParseTime("00:15", lateNight)
+	if err != nil || !got.Equal(nextDayMidnight) {
+		t.Errorf("midnight rollover: got %v %v, want %v", got, err, nextDayMidnight)
+	}
 }
 
 func TestTripTo(t *testing.T) {

@@ -64,6 +64,10 @@ func (c *DefaultLineReplyClient) Reply(ctx context.Context, replyToken string, m
 		Timestamp:  time.Now(),
 	}
 	c.recorded = append(c.recorded, rec)
+	const maxRecorded = 100
+	if len(c.recorded) > maxRecorded {
+		c.recorded = append([]RecordedReply(nil), c.recorded[len(c.recorded)-maxRecorded:]...)
+	}
 	mock := c.mockMode || c.channelToken == ""
 	c.mu.Unlock()
 

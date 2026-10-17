@@ -46,6 +46,8 @@ const (
 	carSlowDepthCM           = 5.0  // sedan slows, water sprays the floor
 	carStallDepthCM          = 15.0 // sedan clearance
 	motoStallDepthCM         = 10.0
+	pickupSlowDepthCM        = 20.0
+	pickupStallDepthCM       = 35.0
 	motoWindGustCautionKMH   = 30.0 // gusts make riding harder
 	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 	motoRainProbThresholdPct = 60   // PoP >= 60% prompts rain gear advisory
@@ -54,24 +56,32 @@ const (
 // stallDepthCM is the water a mode cannot pass; slowDepthCM the water that
 // slows it.
 func stallDepthCM(m domain.Mode) float64 {
-	if m == domain.ModeMoto {
+	switch m {
+	case domain.ModeMoto:
 		return motoStallDepthCM
+	case domain.ModePickup:
+		return pickupStallDepthCM
+	default:
+		return carStallDepthCM
 	}
-	return carStallDepthCM
 }
 
 func slowDepthCM(m domain.Mode) float64 {
-	if m == domain.ModeMoto {
+	switch m {
+	case domain.ModeMoto:
 		return 1
+	case domain.ModePickup:
+		return pickupSlowDepthCM
+	default:
+		return carSlowDepthCM
 	}
-	return carSlowDepthCM
 }
 
 // Thresholds are the engine's cut-offs by unit ("cm", "mmh", "kmh"), which
 // advice may quote as facts.
 func Thresholds() map[string][]float64 {
 	return map[string][]float64{
-		"cm":  {carSlowDepthCM, carStallDepthCM, motoStallDepthCM, soloReportCapCM},
+		"cm":  {carSlowDepthCM, carStallDepthCM, motoStallDepthCM, pickupSlowDepthCM, pickupStallDepthCM, soloReportCapCM},
 		"mmh": {rainLight, rainModerate, rainHeavy},
 		"kmh": {motoWindGustCautionKMH, motoWindGustThresholdKMH},
 	}
@@ -225,6 +235,13 @@ func EvaluateMode(in Input, mode domain.Mode, depart time.Time) Eval {
 		if depth >= carSlowDepthCM {
 			delay += 20
 		}
+	case domain.ModePickup:
+		if rain >= rainModerate {
+			delay += 10
+		}
+		if depth >= pickupSlowDepthCM {
+			delay += 15
+		}
 	case domain.ModeMoto:
 		if rain >= rainModerate {
 			delay += 10
@@ -254,6 +271,13 @@ func riskFor(mode domain.Mode, rain, depth, windGustKMH float64, probPct int) Ri
 			return RiskHigh
 		}
 		if depth >= carSlowDepthCM || rain >= rainModerate {
+			return RiskMedium
+		}
+	case domain.ModePickup:
+		if depth >= pickupStallDepthCM {
+			return RiskHigh
+		}
+		if depth >= pickupSlowDepthCM || rain >= rainModerate {
 			return RiskMedium
 		}
 	case domain.ModeMoto:
@@ -468,7 +492,14 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 	// no answer; the train is, when it is no riskier and gets there on time or
 	// sooner. Failing that, the first clearing wait still beats staying put.
 	var firstClear *time.Time
-	for t := in.DepartAt.Truncate(15 * time.Minute).Add(15 * time.Minute); !t.After(in.DepartAt.Add(3 * time.Hour)); t = t.Add(15 * time.Minute) {
+	start := in.DepartAt
+	if in.Now.After(start) {
+		start = in.Now
+	}
+	for t := start.Truncate(15 * time.Minute).Add(15 * time.Minute); !t.After(start.Add(3 * time.Hour)); t = t.Add(15 * time.Minute) {
+		if t.Before(in.Now) {
+			continue
+		}
 		later := EvaluateMode(in, m, t)
 		if later.Risk != RiskLow {
 			continue
@@ -567,7 +598,7 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 				}
 			}
 		}
-		out = append(out, FloodSpot{ID: s.ID, NameTH: s.Name(in.Lang), Lat: s.Lat, Lng: s.Lng, ExpectedDepthCM: int(math.Round(d)), Risk: depthRisk(d)})
+		out = append(out, FloodSpot{ID: s.ID, NameTH: s.Name(in.Lang), Lat: s.Lat, Lng: s.Lng, ExpectedDepthCM: int(math.Round(d)), Risk: depthRisk(d, in.Mode)})
 	}
 	for idx, rs := range in.RoadSensors {
 		if matchedSensor[idx] {
@@ -586,7 +617,7 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 			Lat:             rs.Lat,
 			Lng:             rs.Lng,
 			ExpectedDepthCM: int(math.Round(d)),
-			Risk:            depthRisk(d),
+			Risk:            depthRisk(d, in.Mode),
 		})
 	}
 	for _, r := range in.Reports {
@@ -598,7 +629,7 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 			continue
 		}
 		out = append(out, FloodSpot{ID: "report-" + r.ID, NameTH: reportLabel(in, r),
-			Lat: r.Lat, Lng: r.Lng, ExpectedDepthCM: int(d), Risk: depthRisk(d)})
+			Lat: r.Lat, Lng: r.Lng, ExpectedDepthCM: int(d), Risk: depthRisk(d, in.Mode)})
 	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].ExpectedDepthCM > out[j].ExpectedDepthCM })
 	return out
@@ -615,11 +646,11 @@ func reportLabel(in Input, r domain.Report) string {
 	return "รายงานผู้ใช้ " + r.CreatedAt.Format("15:04") + " ใกล้" + near
 }
 
-func depthRisk(d float64) Risk {
+func depthRisk(d float64, mode domain.Mode) Risk {
 	switch {
-	case d >= carStallDepthCM:
+	case d >= stallDepthCM(mode):
 		return RiskHigh
-	case d >= carSlowDepthCM:
+	case d >= slowDepthCM(mode):
 		return RiskMedium
 	}
 	return RiskLow

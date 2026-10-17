@@ -148,4 +148,30 @@ func TestDeduplicateTrips(t *testing.T) {
 			t.Fatalf("expected 2 distinct trips preserved, got %d", len(deduped))
 		}
 	})
+
+	t.Run("deduplicates via token overlap when titles are not substrings", func(t *testing.T) {
+		calTrip := domain.Trip{
+			ID:       "cal-keynote",
+			TitleTH:  "Conference Keynote at Hall",
+			Source:   "calendar",
+			ArriveBy: baseTime,
+		}
+		gmailTrip := domain.Trip{
+			ID:       "gmail-keynote",
+			TitleTH:  "Reminder: Keynote session details",
+			Source:   "gmail",
+			ArriveBy: baseTime.Add(15 * time.Minute),
+		}
+
+		trips := []domain.Trip{calTrip, gmailTrip}
+		deduped := DeduplicateTrips(trips)
+
+		if len(deduped) != 1 {
+			t.Fatalf("expected 1 trip via token overlap, got %d", len(deduped))
+		}
+		if deduped[0].ID != "cal-keynote" {
+			t.Errorf("expected cal-keynote, got %s", deduped[0].ID)
+		}
+	})
 }
+

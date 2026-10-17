@@ -76,10 +76,10 @@ func (b *BigQueryWeatherNextFetcher) FetchBangkokGrid(ctx context.Context) ([]Gr
 		SELECT 
 			ST_Y(geography) as lat,
 			ST_X(geography) as lng,
-			forecast[OFFSET(0)].time as valid_time,
-			forecast[OFFSET(0)].temperature_2m_mean as temp_kelvin,
-			forecast[OFFSET(0)].wind_speed_10m_p90 as wind_10m_p90_ms,
-			forecast[OFFSET(0)].total_precipitation_1hr_mean as precip_1hr_m
+			forecast[SAFE_OFFSET(0)].time as valid_time,
+			forecast[SAFE_OFFSET(0)].temperature_2m_mean as temp_kelvin,
+			forecast[SAFE_OFFSET(0)].wind_speed_10m_p90 as wind_10m_p90_ms,
+			forecast[SAFE_OFFSET(0)].total_precipitation_1hr_mean as precip_1hr_m
 		FROM `+"`%s.%s.%s`"+`
 		WHERE init_time >= TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR)
 		  AND ST_DWITHIN(geography, ST_GEOGPOINT(100.5018, 13.7563), 50000)

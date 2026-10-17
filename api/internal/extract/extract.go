@@ -331,13 +331,17 @@ func extractWithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now
 func isAdvertisementOrNewsletter(text string) bool {
 	lower := strings.ToLower(text)
 	adKeywords := []string{
-		"โปรโมชั่น", "ลดราคา", "ส่วนลด", "flash sale", "ช้อป", "voucher",
-		"คูปอง", "newsletter", "digest", "สั่งซื้อสำเร็จ", "ใบเสร็จ",
-		"แคชแบ็ก", "cashback", "advertisement", "สิทธิพิเศษ", "ลดสูงสุด",
+		"โปรโมชั่น", "ลดราคา", "flash sale", "ช้อป", "voucher",
+		"คูปอง", "newsletter", "digest", "สั่งซื้อสำเร็จ",
+		"แคชแบ็ก", "cashback", "advertisement", "ลดสูงสุด",
 	}
+	count := 0
 	for _, kw := range adKeywords {
 		if strings.Contains(lower, kw) {
-			return true
+			count++
+			if count >= 2 {
+				return true
+			}
 		}
 	}
 	return false

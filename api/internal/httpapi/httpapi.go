@@ -3,6 +3,7 @@ package httpapi
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
 	"errors"
 	"io"
@@ -21,6 +22,7 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/extract"
+	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
@@ -407,6 +409,10 @@ func (s *Server) createReport(w http.ResponseWriter, r *http.Request, rc reqCtx)
 		return
 	}
 	assessment, by := vision.Assess(r.Context(), s.Gemini, photo, mime, rc.lang)
+	if by == vision.GeneratedByRejected {
+		writeError(w, http.StatusBadRequest, assessment.DescriptionTH)
+		return
+	}
 	assessment.Lat, assessment.Lng, assessment.CreatedAt, assessment.GeneratedBy = lat, lng, rc.now, by
 	// Only a real Gemini reading of a flood photo is evidence; the fallback
 	// and rejected assessments go back to the caller but are never stored.
@@ -522,24 +528,44 @@ func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		home.Place = place
 	}
 	ctx, p := r.Context(), home.Place.Point()
-	canals, err := rc.prov.Canals.Canals(ctx, p, rc.now)
-	if err != nil {
-		slog.Warn("no canal data for home status", "err", err)
-		canals = nil
+	var canals []domain.CanalReading
+	var canalSource string
+	if rc.prov.Canals != nil {
+		canalSource = rc.prov.Canals.Name()
+		var err error
+		canals, err = rc.prov.Canals.Canals(ctx, p, rc.now)
+		if err != nil {
+			slog.Warn("no canal data for home status", "err", err)
+			canals = nil
+		}
 	}
 	midnight := time.Date(rc.now.Year(), rc.now.Month(), rc.now.Day(), 0, 0, 0, 0, domain.Bangkok)
-	rain, err := rc.prov.Weather.Rain(ctx, p, midnight, rc.now.Add(2*time.Hour))
-	if err != nil {
-		rain = nil
+	var rain []domain.RainSample
+	var weatherSource string
+	if rc.prov.Weather != nil {
+		weatherSource = rc.prov.Weather.Name()
+		var err error
+		rain, err = rc.prov.Weather.Rain(ctx, p, midnight, rc.now.Add(2*time.Hour))
+		if err != nil {
+			rain = nil
+		}
 	}
-	nearby, err := rc.prov.Reports.Near(ctx, p, 500, rc.now.Add(-time.Hour), rc.now)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
+	nearbyCount := 0
+	if rc.prov.Reports != nil {
+		nearby, err := rc.prov.Reports.Near(ctx, p, 500, rc.now.Add(-time.Hour), rc.now)
+		if err != nil {
+			writeError(w, http.StatusInternalServerError, err.Error())
+			return
+		}
+		nearbyCount = len(nearby)
+	}
+	var spots []floodspot.Spot
+	if s.Planner != nil {
+		spots = s.Planner.Spots
 	}
 	status := homestatus.Evaluate(homestatus.Input{
-		Lang: rc.lang, Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: s.Planner.Spots, NearbyReports: len(nearby),
-		CanalSource: rc.prov.Canals.Name(), WeatherSource: rc.prov.Weather.Name(),
+		Lang: rc.lang, Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: spots, NearbyReports: nearbyCount,
+		CanalSource: canalSource, WeatherSource: weatherSource,
 	})
 	status.Place = scenario.LocalizePlace(status.Place, rc.lang)
 	writeJSON(w, http.StatusOK, status)
@@ -722,7 +748,11 @@ func (s *Server) handlePubSubRaw(w http.ResponseWriter, r *http.Request, ctx req
 	}
 	if json.Unmarshal(rawBytes, &psMsg) == nil && psMsg.Message.Data != "" {
 		// Pub/Sub push message detected
-		_ = json.Unmarshal([]byte(psMsg.Message.Data), &body)
+		dataBytes, err := base64.StdEncoding.DecodeString(psMsg.Message.Data)
+		if err != nil {
+			dataBytes = []byte(psMsg.Message.Data)
+		}
+		_ = json.Unmarshal(dataBytes, &body)
 		if body.SourceRef == "" {
 			body.SourceRef = psMsg.Message.MessageID
 		}
@@ -805,6 +835,10 @@ func (s *Server) handleTaskCheck(w http.ResponseWriter, r *http.Request, ctx req
 		writeError(w, http.StatusBadRequest, "invalid json: "+err.Error())
 		return
 	}
+	if strings.TrimSpace(req.UID) == "" || strings.TrimSpace(req.TripID) == "" {
+		writeError(w, http.StatusBadRequest, "missing uid or trip_id")
+		return
+	}
 
 	if s.Evaluator == nil {
 		writeError(w, http.StatusInternalServerError, "evaluator not configured")
@@ -813,6 +847,10 @@ func (s *Server) handleTaskCheck(w http.ResponseWriter, r *http.Request, ctx req
 
 	res, err := s.Evaluator.EvaluateTrip(r.Context(), ctx.prov, ctx.now, req.UID, req.TripID, req.ForceNotify)
 	if err != nil {
+		if strings.Contains(err.Error(), "not found") {
+			writeError(w, http.StatusBadRequest, "trip not found: "+err.Error())
+			return
+		}
 		writeError(w, http.StatusInternalServerError, "evaluation failed: "+err.Error())
 		return
 	}

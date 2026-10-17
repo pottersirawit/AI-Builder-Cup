@@ -80,15 +80,15 @@ var schema = &genai.Schema{
 // photo is not a real flood scene, it returns zero depth, an explanation and
 // generatedBy "rejected"; neither of those is evidence.
 func Assess(ctx context.Context, g *agent.Gemini, photo []byte, mimeType string, lang domain.Lang) (domain.Report, string) {
-	fallback := scenario.HeroAssessment()
-	fallback.DescriptionTH = scenario.Text(fallback.DescriptionTH, lang)
 	if !g.Available() {
+		fallback := scenario.HeroAssessment()
+		fallback.DescriptionTH = scenario.Text(fallback.DescriptionTH, lang)
 		return fallback, "fallback"
 	}
 	r, err := assess(ctx, g, photo, mimeType, lang)
 	if err != nil {
-		slog.Warn("gemini vision failed, using fallback", "err", err)
-		return fallback, "fallback"
+		slog.Warn("gemini vision failed, rejecting corrupt or invalid image", "err", err)
+		return rejected(domain.Report{}, "corrupt_image", lang), GeneratedByRejected
 	}
 	if reason := notEvidence(r); reason != "" {
 		return rejected(r.Report, reason, lang), GeneratedByRejected
@@ -119,11 +119,13 @@ func rejected(r domain.Report, reason string, lang domain.Lang) domain.Report {
 		"not_flood":      "ภาพนี้ดูไม่ใช่น้ำท่วมบนถนน จึงยังไม่นำไปเตือนคนอื่น ลองถ่ายใหม่ให้เห็นระดับน้ำชัดๆ",
 		"screenshot":     "ภาพนี้ดูเป็นภาพจับหน้าจอหรือภาพที่ไม่ได้ถ่ายหน้างาน จึงยังไม่นำไปเตือนคนอื่น",
 		"low_confidence": "ภาพนี้ยังไม่ชัดพอจะประเมินระดับน้ำ จึงยังไม่นำไปเตือนคนอื่น ลองถ่ายใหม่ให้ใกล้ขึ้น",
+		"corrupt_image":  "ไฟล์รูปภาพไม่ถูกต้องหรือเสียหาย ไม่สามารถประเมินได้",
 	}
 	en := map[string]string{
 		"not_flood":      "This photo does not look like street flooding, so it was not shared as a warning. Try again with the water level in view.",
 		"screenshot":     "This photo looks like a screenshot or an image not taken on the spot, so it was not shared as a warning.",
 		"low_confidence": "This photo is too unclear to judge the water level, so it was not shared as a warning. Try again from closer.",
+		"corrupt_image":  "The image file is invalid or corrupted and cannot be assessed.",
 	}
 	r.DepthCMMin, r.DepthCMMax = 0, 0
 	r.DescriptionTH = th[reason]

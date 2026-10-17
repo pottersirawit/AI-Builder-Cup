@@ -30,7 +30,7 @@ class AppState extends ChangeNotifier {
 
   /// "Now" as the app should show it: the demo clock when set.
   DateTime now() =>
-      _demoClock == null ? DateTime.now() : DateTime.parse(_demoClock!);
+      _demoClock == null ? DateTime.now() : DateTime.tryParse(_demoClock!) ?? DateTime.now();
 
   static const _localeKey = 'language';
   static const supportedLocales = [Locale('th'), Locale('en')];

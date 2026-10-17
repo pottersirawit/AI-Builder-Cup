@@ -37,7 +37,7 @@ class ThaiWaterCollector:
                         "district": item.get("district"),
                         "water_level_m": item.get("water_level_msl"),
                         "bank_height_m": item.get("bank_height_msl"),
-                        "margin_to_overflow_m": item.get("bank_height_msl") - item.get("water_level_msl"),
+                        "margin_to_overflow_m": float(item.get("bank_height_msl") or 0.0) - float(item.get("water_level_msl") or 0.0),
                         "status": item.get("status", "NORMAL")
                     })
                 return stations

@@ -70,6 +70,8 @@ func clearanceEN(m domain.Mode) string {
 	switch m {
 	case domain.ModeCar:
 		return "a sedan's 15 cm"
+	case domain.ModePickup:
+		return "a pickup truck's 35 cm"
 	case domain.ModeMoto:
 		return "a motorbike's 10 cm"
 	default:

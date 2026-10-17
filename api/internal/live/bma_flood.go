@@ -68,14 +68,6 @@ func (f *BMARoadFloodFetcher) fetchAll() ([]domain.RoadFloodSensor, error) {
 	}
 	f.mu.RUnlock()
 
-	f.mu.Lock()
-	defer f.mu.Unlock()
-
-	// Double-check after acquiring write lock
-	if !f.cachedAt.IsZero() && time.Since(f.cachedAt) < f.TTL {
-		return f.cached, nil
-	}
-
 	req, err := http.NewRequest(http.MethodGet, f.URL, nil)
 	if err != nil {
 		return nil, err
@@ -123,8 +115,11 @@ func (f *BMARoadFloodFetcher) fetchAll() ([]domain.RoadFloodSensor, error) {
 		})
 	}
 
+	f.mu.Lock()
 	f.cached = sensors
 	f.cachedAt = time.Now()
+	f.mu.Unlock()
+
 	return sensors, nil
 }
 
