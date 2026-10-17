@@ -443,7 +443,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
                       SliverToBoxAdapter(
                         child: _Block(
                           title: l.planWeatherNow,
-                          child: WeatherPeek(outlook: outlook, now: now),
+                          child: WeatherPeek(
+                            outlook: outlook,
+                            now: now,
+                            placeName: weatherPlaceLabel(
+                              l,
+                              here: here,
+                              home: savedHome,
+                              work: store.work,
+                              demoProfile: store.demoProfile,
+                            ),
+                          ),
                         ),
                       ),
                   ],
@@ -707,3 +717,42 @@ String summaryHeaderTitle({
   }
   return l.planTitleToday('$todayLeft');
 }
+
+/// Names the place the outlook was fetched for: a pinned location, a matched
+/// saved place, current GPS, or the saved home.
+String weatherPlaceLabel(
+  AppLocalizations l, {
+  LocateResult? here,
+  SavedPlace? home,
+  SavedPlace? work,
+  bool demoProfile = false,
+}) {
+  String savedLabel(SavedPlace p) =>
+      p.nameTh.isNotEmpty && p.nameTh != p.labelTh && p.labelTh.isNotEmpty
+      ? '${p.labelTh} · ${p.nameTh}'
+      : (p.nameTh.isNotEmpty ? p.nameTh : p.labelTh);
+
+  if (here != null && here.isManual && (here.nameTh ?? '').isNotEmpty) {
+    return here.nameTh!;
+  }
+  if (!demoProfile && here != null && here.ok) {
+    if ((here.nameTh ?? '').isNotEmpty) return here.nameTh!;
+    if (home != null &&
+        (here.lat - home.lat).abs() < 0.005 &&
+        (here.lng - home.lng).abs() < 0.005) {
+      return savedLabel(home);
+    }
+    if (work != null &&
+        (here.lat - work.lat).abs() < 0.005 &&
+        (here.lng - work.lng).abs() < 0.005) {
+      return savedLabel(work);
+    }
+    return l.locationCurrent;
+  }
+  if (home != null) return savedLabel(home);
+  if (here != null && here.ok && (here.nameTh ?? '').isNotEmpty) {
+    return here.nameTh!;
+  }
+  return l.locationCurrent;
+}
+

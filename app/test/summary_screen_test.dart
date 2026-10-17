@@ -832,6 +832,33 @@ void main() {
       'วันนี้ไม่มีนัดแล้ว',
     );
   });
+
+  testWidgets(
+    'weather sheet shows place, data source, hourly rain intensity, and hugs its content',
+    (tester) async {
+      await pumpApp(tester, '2026-09-29T16:10:00+07:00', height: 2400);
+
+      await tapAndSettle(tester, find.byType(WeatherPeek));
+      final card = find.byType(WeatherHeroCard);
+      expect(card, findsOneWidget);
+
+      // Intent 4: Location context and data source transparency
+      expect(find.byKey(const ValueKey('weather-place')), findsOneWidget);
+      expect(find.textContaining('บ้านลาดพร้าว'), findsWidgets);
+      expect(find.textContaining('Google Weather API'), findsOneWidget);
+
+      // Hourly rain intensity labels and mm/hr rates
+      expect(find.text('ฝนปานกลาง'), findsWidgets);
+      expect(find.text('ฝนหนัก'), findsWidgets);
+      expect(find.text('3.6 มม.'), findsOneWidget);
+      expect(find.text('41.3 มม.'), findsOneWidget);
+
+      // Layout: card should wrap its content rather than stretching to full screen height
+      final rect = tester.getRect(card);
+      expect(rect.height, lessThan(520));
+    },
+  );
 }
+
 
 
