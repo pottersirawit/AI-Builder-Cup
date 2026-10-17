@@ -73,6 +73,9 @@ func (w GoogleWeather) Rain(ctx context.Context, at domain.LatLng, from, to time
 				StartTime time.Time `json:"startTime"`
 			} `json:"interval"`
 			Precipitation struct {
+				Probability struct {
+					Percent int `json:"percent"`
+				} `json:"probability"`
 				Qpf struct {
 					Quantity float64 `json:"quantity"`
 				} `json:"qpf"`
@@ -88,7 +91,11 @@ func (w GoogleWeather) Rain(ctx context.Context, at domain.LatLng, from, to time
 		if t.Before(from.Add(-time.Hour)) || t.After(to) {
 			continue
 		}
-		out = append(out, domain.RainSample{Time: t, MMPerHr: h.Precipitation.Qpf.Quantity})
+		out = append(out, domain.RainSample{
+			Time:    t,
+			MMPerHr: h.Precipitation.Qpf.Quantity,
+			ProbPct: h.Precipitation.Probability.Percent,
+		})
 	}
 	if len(out) == 0 {
 		return nil, errors.New("weather API returned no hours in range")

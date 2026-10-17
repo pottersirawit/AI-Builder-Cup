@@ -2636,6 +2636,12 @@ abstract class AppLocalizations {
   /// **'{eta} น. · {status}'**
   String verdictModeStatus(int eta, String status);
 
+  /// No description provided for @verdictModeStatusWithProb.
+  ///
+  /// In th, this message translates to:
+  /// **'{eta} น. · {status} ({prob}%)'**
+  String verdictModeStatusWithProb(int eta, String status, int prob);
+
   /// No description provided for @verdictFloodSpotsTitle.
   ///
   /// In th, this message translates to:

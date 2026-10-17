@@ -1552,6 +1552,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String verdictModeStatusWithProb(int eta, String status, int prob) {
+    return '$eta min · $status ($prob%)';
+  }
+
+  @override
   String get verdictFloodSpotsTitle => 'Flood spots on your route';
 
   @override

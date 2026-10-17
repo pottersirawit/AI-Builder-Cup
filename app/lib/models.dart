@@ -211,11 +211,15 @@ class Trip {
 }
 
 class RainPoint {
-  const RainPoint(this.time, this.mmPerHr);
-  factory RainPoint.fromJson(Json j) =>
-      RainPoint(DateTime.parse(_str(j['time'])), _num(j['mm_per_hr']));
+  const RainPoint(this.time, this.mmPerHr, [this.probPct = 0]);
+  factory RainPoint.fromJson(Json j) => RainPoint(
+        DateTime.parse(_str(j['time'])),
+        _num(j['mm_per_hr']),
+        (j['prob_pct'] as num?)?.toInt() ?? 0,
+      );
   final DateTime time;
   final double mmPerHr;
+  final int probPct;
 }
 
 class TransitLeg {
@@ -246,6 +250,7 @@ class ModeOption {
     required this.etaMin,
     required this.risk,
     required this.noteTh,
+    this.rainProbPct = 0,
     this.viaTh = const [],
     this.transitLegs = const [],
   });
@@ -255,6 +260,7 @@ class ModeOption {
     etaMin: _int(j['eta_min']),
     risk: Risk.parse(j['risk']),
     noteTh: _str(j['note_th']),
+    rainProbPct: (j['rain_prob_pct'] as num?)?.toInt() ?? 0,
     viaTh: _strList(j['via_th']),
     transitLegs: _list(j['transit_legs']).map(TransitLeg.fromJson).toList(),
   );
@@ -262,6 +268,7 @@ class ModeOption {
   final Verdict verdict;
   final int etaMin;
   final Risk risk;
+  final int rainProbPct;
   final String noteTh;
   final List<String> viaTh;
   final List<TransitLeg> transitLegs;

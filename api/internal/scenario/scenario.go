@@ -92,7 +92,16 @@ func (Weather) Rain(_ context.Context, _ domain.LatLng, from, to time.Time) ([]d
 	start := from.In(domain.Bangkok).Truncate(15 * time.Minute)
 	var out []domain.RainSample
 	for t := start; !t.After(to); t = t.Add(15 * time.Minute) {
-		out = append(out, domain.RainSample{Time: t, MMPerHr: RainAt(t)})
+		mm := RainAt(t)
+		prob := dayProfile[t.Hour()].prob
+		if t.Hour() == 17 && t.Minute() < 30 {
+			prob = 50
+		}
+		out = append(out, domain.RainSample{
+			Time:    t,
+			MMPerHr: mm,
+			ProbPct: prob,
+		})
 	}
 	return out, nil
 }

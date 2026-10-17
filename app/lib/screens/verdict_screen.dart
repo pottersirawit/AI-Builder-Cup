@@ -267,10 +267,16 @@ class _VerdictScreenState extends State<VerdictScreen> {
                         for (final o in board)
                           o.mode: ModeStatus(
                             risk: o.risk,
-                            text: l.verdictModeStatus(
-                              o.etaMin,
-                              boardStatusText(l, o.verdict, o.risk),
-                            ),
+                            text: o.rainProbPct > 0
+                                ? l.verdictModeStatusWithProb(
+                                    o.etaMin,
+                                    boardStatusText(l, o.verdict, o.risk),
+                                    o.rainProbPct,
+                                  )
+                                : l.verdictModeStatus(
+                                    o.etaMin,
+                                    boardStatusText(l, o.verdict, o.risk),
+                                  ),
                           ),
                       },
                     ),

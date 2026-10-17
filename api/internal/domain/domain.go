@@ -166,6 +166,7 @@ type Route struct {
 type RainSample struct {
 	Time    time.Time `json:"time"`
 	MMPerHr float64   `json:"mm_per_hr"`
+	ProbPct int       `json:"prob_pct,omitempty"`
 }
 
 type CanalReading struct {

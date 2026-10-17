@@ -197,6 +197,8 @@ func hazardEN(e Eval) string {
 		return "water still draining" + whereEN(e.DeepestTH)
 	case e.MaxRainMM >= rainLight:
 		return "rain on the way and slick roads"
+	case e.Mode == domain.ModeMoto && e.MaxProbPct >= motoRainProbThresholdPct:
+		return fmt.Sprintf("%d%% chance of rain, pack rain gear", e.MaxProbPct)
 	}
 	return "some risk on the way"
 }
