@@ -147,14 +147,33 @@ LeavePlan leavePlan(
       (d.verdict == Verdict.wait || d.verdict == Verdict.switchMode) &&
       best?.verdict == Verdict.leaveNow;
   if (alternative) {
-    final time = deadline?.subtract(eta + arrivalSlack);
-    final kind = time == null
-        ? LeaveKind.now
-        : time.isBefore(now)
+    // The latest departure that still makes it and stays out of the
+    // downpour the asked mode is waiting out.
+    final latest = deadline?.subtract(eta + arrivalSlack);
+    DateTime? safe;
+    for (
+      var t = latest;
+      t != null && !t.isBefore(now);
+      t = t.subtract(const Duration(minutes: 5))
+    ) {
+      if (peakRain(d.rainTimeline, t, t.add(eta)) < moderateRain) {
+        safe = t;
+        break;
+      }
+    }
+    final late = deadline != null && now.add(eta).isAfter(deadline);
+    final kind = safe != null
+        ? LeaveKind.before
+        : late
         ? LeaveKind.overdue
-        : LeaveKind.before;
-    final from = kind == LeaveKind.before ? time! : now;
-    return (kind: kind, time: time, best: best, arriveAt: from.add(eta));
+        : LeaveKind.now;
+    final from = safe ?? now;
+    return (
+      kind: kind,
+      time: safe ?? (late ? latest : null),
+      best: best,
+      arriveAt: from.add(eta),
+    );
   }
   // An answer about an earlier departure than the one planned, or hours
   // before the event, is not about this trip: back off the event's start

@@ -246,8 +246,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
     }
 
     final today = bangkokDay(now);
-    DateTime? leaveAt(Trip t) =>
-        t.id == next?.id ? leaveTimeOf(plan) : leaveTimeOf(_planFor(t, now));
+    LeavePlan? planFor(Trip t) => t.id == next?.id ? plan : _planFor(t, now);
+    DateTime? leaveAt(Trip t) => departureOf(planFor(t), now);
     final upNext = upcoming(repo.trips, now)
         .where(
           (t) =>
@@ -268,6 +268,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
       trips: repo.trips,
       now: now,
       leaveAt: leaveAt,
+      modeOf: (t) => planFor(t)?.best?.mode,
       outlook: repo.outlook,
     );
     final todayTrips = upcoming(

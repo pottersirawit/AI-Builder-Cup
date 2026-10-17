@@ -161,8 +161,33 @@ void main() {
       );
       expect(p.best!.mode, TravelMode.transit);
       expect(p.kind, LeaveKind.before);
-      expect(hhmm(p.time!), '17:30', reason: '18:30 - 50 min - 10 min');
-      expect(hhmm(p.arriveAt), '18:20');
+      expect(
+        hhmm(p.time!),
+        '16:55',
+        reason: 'the latest BTS trip that stays out of the 17:45 downpour',
+      );
+      expect(hhmm(p.arriveAt), '17:45');
+    });
+
+    test('the alternative is "now", not overdue, while it still makes it', () {
+      final d = _fixture('decide_car_storm');
+      final dinner = DateTime.parse('2026-09-29T18:30:00+07:00');
+      final board = rankOptions(serverOptions(d, at));
+      final p = leavePlan(
+        d,
+        board,
+        DateTime.parse('2026-09-29T17:31:00+07:00'),
+        deadline: dinner,
+      );
+      expect(p.kind, LeaveKind.now, reason: '17:31 + 50 min is 18:21');
+      final late = leavePlan(
+        d,
+        board,
+        DateTime.parse('2026-09-29T17:50:00+07:00'),
+        deadline: dinner,
+      );
+      expect(late.kind, LeaveKind.overdue);
+      expect(hhmm(late.time!), '17:30');
     });
 
     test('switch mode never reads the leave-by as "leave before"', () {

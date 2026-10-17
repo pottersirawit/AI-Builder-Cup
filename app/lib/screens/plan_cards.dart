@@ -131,6 +131,15 @@ class _Ring extends CustomPainter {
 }
 
 /// The departure a plan names, if it names one.
+/// When the plan sets off: its leave time, or now once it says go.
+DateTime? departureOf(LeavePlan? p, DateTime now) => p == null
+    ? null
+    : switch (p.kind) {
+        LeaveKind.before || LeaveKind.at => p.time,
+        LeaveKind.now || LeaveKind.overdue => now,
+        LeaveKind.avoid => null,
+      };
+
 DateTime? leaveTimeOf(LeavePlan? p) => p == null
     ? null
     : switch (p.kind) {
@@ -409,7 +418,7 @@ class AlertsCard extends StatelessWidget {
           icon: Symbols.rainy_rounded,
           color: const Color(0xFF6EA8FF),
           title: l.alertWetLeave('${a.value}', to),
-          body: a.trip.mode == TravelMode.moto
+          body: (a.mode ?? a.trip.mode) == TravelMode.moto
               ? l.alertWetLeaveMoto(when)
               : l.alertWetLeaveBody(when),
         );
@@ -418,7 +427,7 @@ class AlertsCard extends StatelessWidget {
           icon: Symbols.umbrella_rounded,
           color: const Color(0xFF6EA8FF),
           title: l.alertWetReturn(to, '${a.value}'),
-          body: a.trip.mode == TravelMode.moto
+          body: (a.mode ?? a.trip.mode) == TravelMode.moto
               ? l.alertWetReturnMoto(when)
               : l.alertWetReturnBody(when),
         );

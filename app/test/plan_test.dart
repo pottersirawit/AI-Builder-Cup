@@ -2,6 +2,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/events.dart';
 import 'package:fontokmai/models.dart';
 import 'package:fontokmai/plan.dart';
+import 'package:fontokmai/screens/plan_cards.dart';
 import 'package:fontokmai/time_th.dart';
 
 const _siam = Place(nameTh: 'สยาม', lat: 13.7462, lng: 100.5347);
@@ -174,6 +175,19 @@ void main() {
       expect(wet.value, 70, reason: 'the 12:00 hour, where now falls');
     });
 
+    test('rain alerts carry the mode the plan travels by', () {
+      final alerts = planAlerts(
+        trips: [
+          _trip('review', '13:00', end: '14:00', to: _thonglor, mode: TravelMode.moto),
+        ],
+        outlook: outlook,
+        now: now,
+        leaveAt: (t) => _t('12:30'),
+        modeOf: (t) => TravelMode.transit,
+      );
+      expect(alerts.map((a) => a.mode).toSet(), {TravelMode.transit});
+    });
+
     test('no rain-as-you-leave alert once the event has started', () {
       final alerts = planAlerts(
         trips: [_trip('review', '13:00', end: '14:00', to: _thonglor)],
@@ -209,5 +223,14 @@ void main() {
     );
     expect(alerts.first.trip.id, 'today-x', reason: 'today before tomorrow');
     expect(alerts.length, lessThanOrEqualTo(maxAlerts));
+  });
+
+  test('a plan that says go sets off now; one that says avoid, never', () {
+    LeavePlan p(LeaveKind k) =>
+        (kind: k, time: _t('07:00'), best: null, arriveAt: _t('09:00'));
+    expect(departureOf(p(LeaveKind.overdue), now), now);
+    expect(departureOf(p(LeaveKind.now), now), now);
+    expect(departureOf(p(LeaveKind.before), now), _t('07:00'));
+    expect(departureOf(p(LeaveKind.avoid), now), isNull);
   });
 }

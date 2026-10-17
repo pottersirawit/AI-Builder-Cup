@@ -108,6 +108,7 @@ class PlanAlert {
     this.value = 0,
     this.gap,
     this.need,
+    this.mode,
   });
   final AlertKind kind;
 
@@ -122,6 +123,9 @@ class PlanAlert {
   final num value;
   final Duration? gap;
   final Duration? need;
+
+  /// How the plan travels, when it differs from the event's own mode.
+  final TravelMode? mode;
 }
 
 /// Rain heavy or likely enough to change how one travels.
@@ -141,6 +145,7 @@ List<PlanAlert> planAlerts({
   required List<Trip> trips,
   required DateTime now,
   required DateTime? Function(Trip) leaveAt,
+  TravelMode? Function(Trip)? modeOf,
   Outlook? outlook,
 }) {
   final soon = upcoming(trips, now)
@@ -185,6 +190,7 @@ List<PlanAlert> planAlerts({
             trip: t,
             at: leave,
             value: h.rainProbPct,
+            mode: modeOf?.call(t),
           ),
         );
       }
@@ -200,6 +206,7 @@ List<PlanAlert> planAlerts({
             trip: last,
             at: back,
             value: h.rainProbPct,
+            mode: modeOf?.call(last),
           ),
         );
       }

@@ -43,10 +43,10 @@ void main() {
     expect(
       find.descendant(
         of: find.byKey(const ValueKey('alert-wetReturn-cal-gym')),
-        matching: find.textContaining('เสื้อกันฝน'),
+        matching: find.textContaining('พกร่ม'),
       ),
       findsOneWidget,
-      reason: 'the gym trip is by motorbike: a raincoat, not an umbrella',
+      reason: 'the gym is set to motorbike, but its plan goes by BTS',
     );
     expect(find.text('พกไปด้วย'), findsOneWidget);
     expect(find.byType(WeatherPeek), findsOneWidget);
@@ -110,7 +110,7 @@ void main() {
   ) async {
     await pumpApp(tester, '2026-09-29T17:40:00+07:00', height: 2400);
 
-    expect(find.textContaining('17:30'), findsWidgets, reason: 'BTS leave-by');
+    expect(find.text('ออกได้เลย'), findsWidgets, reason: 'BTS, 18:30 sharp');
     expect(find.text('19:15'), findsNothing, reason: "the car's wait");
     expect(find.textContaining('ถึงหลังเวลานัด'), findsNothing);
   });
