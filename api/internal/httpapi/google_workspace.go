@@ -6,11 +6,13 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"html"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"regexp"
 	"sort"
 	"strings"
 	"sync"
@@ -21,6 +23,9 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
+
+// ErrScopeNotGranted indicates that the user has not authorized the requested Workspace scope.
+var ErrScopeNotGranted = errors.New("google scope not granted")
 
 const (
 	defaultGoogleClientID     = "945826169258-2npe55rhvgjl26a8mgfod4s9js5bbgpo.apps.googleusercontent.com"
@@ -144,6 +149,9 @@ func (g GoogleOAuth) calendarEvents(ctx context.Context, accessToken string, now
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized {
+			return nil, fmt.Errorf("%w: calendar API returned %d: %s", ErrScopeNotGranted, resp.StatusCode, string(b))
+		}
 		return nil, fmt.Errorf("calendar API returned %d: %s", resp.StatusCode, string(b))
 	}
 
@@ -166,13 +174,12 @@ type gmailMessageItem struct {
 	Subject string
 	Date    string
 	Snippet string
-	// Body is the message's plain text, or empty when it has none.
+	// Body is the message's plain text (or converted from html), or empty when it has none.
 	Body string
 }
 
-// gmailTravelQuery finds bookings and tickets, leaving out the Promotions and
-// Social tabs where the same words mostly sell things.
-const gmailTravelQuery = "(ticket OR booking OR reservation OR flight OR concert OR hotel OR event) -category:promotions -category:social"
+// gmailTravelQuery finds bookings, reservations and tickets in Thai and English.
+const gmailTravelQuery = "(ticket OR booking OR reservation OR flight OR concert OR hotel OR event OR ตั๋ว OR จอง OR นัดหมาย OR เที่ยวบิน OR โรงแรม OR คอนเสิร์ต) -category:promotions -category:social"
 
 // gmailPart is a MIME part of a message fetched with format=full.
 type gmailPart struct {
@@ -185,6 +192,31 @@ type gmailPart struct {
 		Data string `json:"data"`
 	} `json:"body"`
 	Parts []gmailPart `json:"parts"`
+}
+
+var (
+	htmlTagRegex   = regexp.MustCompile(`<[^>]+>`)
+	htmlSpaceRegex = regexp.MustCompile(`[ \t\r]+`)
+)
+
+func stripHTML(s string) string {
+	replacer := strings.NewReplacer(
+		"<br>", "\n", "<br/>", "\n", "<br />", "\n",
+		"</p>", "\n\n", "</div>", "\n", "</tr>", "\n",
+		"</li>", "\n", "</td>", " ", "&nbsp;", " ",
+	)
+	s = replacer.Replace(s)
+	s = htmlTagRegex.ReplaceAllString(s, "")
+	s = html.UnescapeString(s)
+	lines := strings.Split(s, "\n")
+	var cleaned []string
+	for _, line := range lines {
+		line = strings.TrimSpace(htmlSpaceRegex.ReplaceAllString(line, " "))
+		if line != "" {
+			cleaned = append(cleaned, line)
+		}
+	}
+	return strings.Join(cleaned, "\n")
 }
 
 // plainText is the first text/plain part under p, decoded.
@@ -206,10 +238,37 @@ func (p gmailPart) plainText() string {
 	return ""
 }
 
+// htmlText is the first text/html part under p, stripped of HTML tags and decoded.
+func (p gmailPart) htmlText() string {
+	if p.MimeType == "text/html" && p.Body.Data != "" {
+		b, err := base64.URLEncoding.DecodeString(p.Body.Data)
+		if err != nil {
+			b, err = base64.RawURLEncoding.DecodeString(p.Body.Data)
+		}
+		if err == nil {
+			return stripHTML(string(b))
+		}
+	}
+	for _, c := range p.Parts {
+		if t := c.htmlText(); t != "" {
+			return t
+		}
+	}
+	return ""
+}
+
+// bodyText prefers text/plain but falls back to stripped text/html.
+func (p gmailPart) bodyText() string {
+	if t := strings.TrimSpace(p.plainText()); t != "" {
+		return t
+	}
+	return p.htmlText()
+}
+
 // gmailTravelMessages queries recent booking / ticket messages from Gmail API.
 func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string) ([]gmailMessageItem, error) {
 	q := url.QueryEscape(gmailTravelQuery)
-	u := fmt.Sprintf("%s?q=%s&maxResults=6", g.GmailURL, q)
+	u := fmt.Sprintf("%s?q=%s&maxResults=10", g.GmailURL, q)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
@@ -225,6 +284,9 @@ func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string
 
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
 		b, _ := io.ReadAll(io.LimitReader(resp.Body, 4<<10))
+		if resp.StatusCode == http.StatusForbidden || resp.StatusCode == http.StatusUnauthorized {
+			return nil, fmt.Errorf("%w: gmail API returned %d: %s", ErrScopeNotGranted, resp.StatusCode, string(b))
+		}
 		return nil, fmt.Errorf("gmail API returned %d: %s", resp.StatusCode, string(b))
 	}
 
@@ -272,7 +334,7 @@ func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string
 			Subject: subject,
 			Date:    dateStr,
 			Snippet: detail.Snippet,
-			Body:    detail.Payload.plainText(),
+			Body:    detail.Payload.bodyText(),
 		})
 	}
 
@@ -556,8 +618,12 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 
 	calItems, err := g.calendarEvents(ctx, accessToken, now)
 	if err != nil {
-		slog.Warn("fetch google calendar events error", "email", email, "err", err)
-		failed = append(failed, err)
+		if errors.Is(err, ErrScopeNotGranted) {
+			slog.Info("google calendar scope not granted, skipping", "email", email)
+		} else {
+			slog.Warn("fetch google calendar events error", "email", email, "err", err)
+			failed = append(failed, err)
+		}
 	} else {
 		newTrips := ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces)
 		if s.UserStore != nil {
@@ -575,8 +641,12 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 
 	gmailItems, err := g.gmailTravelMessages(ctx, accessToken)
 	if err != nil {
-		slog.Warn("fetch gmail messages error", "email", email, "err", err)
-		failed = append(failed, err)
+		if errors.Is(err, ErrScopeNotGranted) {
+			slog.Info("gmail scope not granted, skipping", "email", email)
+		} else {
+			slog.Warn("fetch gmail messages error", "email", email, "err", err)
+			failed = append(failed, err)
+		}
 	} else {
 		trips := s.gmailTrips(ctx, gmailItems, savedPlaces, now)
 		if s.UserStore != nil {

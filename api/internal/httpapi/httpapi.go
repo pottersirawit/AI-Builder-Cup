@@ -210,6 +210,7 @@ func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Tr
 				}
 				trips = append(trips, t)
 			}
+			trips = DeduplicateTrips(trips)
 			sort.SliceStable(trips, func(i, j int) bool {
 				if trips[i].ArriveBy.IsZero() {
 					return false

@@ -969,3 +969,26 @@ func TestSyncChainsBackToBackEventsPreservingPreviousDestination(t *testing.T) {
 		t.Errorf("trip 1 origin = %q, want สยาม (chained from previous destination)", res.Trips[1].Origin.NameTH)
 	}
 }
+
+func TestGmailPartHTMLFallback(t *testing.T) {
+	htmlBody := `<html><body><h1>AirAsia Booking</h1><p>Flight <b>FD3024</b></p><div>Depart: 14:00</div></body></html>`
+	encoded := base64.URLEncoding.EncodeToString([]byte(htmlBody))
+
+	part := gmailPart{
+		MimeType: "text/html",
+		Body: struct {
+			Data string `json:"data"`
+		}{
+			Data: encoded,
+		},
+	}
+
+	got := part.bodyText()
+	if !strings.Contains(got, "AirAsia Booking") || !strings.Contains(got, "Flight FD3024") || !strings.Contains(got, "Depart: 14:00") {
+		t.Errorf("bodyText() = %q, expected stripped HTML with text content", got)
+	}
+	if strings.Contains(got, "<html>") || strings.Contains(got, "<b>") {
+		t.Errorf("bodyText() contains raw HTML tags: %q", got)
+	}
+}
+

@@ -25,9 +25,11 @@ const (
 	googleAuthURL      = "https://accounts.google.com/o/oauth2/v2/auth"
 	googleUserinfoURL  = "https://openidconnect.googleapis.com/v1/userinfo"
 	defaultRedirectURI = "https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback"
-	// oauthScopes is one consent for sign-in, Calendar and Gmail, so neither
-	// service's token replaces the other's.
-	oauthScopes = "openid email https://www.googleapis.com/auth/calendar.readonly https://www.googleapis.com/auth/gmail.readonly"
+	scopeBase          = "openid email"
+	scopeCalendar      = "https://www.googleapis.com/auth/calendar.readonly"
+	scopeGmail         = "https://www.googleapis.com/auth/gmail.readonly"
+	// oauthScopes requests both Calendar and Gmail when no specific service is selected.
+	oauthScopes = scopeBase + " " + scopeCalendar + " " + scopeGmail
 	// firebaseProject owns the Hosting sites (and their preview channels) an
 	// OAuth flow may return to.
 	firebaseProject = "ai-cup-511208"
@@ -111,9 +113,10 @@ func (g GoogleOAuth) allowedReturn(raw string) bool {
 }
 
 type oauthState struct {
-	Return string `json:"r"`
-	Issued int64  `json:"t"`
-	Nonce  string `json:"n,omitempty"`
+	Return  string `json:"r"`
+	Issued  int64  `json:"t"`
+	Nonce   string `json:"n,omitempty"`
+	Service string `json:"s,omitempty"`
 }
 
 // validNonce is the shape of the app's random sign-in id.
@@ -206,15 +209,22 @@ func (s *Server) oauthStart(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 	clientID, _ := getOAuthCredentials()
+	service := r.URL.Query().Get("service")
+	scope := oauthScopes
+	if service == "calendar" {
+		scope = scopeBase + " " + scopeCalendar
+	} else if service == "gmail" {
+		scope = scopeBase + " " + scopeGmail
+	}
 	q := url.Values{
 		"client_id":              {clientID},
 		"redirect_uri":           {g.RedirectURI},
 		"response_type":          {"code"},
-		"scope":                  {oauthScopes},
+		"scope":                  {scope},
 		"access_type":            {"offline"},
 		"prompt":                 {"consent"},
 		"include_granted_scopes": {"true"},
-		"state":                  {signState(oauthState{Return: ret, Issued: time.Now().Unix(), Nonce: nonce})},
+		"state":                  {signState(oauthState{Return: ret, Issued: time.Now().Unix(), Nonce: nonce, Service: service})},
 	}
 	if hint := r.URL.Query().Get("login_hint"); hint != "" {
 		q.Set("login_hint", hint)
@@ -284,6 +294,9 @@ func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
 	back, _ := url.Parse(ret)
 	bq := back.Query()
 	bq.Set("connected", email)
+	if st.Service != "" {
+		bq.Set("service", st.Service)
+	}
 	back.RawQuery = bq.Encode()
 	http.Redirect(w, r, back.String(), http.StatusFound)
 }

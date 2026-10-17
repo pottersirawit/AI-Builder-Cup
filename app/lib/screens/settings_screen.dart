@@ -150,7 +150,7 @@ class SettingsScreen extends StatelessWidget {
                 detail: l.settingsCalendarDetail,
                 account: _accountLabel(l, store, store.calendarAccount),
                 comingSoon: false,
-                onConnect: () => promptOAuth(context),
+                onConnect: () => promptOAuth(context, service: 'calendar'),
                 onDisconnect: store.disconnectCalendar,
               ),
               ConnectRow(
@@ -160,7 +160,7 @@ class SettingsScreen extends StatelessWidget {
                 detail: l.settingsGmailHint,
                 account: _accountLabel(l, store, store.gmailAccount),
                 comingSoon: false,
-                onConnect: () => promptOAuth(context),
+                onConnect: () => promptOAuth(context, service: 'gmail'),
                 onDisconnect: store.disconnectGmail,
               ),
               toggle(
@@ -258,14 +258,14 @@ String? _accountLabel(AppLocalizations l, PlacesStore store, String? account) {
 /// One sheet connects Google Calendar and Gmail: it says what the app reads,
 /// opens Google, and waits until the server confirms the account. มิว's demo
 /// profile connects without Google.
-Future<void> promptOAuth(BuildContext context) async {
+Future<void> promptOAuth(BuildContext context, {String? service}) async {
   final store = AppScope.readPlaces(context);
   final link = AppScope.linkOf(context);
   final email = await showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
     showDragHandle: true,
-    builder: (_) => _GoogleSheet(store: store, link: link),
+    builder: (_) => _GoogleSheet(store: store, link: link, service: service),
   );
   if (email == null || !context.mounted) return;
   ScaffoldMessenger.of(context).showSnackBar(
@@ -277,9 +277,14 @@ Future<void> promptOAuth(BuildContext context) async {
 }
 
 class _GoogleSheet extends StatefulWidget {
-  const _GoogleSheet({required this.store, required this.link});
+  const _GoogleSheet({
+    required this.store,
+    required this.link,
+    this.service,
+  });
   final PlacesStore store;
   final GoogleLink? link;
+  final String? service;
 
   @override
   State<_GoogleSheet> createState() => _GoogleSheetState();
@@ -296,11 +301,17 @@ class _GoogleSheetState extends State<_GoogleSheet> {
   void _signIn() {
     _signingIn = true;
     if (store.demoProfile || link == null) {
-      store
-        ..connectCalendar()
-        ..connectGmail();
+      if (widget.service == 'calendar') {
+        store.connectCalendar();
+      } else if (widget.service == 'gmail') {
+        store.connectGmail();
+      } else {
+        store
+          ..connectCalendar()
+          ..connectGmail();
+      }
     } else {
-      link!.connect();
+      link!.connect(service: widget.service);
     }
   }
 
@@ -312,16 +323,28 @@ class _GoogleSheetState extends State<_GoogleSheet> {
     return ListenableBuilder(
       listenable: store,
       builder: (context, _) {
-        final waiting =
-            store.calendar == LinkState.connecting ||
-            store.gmail == LinkState.connecting;
-        final failed =
-            store.calendar == LinkState.error || store.gmail == LinkState.error;
-        final account = store.calendarAccount;
-        if (_signingIn &&
-            store.calendar == LinkState.connected &&
-            store.gmail == LinkState.connected &&
-            account != null) {
+        final waiting = widget.service == 'calendar'
+            ? store.calendar == LinkState.connecting
+            : widget.service == 'gmail'
+                ? store.gmail == LinkState.connecting
+                : (store.calendar == LinkState.connecting ||
+                    store.gmail == LinkState.connecting);
+        final failed = widget.service == 'calendar'
+            ? store.calendar == LinkState.error
+            : widget.service == 'gmail'
+                ? store.gmail == LinkState.error
+                : (store.calendar == LinkState.error ||
+                    store.gmail == LinkState.error);
+        final account = widget.service == 'gmail'
+            ? (store.gmailAccount ?? store.calendarAccount)
+            : (store.calendarAccount ?? store.gmailAccount);
+        final isConnected = widget.service == 'calendar'
+            ? store.calendar == LinkState.connected
+            : widget.service == 'gmail'
+                ? store.gmail == LinkState.connected
+                : (store.calendar == LinkState.connected &&
+                    store.gmail == LinkState.connected);
+        if (_signingIn && isConnected && account != null) {
           _signingIn = false;
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (context.mounted) Navigator.of(context).maybePop(account);
@@ -364,11 +387,13 @@ class _GoogleSheetState extends State<_GoogleSheet> {
                 const SizedBox(height: Space.x4),
                 Text(l.settingsGoogleUseTitle, style: t.labelLarge),
                 const SizedBox(height: Space.x2),
-                use(
-                  Symbols.calendar_month_rounded,
-                  l.settingsGoogleCalendarUse,
-                ),
-                use(Symbols.mail_rounded, l.settingsGoogleGmailUse),
+                if (widget.service == null || widget.service == 'calendar')
+                  use(
+                    Symbols.calendar_month_rounded,
+                    l.settingsGoogleCalendarUse,
+                  ),
+                if (widget.service == null || widget.service == 'gmail')
+                  use(Symbols.mail_rounded, l.settingsGoogleGmailUse),
                 use(Symbols.verified_user_rounded, l.settingsGooglePrivacy),
                 const SizedBox(height: Space.x4),
                 if (waiting) ...[
@@ -399,7 +424,7 @@ class _GoogleSheetState extends State<_GoogleSheet> {
                   const SizedBox(height: Space.x3),
                   TextButton(
                     onPressed: () {
-                      link?.cancel();
+                      link?.cancel(service: widget.service);
                       Navigator.of(context).pop();
                     },
                     child: Text(l.settingsGoogleCancel),

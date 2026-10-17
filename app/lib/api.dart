@@ -21,13 +21,22 @@ class ApiResult<T> {
 
 /// What the server knows about a Google sign-in.
 class OAuthStatus {
-  const OAuthStatus({required this.email, required this.connected});
+  const OAuthStatus({
+    required this.email,
+    required this.connected,
+    this.scopes = const [],
+  });
   factory OAuthStatus.fromJson(Json j) => OAuthStatus(
     email: j['email'] as String? ?? '',
     connected: j['connected'] as bool? ?? false,
+    scopes: (j['scopes'] as List<dynamic>?)
+            ?.map((e) => e.toString())
+            .toList() ??
+        const [],
   );
   final String email;
   final bool connected;
+  final List<String> scopes;
 }
 
 /// Client for API contract v0 plus the v1 places additions. Calls fall back to
@@ -119,9 +128,14 @@ class FonTokMaiApi {
     );
   }
 
-  /// Whether the sign-in started with [nonce] has finished, and as whom.
-  Future<OAuthStatus> oauthStatus({required String nonce}) async =>
-      OAuthStatus.fromJson(await _get('/v1/oauth/status', {'nonce': nonce}));
+  /// Whether the sign-in started with [nonce] or for [email] has finished, and as whom.
+  Future<OAuthStatus> oauthStatus({String? nonce, String? email}) async {
+    final query = <String, String>{
+      if (nonce != null && nonce.isNotEmpty) 'nonce': nonce,
+      if (email != null && email.isNotEmpty) 'email': email,
+    };
+    return OAuthStatus.fromJson(await _get('/v1/oauth/status', query));
+  }
 
   Future<ApiResult<Decision>> decide(DecideRequest req) => _withFallback(
     () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),

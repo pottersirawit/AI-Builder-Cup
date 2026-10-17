@@ -410,28 +410,62 @@ class PlacesStore extends ChangeNotifier {
     _write();
   }
 
-  /// Google's consent screen is open: Calendar and Gmail wait for it.
-  void beginGoogleConnect() {
-    _calendar = LinkState.connecting;
-    _gmail = LinkState.connecting;
+  /// Google's consent screen is open: Calendar and/or Gmail wait for it.
+  void beginGoogleConnect({String? service}) {
+    if (service == 'calendar') {
+      _calendar = LinkState.connecting;
+    } else if (service == 'gmail') {
+      _gmail = LinkState.connecting;
+    } else {
+      _calendar = LinkState.connecting;
+      _gmail = LinkState.connecting;
+    }
     _write();
   }
 
-  /// The server confirmed [email] signed in with Calendar and Gmail.
-  void connectGoogle(String email) {
-    if (_calendarEmail != email) _cachedTrips = [];
-    _calendar = LinkState.connected;
-    _gmail = LinkState.connected;
-    _calendarEmail = email;
-    _gmailEmail = email;
+  /// The server confirmed [email] signed in. If [service] or [scopes] are given,
+  /// only connects the services granted.
+  void connectGoogle(String email, {String? service, List<String>? scopes}) {
+    if (_calendarEmail != email && _gmailEmail != email) _cachedTrips = [];
+    final hasCalScope =
+        scopes == null ||
+        scopes.isEmpty ||
+        scopes.any((s) => s.contains('calendar'));
+    final hasGmailScope =
+        scopes == null ||
+        scopes.isEmpty ||
+        scopes.any((s) => s.contains('gmail'));
+
+    if (service == 'calendar') {
+      _calendar = LinkState.connected;
+      _calendarEmail = email;
+    } else if (service == 'gmail') {
+      _gmail = LinkState.connected;
+      _gmailEmail = email;
+    } else {
+      if (hasCalScope) {
+        _calendar = LinkState.connected;
+        _calendarEmail = email;
+      }
+      if (hasGmailScope) {
+        _gmail = LinkState.connected;
+        _gmailEmail = email;
+      }
+    }
     _syncDue = true;
     _write();
   }
 
   /// Sign-in did not finish: cancelled, timed out or failed.
-  void failGoogleConnect() {
-    if (_calendar == LinkState.connecting) _calendar = LinkState.error;
-    if (_gmail == LinkState.connecting) _gmail = LinkState.error;
+  void failGoogleConnect({String? service}) {
+    if (service == 'calendar') {
+      if (_calendar == LinkState.connecting) _calendar = LinkState.error;
+    } else if (service == 'gmail') {
+      if (_gmail == LinkState.connecting) _gmail = LinkState.error;
+    } else {
+      if (_calendar == LinkState.connecting) _calendar = LinkState.error;
+      if (_gmail == LinkState.connecting) _gmail = LinkState.error;
+    }
     _write();
   }
 
