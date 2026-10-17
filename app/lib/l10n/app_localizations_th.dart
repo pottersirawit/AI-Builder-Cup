@@ -1232,7 +1232,7 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String wxMaybeRainFrom(Object time) {
+  String wxMaybeRainFrom(String time) {
     return 'อาจมีฝนราว $time';
   }
 
@@ -1279,7 +1279,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get wxWind => 'ลม';
 
   @override
-  String wxWindKph(Object kph) {
+  String wxWindKph(String kph) {
     return '$kph กม./ชม.';
   }
 
@@ -1305,7 +1305,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get carrySpareUmbrella => 'ร่มพับติดกระเป๋า';
 
   @override
-  String carryWhyMaybeRain(Object from, Object pct, Object to) {
+  String carryWhyMaybeRain(String pct, String from, String to) {
     return 'อาจมีฝน $pct% · $from–$to';
   }
 
@@ -1488,7 +1488,7 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String alertWetReturnMoto(Object time) {
+  String alertWetReturnMoto(String time) {
     return 'เลิกราว $time พกเสื้อกันฝนไว้ขี่กลับด้วย';
   }
 
@@ -1518,7 +1518,7 @@ class AppLocalizationsTh extends AppLocalizations {
   String get allDayNote => 'กิจกรรมทั้งวันไม่มีเวลานัด จึงไม่มีเวลาออกให้';
 
   @override
-  String allDayAskRoute(Object place) {
+  String allDayAskRoute(String place) {
     return 'ถามทางไป$place';
   }
 

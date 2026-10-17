@@ -2172,7 +2172,7 @@ abstract class AppLocalizations {
   ///
   /// In th, this message translates to:
   /// **'อาจมีฝนราว {time}'**
-  String wxMaybeRainFrom(Object time);
+  String wxMaybeRainFrom(String time);
 
   /// No description provided for @wxDryAhead.
   ///
@@ -2262,7 +2262,7 @@ abstract class AppLocalizations {
   ///
   /// In th, this message translates to:
   /// **'{kph} กม./ชม.'**
-  String wxWindKph(Object kph);
+  String wxWindKph(String kph);
 
   /// No description provided for @wxSunset.
   ///
@@ -2310,7 +2310,7 @@ abstract class AppLocalizations {
   ///
   /// In th, this message translates to:
   /// **'อาจมีฝน {pct}% · {from}–{to}'**
-  String carryWhyMaybeRain(Object from, Object pct, Object to);
+  String carryWhyMaybeRain(String pct, String from, String to);
 
   /// No description provided for @carrySunUmbrella.
   ///
@@ -2562,7 +2562,7 @@ abstract class AppLocalizations {
   ///
   /// In th, this message translates to:
   /// **'เลิกราว {time} พกเสื้อกันฝนไว้ขี่กลับด้วย'**
-  String alertWetReturnMoto(Object time);
+  String alertWetReturnMoto(String time);
 
   /// No description provided for @alertNeedsPlace.
   ///
@@ -2610,7 +2610,7 @@ abstract class AppLocalizations {
   ///
   /// In th, this message translates to:
   /// **'ถามทางไป{place}'**
-  String allDayAskRoute(Object place);
+  String allDayAskRoute(String place);
 
   /// No description provided for @stripTitle.
   ///

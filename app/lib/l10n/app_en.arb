@@ -802,6 +802,13 @@
     }
   },
   "wxMaybeRainFrom": "Chance of rain from about {time}",
+  "@wxMaybeRainFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "wxDryAhead": "No rain for 12 hours",
   "wxSunStrong": "Strong sun",
   "wxHot": "Very hot",
@@ -817,6 +824,13 @@
   "wxHumidity": "Humidity",
   "wxWind": "Wind",
   "wxWindKph": "{kph} km/h",
+  "@wxWindKph": {
+    "placeholders": {
+      "kph": {
+        "type": "String"
+      }
+    }
+  },
   "wxSunset": "Sunset",
   "carryTitle": "Take with you today",
   "carryNothing": "Nothing extra needed",
@@ -825,6 +839,19 @@
   "carryUmbrella": "Umbrella",
   "carrySpareUmbrella": "Umbrella, just in case",
   "carryWhyMaybeRain": "Maybe rain, {pct}% · {from}–{to}",
+  "@carryWhyMaybeRain": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "carrySunUmbrella": "Sun umbrella",
   "carrySunscreen": "Sunscreen",
   "carryWater": "Water",
@@ -1058,6 +1085,13 @@
     }
   },
   "alertWetReturnMoto": "It ends around {time}. Pack a raincoat for the ride home",
+  "@alertWetReturnMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "alertNeedsPlace": "{title} has no place yet",
   "@alertNeedsPlace": {
     "placeholders": {
@@ -1080,6 +1114,13 @@
   "allDayNoLeave": "No leave time",
   "allDayNote": "All-day events have no start time, so there is no leave time.",
   "allDayAskRoute": "Ask the way to {place}",
+  "@allDayAskRoute": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "stripTitle": "Today at a glance",
   "stripEvent": "Event",
   "stripTravel": "Travel",

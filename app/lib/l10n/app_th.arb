@@ -802,6 +802,13 @@
     }
   },
   "wxMaybeRainFrom": "อาจมีฝนราว {time}",
+  "@wxMaybeRainFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "wxDryAhead": "ไม่มีฝนอีก 12 ชม.",
   "wxSunStrong": "แดดแรง",
   "wxHot": "ร้อนจัด",
@@ -817,6 +824,13 @@
   "wxHumidity": "ความชื้น",
   "wxWind": "ลม",
   "wxWindKph": "{kph} กม./ชม.",
+  "@wxWindKph": {
+    "placeholders": {
+      "kph": {
+        "type": "String"
+      }
+    }
+  },
   "wxSunset": "อาทิตย์ตก",
   "carryTitle": "วันนี้ควรพก",
   "carryNothing": "ไม่ต้องพกอะไรเพิ่ม",
@@ -825,6 +839,19 @@
   "carryUmbrella": "ร่ม",
   "carrySpareUmbrella": "ร่มพับติดกระเป๋า",
   "carryWhyMaybeRain": "อาจมีฝน {pct}% · {from}–{to}",
+  "@carryWhyMaybeRain": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "carrySunUmbrella": "ร่มกันแดด",
   "carrySunscreen": "ครีมกันแดด",
   "carryWater": "น้ำดื่ม",
@@ -1058,6 +1085,13 @@
     }
   },
   "alertWetReturnMoto": "เลิกราว {time} พกเสื้อกันฝนไว้ขี่กลับด้วย",
+  "@alertWetReturnMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "alertNeedsPlace": "{title} ยังไม่มีสถานที่",
   "@alertNeedsPlace": {
     "placeholders": {
@@ -1080,6 +1114,13 @@
   "allDayNoLeave": "ไม่มีเวลาออก",
   "allDayNote": "กิจกรรมทั้งวันไม่มีเวลานัด จึงไม่มีเวลาออกให้",
   "allDayAskRoute": "ถามทางไป{place}",
+  "@allDayAskRoute": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "stripTitle": "ภาพรวมวันนี้",
   "stripEvent": "นัด",
   "stripTravel": "เดินทาง",

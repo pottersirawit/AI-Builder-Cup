@@ -1251,7 +1251,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String wxMaybeRainFrom(Object time) {
+  String wxMaybeRainFrom(String time) {
     return 'Chance of rain from about $time';
   }
 
@@ -1298,7 +1298,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wxWind => 'Wind';
 
   @override
-  String wxWindKph(Object kph) {
+  String wxWindKph(String kph) {
     return '$kph km/h';
   }
 
@@ -1324,7 +1324,7 @@ class AppLocalizationsEn extends AppLocalizations {
   String get carrySpareUmbrella => 'Umbrella, just in case';
 
   @override
-  String carryWhyMaybeRain(Object from, Object pct, Object to) {
+  String carryWhyMaybeRain(String pct, String from, String to) {
     return 'Maybe rain, $pct% · $from–$to';
   }
 
@@ -1507,7 +1507,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String alertWetReturnMoto(Object time) {
+  String alertWetReturnMoto(String time) {
     return 'It ends around $time. Pack a raincoat for the ride home';
   }
 
@@ -1538,7 +1538,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'All-day events have no start time, so there is no leave time.';
 
   @override
-  String allDayAskRoute(Object place) {
+  String allDayAskRoute(String place) {
     return 'Ask the way to $place';
   }
 
