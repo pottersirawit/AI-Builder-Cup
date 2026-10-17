@@ -559,3 +559,27 @@ func TestLateWithASlowerTrainStillWaits(t *testing.T) {
 		t.Fatalf("got dont_go; the road clears at 09:00 (%q)", res.SummaryTH)
 	}
 }
+
+// Water under a mode's clearance is not why it should switch; the rain is.
+func TestSwitchReasonBlamesWaterOnlyPastItsLimit(t *testing.T) {
+	for _, tt := range []struct {
+		mode  domain.Mode
+		depth float64
+	}{{domain.ModeMoto, 9}, {domain.ModeCar, 4}} {
+		in := dryInput(domain.LangEN, time.Time{})
+		in.Mode = tt.mode
+		res := Result{Verdict: SwitchMode, Evals: map[domain.Mode]Eval{
+			tt.mode:            {MaxDepthCM: tt.depth, MaxRainMM: 30, Risk: RiskHigh},
+			domain.ModeTransit: {Minutes: 40},
+		}}
+		_, _, en := narrateEN(in, res)
+		in.Lang = domain.LangTH
+		_, _, th := narrate(in, res)
+		if strings.Contains(en.ReasonWhyTH, "standing water") || strings.Contains(th.ReasonWhyTH, "น้ำท่วมขัง") {
+			t.Errorf("%s at %.0f cm blames the water:\n%s\n%s", tt.mode, tt.depth, en.ReasonWhyTH, th.ReasonWhyTH)
+		}
+		if !strings.Contains(en.ReasonWhyTH, "30 mm/h") || !strings.Contains(th.ReasonWhyTH, "30 มม./ชม.") {
+			t.Errorf("%s: the reason should name the rain:\n%s\n%s", tt.mode, en.ReasonWhyTH, th.ReasonWhyTH)
+		}
+	}
+}

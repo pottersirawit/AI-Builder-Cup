@@ -97,10 +97,12 @@ func buildExplanation(in Input, res Result) Explanation {
 		}
 	case SwitchMode:
 		switch {
-		case e.MaxDepthCM >= 1 && e.Risk == RiskHigh:
+		case e.MaxDepthCM >= stallDepthCM(in.Mode):
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากเส้นทางมีน้ำท่วมขังที่%s สูงราว %.0f ซม. ซึ่งเกินระยะปลอดภัย (%s) ขณะที่รถไฟฟ้าวิ่งบนทางยกระดับ/ใต้ดิน ไม่ได้รับผลกระทบจากน้ำท่วมผิวถนน",
 				in.Mode.NameTH(), e.DeepestTH, e.MaxDepthCM, clearanceText(in.Mode))
-		case e.MaxDepthCM >= 1:
+		case e.MaxRainMM >= rainModerate:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากมีฝนกลางทางราว %.0f มม./ชม. ถนนลื่น รถไฟฟ้าใช้เวลาราว %d นาที", in.Mode.NameTH(), e.MaxRainMM, tr.Minutes)
+		case e.MaxDepthCM >= slowDepthCM(in.Mode):
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากเส้นทางมีน้ำท่วมขังที่%s สูงราว %.0f ซม. ทำให้ต้องชะลอ (ระยะพ้นน้ำปลอดภัย: %s) ขณะที่รถไฟฟ้าวิ่งบนทางยกระดับ/ใต้ดิน ไม่ได้รับผลกระทบจากน้ำท่วมผิวถนน",
 				in.Mode.NameTH(), e.DeepestTH, e.MaxDepthCM, clearanceText(in.Mode))
 		case e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto:

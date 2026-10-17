@@ -99,10 +99,12 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		}
 	case SwitchMode:
 		switch {
-		case e.MaxDepthCM >= 1 && e.Risk == RiskHigh:
+		case e.MaxDepthCM >= stallDepthCM(in.Mode):
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because there is about %.0f cm of standing water%s, beyond the safe clearance (%s). Trains run above or below the street, so flooding does not affect them.",
 				mode, e.MaxDepthCM, whereEN(e.DeepestTH), clearanceEN(in.Mode))
-		case e.MaxDepthCM >= 1:
+		case e.MaxRainMM >= rainModerate:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because of rain on the way (about %.0f mm/h) and slick roads. The train takes about %d min.", mode, e.MaxRainMM, tr.Minutes)
+		case e.MaxDepthCM >= slowDepthCM(in.Mode):
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because about %.0f cm of standing water%s will slow you down (safe clearance: %s). Trains run above or below the street, so flooding does not affect them.",
 				mode, e.MaxDepthCM, whereEN(e.DeepestTH), clearanceEN(in.Mode))
 		case e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto:

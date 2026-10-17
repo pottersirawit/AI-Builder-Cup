@@ -50,6 +50,22 @@ const (
 	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 )
 
+// stallDepthCM is the water a mode cannot pass; slowDepthCM the water that
+// slows it.
+func stallDepthCM(m domain.Mode) float64 {
+	if m == domain.ModeMoto {
+		return motoStallDepthCM
+	}
+	return carStallDepthCM
+}
+
+func slowDepthCM(m domain.Mode) float64 {
+	if m == domain.ModeMoto {
+		return 1
+	}
+	return carSlowDepthCM
+}
+
 // Thresholds are the engine's cut-offs by unit ("cm", "mmh", "kmh"), which
 // advice may quote as facts.
 func Thresholds() map[string][]float64 {
