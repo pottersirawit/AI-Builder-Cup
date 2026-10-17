@@ -225,6 +225,28 @@ func TestEvaluateEnglishHasNoThai(t *testing.T) {
 	}
 }
 
+func TestCanalWordingMatchesTheReading(t *testing.T) {
+	below := []domain.CanalReading{{NameTH: "คลองลาดพร้าว", NameEN: "Lat Phrao Canal", LevelM: 1.72, BankM: 1.8}}
+	for _, tt := range []struct {
+		lang                     domain.Lang
+		wantSummary, notSummary  string
+		notHeadline, morningHead string
+	}{
+		{domain.LangTH, "ต่ำกว่าตลิ่ง 8 ซม.", "ขึ้นถึงตลิ่งแล้ว", "ล้นตลิ่งแล้ว", "วันนี้เสี่ยงน้ำท่วม: ปานกลาง"},
+		{domain.LangEN, "8 cm below its bank", "has reached its bank", "has overflowed", "Moderate flood risk today"},
+	} {
+		st := Evaluate(Input{Lang: tt.lang, Now: at(20, 0), Canals: below})
+		if st.Level != Danger || !strings.Contains(st.SummaryTH, tt.wantSummary) || strings.Contains(st.SummaryTH, tt.notSummary) || strings.Contains(st.HeadlineTH, tt.notHeadline) {
+			t.Errorf("%s 8 cm below the bank: got %s %q / %q", tt.lang, st.Level, st.HeadlineTH, st.SummaryTH)
+		}
+		in := scenarioInput(at(8, 0), 0)
+		in.Lang = tt.lang
+		if st := Evaluate(in); st.HeadlineTH != tt.morningHead {
+			t.Errorf("%s 08:00 headline = %q, want %q", tt.lang, st.HeadlineTH, tt.morningHead)
+		}
+	}
+}
+
 func TestEvaluateEnglishWording(t *testing.T) {
 	st := Evaluate(func() Input { in := scenarioInput(at(21, 40), 11); in.Lang = domain.LangEN; return in }())
 	if st.HeadlineTH != "Water will reach your door in 40 minutes" {
