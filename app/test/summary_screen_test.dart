@@ -130,12 +130,12 @@ void main() {
     );
     await openHero(tester);
     expect(
-      find.text('ไปได้เลย'),
+      find.text('ควรออกก่อน 17:15'),
       findsWidgets,
-      reason: 'opens on BTS, the hero\'s mode',
+      reason: 'opens on BTS, the hero\'s mode, saying what the card says',
     );
     await tapAndSettle(tester, find.text('รถยนต์'));
-    expect(find.text('ออกก่อน 16:45'), findsOneWidget);
+    expect(find.text('ควรออกก่อน 16:45'), findsOneWidget);
 
     final band = find.byKey(const ValueKey('rain-band'));
     await reveal(tester, band);
@@ -155,7 +155,58 @@ void main() {
     await settle(tester);
     expect(log.length, calls + 1);
     expect(log.last, contains('"depart_at":"2026-09-29T17:40:00+07:00"'));
-    expect(find.text('อย่าเพิ่งออก'), findsOneWidget);
+    expect(
+      find.textContaining('โดนฝนกลางทาง'),
+      findsOneWidget,
+      reason: 'still a leave time, not "hold off"',
+    );
+    expect(find.text('อย่าเพิ่งออก'), findsNothing);
+    expect(
+      find.byKey(const ValueKey('alt-wait')),
+      findsNothing,
+      reason: 'waiting out the rain misses 18:30',
+    );
+    expect(find.textContaining('ไปได้ ออก 17:40 ถึง 18:30'), findsOneWidget);
+
+    await tapAndSettle(
+      tester,
+      find.descendant(
+        of: find.byKey(const ValueKey('alt-mode')),
+        matching: find.byType(FilledButton),
+      ),
+    );
+    expect(log.last, contains('"mode":"transit"'));
+    expect(log.last, contains('"depart_at":"2026-09-29T17:40:00+07:00"'));
+    expect(find.byKey(const ValueKey('alt-mode')), findsNothing);
+  });
+
+  testWidgets('the detail says what to bring for the weather on the way', (
+    tester,
+  ) async {
+    await pumpApp(tester, '2026-09-29T16:10:00+07:00', height: 1600);
+    await openHero(tester);
+
+    await reveal(tester, find.byKey(const ValueKey('gear-section')));
+    expect(find.text('ของที่ควรพก'), findsOneWidget);
+    expect(find.textContaining('รู้สึกเหมือน'), findsWidgets);
+    expect(find.byKey(const ValueKey('gear-umbrella')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pick-leave')), findsOneWidget);
+    expect(find.byKey(const ValueKey('pick-arrive')), findsOneWidget);
+  });
+
+  testWidgets('a trip beyond the rain forecast says so instead of pinning '
+      'the band to its edge', (tester) async {
+    await pumpApp(tester, '2026-09-29T16:10:00+07:00', height: 1600);
+    await tapAndSettle(tester, find.text('อีเวนต์'));
+    await tapAndSettle(tester, find.text('Daily standup ที่ออฟฟิศ'));
+
+    expect(find.byKey(const ValueKey('rain-band')), findsNothing);
+    expect(find.byKey(const ValueKey('band-out-of-range')), findsOneWidget);
+    expect(
+      find.textContaining('30 ก.ย.'),
+      findsWidgets,
+      reason: "tomorrow's leave time carries its date",
+    );
   });
 
   testWidgets('verdict detail shows reasoning and reacts to the mode toggle', (
@@ -165,8 +216,8 @@ void main() {
     await openHero(tester);
 
     await tapAndSettle(tester, find.text('รถไฟฟ้า'));
-    await reveal(tester, find.text('ไปได้เลย'));
-    expect(find.text('ไปได้เลย'), findsOneWidget);
+    await reveal(tester, find.text('ควรออกก่อน 17:15'));
+    expect(find.text('ควรออกก่อน 17:15'), findsOneWidget);
     await reveal(tester, find.text('หาเส้นทาง'));
     expect(find.text('เหตุผลที่แนะนำแบบนี้'), findsOneWidget);
     expect(find.text('AI วิเคราะห์ให้'), findsWidgets);

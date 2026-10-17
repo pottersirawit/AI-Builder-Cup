@@ -1804,4 +1804,95 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get eventsChangePlace => 'Change';
+
+  @override
+  String get partsBandTitle => 'Rain along your route';
+
+  @override
+  String get partsBandHint =>
+      'Taller bars mean heavier rain. Drag the pin or tap a time below to change it.';
+
+  @override
+  String get partsLegendOnRoad => 'On the road';
+
+  @override
+  String partsPickArrive(String time) {
+    return 'Arrive $time';
+  }
+
+  @override
+  String get partsPickLeaveHelp => 'When do you want to leave?';
+
+  @override
+  String get partsPickArriveHelp => 'When do you want to arrive?';
+
+  @override
+  String partsPickTimeSemantic(String what) {
+    return 'Change time: $what';
+  }
+
+  @override
+  String get partsUseSuggested => 'Use suggested time';
+
+  @override
+  String partsHeadlineLeaveArrive(String leave, String arrive) {
+    return 'Leave $leave, arrive $arrive';
+  }
+
+  @override
+  String partsHeadlineLate(String leave, int min) {
+    return 'Leave $leave: $min min late';
+  }
+
+  @override
+  String get verdictGearTitle => 'What to bring';
+
+  @override
+  String verdictGearWeather(int temp, int feels) {
+    return '$temp° on the way, feels like $feels°';
+  }
+
+  @override
+  String get verdictGearTooFar =>
+      'The hourly forecast doesn\'t reach this trip yet. Check back closer to the time.';
+
+  @override
+  String get verdictGearNothingBody => 'The weather on the way looks fine';
+
+  @override
+  String get carryJacket => 'A jacket';
+
+  @override
+  String carryWhyCold(String c, String from, String to) {
+    return 'Chilly, feels like $c° · $from–$to';
+  }
+
+  @override
+  String get partsBandOutOfRange =>
+      'The detailed rain forecast only covers the next 5 hours. Check back closer to your trip.';
+
+  @override
+  String partsHeadlineWet(String time) {
+    return 'Leave $time: rain on the way';
+  }
+
+  @override
+  String partsHeadlineRisky(String time) {
+    return 'Leave $time: not advised';
+  }
+
+  @override
+  String partsAltMode(String mode, String leave, String arrive) {
+    return '$mode works: leave $leave, arrive $arrive';
+  }
+
+  @override
+  String partsAltModeAction(String mode) {
+    return 'Switch to $mode';
+  }
+
+  @override
+  String partsAltWait(String leave, String arrive) {
+    return 'Or wait until $leave for the rain to ease, arrive $arrive';
+  }
 }

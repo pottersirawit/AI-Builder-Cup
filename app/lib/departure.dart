@@ -199,6 +199,47 @@ List<Departure> serverOptions(Decision d, DateTime departAt) => [
     ),
 ];
 
+/// The first five-minute departure after [from], within the rain timeline,
+/// at which [mode] can go by the on-device estimate, arriving by [deadline]
+/// when there is one. Null when waiting does not help.
+Departure? nextGoodDeparture(
+  Decision d,
+  TravelMode mode,
+  DateTime from, {
+  DateTime? deadline,
+  AppLocalizations? l,
+}) {
+  final points = d.rainTimeline;
+  if (points.isEmpty) return null;
+  final end = points.last.time.add(_bucket);
+  for (
+    var t = snapDeparture(from.add(_step), from, end);
+    t.isBefore(end) && t.isAfter(from);
+    t = t.add(_step)
+  ) {
+    final o = previewOptions(d, t, l).where((o) => o.mode == mode).firstOrNull;
+    if (o == null) return null;
+    if (deadline != null && o.arriveAt.isAfter(deadline)) return null;
+    if (o.verdict == Verdict.leaveNow) return o;
+  }
+  return null;
+}
+
+/// The best other way to go at the same departure: one that can go and,
+/// with a [deadline], gets there in time. [board] is ranked best first.
+Departure? otherModeThatGoes(
+  List<Departure> board,
+  TravelMode mode, {
+  DateTime? deadline,
+}) => board
+    .where(
+      (o) =>
+          o.mode != mode &&
+          o.verdict == Verdict.leaveNow &&
+          (deadline == null || !o.arriveAt.isAfter(deadline)),
+    )
+    .firstOrNull;
+
 int _verdictRank(Verdict v) => switch (v) {
   Verdict.leaveNow => 0,
   Verdict.switchMode => 1,

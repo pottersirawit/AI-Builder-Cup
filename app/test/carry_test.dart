@@ -124,4 +124,26 @@ void main() {
       CarryKind.spareRaincoat,
     ]);
   });
+
+  test('a cold morning means a jacket, sized by the coldest hour', () {
+    final chilly = Outlook(
+      now: _h(6, temp: 18, feels: 17),
+      hours: [
+        _h(6, temp: 18, feels: 17),
+        _h(7, temp: 19, feels: 15),
+        _h(8, temp: 22, feels: 21),
+      ],
+    );
+    final items = whatToCarry(chilly, now: at(6));
+    expect(_kinds(items), [CarryKind.jacket]);
+    expect(items.single.value, 15);
+    expect(hhmm(items.single.to!), '08:00');
+  });
+
+  test('a normal Bangkok day needs no jacket', () {
+    expect(
+      _kinds(whatToCarry(_storm, now: at(13, 30))),
+      isNot(contains(CarryKind.jacket)),
+    );
+  });
 }

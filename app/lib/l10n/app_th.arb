@@ -1305,5 +1305,128 @@
     }
   },
   "eventsConfirmPlace": "ยืนยันสถานที่",
-  "eventsChangePlace": "เปลี่ยน"
+  "eventsChangePlace": "เปลี่ยน",
+  "partsBandTitle": "ฝนตามเส้นทาง",
+  "partsBandHint": "แท่งยิ่งสูง ฝนยิ่งหนัก · ลากหมุดหรือแตะเวลาด้านล่างเพื่อเปลี่ยน",
+  "partsLegendOnRoad": "ช่วงที่อยู่บนถนน",
+  "partsPickArrive": "ถึง {time}",
+  "@partsPickArrive": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsPickLeaveHelp": "จะออกกี่โมง",
+  "partsPickArriveHelp": "อยากไปถึงกี่โมง",
+  "partsPickTimeSemantic": "เปลี่ยนเวลา {what}",
+  "@partsPickTimeSemantic": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "partsUseSuggested": "ใช้เวลาที่แนะนำ",
+  "partsHeadlineLeaveArrive": "ออก {leave} ถึง {arrive}",
+  "@partsHeadlineLeaveArrive": {
+    "placeholders": {
+      "leave": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  },
+  "partsHeadlineLate": "ออก {leave} จะสาย {min} นาที",
+  "@partsHeadlineLate": {
+    "placeholders": {
+      "leave": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictGearTitle": "ของที่ควรพก",
+  "verdictGearWeather": "ช่วงเดินทาง {temp}° รู้สึกเหมือน {feels}°",
+  "@verdictGearWeather": {
+    "placeholders": {
+      "temp": {
+        "type": "int"
+      },
+      "feels": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictGearTooFar": "พยากรณ์รายชั่วโมงยังไปไม่ถึงเวลานี้ ใกล้เวลาแล้วจะบอกว่าควรพกอะไร",
+  "verdictGearNothingBody": "อากาศช่วงเดินทางกำลังดี",
+  "carryJacket": "เสื้อกันหนาว",
+  "carryWhyCold": "อากาศเย็น รู้สึกเหมือน {c}° · {from}–{to}",
+  "@carryWhyCold": {
+    "placeholders": {
+      "c": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "partsBandOutOfRange": "พยากรณ์ฝนละเอียดดูได้ล่วงหน้าแค่ 5 ชม. ใกล้เวลาเดินทางแล้วค่อยเปิดดูอีกครั้ง",
+  "partsHeadlineWet": "ออก {time} โดนฝนกลางทาง",
+  "@partsHeadlineWet": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsHeadlineRisky": "ออก {time} ไม่แนะนำ",
+  "@partsHeadlineRisky": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsAltMode": "{mode} ไปได้ ออก {leave} ถึง {arrive}",
+  "@partsAltMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "leave": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  },
+  "partsAltModeAction": "เปลี่ยนเป็น{mode}",
+  "@partsAltModeAction": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "partsAltWait": "หรือรอออก {leave} ฝนซาแล้ว ถึง {arrive}",
+  "@partsAltWait": {
+    "placeholders": {
+      "leave": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  }
 }

@@ -40,8 +40,9 @@ void main() {
     expect(find.text('Arrive'), findsOneWidget);
     expect(find.text('Mode'), findsOneWidget);
     expect(find.text('Sure'), findsWidgets);
-    expect(find.text('Drag the pin to try a departure time'), findsOneWidget);
-    expect(find.text('Now'), findsOneWidget);
+    expect(find.text('Rain along your route'), findsOneWidget);
+    expect(find.text('Light rain'), findsOneWidget, reason: 'band legend');
+    expect(find.text('Now'), findsWidgets);
     expect(find.text('Sample data'), findsWidgets);
     expect(find.textContaining(RegExp(r'Takes \d+ min')), findsOneWidget);
 
@@ -75,7 +76,7 @@ void main() {
         find.text('Estimated from rain along the route. Release to confirm.'),
         findsOneWidget,
       );
-      expect(find.text('Leave now'), findsOneWidget);
+      expect(find.text('Use suggested time'), findsOneWidget);
       await gesture.up();
       await settle(tester);
     },

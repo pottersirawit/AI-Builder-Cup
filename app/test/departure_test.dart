@@ -161,4 +161,38 @@ void main() {
     expect(moto.rainProbPct, 75);
     expect(moto.noteTh, contains('เสื้อกันฝน'));
   });
+
+  test('waiting out the storm finds the first time the mode can go', () {
+    final later = nextGoodDeparture(calm, TravelMode.moto, bkk('17:45'))!;
+    expect(later.verdict, Verdict.leaveNow);
+    expect(later.departAt.isAfter(bkk('17:45')), isTrue);
+    final before = previewOptions(
+      calm,
+      later.departAt.subtract(const Duration(minutes: 5)),
+    ).firstWhere((o) => o.mode == TravelMode.moto);
+    expect(before.verdict, isNot(Verdict.leaveNow), reason: 'the first one');
+  });
+
+  test('a wait that misses the deadline is no answer', () {
+    final later = nextGoodDeparture(calm, TravelMode.moto, bkk('17:45'))!;
+    expect(
+      nextGoodDeparture(
+        calm,
+        TravelMode.moto,
+        bkk('17:45'),
+        deadline: later.arriveAt.subtract(const Duration(minutes: 1)),
+      ),
+      isNull,
+    );
+  });
+
+  test('another mode that goes at the same time, on time', () {
+    final board = rankOptions(previewOptions(calm, bkk('17:45')));
+    expect(otherModeThatGoes(board, TravelMode.moto)!.mode, TravelMode.transit);
+    expect(
+      otherModeThatGoes(board, TravelMode.moto, deadline: bkk('18:00')),
+      isNull,
+      reason: 'BTS arrives after 18:00',
+    );
+  });
 }
