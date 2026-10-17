@@ -1321,6 +1321,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get carryUmbrella => 'Umbrella';
 
   @override
+  String get carrySpareRaincoat => 'Raincoat, just in case';
+
+  @override
   String get carrySpareUmbrella => 'Umbrella, just in case';
 
   @override

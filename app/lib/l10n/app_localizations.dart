@@ -2300,6 +2300,12 @@ abstract class AppLocalizations {
   /// **'ร่ม'**
   String get carryUmbrella;
 
+  /// No description provided for @carrySpareRaincoat.
+  ///
+  /// In th, this message translates to:
+  /// **'เสื้อกันฝนไว้ใต้เบาะ'**
+  String get carrySpareRaincoat;
+
   /// No description provided for @carrySpareUmbrella.
   ///
   /// In th, this message translates to:

@@ -15,4 +15,21 @@ void main() {
     expect(carryLook(th, spare).why, 'อาจมีฝน 55% · 14:00–16:00');
     expect(carryLook(en, spare).why, 'Maybe rain, 55% · 14:00–16:00');
   });
+
+  test('a rider\'s raincoat is for riding in rain, not a downpour', () {
+    final th = lookupAppLocalizations(const Locale('th'));
+    final coat = (kind: CarryKind.raincoat, from: from, to: to, value: 80);
+    expect(
+      carryLook(th, coat, moto: true).why,
+      th.carryWhyMoto('14:00', '16:00'),
+    );
+    expect(carryLook(th, coat).why, th.carryWhyHeavy('14:00', '16:00'));
+    final spare = (
+      kind: CarryKind.spareRaincoat,
+      from: from,
+      to: to,
+      value: 45,
+    );
+    expect(carryLook(th, spare, moto: true).why, 'อาจมีฝน 45% · 14:00–16:00');
+  });
 }

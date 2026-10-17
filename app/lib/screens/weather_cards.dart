@@ -313,10 +313,12 @@ class _HourCell extends StatelessWidget {
 }
 
 /// Words, icon and accent for one thing to carry.
+/// A rider's raincoat is for riding in rain; anyone else's is for a downpour.
 ({IconData icon, String title, String why, Color accent}) carryLook(
   AppLocalizations l,
-  CarryItem i,
-) {
+  CarryItem i, {
+  bool moto = false,
+}) {
   final from = i.from == null ? '' : hhmm(i.from!);
   final to = i.to == null ? '' : hhmm(i.to!);
   const rain = Color(0xFF6EA8FF), sun = Color(0xFFFFB547);
@@ -324,7 +326,13 @@ class _HourCell extends StatelessWidget {
     CarryKind.raincoat => (
       icon: Symbols.apparel_rounded,
       title: l.carryRaincoat,
-      why: l.carryWhyHeavy(from, to),
+      why: moto ? l.carryWhyMoto(from, to) : l.carryWhyHeavy(from, to),
+      accent: rain,
+    ),
+    CarryKind.spareRaincoat => (
+      icon: Symbols.apparel_rounded,
+      title: l.carrySpareRaincoat,
+      why: l.carryWhyMaybeRain('${i.value}', from, to),
       accent: rain,
     ),
     CarryKind.umbrella => (
@@ -404,10 +412,8 @@ class CarryStrip extends StatelessWidget {
   }
 
   Widget _tile(AppLocalizations l, CarryItem item) {
-    final look = carryLook(l, item);
-    final why = item.kind == CarryKind.raincoat && moto
-        ? l.carryWhyMoto(hhmm(item.from!), hhmm(item.to!))
-        : look.why;
+    final look = carryLook(l, item, moto: moto);
+    final why = look.why;
     return _CarryTile(
       key: ValueKey('carry-${item.kind.name}'),
       icon: look.icon,
@@ -492,8 +498,9 @@ class _CarryTile extends StatelessWidget {
 
 /// "พกไปด้วย ☂ ร่ม · 🧴 ครีมกันแดด": the trip's packing list as small pills.
 class BringRow extends StatelessWidget {
-  const BringRow({super.key, required this.items});
+  const BringRow({super.key, required this.items, this.moto = false});
   final List<CarryItem> items;
+  final bool moto;
 
   @override
   Widget build(BuildContext context) {
@@ -515,7 +522,7 @@ class BringRow extends StatelessWidget {
             for (final i in items)
               Builder(
                 builder: (context) {
-                  final look = carryLook(l, i);
+                  final look = carryLook(l, i, moto: moto);
                   return Tooltip(
                     message: look.why,
                     child: Container(

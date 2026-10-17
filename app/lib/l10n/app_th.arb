@@ -837,6 +837,7 @@
   "carryNothingBody": "อากาศดีตลอด 12 ชม.ข้างหน้า",
   "carryRaincoat": "เสื้อกันฝน",
   "carryUmbrella": "ร่ม",
+  "carrySpareRaincoat": "เสื้อกันฝนไว้ใต้เบาะ",
   "carrySpareUmbrella": "ร่มพับติดกระเป๋า",
   "carryWhyMaybeRain": "อาจมีฝน {pct}% · {from}–{to}",
   "@carryWhyMaybeRain": {

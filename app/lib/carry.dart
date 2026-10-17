@@ -27,6 +27,7 @@ enum CarryKind {
   raincoat,
   umbrella,
   spareUmbrella,
+  spareRaincoat,
   sunUmbrella,
   sunscreen,
   water,
@@ -92,7 +93,11 @@ List<CarryItem> whatToCarry(
   final moto = mode == TravelMode.moto;
 
   return [
-    if (wet.isNotEmpty && (heavy || moto))
+    if (moto && likely.isNotEmpty)
+      span(CarryKind.raincoat, likely, peakChance(likely))
+    else if (moto && wet.isNotEmpty)
+      span(CarryKind.spareRaincoat, wet, peakProb)
+    else if (heavy)
       span(CarryKind.raincoat, wet, peakProb),
     if (likely.isNotEmpty && !moto)
       span(CarryKind.umbrella, likely, peakChance(likely))

@@ -837,6 +837,7 @@
   "carryNothingBody": "Fine weather for the next 12 hours",
   "carryRaincoat": "Raincoat",
   "carryUmbrella": "Umbrella",
+  "carrySpareRaincoat": "Raincoat, just in case",
   "carrySpareUmbrella": "Umbrella, just in case",
   "carryWhyMaybeRain": "Maybe rain, {pct}% · {from}–{to}",
   "@carryWhyMaybeRain": {

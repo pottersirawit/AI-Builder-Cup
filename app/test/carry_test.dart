@@ -117,4 +117,11 @@ void main() {
     final drizzle = Outlook(now: _h(9), hours: [_h(9, prob: 30, mm: 0.8)]);
     expect(_kinds(whatToCarry(drizzle, now: at(9))), [CarryKind.umbrella]);
   });
+
+  test('a rider at a 40-59% chance packs a raincoat just in case', () {
+    final maybe = Outlook(now: _h(13), hours: [_h(13), _h(14, prob: 45)]);
+    expect(_kinds(whatToCarry(maybe, now: at(13), mode: TravelMode.moto)), [
+      CarryKind.spareRaincoat,
+    ]);
+  });
 }

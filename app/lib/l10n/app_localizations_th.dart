@@ -1302,6 +1302,9 @@ class AppLocalizationsTh extends AppLocalizations {
   String get carryUmbrella => 'ร่ม';
 
   @override
+  String get carrySpareRaincoat => 'เสื้อกันฝนไว้ใต้เบาะ';
+
+  @override
   String get carrySpareUmbrella => 'ร่มพับติดกระเป๋า';
 
   @override

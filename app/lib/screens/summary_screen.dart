@@ -227,7 +227,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
         loading: ctrl?.loading ?? false,
         failed: ctrl?.error != null && d == null,
         unresolved: unresolved,
-        footer: bring.isEmpty ? null : BringRow(items: bring),
+        footer: bring.isEmpty
+            ? null
+            : BringRow(items: bring, moto: plan?.best?.mode == TravelMode.moto),
         aside: switch (leaveTimeOf(plan)) {
           final leave? when leave.difference(now) <= planningWindow =>
             CountdownRing(leaveAt: leave, now: now),
