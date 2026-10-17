@@ -123,7 +123,9 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		exp.ReasonWhyTH = "It is not a good time to set out. Weather and flooding are high risk on every route and for every way of travelling, so stay indoors somewhere safe."
 	}
 
-	if res.RainOnset != nil {
+	if res.RainOnset != nil && !res.RainOnset.After(in.Now) {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: raining on your route now (peak %.0f mm/h)", e.MaxRainMM))
+	} else if res.RainOnset != nil {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: starts on your route around %s (peak %.0f mm/h)", hhmm(*res.RainOnset), e.MaxRainMM))
 	} else if e.MaxRainMM >= rainLight {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: up to %.0f mm/h on the way", e.MaxRainMM))

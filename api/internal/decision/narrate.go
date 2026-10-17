@@ -123,7 +123,9 @@ func buildExplanation(in Input, res Result) Explanation {
 
 	// 2. Factors considered
 	// Rain factor
-	if res.RainOnset != nil {
+	if res.RainOnset != nil && !res.RainOnset.After(in.Now) {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("กลุ่มฝน: กำลังตกบนเส้นทางตอนนี้ (ความแรงสูงสุด %.0f มม./ชม.)", e.MaxRainMM))
+	} else if res.RainOnset != nil {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("กลุ่มฝน: เริ่มตกบนเส้นทางราว %s (ความแรงสูงสุด %.0f มม./ชม.)", hhmm(*res.RainOnset), e.MaxRainMM))
 	} else if e.MaxRainMM >= rainLight {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("ปริมาณฝน: มีฝนตกระหว่างทางสูงสุด %.0f มม./ชม.", e.MaxRainMM))

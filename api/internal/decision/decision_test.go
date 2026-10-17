@@ -441,6 +441,25 @@ func TestOnlyUsableReportsCount(t *testing.T) {
 	}
 }
 
+func TestRainFactorSaysRainingNowMidStorm(t *testing.T) {
+	for _, tt := range []struct {
+		lang         domain.Lang
+		now, starts string
+	}{{domain.LangTH, "กำลังตก", "เริ่มตก"}, {domain.LangEN, "raining on your route now", "starts on your route"}} {
+		in := heroInput(t, at(18, 52), at(18, 52), domain.ModeCar)
+		in.Lang = tt.lang
+		f := Decide(in).Explanation.FactorsTH[0]
+		if !strings.Contains(f, tt.now) || strings.Contains(f, tt.starts) {
+			t.Errorf("%s mid-storm rain factor = %q, want it raining now", tt.lang, f)
+		}
+		in = heroInput(t, at(16, 10), at(16, 10), domain.ModeCar)
+		in.Lang = tt.lang
+		if f := Decide(in).Explanation.FactorsTH[0]; !strings.Contains(f, tt.starts) {
+			t.Errorf("%s before the rain, factor = %q, want when it starts", tt.lang, f)
+		}
+	}
+}
+
 func TestTransitUmbrellaOnlyWhenItRains(t *testing.T) {
 	for _, tt := range []struct {
 		lang     domain.Lang
