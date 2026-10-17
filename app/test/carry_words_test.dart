@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/carry.dart';
+import 'package:fontokmai/models.dart';
 import 'package:fontokmai/l10n/app_localizations.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
 
@@ -31,5 +32,30 @@ void main() {
       value: 45,
     );
     expect(carryLook(th, spare, moto: true).why, 'อาจมีฝน 45% · 14:00–16:00');
+  });
+
+  test('a wet hour now is never "no rain for 12 hours"', () {
+    final th = lookupAppLocalizations(const Locale('th'));
+    WeatherHour h(int hour, int prob, double mm) => WeatherHour(
+      time: DateTime.parse(
+        '2026-09-29T00:00:00+07:00',
+      ).add(Duration(hours: hour)),
+      tempC: 30,
+      feelsLikeC: 34,
+      uvIndex: 0,
+      rainProbPct: prob,
+      rainMmPerHr: mm,
+    );
+    final o = Outlook(
+      now: h(16, 85, 0.3),
+      hours: [h(16, 85, 0.3), h(17, 10, 0)],
+    );
+    final line = weatherHeadline(
+      th,
+      o,
+      DateTime.parse('2026-09-29T16:10:00+07:00'),
+    );
+    expect(line, isNot(contains(th.wxDryAhead)));
+    expect(line, contains(th.wxMaybeRainNow));
   });
 }

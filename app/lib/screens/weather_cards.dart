@@ -89,7 +89,7 @@ String weatherHeadline(AppLocalizations l, Outlook o, DateTime now) {
 String _rainLine(AppLocalizations l, List<WeatherHour> ahead, WeatherHour now) {
   if (_rainNow(l, ahead, now) case final falling?) return falling;
   final rain = ahead.skip(1).where(isRaining).firstOrNull;
-  if (rain == null) return l.wxDryAhead;
+  if (rain == null) return isRaining(now) ? l.wxMaybeRainNow : l.wxDryAhead;
   return likelyRain(rain)
       ? l.wxRainFrom(hhmm(rain.time))
       : l.wxMaybeRainFrom(hhmm(rain.time));

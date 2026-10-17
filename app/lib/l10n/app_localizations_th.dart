@@ -1237,6 +1237,9 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String get wxMaybeRainNow => 'อาจมีฝนชั่วโมงนี้ จากนั้นแห้ง';
+
+  @override
   String get wxDryAhead => 'ไม่มีฝนอีก 12 ชม.';
 
   @override

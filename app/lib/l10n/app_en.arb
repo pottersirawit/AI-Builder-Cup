@@ -809,6 +809,7 @@
       }
     }
   },
+  "wxMaybeRainNow": "Chance of rain this hour, then dry",
   "wxDryAhead": "No rain for 12 hours",
   "wxSunStrong": "Strong sun",
   "wxHot": "Very hot",
