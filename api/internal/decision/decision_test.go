@@ -314,3 +314,22 @@ func TestReportDepthWeighting(t *testing.T) {
 		})
 	}
 }
+
+func dryInput(lang domain.Lang, arriveBy time.Time) Input {
+	return Input{
+		Lang: lang, Now: at(8, 0), DepartAt: at(8, 0), ArriveBy: arriveBy, Mode: domain.ModeCar, DestinationTH: "Siam",
+		Travel: func(domain.Mode, time.Time) int { return 30 },
+	}
+}
+
+func TestDryDayWithoutDeadlineHasNoLeaveBy(t *testing.T) {
+	for _, tt := range []struct {
+		lang         domain.Lang
+		wantHeadline string
+	}{{domain.LangTH, "ออกได้เลย"}, {domain.LangEN, "Good to go now"}} {
+		res := Decide(dryInput(tt.lang, time.Time{}))
+		if res.Verdict != LeaveNow || res.LeaveBy != nil || res.HeadlineTH != tt.wantHeadline {
+			t.Errorf("%s: got %s %q leave_by=%v, want leave_now %q and no leave_by", tt.lang, res.Verdict, res.HeadlineTH, res.LeaveBy, tt.wantHeadline)
+		}
+	}
+}

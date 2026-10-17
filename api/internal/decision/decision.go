@@ -356,7 +356,8 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 }
 
 // LeaveBy is the latest departure, from now, such that leaving at any moment
-// until then is low risk and on time. Nil when leaving now is already not OK.
+// until then is low risk and on time. Nil when leaving now is already not OK,
+// and when nothing ends the window within the search horizon.
 func LeaveBy(in Input, m domain.Mode) *time.Time {
 	if !EvaluateMode(in, m, in.Now).OK() {
 		return nil
@@ -368,11 +369,11 @@ func LeaveBy(in Input, m domain.Mode) *time.Time {
 	}
 	for t := ceil(in.Now, step); !t.After(limit); t = t.Add(step) {
 		if !EvaluateMode(in, m, t).OK() {
-			break
+			return &best
 		}
 		best = t
 	}
-	return &best
+	return nil
 }
 
 func rainOnset(in Input) *time.Time {
