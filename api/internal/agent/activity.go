@@ -389,6 +389,18 @@ func groundChecklist(items []ChecklistItem, f *domain.DayForecast) []ChecklistIt
 
 const activityCacheTTL = 30 * time.Minute
 
+func thaiIn(out geminiActivityOut) bool {
+	if domain.HasThai(out.HeadlineTH) {
+		return true
+	}
+	for _, it := range out.Checklist {
+		if domain.HasThai(it.ItemTH) || domain.HasThai(it.WhyTH) {
+			return true
+		}
+	}
+	return false
+}
+
 // PlanActivity writes what to prepare for a: Gemini's checklist (the fixed
 // list without it), the engine's weather notes for f, and, without a place,
 // the question back with places known for the activity.
@@ -457,7 +469,7 @@ func geminiActivity(ctx context.Context, g *Gemini, lang domain.Lang, a Activity
 		"headline_th ไม่เกิน 30 ตัวอักษร",
 		name, a.NameTH, where, weather)
 	if lang == domain.LangEN {
-		prompt += "\nWrite headline_th, item_th and why_th in short, friendly English (keep the JSON keys). Place names in suggestions_th may stay as they are searched in Thailand."
+		prompt = "LANGUAGE: the user reads English. Write headline_th, every item_th and every why_th in short, friendly English, never Thai (keep the JSON keys). Only place names in suggestions_th may stay Thai.\n\n" + prompt
 	} else {
 		prompt += "\nเขียนเป็นภาษาไทย"
 	}
@@ -481,6 +493,10 @@ func geminiActivity(ctx context.Context, g *Gemini, lang domain.Lang, a Activity
 	}
 	var out geminiActivityOut
 	if err := decodeJSON(resp.Text(), &out); err != nil || len(out.Checklist) == 0 {
+		return geminiActivityOut{}, false
+	}
+	if lang == domain.LangEN && thaiIn(out) {
+		// An English reader gets the fixed English list over a Thai one.
 		return geminiActivityOut{}, false
 	}
 	if out.HeadlineTH == "" || len([]rune(out.HeadlineTH)) > 40 {

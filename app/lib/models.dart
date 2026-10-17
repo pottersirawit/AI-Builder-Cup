@@ -538,6 +538,15 @@ class Decision {
   final ActivityPlan? activity;
 
   bool get asksWhere => activity?.asksWhere == true;
+
+  /// An answer with nothing to show: no verdict text, no ways to travel and
+  /// no question back. Never drawn as an empty pass.
+  bool get unreadable =>
+      !refused &&
+      !asksWhere &&
+      needsPlace == null &&
+      headlineTh.isEmpty &&
+      modeOptions.isEmpty;
 }
 
 /// A day out the user is preparing for ("ไปปีนผา"), sent back with the next

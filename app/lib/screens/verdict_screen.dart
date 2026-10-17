@@ -180,7 +180,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
           )
         : needs != null
         ? NeedsPlacePass(needs: needs, onResolved: _c.resolvePlace)
-        : _c.error != null && d == null
+        : (_c.error != null && d == null) || d?.unreadable == true
         ? Pass(
             sections: [
               PassSection(
@@ -301,7 +301,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ),
           ),
-          if (d != null && !d.refused) ...[
+          if (d != null && !d.refused && !d.unreadable) ...[
             if (d.explanation case final e? when !e.isEmpty)
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),

@@ -171,4 +171,24 @@ void main() {
     expect(body['question_th'], 'หินเหล็กไฟ เสาร์นี้');
     expect(body['activity']['kind'], 'climbing');
   });
+
+  testWidgets('an answer the app cannot read is an error, not an empty pass', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      _clock,
+      height: 1600,
+      respond: (req) => req.url.path == '/v1/decide'
+          ? jsonResponse({'something_new': true})
+          : null,
+    );
+    await tapAndSettle(tester, find.byTooltip('ถามเส้นทาง'));
+    await tester.enterText(find.byType(TextField).first, 'ไปตั้งแคมป์');
+    await tester.testTextInput.receiveAction(TextInputAction.send);
+    await settle(tester);
+
+    expect(find.text('ยังตัดสินไม่ได้'), findsOneWidget);
+    expect(find.text('เทียบวิธีเดินทาง'), findsNothing);
+  });
 }

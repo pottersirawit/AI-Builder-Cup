@@ -113,3 +113,12 @@ func TestPlanActivityWithoutGemini(t *testing.T) {
 		t.Fatalf("got %+v", at)
 	}
 }
+
+func TestThaiInAnEnglishChecklist(t *testing.T) {
+	if !thaiIn(geminiActivityOut{HeadlineTH: "Camping", Checklist: []ChecklistItem{{ItemTH: "เต็นท์", WhyTH: "shelter"}}}) {
+		t.Error("a Thai item in an English list")
+	}
+	if thaiIn(geminiActivityOut{HeadlineTH: "Camping", Checklist: []ChecklistItem{{ItemTH: "Tent", WhyTH: "Shelter"}}}) {
+		t.Error("all English")
+	}
+}
