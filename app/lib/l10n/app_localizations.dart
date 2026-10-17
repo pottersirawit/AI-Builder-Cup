@@ -1154,12 +1154,6 @@ abstract class AppLocalizations {
   /// **'ข้ามไปก่อน'**
   String get onboardingSkip;
 
-  /// No description provided for @onboardingDemo.
-  ///
-  /// In th, this message translates to:
-  /// **'ใช้โปรไฟล์เดโม (มิว)'**
-  String get onboardingDemo;
-
   /// No description provided for @onboardingSet.
   ///
   /// In th, this message translates to:
@@ -2816,18 +2810,6 @@ abstract class AppLocalizations {
   /// **'การเดินทาง'**
   String get settingsTravelGroup;
 
-  /// No description provided for @settingsRemindAhead.
-  ///
-  /// In th, this message translates to:
-  /// **'เตือนล่วงหน้า'**
-  String get settingsRemindAhead;
-
-  /// No description provided for @settingsRemindAheadHint.
-  ///
-  /// In th, this message translates to:
-  /// **'2 ชั่วโมงก่อนเวลาที่ควรออก'**
-  String get settingsRemindAheadHint;
-
   /// No description provided for @settingsAutoGroup.
   ///
   /// In th, this message translates to:
@@ -2851,126 +2833,6 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล'**
   String get settingsGmailHint;
-
-  /// No description provided for @settingsRoutine.
-  ///
-  /// In th, this message translates to:
-  /// **'เรียนรู้กิจวัตร'**
-  String get settingsRoutine;
-
-  /// No description provided for @settingsRoutineHint.
-  ///
-  /// In th, this message translates to:
-  /// **'รู้เองว่ากลับบ้านราวหกโมงทุกวัน · เร็ว ๆ นี้'**
-  String get settingsRoutineHint;
-
-  /// No description provided for @settingsCommunityGroup.
-  ///
-  /// In th, this message translates to:
-  /// **'ชุมชนและน้ำท่วม'**
-  String get settingsCommunityGroup;
-
-  /// No description provided for @settingsShareReports.
-  ///
-  /// In th, this message translates to:
-  /// **'แชร์รายงานน้ำท่วมของฉัน'**
-  String get settingsShareReports;
-
-  /// No description provided for @settingsShareReportsHint.
-  ///
-  /// In th, this message translates to:
-  /// **'ไม่ระบุตัว เฉพาะตำแหน่งและระดับน้ำ'**
-  String get settingsShareReportsHint;
-
-  /// No description provided for @settingsHomeAlerts.
-  ///
-  /// In th, this message translates to:
-  /// **'เตือนน้ำท่วมที่บ้าน'**
-  String get settingsHomeAlerts;
-
-  /// No description provided for @settingsHomeAlertsHint.
-  ///
-  /// In th, this message translates to:
-  /// **'แม้ไม่ได้เปิดแอป'**
-  String get settingsHomeAlertsHint;
-
-  /// No description provided for @settingsSmsBackup.
-  ///
-  /// In th, this message translates to:
-  /// **'สำรองทาง SMS'**
-  String get settingsSmsBackup;
-
-  /// No description provided for @settingsSmsBackupHint.
-  ///
-  /// In th, this message translates to:
-  /// **'เมื่อไม่มีอินเทอร์เน็ต'**
-  String get settingsSmsBackupHint;
-
-  /// No description provided for @settingsProfileGroup.
-  ///
-  /// In th, this message translates to:
-  /// **'โปรไฟล์'**
-  String get settingsProfileGroup;
-
-  /// No description provided for @settingsExitDemo.
-  ///
-  /// In th, this message translates to:
-  /// **'ออกจากโปรไฟล์เดโม'**
-  String get settingsExitDemo;
-
-  /// No description provided for @settingsExitDemoHint.
-  ///
-  /// In th, this message translates to:
-  /// **'ลบสถานที่ของมิวและกลับไปหน้าเริ่มต้น'**
-  String get settingsExitDemoHint;
-
-  /// No description provided for @settingsUseDemo.
-  ///
-  /// In th, this message translates to:
-  /// **'ใช้โปรไฟล์เดโม (มิว)'**
-  String get settingsUseDemo;
-
-  /// No description provided for @settingsUseDemoHint.
-  ///
-  /// In th, this message translates to:
-  /// **'สถานที่และนัดจำลองของมิว สำหรับสาธิต'**
-  String get settingsUseDemoHint;
-
-  /// No description provided for @settingsTeamGroup.
-  ///
-  /// In th, this message translates to:
-  /// **'สำหรับทีม'**
-  String get settingsTeamGroup;
-
-  /// No description provided for @settingsDesignSystem.
-  ///
-  /// In th, this message translates to:
-  /// **'ระบบดีไซน์'**
-  String get settingsDesignSystem;
-
-  /// No description provided for @settingsDesignSystemHint.
-  ///
-  /// In th, this message translates to:
-  /// **'สี ตัวอักษร ระยะ และคอมโพเนนต์ทุกสถานะท้องฟ้า'**
-  String get settingsDesignSystemHint;
-
-  /// No description provided for @settingsDemoClock.
-  ///
-  /// In th, this message translates to:
-  /// **'เวลาสาธิต'**
-  String get settingsDemoClock;
-
-  /// No description provided for @settingsRealTime.
-  ///
-  /// In th, this message translates to:
-  /// **'เวลาจริง'**
-  String get settingsRealTime;
-
-  /// No description provided for @settingsDemoNote.
-  ///
-  /// In th, this message translates to:
-  /// **'ชื่อ “มิว” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม'**
-  String get settingsDemoNote;
 
   /// No description provided for @settingsPlaceHome.
   ///

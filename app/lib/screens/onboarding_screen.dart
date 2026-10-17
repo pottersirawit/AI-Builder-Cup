@@ -100,24 +100,10 @@ class OnboardingScreen extends StatelessWidget {
                       child: Text(l.onboardingStart),
                     ),
                     const SizedBox(height: Space.x1),
-                    Wrap(
-                      alignment: WrapAlignment.spaceBetween,
-                      children: [
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            foregroundColor: sky.onField,
-                          ),
-                          onPressed: store.completeOnboarding,
-                          child: Text(l.onboardingSkip),
-                        ),
-                        TextButton(
-                          style: TextButton.styleFrom(
-                            foregroundColor: sky.onFieldMuted,
-                          ),
-                          onPressed: store.useDemoProfile,
-                          child: Text(l.onboardingDemo),
-                        ),
-                      ],
+                    TextButton(
+                      style: TextButton.styleFrom(foregroundColor: sky.onField),
+                      onPressed: store.completeOnboarding,
+                      child: Text(l.onboardingSkip),
                     ),
                   ],
                 ),

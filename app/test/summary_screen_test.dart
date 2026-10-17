@@ -6,12 +6,18 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:fontokmai/design/design.dart';
 import 'package:fontokmai/screens/event_cards.dart';
+import 'package:fontokmai/screens/parts.dart';
 import 'package:fontokmai/screens/plan_cards.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
 
 import 'helpers.dart';
 
 void main() {
+  testWidgets('real time shows no demo clock chip', (tester) async {
+    await pumpApp(tester, null, places: await emptyStore());
+    expect(find.byType(DemoClockChip), findsNothing);
+  });
+
   testWidgets('the summary is the day\'s plan, with weather kept small', (
     tester,
   ) async {
@@ -198,7 +204,7 @@ void main() {
     );
   });
 
-  testWidgets('ask, settings and design gallery open without errors', (
+  testWidgets('ask and settings open without errors', (
     tester,
   ) async {
     await pumpApp(tester, '2026-09-29T16:10:00+07:00');
@@ -213,8 +219,7 @@ void main() {
     expect(find.text('บ้านลาดพร้าว'), findsOneWidget);
     await reveal(tester, find.text('Google Calendar'));
     expect(find.text('Google Calendar'), findsOneWidget);
-    await tapAndSettle(tester, find.text('ระบบดีไซน์'));
-    expect(find.text('พื้นท้องฟ้า'), findsOneWidget);
+    expect(find.text('ระบบดีไซน์'), findsNothing);
   });
 
   testWidgets('both tabs fit at 2x text without overflow', (tester) async {

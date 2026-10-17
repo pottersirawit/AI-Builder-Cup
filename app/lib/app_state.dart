@@ -103,19 +103,6 @@ class AppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  /// Local-only toggles from the settings screen, keyed by setting id.
-  final Map<String, bool> toggles = {
-    'gmail': true,
-    'routine': false,
-    'share_reports': true,
-    'home_alerts': true,
-    'sms_backup': true,
-  };
-  void setToggle(String key, bool v) {
-    toggles[key] = v;
-    notifyListeners();
-  }
-
   /// Notification permission. Stubbed: the app has no notifications plugin
   /// yet, so this is only false when a demo preset stages the denied state.
   bool notificationsDenied = false;

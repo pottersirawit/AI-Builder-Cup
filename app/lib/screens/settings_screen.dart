@@ -7,9 +7,6 @@ import '../google_link.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
-import '../time_th.dart';
-import 'gallery_screen.dart';
-import 'parts.dart';
 import 'place_picker.dart';
 
 /// Settings are local-only; saved places travel only as coordinates inside
@@ -24,20 +21,6 @@ class SettingsScreen extends StatelessWidget {
     final store = AppScope.placesOf(context);
     final locator = AppScope.locatorOf(context);
     final sky = state.flood ? SkyState.flood : SkyState.clear;
-
-    Widget toggle(
-      String id,
-      IconData icon,
-      String title,
-      String subtitle, {
-      bool enabled = true,
-    }) => SwitchListTile(
-      secondary: Icon(icon),
-      title: Text(title),
-      subtitle: Text(subtitle),
-      value: state.toggles[id]!,
-      onChanged: enabled ? (v) => state.setToggle(id, v) : null,
-    );
 
     return Scaffold(
       body: CustomScrollView(
@@ -136,12 +119,6 @@ class SettingsScreen extends StatelessWidget {
                   onChanged: (m) => state.mode = m,
                 ),
               ),
-              const SizedBox(height: Space.x2),
-              ListTile(
-                leading: const Icon(Symbols.notifications_rounded),
-                title: Text(l.settingsRemindAhead),
-                subtitle: Text(l.settingsRemindAheadHint),
-              ),
               _Group(l.settingsAutoGroup),
               ConnectRow(
                 icon: Symbols.calendar_month_rounded,
@@ -162,82 +139,6 @@ class SettingsScreen extends StatelessWidget {
                 comingSoon: false,
                 onConnect: () => promptOAuth(context),
                 onDisconnect: store.disconnectGmail,
-              ),
-              toggle(
-                'routine',
-                Symbols.repeat_rounded,
-                l.settingsRoutine,
-                l.settingsRoutineHint,
-                enabled: false,
-              ),
-              _Group(l.settingsCommunityGroup),
-              toggle(
-                'share_reports',
-                Symbols.photo_camera_rounded,
-                l.settingsShareReports,
-                l.settingsShareReportsHint,
-              ),
-              toggle(
-                'home_alerts',
-                Symbols.home_rounded,
-                l.settingsHomeAlerts,
-                l.settingsHomeAlertsHint,
-              ),
-              toggle(
-                'sms_backup',
-                Symbols.sms_rounded,
-                l.settingsSmsBackup,
-                l.settingsSmsBackupHint,
-              ),
-              _Group(l.settingsProfileGroup),
-              if (store.demoProfile)
-                ListTile(
-                  leading: const Icon(Symbols.logout_rounded),
-                  title: Text(l.settingsExitDemo),
-                  subtitle: Text(l.settingsExitDemoHint),
-                  onTap: () {
-                    Navigator.of(context).popUntil((r) => r.isFirst);
-                    store.resetToFirstRun();
-                  },
-                )
-              else
-                ListTile(
-                  leading: const Icon(Symbols.person_play_rounded),
-                  title: Text(l.settingsUseDemo),
-                  subtitle: Text(l.settingsUseDemoHint),
-                  onTap: store.useDemoProfile,
-                ),
-              _Group(l.settingsTeamGroup),
-              ListTile(
-                leading: const Icon(Symbols.palette_rounded),
-                title: Text(l.settingsDesignSystem),
-                subtitle: Text(l.settingsDesignSystemHint),
-                trailing: const Icon(Symbols.chevron_right_rounded),
-                onTap: () => Navigator.of(context).push(
-                  MaterialPageRoute<void>(
-                    builder: (_) => const GalleryScreen(),
-                  ),
-                ),
-              ),
-              ListTile(
-                leading: const Icon(Symbols.schedule_rounded),
-                title: Text(l.settingsDemoClock),
-                subtitle: Text(
-                  state.demoClock == null
-                      ? l.settingsRealTime
-                      : dayTime(l, state.now()),
-                ),
-                trailing: const Icon(Symbols.chevron_right_rounded),
-                onTap: () => showDemoClockPicker(context),
-              ),
-              Padding(
-                padding: const EdgeInsets.fromLTRB(
-                  Space.gutter,
-                  Space.x4,
-                  Space.gutter,
-                  Space.x10,
-                ),
-                child: SourceLabel(l.settingsDemoNote),
               ),
             ],
           ),

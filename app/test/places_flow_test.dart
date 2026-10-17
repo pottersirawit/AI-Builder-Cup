@@ -34,15 +34,8 @@ void main() {
     );
     expect(find.text('ค้นหา'), findsNWidgets(2));
     expect(find.text('เริ่มใช้'), findsOneWidget);
-    expect(find.text('ใช้โปรไฟล์เดโม (มิว)'), findsOneWidget);
-
-    await tapAndSettle(tester, find.text('ใช้โปรไฟล์เดโม (มิว)'));
-    expect(find.text('ควรออกก่อน'), findsOneWidget);
-    expect(
-      find.text('เดโม'),
-      findsOneWidget,
-      reason: 'demo badge in the header',
-    );
+    expect(find.text('ข้ามไปก่อน'), findsOneWidget);
+    expect(find.text('ใช้โปรไฟล์เดโม (มิว)'), findsNothing);
   });
 
   testWidgets('skip leads to a summary that asks for the calendar first', (

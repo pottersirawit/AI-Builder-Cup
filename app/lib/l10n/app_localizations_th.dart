@@ -605,9 +605,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get onboardingSkip => 'ข้ามไปก่อน';
 
   @override
-  String get onboardingDemo => 'ใช้โปรไฟล์เดโม (มิว)';
-
-  @override
   String get onboardingSet => 'ตั้งแล้ว';
 
   @override
@@ -1637,12 +1634,6 @@ class AppLocalizationsTh extends AppLocalizations {
   String get settingsTravelGroup => 'การเดินทาง';
 
   @override
-  String get settingsRemindAhead => 'เตือนล่วงหน้า';
-
-  @override
-  String get settingsRemindAheadHint => '2 ชั่วโมงก่อนเวลาที่ควรออก';
-
-  @override
   String get settingsAutoGroup => 'ให้แอปหาทริปให้เอง';
 
   @override
@@ -1656,69 +1647,6 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get settingsGmailHint =>
       'เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล';
-
-  @override
-  String get settingsRoutine => 'เรียนรู้กิจวัตร';
-
-  @override
-  String get settingsRoutineHint =>
-      'รู้เองว่ากลับบ้านราวหกโมงทุกวัน · เร็ว ๆ นี้';
-
-  @override
-  String get settingsCommunityGroup => 'ชุมชนและน้ำท่วม';
-
-  @override
-  String get settingsShareReports => 'แชร์รายงานน้ำท่วมของฉัน';
-
-  @override
-  String get settingsShareReportsHint => 'ไม่ระบุตัว เฉพาะตำแหน่งและระดับน้ำ';
-
-  @override
-  String get settingsHomeAlerts => 'เตือนน้ำท่วมที่บ้าน';
-
-  @override
-  String get settingsHomeAlertsHint => 'แม้ไม่ได้เปิดแอป';
-
-  @override
-  String get settingsSmsBackup => 'สำรองทาง SMS';
-
-  @override
-  String get settingsSmsBackupHint => 'เมื่อไม่มีอินเทอร์เน็ต';
-
-  @override
-  String get settingsProfileGroup => 'โปรไฟล์';
-
-  @override
-  String get settingsExitDemo => 'ออกจากโปรไฟล์เดโม';
-
-  @override
-  String get settingsExitDemoHint => 'ลบสถานที่ของมิวและกลับไปหน้าเริ่มต้น';
-
-  @override
-  String get settingsUseDemo => 'ใช้โปรไฟล์เดโม (มิว)';
-
-  @override
-  String get settingsUseDemoHint => 'สถานที่และนัดจำลองของมิว สำหรับสาธิต';
-
-  @override
-  String get settingsTeamGroup => 'สำหรับทีม';
-
-  @override
-  String get settingsDesignSystem => 'ระบบดีไซน์';
-
-  @override
-  String get settingsDesignSystemHint =>
-      'สี ตัวอักษร ระยะ และคอมโพเนนต์ทุกสถานะท้องฟ้า';
-
-  @override
-  String get settingsDemoClock => 'เวลาสาธิต';
-
-  @override
-  String get settingsRealTime => 'เวลาจริง';
-
-  @override
-  String get settingsDemoNote =>
-      'ชื่อ “มิว” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม';
 
   @override
   String get settingsPlaceHome => 'บ้าน';

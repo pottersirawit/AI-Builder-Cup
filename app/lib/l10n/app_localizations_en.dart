@@ -620,9 +620,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingSkip => 'Skip for now';
 
   @override
-  String get onboardingDemo => 'Use the demo profile (Miw)';
-
-  @override
   String get onboardingSet => 'Set';
 
   @override
@@ -1658,12 +1655,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTravelGroup => 'Travel';
 
   @override
-  String get settingsRemindAhead => 'Remind me ahead';
-
-  @override
-  String get settingsRemindAheadHint => '2 hours before you should leave';
-
-  @override
   String get settingsAutoGroup => 'Let the app find trips';
 
   @override
@@ -1677,72 +1668,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsGmailHint =>
       'Only ticket and appointment confirmations. We don\'t store email content.';
-
-  @override
-  String get settingsRoutine => 'Learn my routine';
-
-  @override
-  String get settingsRoutineHint =>
-      'Notices you head home around 6 pm every day · coming soon';
-
-  @override
-  String get settingsCommunityGroup => 'Community and flooding';
-
-  @override
-  String get settingsShareReports => 'Share my flood reports';
-
-  @override
-  String get settingsShareReportsHint =>
-      'Anonymous. Only location and water depth.';
-
-  @override
-  String get settingsHomeAlerts => 'Flood alerts for home';
-
-  @override
-  String get settingsHomeAlertsHint => 'Even when the app is closed';
-
-  @override
-  String get settingsSmsBackup => 'SMS backup';
-
-  @override
-  String get settingsSmsBackupHint => 'When there\'s no internet';
-
-  @override
-  String get settingsProfileGroup => 'Profile';
-
-  @override
-  String get settingsExitDemo => 'Leave the demo profile';
-
-  @override
-  String get settingsExitDemoHint =>
-      'Removes Mew\'s places and goes back to the start';
-
-  @override
-  String get settingsUseDemo => 'Use the demo profile (Mew)';
-
-  @override
-  String get settingsUseDemoHint =>
-      'Mew\'s sample places and appointments, for demos';
-
-  @override
-  String get settingsTeamGroup => 'For the team';
-
-  @override
-  String get settingsDesignSystem => 'Design system';
-
-  @override
-  String get settingsDesignSystemHint =>
-      'Colour, type, spacing and components in every sky state';
-
-  @override
-  String get settingsDemoClock => 'Demo clock';
-
-  @override
-  String get settingsRealTime => 'Real time';
-
-  @override
-  String get settingsDemoNote =>
-      'The name “Mew”, user counts and community reports in this app are simulated for the demo.';
 
   @override
   String get settingsPlaceHome => 'Home';
