@@ -420,7 +420,7 @@ func applyAgent(resp *Response, out agentOutput, baseline decision.Result, s *pl
 			}
 		}
 	}
-	if kept && baseline.Verdict != decision.LeaveNow && Contradicts(resp.HeadlineTH+" "+resp.SummaryTH+" "+resp.Explanation.ReasonWhyTH) {
+	if kept && Contradicts(resp.HeadlineTH+"\n"+resp.SummaryTH+"\n"+resp.Explanation.ReasonWhyTH, baseline.Verdict) {
 		resp.HeadlineTH, resp.SummaryTH, resp.Explanation = baseline.HeadlineTH, baseline.SummaryTH, baseline.Explanation
 		steps = append(steps, planner.Call{Tool: GuardrailVerdictTool, SummaryTH: contradictionSummary(s.Lang)})
 	}

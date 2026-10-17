@@ -38,7 +38,7 @@ func narrateEN(in Input, res Result) (headline, summary string, exp Explanation)
 		}
 		parts = append(parts, conditionsEN(e))
 		parts = append(parts, fmt.Sprintf("%s, the trip takes %d min and you arrive%s around %s%s.", when, e.Minutes, atEN(in.DestinationTH), hhmm(e.Arrive), deadlineEN(in, e)))
-		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil {
+		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil && weatherEndsLeaveBy(in, *res.LeaveBy) {
 			parts = append(parts, fmt.Sprintf("If you leave after %s you will hit rain on the way.", hhmm(*res.LeaveBy)))
 		}
 		if in.Mode == domain.ModeTransit && e.MaxRainMM >= rainLight {
@@ -83,24 +83,38 @@ func buildExplanationEN(in Input, res Result) Explanation {
 	switch res.Verdict {
 	case LeaveNow:
 		switch {
-		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && weatherEndsLeaveBy(in, *res.LeaveBy):
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s) so you get there before heavy rain builds up and floods the route.", hhmm(*res.LeaveBy), mode)
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && !in.ArriveBy.IsZero():
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s) to make your %s appointment.", hhmm(*res.LeaveBy), mode, hhmm(in.ArriveBy))
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s).", hhmm(*res.LeaveBy), mode)
 		case e.Late():
 			exp.ReasonWhyTH = fmt.Sprintf("The route is passable by %s, but you would arrive %d min past your %s appointment.", mode, e.LateMinutes, hhmm(in.ArriveBy))
 		default:
 			exp.ReasonWhyTH = fmt.Sprintf("Conditions on your route are safe right now: no heavy rain and no standing water in the way. You can head out by %s.", mode)
 		}
 	case SwitchMode:
-		if e.MaxDepthCM >= 1 {
+		switch {
+		case e.MaxDepthCM >= 1 && e.Risk == RiskHigh:
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because there is about %.0f cm of standing water%s, beyond the safe clearance (%s). Trains run above or below the street, so flooding does not affect them.",
 				mode, e.MaxDepthCM, whereEN(e.DeepestTH), clearanceEN(in.Mode))
-		} else if e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto {
+		case e.MaxDepthCM >= 1:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because about %.0f cm of standing water%s will slow you down (safe clearance: %s). Trains run above or below the street, so flooding does not affect them.",
+				mode, e.MaxDepthCM, whereEN(e.DeepestTH), clearanceEN(in.Mode))
+		case e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto:
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the motorbike because wind gusts of %.0f km/h on the route make it easy to lose control.", e.WindGustKMH)
-		} else {
+		case e.Risk == RiskHigh:
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT because the road route is high risk in this weather. The train takes about %d min and is safer.", tr.Minutes)
+		case e.MaxRainMM < rainLight && e.WindGustKMH >= motoWindGustCautionKMH:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because wind gusts of %.0f km/h on the route make riding harder. The train takes about %d min.", mode, e.WindGustKMH, tr.Minutes)
+		default:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because of rain on the way (about %.0f mm/h) and slick roads. The train takes about %d min.", mode, e.MaxRainMM, tr.Minutes)
 		}
 	case Wait:
-		if res.WaitUntil != nil {
+		if res.WaitUntil != nil && e.MaxDepthCM < 1 {
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest waiting until %s for the rain to ease before you travel by %s.", hhmm(*res.WaitUntil), mode)
+		} else if res.WaitUntil != nil {
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest waiting until %s so the standing water%s can drain and the rain can ease before you travel by %s.", hhmm(*res.WaitUntil), whereEN(e.DeepestTH), mode)
 		} else {
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest holding off on travelling by %s until the standing water on the route has drained.", mode)
@@ -109,7 +123,9 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		exp.ReasonWhyTH = "It is not a good time to set out. Weather and flooding are high risk on every route and for every way of travelling, so stay indoors somewhere safe."
 	}
 
-	if res.RainOnset != nil {
+	if res.RainOnset != nil && !res.RainOnset.After(in.Now) {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: raining on your route now (peak %.0f mm/h)", e.MaxRainMM))
+	} else if res.RainOnset != nil {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: starts on your route around %s (peak %.0f mm/h)", hhmm(*res.RainOnset), e.MaxRainMM))
 	} else if e.MaxRainMM >= rainLight {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Rain: up to %.0f mm/h on the way", e.MaxRainMM))
@@ -123,8 +139,8 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		exp.FactorsTH = append(exp.FactorsTH, "Water depth: no standing water found on the route")
 	}
 
-	if e.WindGustKMH >= 30 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind: gusts up to %.0f km/h (motorbike caution threshold is 45 km/h)", e.WindGustKMH))
+	if e.WindGustKMH >= motoWindGustCautionKMH {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind: gusts up to %.0f km/h (motorbike caution threshold is %.0f km/h)", e.WindGustKMH, motoWindGustThresholdKMH))
 	}
 
 	if !in.ArriveBy.IsZero() {
@@ -137,8 +153,11 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Travel time: about %d min, arriving around %s", e.Minutes, hhmm(e.Arrive)))
 	}
 
-	if len(in.Reports) > 0 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Community reports: %d real flood reports near your route", len(in.Reports)))
+	switch n := usableReports(in.Reports); {
+	case n == 1:
+		exp.FactorsTH = append(exp.FactorsTH, "Community reports: 1 real flood report near your route")
+	case n > 1:
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Community reports: %d real flood reports near your route", n))
 	}
 
 	for _, s := range res.FloodSpots {
@@ -161,7 +180,10 @@ func buildExplanationEN(in Input, res Result) Explanation {
 			exp.RouteAdviceTH = fmt.Sprintf("Watch for flooding at %s. If heavy rain hits, switch to the elevated expressway or a nearby main road.", spots)
 		}
 	} else if in.Mode == domain.ModeTransit {
-		exp.RouteAdviceTH = "Your train route is not affected by flooded roads, so travel as normal (bring an umbrella for the walk to and from the station)."
+		exp.RouteAdviceTH = "Your train route is not affected by flooded roads, so travel as normal."
+		if e.MaxRainMM >= rainLight {
+			exp.RouteAdviceTH = "Your train route is not affected by flooded roads, so travel as normal (bring an umbrella for the walk to and from the station)."
+		}
 	} else {
 		exp.RouteAdviceTH = "Your route does not pass any critical flood spot in Bangkok, so you can take the main route as usual."
 	}
@@ -198,6 +220,9 @@ func hazardEN(e Eval) string {
 	case e.MaxRainMM >= rainLight:
 		return "rain on the way and slick roads"
 	}
+	if e.Mode == domain.ModeMoto && e.WindGustKMH >= motoWindGustCautionKMH {
+		return fmt.Sprintf("wind gusts of %.0f km/h", e.WindGustKMH)
+	}
 	return "some risk on the way"
 }
 
@@ -233,7 +258,7 @@ func modeNoteEN(e Eval) string {
 }
 
 func rainWordEN(mm float64) string {
-	if mm >= 35 {
+	if mm >= rainHeavy {
 		return "Heavy rain"
 	}
 	return "Moderate rain"
