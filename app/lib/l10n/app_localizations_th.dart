@@ -271,7 +271,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String partsNeedsWhere(String place) {
-    return 'ยังไม่รู้ว่า$placeอยู่ไหน';
+    return 'ยังไม่รู้ว่า $place อยู่ไหน';
   }
 
   @override
@@ -1412,7 +1412,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String alertShort(String to) {
-    return 'ไป$toไม่ทัน';
+    return 'ไป $to ไม่ทัน';
   }
 
   @override
@@ -1422,22 +1422,22 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String alertOverlap(String from, String to) {
-    return '$from กับ$to เวลาชนกัน';
+    return '$from กับ $to เวลาชนกัน';
   }
 
   @override
   String alertTight(String to) {
-    return 'เวลาไป$toเผื่อน้อย';
+    return 'เวลาไป $to เผื่อน้อย';
   }
 
   @override
   String alertTightBody(String need, String gap, String from) {
-    return 'เดินทางราว $need มีเวลา $gap ออกจาก$fromให้ตรงเวลา';
+    return 'เดินทางราว $need มีเวลา $gap ออกจาก $from ให้ตรงเวลา';
   }
 
   @override
   String alertWetLeave(String pct, String to) {
-    return 'ฝน $pct% ตอนออกไป$to';
+    return 'ฝน $pct% ตอนออกไป $to';
   }
 
   @override
@@ -1452,7 +1452,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String alertWetReturn(String from, String pct) {
-    return 'ขากลับจาก$fromฝน $pct%';
+    return 'ขากลับจาก $from ฝน $pct%';
   }
 
   @override
@@ -1517,7 +1517,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String verdictGoTo(String place) {
-    return 'ไป$place';
+    return 'ไป $place';
   }
 
   @override

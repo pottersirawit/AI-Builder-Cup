@@ -48,7 +48,7 @@ void main() {
       findsOneWidget,
       reason: 'lunch at Siam ends 12:45, review at Thonglor starts 13:00',
     );
-    expect(find.text('ไปรีวิวงานที่ทองหล่อไม่ทัน'), findsOneWidget);
+    expect(find.text('ไป รีวิวงานที่ทองหล่อ ไม่ทัน'), findsOneWidget);
     expect(
       find.byKey(const ValueKey('alert-needsPlace-cal-dentist')),
       findsOneWidget,

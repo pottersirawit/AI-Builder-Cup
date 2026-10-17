@@ -9,6 +9,23 @@ import 'helpers.dart';
 final _thai = RegExp(r'[ก-๙]');
 
 void main() {
+  test('Thai copy keeps English event and place names apart', () {
+    final l = lookupAppLocalizations(const Locale('th'));
+    const name = 'AI Builder Cup';
+    for (final line in [
+      l.alertShort(name),
+      l.alertOverlap(name, name),
+      l.alertTight(name),
+      l.alertTightBody('20 นาที', '10 นาที', name),
+      l.alertWetLeave('60', name),
+      l.alertWetReturn(name, '60'),
+      l.partsNeedsWhere(name),
+      l.verdictGoTo(name),
+    ]) {
+      expect(line, isNot(matches(RegExp(r'[ก-๙]AI|Cup[ก-๙]'))), reason: line);
+    }
+  });
+
   testWidgets('the departure pass, board and GeneratedBy read in English', (
     tester,
   ) async {

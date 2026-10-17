@@ -116,7 +116,7 @@ void main() {
       await tester.enterText(find.byType(TextField).first, 'กลับบ้านตอนนี้');
       await tester.testTextInput.receiveAction(TextInputAction.send);
       await settle(tester);
-      expect(find.text('ยังไม่รู้ว่าบ้านอยู่ไหน'), findsOneWidget);
+      expect(find.text('ยังไม่รู้ว่า บ้าน อยู่ไหน'), findsOneWidget);
       expect(log, isEmpty, reason: 'known without asking the server');
 
       await tapAndSettle(tester, find.text('ใช้ตำแหน่งตอนนี้'));
@@ -128,7 +128,7 @@ void main() {
       await tapAndSettle(tester, find.text('บันทึก'));
 
       expect(store.home, isNotNull);
-      expect(find.text('ยังไม่รู้ว่าบ้านอยู่ไหน'), findsNothing);
+      expect(find.text('ยังไม่รู้ว่า บ้าน อยู่ไหน'), findsNothing);
       expect(log, hasLength(1));
       final body = jsonDecode(log.single) as Map<String, dynamic>;
       expect(body['question_th'], 'กลับบ้านตอนนี้');

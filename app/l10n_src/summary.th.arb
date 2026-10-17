@@ -317,7 +317,7 @@
   "unitMin": "นาที",
   "unitHour": "ชม.",
   "alertsTitle": "ต้องรู้ก่อนออก",
-  "alertShort": "ไป{to}ไม่ทัน",
+  "alertShort": "ไป {to} ไม่ทัน",
   "@alertShort": {
     "placeholders": {
       "to": {
@@ -342,7 +342,7 @@
       }
     }
   },
-  "alertOverlap": "{from} กับ{to} เวลาชนกัน",
+  "alertOverlap": "{from} กับ {to} เวลาชนกัน",
   "@alertOverlap": {
     "placeholders": {
       "from": {
@@ -353,7 +353,7 @@
       }
     }
   },
-  "alertTight": "เวลาไป{to}เผื่อน้อย",
+  "alertTight": "เวลาไป {to} เผื่อน้อย",
   "@alertTight": {
     "placeholders": {
       "to": {
@@ -361,7 +361,7 @@
       }
     }
   },
-  "alertTightBody": "เดินทางราว {need} มีเวลา {gap} ออกจาก{from}ให้ตรงเวลา",
+  "alertTightBody": "เดินทางราว {need} มีเวลา {gap} ออกจาก {from} ให้ตรงเวลา",
   "@alertTightBody": {
     "placeholders": {
       "need": {
@@ -375,7 +375,7 @@
       }
     }
   },
-  "alertWetLeave": "ฝน {pct}% ตอนออกไป{to}",
+  "alertWetLeave": "ฝน {pct}% ตอนออกไป {to}",
   "@alertWetLeave": {
     "placeholders": {
       "pct": {
@@ -402,7 +402,7 @@
       }
     }
   },
-  "alertWetReturn": "ขากลับจาก{from}ฝน {pct}%",
+  "alertWetReturn": "ขากลับจาก {from} ฝน {pct}%",
   "@alertWetReturn": {
     "placeholders": {
       "from": {

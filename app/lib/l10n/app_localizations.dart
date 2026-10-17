@@ -545,7 +545,7 @@ abstract class AppLocalizations {
   /// No description provided for @partsNeedsWhere.
   ///
   /// In th, this message translates to:
-  /// **'ยังไม่รู้ว่า{place}อยู่ไหน'**
+  /// **'ยังไม่รู้ว่า {place} อยู่ไหน'**
   String partsNeedsWhere(String place);
 
   /// No description provided for @partsNeedsSaveOnce.
@@ -2459,7 +2459,7 @@ abstract class AppLocalizations {
   /// No description provided for @alertShort.
   ///
   /// In th, this message translates to:
-  /// **'ไป{to}ไม่ทัน'**
+  /// **'ไป {to} ไม่ทัน'**
   String alertShort(String to);
 
   /// No description provided for @alertShortBody.
@@ -2471,25 +2471,25 @@ abstract class AppLocalizations {
   /// No description provided for @alertOverlap.
   ///
   /// In th, this message translates to:
-  /// **'{from} กับ{to} เวลาชนกัน'**
+  /// **'{from} กับ {to} เวลาชนกัน'**
   String alertOverlap(String from, String to);
 
   /// No description provided for @alertTight.
   ///
   /// In th, this message translates to:
-  /// **'เวลาไป{to}เผื่อน้อย'**
+  /// **'เวลาไป {to} เผื่อน้อย'**
   String alertTight(String to);
 
   /// No description provided for @alertTightBody.
   ///
   /// In th, this message translates to:
-  /// **'เดินทางราว {need} มีเวลา {gap} ออกจาก{from}ให้ตรงเวลา'**
+  /// **'เดินทางราว {need} มีเวลา {gap} ออกจาก {from} ให้ตรงเวลา'**
   String alertTightBody(String need, String gap, String from);
 
   /// No description provided for @alertWetLeave.
   ///
   /// In th, this message translates to:
-  /// **'ฝน {pct}% ตอนออกไป{to}'**
+  /// **'ฝน {pct}% ตอนออกไป {to}'**
   String alertWetLeave(String pct, String to);
 
   /// No description provided for @alertWetLeaveBody.
@@ -2507,7 +2507,7 @@ abstract class AppLocalizations {
   /// No description provided for @alertWetReturn.
   ///
   /// In th, this message translates to:
-  /// **'ขากลับจาก{from}ฝน {pct}%'**
+  /// **'ขากลับจาก {from} ฝน {pct}%'**
   String alertWetReturn(String from, String pct);
 
   /// No description provided for @alertWetReturnBody.
@@ -2615,7 +2615,7 @@ abstract class AppLocalizations {
   /// No description provided for @verdictGoTo.
   ///
   /// In th, this message translates to:
-  /// **'ไป{place}'**
+  /// **'ไป {place}'**
   String verdictGoTo(String place);
 
   /// No description provided for @verdictCompareModes.
