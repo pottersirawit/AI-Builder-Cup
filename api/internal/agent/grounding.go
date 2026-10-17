@@ -80,7 +80,9 @@ func NewGrounding(resp Response, core decision.Result, extra ...time.Time) Groun
 // depths, rain rates, ETAs, lateness, wind, the clearance thresholds and the
 // minutes between the departure (or appointment) and each known time.
 func (g *Grounding) collectNumbers(resp Response, core decision.Result) {
-	g.addNum("cm", 15, 10)
+	for unit, vs := range decision.Thresholds() {
+		g.addNum(unit, vs...)
+	}
 	for _, f := range slices.Concat(core.FloodSpots, resp.FloodSpots) {
 		g.addNum("cm", float64(f.ExpectedDepthCM))
 	}

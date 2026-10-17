@@ -273,7 +273,7 @@ func modeNoteTH(in Input, e Eval) string {
 
 // rainWordTH follows the TMD bands: 10-35 mm/h moderate, 35+ heavy.
 func rainWordTH(mm float64) string {
-	if mm >= 35 {
+	if mm >= rainHeavy {
 		return "ฝนหนัก"
 	}
 	return "ฝนตกปานกลาง"

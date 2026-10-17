@@ -38,6 +38,7 @@ func (r Risk) rank() int { return map[Risk]int{RiskLow: 0, RiskMedium: 1, RiskHi
 const (
 	rainLight    = 1.0
 	rainModerate = 10.0
+	rainHeavy    = 35.0
 )
 
 // Vehicle Clearance Profiles (CONTEXT.md): water depth in cm & wind threshold in km/h.
@@ -48,6 +49,16 @@ const (
 	motoWindGustCautionKMH   = 30.0 // gusts make riding harder
 	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 )
+
+// Thresholds are the engine's cut-offs by unit ("cm", "mmh", "kmh"), which
+// advice may quote as facts.
+func Thresholds() map[string][]float64 {
+	return map[string][]float64{
+		"cm":  {carSlowDepthCM, carStallDepthCM, motoStallDepthCM, soloReportCapCM},
+		"mmh": {rainLight, rainModerate, rainHeavy},
+		"kmh": {motoWindGustCautionKMH, motoWindGustThresholdKMH},
+	}
+}
 
 // Water drains from a flood spot linearly over drainWindow after the rain that
 // caused it; a community report is trusted for reportTTL.

@@ -162,6 +162,20 @@ func TestUngroundedNumbers(t *testing.T) {
 	}
 }
 
+func TestEngineThresholdsAreGrounded(t *testing.T) {
+	g := NewGrounding(Response{}, decision.Result{})
+	for _, text := range []string{
+		"Water over 5 cm slows a sedan; 15 cm stalls it and 10 cm stalls a motorbike.",
+		"Rain from 1 mm/h is light, 10 mm/h moderate and 35 mm/h heavy.",
+		"Gusts of 30 km/h make riding harder and 45 km/h is dangerous.",
+		"น้ำเกิน 5 ซม. ฝน 10 มม./ชม. ลม 45 กม./ชม.",
+	} {
+		if got := g.UngroundedNumbers(text); len(got) > 0 {
+			t.Errorf("%q: engine thresholds flagged as ungrounded: %v", text, got)
+		}
+	}
+}
+
 func TestContradicts(t *testing.T) {
 	tests := []struct {
 		text    string

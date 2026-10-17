@@ -253,7 +253,7 @@ func modeNoteEN(e Eval) string {
 }
 
 func rainWordEN(mm float64) string {
-	if mm >= 35 {
+	if mm >= rainHeavy {
 		return "Heavy rain"
 	}
 	return "Moderate rain"
