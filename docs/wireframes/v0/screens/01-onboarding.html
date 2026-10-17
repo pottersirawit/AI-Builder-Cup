@@ -71,4 +71,37 @@ body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-u
 .flow .f { border:2px solid var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; background:#fff; font-weight:700; }
 .flow .a { color:var(--mid); font-size:20px; }
 .page { padding:36px; display:inline-block; }
-</style></head><body><div class="page"><div class="cell"><h2>1 · Onboarding</h2><div class="goal">Two optional taps so the app can warn before you head home. Skippable: asking always works.</div><div class="phone"><div class="status"><span>09:00</span><span>● ● ▮</span></div><div class="body"><div style="height:36px"></div><div class="img" style="height:110px;border-radius:50%;width:110px;align-self:center">โลโก้<br>ฝนตกไหม</div><div class="h1" style="text-align:center">ให้แอปเตือนก่อนกลับบ้าน</div><div class="anc"><div class="pinno">1</div></div><div class="box"><div class="h2">บ้าน</div><div class="t mut">ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน</div><div style="display:flex;gap:8px;margin-top:10px"><div class="btn" style="flex:1">ใช้ตำแหน่งตอนนี้</div><div class="btn" style="flex:1">ค้นหา</div></div></div><div class="anc"><div class="pinno">2</div></div><div class="box"><div class="h2">ที่ทำงาน <span class="mut" style="font-weight:400">· ไม่บังคับ</span></div><div class="t mut">ทำให้เตือนตอนเลิกงานได้แม่นขึ้น</div><div style="display:flex;gap:8px;margin-top:10px"><div class="btn" style="flex:1">ใช้ตำแหน่งตอนนี้</div><div class="btn" style="flex:1">ค้นหา</div></div></div><div style="flex:1"></div><div class="btn fill">เริ่มใช้</div><div class="anc"><div class="pinno">3</div></div><div class="btn ghost">ข้ามไปก่อน</div><div class="t mut" style="text-align:center">ใช้โปรไฟล์เดโม (มิว)</div></div></div><div class="legend"><div><b>1</b><span>Home place: for the warning before you leave and flood risk at your door</span></div><div><b>2</b><span>Work place (optional): makes the end-of-day warning accurate</span></div><div><b>3</b><span>Skip is a first-class path: the ask bar works with nothing connected</span></div></div></div></div></body></html>
+
+.navbar { position:absolute; left:16px; right:16px; bottom:14px; height:58px; display:flex; gap:10px; z-index:3; }
+.navbar .pill { flex:1; border:2px solid var(--ink); border-radius:30px; display:flex; background:var(--paper); }
+.navbar .pill div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.navbar .pill div i { width:20px; height:20px; border:2px solid var(--line); border-radius:6px; display:block; }
+.navbar .pill div.on { color:var(--ink); font-weight:700; } .navbar .pill div.on i { border-color:var(--ink); background:var(--fill2); }
+.navbar .spark { width:58px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phone .body { padding-bottom:84px; }
+.dim { position:absolute; inset:0; background:rgba(27,31,36,.35); z-index:6; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; background:var(--paper); border-top:2px solid var(--ink); border-radius:24px 24px 0 0; padding:10px 16px 18px 26px; display:flex; flex-direction:column; gap:10px; z-index:7; }
+.bsheet .grab { width:40px; height:5px; border-radius:3px; background:var(--line); align-self:center; margin-bottom:4px; }
+.acts { margin-left:auto; display:flex; gap:8px; } .top .acts .gear, .acts .gear { margin-left:0; width:30px; height:30px; border:2px solid var(--line); border-radius:50%; display:block; }
+.grow { flex:1; min-width:0; }
+.stub { flex:none; border:2px solid var(--ink); border-radius:10px; background:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.stub b { font-size:18px; } .stub span { font-size:11px; color:var(--mid); }
+.ticket { border:2px solid var(--ink); border-radius:16px; background:var(--fill); display:flex; flex-direction:column; flex:none; }
+.tk-top, .tk-bot { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.perf { border-top:2px dashed var(--line); margin:0 10px; position:relative; }
+.perf::before, .perf::after { content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--ink); }
+.perf::before { left:-21px; clip-path:inset(0 0 0 50%); } .perf::after { right:-21px; clip-path:inset(0 50% 0 0); }
+.ring { width:76px; height:76px; border-radius:50%; border:6px solid var(--ink); border-right-color:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; flex:none; }
+.ring b { font-size:20px; } .ring span { font-size:9px; color:var(--mid); }
+.sec { display:flex; flex-direction:column; gap:8px; }
+.hscroll { display:flex; gap:10px; overflow:hidden; }
+.mini { width:170px; flex:none; border:2px solid var(--line); border-radius:12px; padding:10px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+.tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.tag.ok { border-color:var(--line); }
+.ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); display:inline-block; }
+.ic.round { border-radius:50%; } .ic.sq { width:26px; height:26px; }
+.chip.ghost { color:var(--mid); border-style:dashed; }
+.rb .bubble-t { position:absolute; top:2px; background:var(--ink); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; }
+.rb .bracket { position:absolute; bottom:12px; height:6px; border:2px solid var(--ink); border-top:none; }
+.rb .hours { position:absolute; left:6px; right:6px; bottom:0; display:flex; justify-content:space-between; font-size:9px; color:var(--mid); }
+</style></head><body><div class="page"><div class="cell"><h2>1 · Onboarding</h2><div class="goal">First launch only. Set home and work on a pass, or skip: asking always works.</div><div class="phone"><div class="status"><span>09:00</span><span>● ● ▮</span></div><div class="body"><div class="t" style="display:flex;gap:8px;align-items:center;margin-top:8px"><span class="ic sq"></span><b>ฝนตกไหม</b></div><div class="h1" style="font-size:30px">ให้แอปเตือนก่อนกลับบ้าน</div><div class="t mut">บอกว่าบ้านกับที่ทำงานอยู่ไหน แอปจะเช็กฝนและน้ำท่วมบนทางกลับให้ทุกเย็น และดูความเสี่ยงน้ำท่วมหน้าบ้าน</div><div class="anc"><div class="pinno">1</div></div><div class="ticket"><div class="tk-top"><div class="h2">บ้าน</div><div class="t mut">ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน</div><div style="display:flex;gap:8px;margin-top:8px"><div class="btn" style="flex:1">ใช้ตำแหน่งตอนนี้</div><div class="btn" style="flex:1">ค้นหา</div></div></div><div class="perf"></div><div class="tk-bot"><div class="anc"><div class="pinno">2</div></div><div style="display:flex;justify-content:space-between"><div class="h2">ที่ทำงาน</div><span class="tag ok">ตั้งแล้ว</span></div><div class="t mut">สีลม ซอย 3 · จ–ศ ออก 18:00</div><div class="t" style="text-align:right">แก้ไข</div></div><div class="perf"></div><div class="tk-bot t mut">🔒 ข้ามไปก่อนก็ได้ ถามเองได้เสมอ</div></div><div style="flex:1"></div><div class="btn fill">เริ่มใช้</div><div class="anc"><div class="pinno">3</div></div><div class="btn ghost">ข้ามไปก่อน</div></div></div><div class="legend"><div><b>1</b><span>Home slot: GPS or search, then confirm on a pin</span></div><div><b>2</b><span>Work slot is optional; once set it shows the days and usual leave time</span></div><div><b>3</b><span>Skip is a first-class path: the Ask button works with nothing set</span></div></div></div></div></body></html>

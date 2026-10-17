@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
+import '../carry.dart';
 import '../design/design.dart';
 import '../events.dart';
 import '../l10n/l10n.dart';
@@ -13,6 +14,7 @@ import 'ask_screen.dart';
 import 'origin_picker.dart';
 import 'parts.dart';
 import 'place_picker.dart';
+import 'weather_cards.dart' show carryLook;
 
 /// One trip in full: drag the departure, compare modes, see why.
 class VerdictScreen extends StatefulWidget {
@@ -43,7 +45,11 @@ class _VerdictScreenState extends State<VerdictScreen> {
     request: _initialRequest,
     departAt: widget.departAt,
     mode: widget.mode,
+    deadline: widget.trip?.allDay == true ? null : widget.trip?.arriveBy,
   )..addListener(_changed);
+
+  /// Weather at the destination, for what to bring.
+  Outlook? _outlook;
 
   DecideRequest get _initialRequest {
     final prev = widget.previousTrip;
@@ -51,7 +57,8 @@ class _VerdictScreenState extends State<VerdictScreen> {
     if (prev != null &&
         prev.destination.resolved &&
         trip != null &&
-        (widget.request.origin == null || widget.request.origin!.isPlaceholder)) {
+        (widget.request.origin == null ||
+            widget.request.origin!.isPlaceholder)) {
       return widget.request.copyWith(
         origin: prev.destination,
         trip: trip.copyWith(origin: prev.destination),
@@ -64,6 +71,20 @@ class _VerdictScreenState extends State<VerdictScreen> {
   void initState() {
     super.initState();
     _c.load();
+    _loadOutlook();
+  }
+
+  Future<void> _loadOutlook() async {
+    final dest = widget.trip?.destination ?? widget.request.destination;
+    final known = dest != null && (dest.lat != 0 || dest.lng != 0);
+    try {
+      final r = await AppScope.apiOf(
+        context,
+      ).outlook(lat: known ? dest.lat : null, lng: known ? dest.lng : null);
+      if (mounted) setState(() => _outlook = r.data);
+    } catch (_) {
+      // No weather, no packing list; the trip's answer stands on its own.
+    }
   }
 
   void _changed() => setState(() {});
@@ -71,7 +92,8 @@ class _VerdictScreenState extends State<VerdictScreen> {
   Future<void> _openOriginPicker() async {
     final state = AppScope.readState(context);
     final store = AppScope.readPlaces(context);
-    final prev = widget.previousTrip ??
+    final prev =
+        widget.previousTrip ??
         (widget.trip != null
             ? previousEventFor(store.cachedTrips, widget.trip!)
             : null);
@@ -178,8 +200,10 @@ class _VerdictScreenState extends State<VerdictScreen> {
             actions: [
               if (trip != null)
                 ActionChip(
-                  avatar:
-                      const Icon(Symbols.edit_location_alt_rounded, size: 18),
+                  avatar: const Icon(
+                    Symbols.edit_location_alt_rounded,
+                    size: 18,
+                  ),
                   label: Text(l.isThai ? 'เปลี่ยนจุดเริ่มต้น' : 'Change start'),
                   onPressed: _openOriginPicker,
                 ),
@@ -253,6 +277,17 @@ class _VerdictScreenState extends State<VerdictScreen> {
             if (d.explanation case final e? when !e.isEmpty)
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),
+              ),
+            if (_outlook case final o?)
+              SliverToBoxAdapter(
+                child: _GearSection(
+                  outlook: o,
+                  from: _c.departAt,
+                  until: _c.deadline != null
+                      ? _c.deadline!.add(const Duration(hours: 2))
+                      : _c.departAt.add(Duration(minutes: _c.etaMin + 60)),
+                  mode: _c.mode,
+                ),
               ),
             SliverToBoxAdapter(
               child: Section(
@@ -364,10 +399,17 @@ class _VerdictScreenState extends State<VerdictScreen> {
                         children: [
                           for (final contact in d.emergencyContacts)
                             ActionChip(
-                              avatar: const Icon(Symbols.phone_in_talk_rounded, size: 16),
-                              label: Text('${contact.number} ${l.isThai ? contact.agencyTh : contact.agencyEn}'),
+                              avatar: const Icon(
+                                Symbols.phone_in_talk_rounded,
+                                size: 16,
+                              ),
+                              label: Text(
+                                '${contact.number} ${l.isThai ? contact.agencyTh : contact.agencyEn}',
+                              ),
                               onPressed: () {
-                                Clipboard.setData(ClipboardData(text: contact.number));
+                                Clipboard.setData(
+                                  ClipboardData(text: contact.number),
+                                );
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
@@ -396,10 +438,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       children: [
                         for (final s in d.sources)
                           Chip(
-                            avatar: Icon(
-                              _sourceIcon(s),
-                              size: 16,
-                            ),
+                            avatar: Icon(_sourceIcon(s), size: 16),
                             label: Text(
                               s == gpsSourceLabel ? l.verdictSourceGps : s,
                             ),
@@ -412,7 +451,9 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     const SizedBox(height: Space.x2),
                     Text(
                       l.verdictAccuracyDisclaimer,
-                      style: t.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                      style: t.labelSmall?.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -441,6 +482,116 @@ class _VerdictScreenState extends State<VerdictScreen> {
           ],
         ],
       ),
+    );
+  }
+}
+
+/// What to bring for this trip, from the weather at the destination between
+/// leaving and the end of the event: rain gear, sun, heat or cold.
+class _GearSection extends StatelessWidget {
+  const _GearSection({
+    required this.outlook,
+    required this.from,
+    required this.until,
+    required this.mode,
+  });
+  final Outlook outlook;
+  final DateTime from;
+  final DateTime until;
+  final TravelMode mode;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final hours = hoursAhead(outlook, now: from, until: until);
+    final items = whatToCarry(outlook, now: from, until: until, mode: mode);
+    final moto = mode == TravelMode.moto;
+    final first = hours.firstOrNull;
+    final peakTemp = hours.fold(-99.0, (m, h) => h.tempC > m ? h.tempC : m);
+    // The extreme the body feels: the coldest when it is cold, else the hottest.
+    final feels = hours.any((h) => h.feelsLikeC <= coldFeelsLikeC)
+        ? hours.fold(99.0, (m, h) => h.feelsLikeC < m ? h.feelsLikeC : m)
+        : hours.fold(-99.0, (m, h) => h.feelsLikeC > m ? h.feelsLikeC : m);
+
+    Widget row(IconData icon, Color accent, String title, String why) =>
+        MergeSemantics(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: Space.x2),
+            child: Row(
+              children: [
+                Container(
+                  width: 40,
+                  height: 40,
+                  decoration: BoxDecoration(
+                    shape: BoxShape.circle,
+                    color: accent.withValues(alpha: .18),
+                  ),
+                  child: Icon(icon, color: accent, fill: 1, size: 22),
+                ),
+                const SizedBox(width: Space.x3),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(title, style: t.titleMedium),
+                      Text(
+                        why,
+                        style: tabular(
+                          t.bodySmall!,
+                        ).copyWith(color: scheme.onSurfaceVariant),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+
+    return Section(
+      key: const ValueKey('gear-section'),
+      title: l.verdictGearTitle,
+      trailing: Icon(Symbols.backpack_rounded, size: 20, color: scheme.primary),
+      child: first == null
+          ? Text(
+              l.verdictGearTooFar,
+              style: t.bodyMedium!.copyWith(color: scheme.onSurfaceVariant),
+            )
+          : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  l.verdictGearWeather(peakTemp.round(), feels.round()),
+                  style: tabular(
+                    t.bodyMedium!,
+                  ).copyWith(color: scheme.onSurfaceVariant),
+                ),
+                const SizedBox(height: Space.x2),
+                if (items.isEmpty)
+                  row(
+                    Symbols.check_circle_rounded,
+                    FonColors.of(context).riskLow,
+                    l.carryNothing,
+                    l.verdictGearNothingBody,
+                  )
+                else
+                  for (final i in items)
+                    Builder(
+                      key: ValueKey('gear-${i.kind.name}'),
+                      builder: (context) {
+                        final look = carryLook(l, i, moto: moto);
+                        return row(
+                          look.icon,
+                          look.accent,
+                          look.title,
+                          look.why,
+                        );
+                      },
+                    ),
+              ],
+            ),
     );
   }
 }
@@ -650,7 +801,9 @@ IconData _sourceIcon(String s) {
   if (s.contains('GPS') || s.contains('ตำแหน่ง')) {
     return Symbols.my_location_rounded;
   }
-  if (s.contains('Road Flood') || s.contains('Sensor') || s.contains('เซ็นเซอร์')) {
+  if (s.contains('Road Flood') ||
+      s.contains('Sensor') ||
+      s.contains('เซ็นเซอร์')) {
     return Symbols.sensors_rounded;
   }
   if (s.contains('WeatherNext') || s.contains('Wind')) {
@@ -713,11 +866,7 @@ class _CalculatedRouteSection extends StatelessWidget {
 
     return Section(
       title: l.isThai ? 'เส้นทางที่ใช้คำนวณ' : 'Calculated route',
-      trailing: Icon(
-        selectedMode.icon,
-        size: 20,
-        color: scheme.primary,
-      ),
+      trailing: Icon(selectedMode.icon, size: 20, color: scheme.primary),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -725,7 +874,7 @@ class _CalculatedRouteSection extends StatelessWidget {
             Row(
               children: [
                 Icon(
-                   Symbols.route_rounded,
+                  Symbols.route_rounded,
                   size: 18,
                   color: scheme.onSurfaceVariant,
                 ),
@@ -733,9 +882,9 @@ class _CalculatedRouteSection extends StatelessWidget {
                 Expanded(
                   child: Text(
                     '${selectedMode.label(l)} · ${l.partsTakesMin(selectedOption.etaMin)}',
-                    style: tabular(t.labelLarge!).copyWith(
-                      color: scheme.onSurfaceVariant,
-                    ),
+                    style: tabular(
+                      t.labelLarge!,
+                    ).copyWith(color: scheme.onSurfaceVariant),
                   ),
                 ),
               ],
@@ -795,11 +944,7 @@ class _CalculatedRouteSection extends StatelessWidget {
             if (selectedMode != TravelMode.transit) ...[
               Row(
                 children: [
-                  Icon(
-                    Symbols.train_rounded,
-                    size: 18,
-                    color: scheme.primary,
-                  ),
+                  Icon(Symbols.train_rounded, size: 18, color: scheme.primary),
                   const SizedBox(width: Space.x2),
                   Expanded(
                     child: Text(
@@ -814,11 +959,7 @@ class _CalculatedRouteSection extends StatelessWidget {
               const SizedBox(height: Space.x2),
             ],
             for (var i = 0; i < transitLegs.length; i++) ...[
-              _TransitLegTile(
-                leg: transitLegs[i],
-                index: i,
-                isThai: l.isThai,
-              ),
+              _TransitLegTile(leg: transitLegs[i], index: i, isThai: l.isThai),
               if (i < transitLegs.length - 1) const SizedBox(height: Space.x2),
             ],
           ],
@@ -895,9 +1036,9 @@ class _TransitLegTile extends StatelessWidget {
               if (leg.stopCount > 0)
                 Text(
                   isThai ? '${leg.stopCount} สถานี' : '${leg.stopCount} stops',
-                  style: tabular(t.labelMedium!).copyWith(
-                    color: scheme.onSurfaceVariant,
-                  ),
+                  style: tabular(
+                    t.labelMedium!,
+                  ).copyWith(color: scheme.onSurfaceVariant),
                 ),
             ],
           ),
@@ -953,5 +1094,3 @@ class _TransitLegTile extends StatelessWidget {
     );
   }
 }
-
-

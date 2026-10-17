@@ -7,6 +7,16 @@ import '../events.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../time_th.dart';
+import '../trips_repository.dart';
+
+/// Hides [trip] from the user's events.
+void dismissTripWithUndo(
+  BuildContext context,
+  TripsRepository repo,
+  Trip trip,
+) {
+  repo.dismissTrip(trip.id);
+}
 
 /// "อีก 2 ชม. 20 นาที": time until an event starts.
 String untilText(AppLocalizations l, Duration d) =>
@@ -165,6 +175,7 @@ class NextEventCard extends StatelessWidget {
     this.onRetry,
     this.onResolvePlace,
     this.onAsk,
+    this.onDismiss,
     this.footer,
     this.aside,
   });
@@ -188,6 +199,7 @@ class NextEventCard extends StatelessWidget {
   final VoidCallback? onRetry;
   final VoidCallback? onResolvePlace;
   final VoidCallback? onAsk;
+  final VoidCallback? onDismiss;
 
   @override
   Widget build(BuildContext context) {
@@ -332,6 +344,15 @@ class NextEventCard extends StatelessWidget {
               ],
             ),
           ),
+          if (onDismiss != null)
+            IconButton(
+              key: ValueKey('dismiss-hero-${trip.id}'),
+              onPressed: onDismiss,
+              visualDensity: VisualDensity.compact,
+              padding: EdgeInsets.zero,
+              constraints: const BoxConstraints(minWidth: 32, minHeight: 32),
+              icon: Icon(Symbols.close_rounded, size: 18, color: muted),
+            ),
           if (onTap != null)
             Icon(Symbols.chevron_right_rounded, size: 20, color: muted),
         ],
@@ -739,10 +760,10 @@ class EventRow extends StatelessWidget {
           Text(
             p.kind == LeaveKind.avoid || best == null
                 ? l.eventsAvoid
+                : (p.time == null || p.kind == LeaveKind.overdue)
+                ? '${l.summaryLeaveNow} · ${best.mode.label(l)}'
                 : l.eventsLeaveAt(
-                    p.time == null || p.kind == LeaveKind.overdue
-                        ? l.summaryLeaveNow
-                        : hhmm(p.time!),
+                    hhmm(p.time!),
                     best.mode.label(l),
                   ),
             maxLines: 1,

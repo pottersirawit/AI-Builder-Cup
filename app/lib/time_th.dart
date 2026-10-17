@@ -21,6 +21,18 @@ String isoBangkok(DateTime t) {
       'T${_two(b.hour)}:${_two(b.minute)}:00+07:00';
 }
 
+/// [hour]:[minute] Bangkok time on the Bangkok day of [day].
+DateTime bangkokAt(DateTime day, int hour, int minute) {
+  final b = toBangkok(day);
+  return DateTime.utc(
+    b.year,
+    b.month,
+    b.day,
+    hour,
+    minute,
+  ).subtract(_bkkOffset);
+}
+
 int dayOfMonth(DateTime t) => toBangkok(t).day;
 
 String monthShort(AppLocalizations l, DateTime t) =>

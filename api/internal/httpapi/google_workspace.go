@@ -178,8 +178,8 @@ type gmailMessageItem struct {
 	Body string
 }
 
-// gmailTravelQuery finds bookings, reservations and tickets in Thai and English.
-const gmailTravelQuery = "(ticket OR booking OR reservation OR flight OR concert OR hotel OR event OR ตั๋ว OR จอง OR นัดหมาย OR เที่ยวบิน OR โรงแรม OR คอนเสิร์ต) -category:promotions -category:social"
+// gmailTravelQuery excludes noise tabs so Gemini can classify recent inbox messages directly.
+const gmailTravelQuery = "-category:promotions -category:social"
 
 // gmailPart is a MIME part of a message fetched with format=full.
 type gmailPart struct {
@@ -394,14 +394,15 @@ func matchSavedPlace(text string, savedPlaces []domain.SavedPlace) (domain.Place
 
 var onlineMarkers = []string{"meet.google.com", "zoom.us", "teams.microsoft.com", "zoom", "google meet", "teams"}
 
-// isOnlineMeeting reports whether a Calendar event happens on a video call:
-// it carries a Meet link or conference data, or its location is a URL or
-// names a video-call service.
-func isOnlineMeeting(item googleCalendarItem) bool {
-	if item.HangoutLink != "" || len(item.ConferenceData) > 0 && string(item.ConferenceData) != "null" {
-		return true
+func hasOnlineLink(item googleCalendarItem) bool {
+	return item.HangoutLink != "" || (len(item.ConferenceData) > 0 && string(item.ConferenceData) != "null")
+}
+
+func isOnlineLocation(loc string) bool {
+	loc = strings.ToLower(strings.TrimSpace(loc))
+	if loc == "" {
+		return false
 	}
-	loc := strings.ToLower(strings.TrimSpace(item.Location))
 	if strings.HasPrefix(loc, "http://") || strings.HasPrefix(loc, "https://") {
 		return true
 	}
@@ -413,11 +414,48 @@ func isOnlineMeeting(item googleCalendarItem) bool {
 	return false
 }
 
+// isOnlineMeeting reports whether a Calendar event happens solely on a video
+// call: its location is a URL/video-call service, or it carries a Meet link
+// without any physical location.
+func isOnlineMeeting(item googleCalendarItem) bool {
+	loc := strings.TrimSpace(item.Location)
+	if loc != "" {
+		return isOnlineLocation(loc)
+	}
+	return hasOnlineLink(item)
+}
+
+var titleLocationSplitters = []string{
+	" ที่ ", "ที่",
+	" แถว ", "แถว",
+	" ณ ",
+	" @ ", "@",
+	" at ",
+	" in ",
+}
+
+// inferLocationFromTitle extracts an explicit location phrase from a Calendar
+// event summary (e.g. "นัดกินข้าวที่เซ็นทรัลเวิลด์" -> "เซ็นทรัลเวิลด์",
+// "Meeting @ Siam Paragon" -> "Siam Paragon"). Returns "" when the summary
+// contains no location phrase.
+func inferLocationFromTitle(title string) string {
+	lower := strings.ToLower(title)
+	for _, sep := range titleLocationSplitters {
+		if idx := strings.LastIndex(lower, sep); idx >= 0 {
+			candidate := strings.TrimSpace(title[idx+len(sep):])
+			if candidate != "" && !isOnlineLocation(candidate) {
+				return candidate
+			}
+		}
+	}
+	return ""
+}
+
 // ConvertCalendarEventToTrip turns a Google Calendar entry into a domain.Trip
-// from the user's home. It never invents a place or a time: an online meeting
-// is Virtual, an all-day event is AllDay, and a location that matches no saved
-// place and does not geocode leaves the destination unresolved with the
-// location text in LocationTextTH.
+// from the user's home. An event with both a Meet link and a physical location
+// (or a location inferred from its title) is treated as onsite rather than
+// virtual. When a location is inferred from the title rather than the location
+// field, InferredPlace is set so the app can ask the user to confirm it.
 func ConvertCalendarEventToTrip(ctx context.Context, item googleCalendarItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) domain.Trip {
 	title := strings.TrimSpace(item.Summary)
 	if title == "" {
@@ -447,29 +485,39 @@ func ConvertCalendarEventToTrip(ctx context.Context, item googleCalendarItem, ge
 	}
 
 	location := strings.TrimSpace(item.Location)
-	switch {
-	case isOnlineMeeting(item):
-		trip.Virtual = true
-		trip.Destination = domain.Place{NameTH: onlineTH}
-	case trip.AllDay:
-		if location != "" {
-			if p, ok := resolveEventPlace(ctx, location, geo, savedPlaces); ok {
-				trip.Destination = p
-			} else {
-				trip.Destination = domain.Place{NameTH: location}
-				trip.LocationTextTH = location
-			}
+	if location != "" {
+		if isOnlineLocation(location) {
+			trip.Virtual = true
+			trip.Destination = domain.Place{NameTH: onlineTH}
+			return trip
 		}
-	default:
-		query := location
-		if query == "" {
-			query = title
-		}
-		if p, ok := resolveEventPlace(ctx, query, geo, savedPlaces); ok {
+		if p, ok := resolveEventPlace(ctx, location, geo, savedPlaces); ok {
 			trip.Destination = p
 		} else {
 			trip.Destination = domain.Place{NameTH: location}
 			trip.LocationTextTH = location
+		}
+		return trip
+	}
+
+	if inferred := inferLocationFromTitle(title); inferred != "" {
+		if p, ok := resolveEventPlace(ctx, inferred, geo, savedPlaces); ok {
+			trip.Destination = p
+			trip.InferredPlace = true
+			return trip
+		}
+	}
+
+	switch {
+	case hasOnlineLink(item):
+		trip.Virtual = true
+		trip.Destination = domain.Place{NameTH: onlineTH}
+	case trip.AllDay:
+		// All-day event with no location and no inferred location from title stays unresolved.
+	default:
+		if p, ok := resolveEventPlace(ctx, title, geo, savedPlaces); ok {
+			trip.Destination = p
+			trip.InferredPlace = true
 		}
 	}
 	return trip
@@ -542,14 +590,21 @@ func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, p ext
 	if title == "" {
 		title = "ตั๋วหรือนัดหมายการเดินทาง"
 	}
+	arr := p.ArriveBy.In(domain.Bangkok)
 	trip = domain.Trip{
 		ID:       "gmail-" + item.ID,
 		TitleTH:  title,
 		Source:   "gmail",
 		Origin:   homeOrigin(savedPlaces),
-		ArriveBy: p.ArriveBy.In(domain.Bangkok),
+		ArriveBy: arr,
 		Mode:     domain.ModeCar,
 		NoteTH:   gmailNoteTH,
+	}
+	if p.AllDay {
+		midnight := time.Date(arr.Year(), arr.Month(), arr.Day(), 0, 0, 0, 0, domain.Bangkok)
+		trip.AllDay = true
+		trip.ArriveBy = midnight
+		trip.EndsAt = midnight.AddDate(0, 0, 1)
 	}
 	if p.Mode != nil {
 		trip.Mode = *p.Mode
@@ -616,6 +671,18 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		savedPlaces = s.Planner.Places
 	}
 
+	var existingTrips map[string]domain.Trip
+	if s.UserStore != nil {
+		if uTrips, err := s.UserStore.ListTrips(ctx, email); err == nil {
+			existingTrips = make(map[string]domain.Trip, len(uTrips))
+			for _, ut := range uTrips {
+				if !ut.Trip.Virtual && ut.Trip.Destination.Resolved() && !ut.Trip.InferredPlace {
+					existingTrips[ut.Trip.ID] = ut.Trip
+				}
+			}
+		}
+	}
+
 	calItems, err := g.calendarEvents(ctx, accessToken, now)
 	if err != nil {
 		if errors.Is(err, ErrScopeNotGranted) {
@@ -626,6 +693,16 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		}
 	} else {
 		newTrips := ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces)
+		for i := range newTrips {
+			if prev, ok := existingTrips[newTrips[i].ID]; ok {
+				if !newTrips[i].Destination.Resolved() || newTrips[i].InferredPlace || newTrips[i].Virtual {
+					newTrips[i].Destination = prev.Destination
+					newTrips[i].LocationTextTH = ""
+					newTrips[i].InferredPlace = false
+					newTrips[i].Virtual = false
+				}
+			}
+		}
 		if s.UserStore != nil {
 			_ = s.UserStore.DeleteTripsBySource(ctx, email, "calendar")
 			for _, trip := range newTrips {
@@ -649,6 +726,15 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		}
 	} else {
 		trips := s.gmailTrips(ctx, gmailItems, savedPlaces, now)
+		for i := range trips {
+			if prev, ok := existingTrips[trips[i].ID]; ok {
+				if !trips[i].Destination.Resolved() || trips[i].InferredPlace {
+					trips[i].Destination = prev.Destination
+					trips[i].LocationTextTH = ""
+					trips[i].InferredPlace = false
+				}
+			}
+		}
 		if s.UserStore != nil {
 			_ = s.UserStore.DeleteTripsBySource(ctx, email, "gmail")
 			for _, trip := range trips {

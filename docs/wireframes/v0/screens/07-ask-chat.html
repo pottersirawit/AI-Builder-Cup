@@ -1,4 +1,4 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><title>3 · Verdict detail</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>7 · Ask a follow-up</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 :root { --ink:#1b1f24; --mid:#6b7280; --line:#9aa1ab; --fill:#f1f3f5; --fill2:#e3e6ea; --paper:#fff; --accent:#1f2937; }
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-ui,sans-serif; color:var(--ink); background:#fafafa; }
@@ -71,4 +71,37 @@ body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-u
 .flow .f { border:2px solid var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; background:#fff; font-weight:700; }
 .flow .a { color:var(--mid); font-size:20px; }
 .page { padding:36px; display:inline-block; }
-</style></head><body><div class="page"><div class="cell"><h2>3 · Verdict detail</h2><div class="goal">Why we say so: reasoning trace, flood spots on the route, sources, confidence.</div><div class="phone"><div class="status"><span>16:10</span><span>● ● ▮</span></div><div class="body"><div class="top"><span class="back"></span><div><b>ไปบ้านลาดพร้าว</b><small>สีลม ซอย 3 → บ้านลาดพร้าว</small></div></div><div class="card"><div class="h1" style="font-size:30px">ออกก่อน 16:45</div><div class="t">ฝนถึงพระราม 4 ราว 17:30</div><div class="seg"><div><span>ออก</span><b>16:45</b></div><div><span>ถึง</span><b>17:35</b></div><div><span>โหมด</span><b>รถยนต์</b></div></div></div><div class="anc"><div class="pinno">1</div></div><div class="h2">จุดน้ำท่วมบนเส้นทาง</div><div class="r"><span class="ic"></span><div class="grow"><b class="t">แยกรัชดา–ลาดพร้าว</b><div class="t mut">คาดว่าลึก 15 ซม. · ตอนนี้ยังแห้ง</div></div><span class="tag">เสี่ยงกลาง</span></div><div class="anc"><div class="pinno">2</div></div><div class="h2">ขั้นตอนที่ใช้ตัดสิน</div><div class="trace"><div class="s"><span class="n">1</span><div><b class="t">เข้าใจคำถาม</b><div class="t mut">ไปบ้านลาดพร้าว</div></div></div><div class="s"><span class="n">2</span><div><b class="t">เช็กฝนระหว่างทาง</b><div class="t mut">ฝนหนักสุด 18:15 ราว 16 มม./ชม.</div></div></div><div class="s"><span class="n">3</span><div><b class="t">ประเมินความเสี่ยง</b><div class="t mut">รถยนต์เสี่ยงต่ำ ถ้าออกก่อน 16:45</div></div></div></div><div class="anc"><div class="pinno">3</div></div><div class="chips"><span class="chip">Google Weather</span><span class="chip">ThaiWater</span><span class="chip">BMA</span></div></div></div><div class="legend"><div><b>1</b><span>Flood spots on the actual route with expected depth for your vehicle</span></div><div><b>2</b><span>“How we got here”: each tool the AI agent called, in plain words</span></div><div><b>3</b><span>Sources and confidence on every answer</span></div></div></div></div></body></html>
+
+.navbar { position:absolute; left:16px; right:16px; bottom:14px; height:58px; display:flex; gap:10px; z-index:3; }
+.navbar .pill { flex:1; border:2px solid var(--ink); border-radius:30px; display:flex; background:var(--paper); }
+.navbar .pill div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.navbar .pill div i { width:20px; height:20px; border:2px solid var(--line); border-radius:6px; display:block; }
+.navbar .pill div.on { color:var(--ink); font-weight:700; } .navbar .pill div.on i { border-color:var(--ink); background:var(--fill2); }
+.navbar .spark { width:58px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phone .body { padding-bottom:84px; }
+.dim { position:absolute; inset:0; background:rgba(27,31,36,.35); z-index:6; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; background:var(--paper); border-top:2px solid var(--ink); border-radius:24px 24px 0 0; padding:10px 16px 18px 26px; display:flex; flex-direction:column; gap:10px; z-index:7; }
+.bsheet .grab { width:40px; height:5px; border-radius:3px; background:var(--line); align-self:center; margin-bottom:4px; }
+.acts { margin-left:auto; display:flex; gap:8px; } .top .acts .gear, .acts .gear { margin-left:0; width:30px; height:30px; border:2px solid var(--line); border-radius:50%; display:block; }
+.grow { flex:1; min-width:0; }
+.stub { flex:none; border:2px solid var(--ink); border-radius:10px; background:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.stub b { font-size:18px; } .stub span { font-size:11px; color:var(--mid); }
+.ticket { border:2px solid var(--ink); border-radius:16px; background:var(--fill); display:flex; flex-direction:column; flex:none; }
+.tk-top, .tk-bot { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.perf { border-top:2px dashed var(--line); margin:0 10px; position:relative; }
+.perf::before, .perf::after { content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--ink); }
+.perf::before { left:-21px; clip-path:inset(0 0 0 50%); } .perf::after { right:-21px; clip-path:inset(0 50% 0 0); }
+.ring { width:76px; height:76px; border-radius:50%; border:6px solid var(--ink); border-right-color:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; flex:none; }
+.ring b { font-size:20px; } .ring span { font-size:9px; color:var(--mid); }
+.sec { display:flex; flex-direction:column; gap:8px; }
+.hscroll { display:flex; gap:10px; overflow:hidden; }
+.mini { width:170px; flex:none; border:2px solid var(--line); border-radius:12px; padding:10px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+.tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.tag.ok { border-color:var(--line); }
+.ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); display:inline-block; }
+.ic.round { border-radius:50%; } .ic.sq { width:26px; height:26px; }
+.chip.ghost { color:var(--mid); border-style:dashed; }
+.rb .bubble-t { position:absolute; top:2px; background:var(--ink); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; }
+.rb .bracket { position:absolute; bottom:12px; height:6px; border:2px solid var(--ink); border-top:none; }
+.rb .hours { position:absolute; left:6px; right:6px; bottom:0; display:flex; justify-content:space-between; font-size:9px; color:var(--mid); }
+</style></head><body><div class="page"><div class="cell"><h2>7 · Ask a follow-up</h2><div class="goal">Keeps the trip in context; every answer is a small pass with its own confidence.</div><div class="phone"><div class="status"><span>18:52</span><span>● ● ▮</span></div><div class="body"><div class="top"><span class="back"></span><div><b>ถามต่อ</b><small>กินข้าวเย็นกับที่บ้าน</small></div><div class="acts"></div></div><div class="bubble ai">✦ ตอนนี้แนะนำ “อย่าเพิ่งออก” นะ มีอะไรอยากถามต่อไหม</div><div class="anc"><div class="pinno">1</div></div><div class="bubble me">ถ้ารอถึงสองทุ่มค่อยกลับล่ะ</div><div class="anc"><div class="pinno">2</div></div><div class="ticket" style="max-width:90%"><div class="tk-top"><div class="h2" style="font-size:18px">ออกสองทุ่มได้ แต่เลยนัด</div><span class="tag" style="align-self:flex-start">รอก่อน</span><div class="t">รัชดาน้ำเริ่มลดหลัง 20:00 ออกสองทุ่มถึงบ้านราว 21:05</div></div><div class="perf"></div><div class="tk-bot t mut">มั่นใจ ▮▮▮▮▯ 71% · ✦ AI วิเคราะห์ให้</div></div><div style="flex:1"></div><div class="anc"><div class="pinno">3</div></div><div class="chips"><span class="chip ghost">ถ้ารอถึงสองทุ่มค่อยกลับล่ะ</span><span class="chip">ไป BTS แทนดีไหม</span></div><div class="ask"><span>พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ</span><i></i></div><div class="t mut" style="font-size:11px;text-align:center">ข้อมูลจาก AI อาจคลาดเคลื่อน</div></div></div><div class="legend"><div><b>1</b><span>Natural language in, Thai or English</span></div><div><b>2</b><span>Answer as a mini pass: headline, verdict, why, confidence</span></div><div><b>3</b><span>Two suggestions; each greys out once used</span></div></div></div></div></body></html>

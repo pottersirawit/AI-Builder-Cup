@@ -448,6 +448,16 @@
   "stripEvent": "Event",
   "stripTravel": "Travel",
   "stripRain": "Rain",
+  "eventsInferredPlacePrompt": "AI suggested place: {place}",
+  "@eventsInferredPlacePrompt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsConfirmPlace": "Confirm place",
+  "eventsChangePlace": "Change",
   "notificationsTitle": "Notifications",
   "notificationsEmptyTitle": "No notifications yet",
   "notificationsEmptyBody": "Rain, flood, and trip alerts will show up here",

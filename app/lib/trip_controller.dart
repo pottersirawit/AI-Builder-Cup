@@ -3,6 +3,7 @@ import 'package:flutter/foundation.dart';
 import 'api.dart';
 import 'app_state.dart';
 import 'departure.dart';
+import 'events.dart';
 import 'l10n/l10n.dart';
 import 'models.dart';
 import 'places.dart';
@@ -17,10 +18,12 @@ class TripController extends ChangeNotifier {
     required DecideRequest request,
     DateTime? departAt,
     TravelMode? mode,
+    this.deadline,
   }) : _api = api,
        _state = state,
        _request = request,
        _departAt = departAt ?? state.now(),
+       _plannedAt = departAt,
        _mode = mode ?? request.mode ?? state.mode;
 
   final FonTokMaiApi _api;
@@ -38,6 +41,24 @@ class TripController extends ChangeNotifier {
 
   DateTime _departAt;
   DateTime get departAt => _departAt;
+
+  /// When the event starts, for a trip to one: the departure is planned
+  /// back from it until the user picks a time.
+  final DateTime? deadline;
+
+  final DateTime? _plannedAt;
+
+  bool _userSet = false;
+
+  /// The user chose the departure (dragged, picked or reset it).
+  bool get userSet => _userSet;
+
+  bool _aligned = false;
+
+  /// Where [_alignToPlan] put the marker. The re-asked answer can change the
+  /// ETA and so the plan's time; the marker's time stays the one the page
+  /// shows, so the headline, pin and segments agree.
+  DateTime? _alignedAt;
 
   TravelMode _mode;
   TravelMode get mode => _mode;
@@ -89,6 +110,45 @@ class TripController extends ChangeNotifier {
 
   int get etaMin => selected?.etaMin ?? 0;
 
+  /// The chosen mode at the chosen time can go and arrives on time.
+  bool get selectedGoes {
+    final s = selected;
+    if (s == null) return true;
+    return s.verdict == Verdict.leaveNow &&
+        (deadline == null || !s.arriveAt.isAfter(deadline!));
+  }
+
+  /// Another mode that goes at this departure, when the chosen one cannot.
+  Departure? get otherMode =>
+      selectedGoes ? null : otherModeThatGoes(board, _mode, deadline: deadline);
+
+  /// A later departure for the chosen mode that clears the rain, when the
+  /// chosen time cannot go.
+  Departure? get waitOut {
+    final d = _decision;
+    if (d == null || selectedGoes) return null;
+    return nextGoodDeparture(d, _mode, _departAt, deadline: deadline, l: _l);
+  }
+
+  /// When to leave for the event, as its card says; null for a trip with no
+  /// start time or while previewing.
+  LeavePlan? get plan {
+    final d = _decision;
+    if (d == null || deadline == null || _previewing) return null;
+    final p = leavePlan(d, board, _state.now(), deadline: deadline);
+    if (_userSet ||
+        _alignedAt != _departAt ||
+        (p.kind != LeaveKind.before && p.kind != LeaveKind.at)) {
+      return p;
+    }
+    return (
+      kind: p.kind,
+      time: _departAt,
+      best: p.best,
+      arriveAt: _departAt.add(Duration(minutes: etaMin)),
+    );
+  }
+
   SkyState sky({HomeLevel? home}) {
     final d = _decision;
     if (d == null)
@@ -136,11 +196,34 @@ class TripController extends ChangeNotifier {
     }
     _loading = false;
     _notify();
+    _alignToPlan();
+  }
+
+  /// The first answer is for the planning window's start, hours early; move
+  /// the marker to the plan's leave time once so the pass and the band agree.
+  void _alignToPlan() {
+    if (_aligned || _userSet || _decision == null) return;
+    _aligned = true;
+    // Leaving now is already a valid answer to "leave before …".
+    if (_departAt.difference(_state.now()).inMinutes < 5) return;
+    final p = plan;
+    final t = p?.time;
+    if (t == null || (p!.kind != LeaveKind.before && p.kind != LeaveKind.at)) {
+      return;
+    }
+    if (!t.isAfter(_state.now()) ||
+        t.difference(_departAt).inMinutes.abs() < 10) {
+      return;
+    }
+    _departAt = t;
+    _alignedAt = t;
+    load();
   }
 
   /// Moves the marker; shows the on-device preview until [commit].
   void drag(DateTime t) {
     if (t == _departAt && _previewing) return;
+    _userSet = true;
     _departAt = t;
     _previewing = _decision != null;
     _notify();
@@ -148,7 +231,8 @@ class TripController extends ChangeNotifier {
 
   /// Settles the departure and asks the agent.
   Future<void> commit(DateTime t) {
-    _departAt = t;
+    _userSet = true;
+    _departAt = t.isBefore(earliest) ? earliest : t;
     _previewing = _decision != null;
     return load();
   }
@@ -224,6 +308,20 @@ class TripController extends ChangeNotifier {
 
   /// Back to leaving now.
   Future<void> resetDeparture() => commit(_state.now());
+
+  /// Leave early enough to arrive at [t].
+  Future<void> arriveAt(DateTime t) =>
+      commit(t.subtract(Duration(minutes: etaMin)));
+
+  /// Back to the event's suggested leave time.
+  Future<void> useSuggested() {
+    _userSet = false;
+    _aligned = false;
+    _alignedAt = null;
+    _departAt = _plannedAt ?? _state.now();
+    if (_departAt.isBefore(earliest)) _departAt = earliest;
+    return load();
+  }
 
   void _notify() {
     if (!_disposed) notifyListeners();

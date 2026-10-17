@@ -30,7 +30,18 @@ class TripsRepository extends ChangeNotifier {
   static const decideAhead = Duration(hours: 24);
 
   List<Trip> _trips = const [];
-  List<Trip> get trips => _trips;
+  List<Trip> get trips =>
+      _trips.where((t) => !_places.isTripDismissed(t.id)).toList();
+
+  void dismissTrip(String tripId) {
+    _places.dismissTrip(tripId);
+    _notify();
+  }
+
+  void restoreTrip(String tripId) {
+    _places.restoreTrip(tripId);
+    _notify();
+  }
 
   HomeStatus? _home;
 
@@ -77,6 +88,7 @@ class TripsRepository extends ChangeNotifier {
   bool awaitsDecision(Trip t, DateTime now) =>
       t.travels &&
       !t.unresolved &&
+      !t.inferredPlace &&
       t.arriveBy!.difference(now) <= decideAhead &&
       !_decisions.containsKey(t.id) &&
       !_unanswered.contains(t.id);
@@ -86,6 +98,46 @@ class TripsRepository extends ChangeNotifier {
     if (identical(_decisions[tripId], d)) return;
     _decisions[tripId] = d;
     _notify();
+  }
+
+  /// Saves and persists a confirmed [destination] onto [trip] (including
+  /// all-day events and hybrid online meetings).
+  Future<Trip> saveTripDestination(Trip trip, Place destination) async {
+    final updated = trip.copyWith(
+      destination: destination,
+      clearLocationTextTh: true,
+      virtual: false,
+      inferredPlace: false,
+    );
+    _places.setTripPlace(trip.id, destination);
+    _trips = [
+      for (final t in _trips)
+        if (t.id == trip.id) updated else t,
+    ];
+    _decisions.remove(trip.id);
+    _unanswered.remove(trip.id);
+    _notify();
+    unawaited(_syncSavedTripToServer(updated));
+    unawaited(decideSoon());
+    return updated;
+  }
+
+  Future<void> _syncSavedTripToServer(Trip updated) async {
+    if (!updated.destination.resolved) return;
+    final now = _state.now();
+    try {
+      final r = await _api.decide(
+        requestFor(updated).copyWith(
+          departAt: isoBangkok(planDepartFor(updated, now)),
+          mode: updated.mode,
+        ),
+      );
+      if (_disposed) return;
+      if (r.data.needsPlace == null) {
+        _decisions[updated.id] = r.data;
+        _notify();
+      }
+    } catch (_) {}
   }
 
   /// The request that plans [t] precisely: full trip plus identity.
@@ -102,7 +154,7 @@ class TripsRepository extends ChangeNotifier {
     _loading = true;
     _error = null;
     if (_trips.isEmpty && _places.cachedTrips.isNotEmpty && connected) {
-      _trips = _places.cachedTrips;
+      _trips = [for (final t in _places.cachedTrips) _applySavedPlace(t)];
     }
     _notify();
     final savedHome = _places.home;
@@ -156,7 +208,13 @@ class TripsRepository extends ChangeNotifier {
       _state.homeLevel = homeR?.data.level ?? HomeLevel.normal;
       _home = homeR?.data;
     }
-    var fresh = tripsR?.data ?? const <Trip>[];
+    var fresh = [
+      for (final t in (tripsR?.data ?? const <Trip>[])) _applySavedPlace(t),
+    ];
+    if (fresh.isNotEmpty) {
+      fresh = await _inferMissingPlaces(fresh);
+      if (seq != _seq || _disposed) return;
+    }
     if (fresh.isNotEmpty && !demo) {
       fresh = _chainTrips(fresh);
       if (savedHome != null) {
@@ -167,7 +225,9 @@ class TripsRepository extends ChangeNotifier {
       if (sync) _lastSyncTime = clock.now();
       _places.setCachedTrips(fresh);
     }
-    final rawCached = _places.cachedTrips;
+    final rawCached = [
+      for (final t in _places.cachedTrips) _applySavedPlace(t),
+    ];
     final chainedCached = demo ? rawCached : _chainTrips(rawCached);
     final cached = savedHome == null || demo
         ? chainedCached
@@ -182,16 +242,82 @@ class TripsRepository extends ChangeNotifier {
     _notify();
   }
 
+  Trip _applySavedPlace(Trip t) {
+    final saved = _places.tripPlace(t.id);
+    if (saved != null && saved.resolved) {
+      return t.copyWith(
+        destination: saved,
+        clearLocationTextTh: true,
+        virtual: false,
+        inferredPlace: false,
+      );
+    }
+    return t;
+  }
+
+  Future<List<Trip>> _inferMissingPlaces(List<Trip> list) async {
+    final out = <Trip>[];
+    for (final t in list) {
+      if (t.destination.resolved || _places.tripPlace(t.id) != null) {
+        out.add(t);
+        continue;
+      }
+      final q = inferPlaceQueryFromTitle(t.titleTh);
+      if (q == null) {
+        out.add(t);
+        continue;
+      }
+      final inferred = await _resolveInferredPlace(q);
+      if (inferred != null) {
+        out.add(
+          t.copyWith(
+            destination: inferred,
+            clearLocationTextTh: true,
+            virtual: false,
+            inferredPlace: true,
+          ),
+        );
+      } else {
+        out.add(t);
+      }
+    }
+    return out;
+  }
+
+  Future<Place?> _resolveInferredPlace(String query) async {
+    final lower = query.toLowerCase();
+    for (final sp in _places.places) {
+      if (sp.kind == PlaceKind.home) continue;
+      final name = sp.nameTh.toLowerCase();
+      final label = sp.labelTh.toLowerCase();
+      if ((name.isNotEmpty && lower.contains(name)) ||
+          (label.isNotEmpty && lower.contains(label))) {
+        return sp.asPlace;
+      }
+    }
+    try {
+      final res = await _api.searchPlaces(query);
+      for (final c in res.data) {
+        if (c.lat != 0 || c.lng != 0) {
+          return Place(nameTh: c.nameTh, lat: c.lat, lng: c.lng);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
   /// Decides, one at a time, the events within [decideAhead] that have no
   /// answer yet. The next event is skipped: its controller decides it.
   Future<void> decideSoon() async {
     final now = _state.now();
-    final next = nextEvent(_trips, now);
-    final due = upcoming(_trips, now).where(
+    final current = trips;
+    final next = nextEvent(current, now);
+    final due = upcoming(current, now).where(
       (t) =>
           t.id != next?.id &&
           t.travels &&
           !t.unresolved &&
+          !t.inferredPlace &&
           t.arriveBy != null &&
           t.arriveBy!.difference(now) <= decideAhead &&
           !_decisions.containsKey(t.id) &&

@@ -2741,7 +2741,7 @@ abstract class AppLocalizations {
   /// No description provided for @verdictModeStatusWithProb.
   ///
   /// In th, this message translates to:
-  /// **'{eta} น. · {status} ({prob}%)'**
+  /// **'{eta} น. · {status} (โอกาสฝน {prob}%)'**
   String verdictModeStatusWithProb(int eta, String status, int prob);
 
   /// No description provided for @verdictFloodSpotsTitle.
@@ -3050,6 +3050,156 @@ abstract class AppLocalizations {
   /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
   String get verdictAccuracyDisclaimer;
 
+  /// No description provided for @eventsInferredPlacePrompt.
+  ///
+  /// In th, this message translates to:
+  /// **'AI แนะนำสถานที่: {place}'**
+  String eventsInferredPlacePrompt(String place);
+
+  /// No description provided for @eventsConfirmPlace.
+  ///
+  /// In th, this message translates to:
+  /// **'ยืนยันสถานที่'**
+  String get eventsConfirmPlace;
+
+  /// No description provided for @eventsChangePlace.
+  ///
+  /// In th, this message translates to:
+  /// **'เปลี่ยน'**
+  String get eventsChangePlace;
+
+  /// No description provided for @partsBandTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนตามเส้นทาง'**
+  String get partsBandTitle;
+
+  /// No description provided for @partsBandHint.
+  ///
+  /// In th, this message translates to:
+  /// **'แท่งยิ่งสูง ฝนยิ่งหนัก · ลากหมุดหรือแตะเวลาด้านล่างเพื่อเปลี่ยน'**
+  String get partsBandHint;
+
+  /// No description provided for @partsLegendOnRoad.
+  ///
+  /// In th, this message translates to:
+  /// **'ช่วงที่อยู่บนถนน'**
+  String get partsLegendOnRoad;
+
+  /// No description provided for @partsPickArrive.
+  ///
+  /// In th, this message translates to:
+  /// **'ถึง {time}'**
+  String partsPickArrive(String time);
+
+  /// No description provided for @partsPickLeaveHelp.
+  ///
+  /// In th, this message translates to:
+  /// **'จะออกกี่โมง'**
+  String get partsPickLeaveHelp;
+
+  /// No description provided for @partsPickArriveHelp.
+  ///
+  /// In th, this message translates to:
+  /// **'อยากไปถึงกี่โมง'**
+  String get partsPickArriveHelp;
+
+  /// No description provided for @partsPickTimeSemantic.
+  ///
+  /// In th, this message translates to:
+  /// **'เปลี่ยนเวลา {what}'**
+  String partsPickTimeSemantic(String what);
+
+  /// No description provided for @partsUseSuggested.
+  ///
+  /// In th, this message translates to:
+  /// **'ใช้เวลาที่แนะนำ'**
+  String get partsUseSuggested;
+
+  /// No description provided for @partsHeadlineLeaveArrive.
+  ///
+  /// In th, this message translates to:
+  /// **'ออก {leave} ถึง {arrive}'**
+  String partsHeadlineLeaveArrive(String leave, String arrive);
+
+  /// No description provided for @partsHeadlineLate.
+  ///
+  /// In th, this message translates to:
+  /// **'ออก {leave} จะสาย {min} นาที'**
+  String partsHeadlineLate(String leave, int min);
+
+  /// No description provided for @verdictGearTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ของที่ควรพก'**
+  String get verdictGearTitle;
+
+  /// No description provided for @verdictGearWeather.
+  ///
+  /// In th, this message translates to:
+  /// **'ช่วงเดินทาง {temp}° รู้สึกเหมือน {feels}°'**
+  String verdictGearWeather(int temp, int feels);
+
+  /// No description provided for @verdictGearTooFar.
+  ///
+  /// In th, this message translates to:
+  /// **'พยากรณ์รายชั่วโมงยังไปไม่ถึงเวลานี้ ใกล้เวลาแล้วจะบอกว่าควรพกอะไร'**
+  String get verdictGearTooFar;
+
+  /// No description provided for @verdictGearNothingBody.
+  ///
+  /// In th, this message translates to:
+  /// **'อากาศช่วงเดินทางกำลังดี'**
+  String get verdictGearNothingBody;
+
+  /// No description provided for @carryJacket.
+  ///
+  /// In th, this message translates to:
+  /// **'เสื้อกันหนาว'**
+  String get carryJacket;
+
+  /// No description provided for @carryWhyCold.
+  ///
+  /// In th, this message translates to:
+  /// **'อากาศเย็น รู้สึกเหมือน {c}° · {from}–{to}'**
+  String carryWhyCold(String c, String from, String to);
+
+  /// No description provided for @partsBandOutOfRange.
+  ///
+  /// In th, this message translates to:
+  /// **'พยากรณ์ฝนละเอียดดูได้ล่วงหน้าแค่ 5 ชม. ใกล้เวลาเดินทางแล้วค่อยเปิดดูอีกครั้ง'**
+  String get partsBandOutOfRange;
+
+  /// No description provided for @partsHeadlineWet.
+  ///
+  /// In th, this message translates to:
+  /// **'ออก {time} โดนฝนกลางทาง'**
+  String partsHeadlineWet(String time);
+
+  /// No description provided for @partsHeadlineRisky.
+  ///
+  /// In th, this message translates to:
+  /// **'ออก {time} ไม่แนะนำ'**
+  String partsHeadlineRisky(String time);
+
+  /// No description provided for @partsAltMode.
+  ///
+  /// In th, this message translates to:
+  /// **'{mode} ไปได้ ออก {leave} ถึง {arrive}'**
+  String partsAltMode(String mode, String leave, String arrive);
+
+  /// No description provided for @partsAltModeAction.
+  ///
+  /// In th, this message translates to:
+  /// **'เปลี่ยนเป็น{mode}'**
+  String partsAltModeAction(String mode);
+
+  /// No description provided for @partsAltWait.
+  ///
+  /// In th, this message translates to:
+  /// **'หรือรอออก {leave} ฝนซาแล้ว ถึง {arrive}'**
+  String partsAltWait(String leave, String arrive);
+
   /// No description provided for @notificationsTitle.
   ///
   /// In th, this message translates to:
@@ -3065,7 +3215,7 @@ abstract class AppLocalizations {
   /// No description provided for @notificationsEmptyBody.
   ///
   /// In th, this message translates to:
-  /// **'เมื่อใกล้เวลาออกเดินทางหรือมีฝนบนเส้นทาง แอปจะแจ้งเตือนที่นี่'**
+  /// **'เมื่อมีความเสี่ยงเรื่องฝน น้ำท่วม หรือเวลาออกเดินทาง ระบบจะแจ้งเตือนที่นี่'**
   String get notificationsEmptyBody;
 
   /// No description provided for @notificationsMarkAllRead.

@@ -260,6 +260,34 @@ void main() {
         expect(hhmm(p.time!), '08:40', reason: '09:30 - 40 min - 10 min');
       },
     );
+
+    test(
+      'an event tomorrow with no leave-by never returns LeaveKind.now',
+      () {
+        final j =
+            jsonDecode(
+                  File('assets/fixtures/decide_car.json').readAsStringSync(),
+                )
+                as Map<String, dynamic>;
+        j.remove('leave_by');
+        final d = Decision.fromJson(j);
+        final now = DateTime.parse('2026-10-17T22:20:00+07:00');
+        final eventTomorrow = DateTime.parse('2026-10-18T13:30:00+07:00');
+        final planned = DateTime.parse('2026-10-18T10:30:00+07:00');
+        final p = leavePlan(
+          d,
+          rankOptions(serverOptions(d, planned)),
+          now,
+          deadline: eventTomorrow,
+        );
+        expect(p.kind, LeaveKind.before);
+        expect(
+          isoBangkok(p.time!),
+          '2026-10-18T12:40:00+07:00',
+          reason: '13:30 - 40 min by BTS - 10 min slack',
+        );
+      },
+    );
   });
 
   group('all-day events', () {
@@ -369,6 +397,65 @@ void main() {
       final e2 = _trip('e2', '2026-10-17T13:00:00+07:00');
       final e3 = _trip('e3', '2026-10-17T17:00:00+07:00');
       expect(previousEventFor([e1, e2, e3], e3)?.id, 'e2');
+    });
+  });
+
+  group('event location customization & hybrid online meetings', () {
+    test('online meeting with resolved destination is treated as onsite', () {
+      final t = Trip.fromJson({
+        'id': 'cal-hybrid',
+        'title_th': 'Quarterly Review (Google Meet)',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.81, 'lng': 100.59},
+        'destination': {'name_th': 'ไบเทค บางนา', 'lat': 13.67, 'lng': 100.61},
+        'arrive_by': '2026-10-17T10:00:00+07:00',
+        'mode': 'car',
+        'virtual': true,
+      });
+      expect(t.virtual, isFalse);
+      expect(t.travels, isTrue);
+      expect(t.destination.resolved, isTrue);
+      expect(t.destination.nameTh, 'ไบเทค บางนา');
+    });
+
+    test('online meeting with unresolved physical location_text_th is onsite unresolved', () {
+      final t = Trip.fromJson({
+        'id': 'cal-hybrid-unres',
+        'title_th': 'Workshop (Google Meet)',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.81, 'lng': 100.59},
+        'destination': {'name_th': 'อาคารลับ ชั้น 9'},
+        'location_text_th': 'อาคารลับ ชั้น 9',
+        'arrive_by': '2026-10-17T14:00:00+07:00',
+        'mode': 'car',
+        'virtual': true,
+      });
+      expect(t.virtual, isFalse);
+      expect(t.unresolved, isTrue);
+      expect(t.locationTextTh, 'อาคารลับ ชั้น 9');
+    });
+
+    test('pure online meeting without physical location stays virtual', () {
+      final t = Trip.fromJson({
+        'id': 'cal-pure-online',
+        'title_th': 'Sprint planning',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.81, 'lng': 100.59},
+        'destination': {'name_th': 'ออนไลน์'},
+        'arrive_by': '2026-10-17T10:00:00+07:00',
+        'mode': 'car',
+        'virtual': true,
+      });
+      expect(t.virtual, isTrue);
+      expect(t.travels, isFalse);
+    });
+
+    test('inferPlaceQueryFromTitle extracts location from event title', () {
+      expect(inferPlaceQueryFromTitle('นัดกินข้าวที่เซ็นทรัลเวิลด์'), 'เซ็นทรัลเวิลด์');
+      expect(inferPlaceQueryFromTitle('ประชุมทีม @ สยามพารากอน'), 'สยามพารากอน');
+      expect(inferPlaceQueryFromTitle('Dinner at Thonglor'), 'Thonglor');
+      expect(inferPlaceQueryFromTitle('คุยเรื่องงบประมาณ'), isNull);
+      expect(inferPlaceQueryFromTitle('Sprint planning'), isNull);
     });
   });
 }

@@ -23,8 +23,8 @@ func areDuplicateTrips(a, b domain.Trip) bool {
 		return false
 	}
 
-	// If both are all-day events on the same day
-	if a.AllDay && b.AllDay {
+	// If either is an all-day (date-only) event on the same day, match by destination or title
+	if a.AllDay || b.AllDay {
 		return destinationsOrTitlesMatch(a, b)
 	}
 

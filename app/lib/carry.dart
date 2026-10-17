@@ -1,5 +1,5 @@
-// What to take out of the house today: rain gear, sun protection, water,
-// decided from the next hours of weather.
+// What to take out of the house today: rain gear, sun protection, water, a
+// jacket, decided from the next hours of weather.
 
 import 'departure.dart';
 import 'models.dart';
@@ -20,6 +20,10 @@ const veryHighUv = 8;
 /// Feels-like heat where water stops being optional.
 const hotFeelsLikeC = 40.0;
 
+/// Feels-like cold where a jacket is worth taking: rare in Bangkok, common
+/// up north in the cool season.
+const coldFeelsLikeC = 20.0;
+
 /// How far ahead packing looks when no event bounds the day.
 const carryHorizon = Duration(hours: 12);
 
@@ -31,6 +35,7 @@ enum CarryKind {
   sunUmbrella,
   sunscreen,
   water,
+  jacket,
   shoes,
 }
 
@@ -88,6 +93,11 @@ List<CarryItem> whatToCarry(
     0.0,
     (m, h) => h.feelsLikeC > m ? h.feelsLikeC : m,
   );
+  final cold = hours.where((h) => h.feelsLikeC <= coldFeelsLikeC).toList();
+  final lowFeels = cold.fold(
+    coldFeelsLikeC,
+    (m, h) => h.feelsLikeC < m ? h.feelsLikeC : m,
+  );
   final heavy = wet.any((h) => h.rainMmPerHr >= heavyRain);
   final soaking = wet.where((h) => h.rainMmPerHr >= moderateRain).length >= 2;
   final moto = mode == TravelMode.moto;
@@ -107,6 +117,7 @@ List<CarryItem> whatToCarry(
       span(CarryKind.sunUmbrella, sunny, peakUv),
     if (sunny.isNotEmpty) span(CarryKind.sunscreen, sunny, peakUv),
     if (hot.isNotEmpty) span(CarryKind.water, hot, peakFeels.round()),
+    if (cold.isNotEmpty) span(CarryKind.jacket, cold, lowFeels.round()),
     if (soaking) span(CarryKind.shoes, wet, peakProb),
   ];
 }

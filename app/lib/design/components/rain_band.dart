@@ -170,6 +170,96 @@ class RainBand extends StatelessWidget {
   }
 }
 
+/// Key to the band: what each bar colour, the road bracket and the dashed
+/// line mean.
+class RainBandLegend extends StatelessWidget {
+  const RainBandLegend({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FonColors.of(context);
+    final l = context.l10n;
+    final style = Theme.of(
+      context,
+    ).textTheme.labelSmall!.copyWith(color: c.paperMuted);
+    Widget item(Widget mark, String text) => Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        mark,
+        const SizedBox(width: Space.x1),
+        Text(text, style: style),
+      ],
+    );
+    Widget swatch(Color color, double h) => Container(
+      width: 10,
+      height: h,
+      decoration: BoxDecoration(
+        color: color,
+        borderRadius: const BorderRadius.vertical(top: Radius.circular(2)),
+      ),
+    );
+    final words = [
+      for (final w in [
+        l.summaryRainNone,
+        l.summaryRainLight,
+        l.summaryRainModerate,
+        l.summaryRainHeavy,
+      ])
+        w.isEmpty ? w : w[0].toUpperCase() + w.substring(1),
+    ];
+    return Wrap(
+      spacing: Space.x3,
+      runSpacing: Space.x1,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        for (var i = 0; i < 4; i++)
+          item(swatch(c.rain[i], 4.0 + i * 3), words[i]),
+        item(
+          Container(
+            width: 16,
+            height: 4,
+            decoration: BoxDecoration(
+              color: c.marker.withValues(alpha: .55),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+          l.partsLegendOnRoad,
+        ),
+        item(
+          SizedBox(
+            width: 2,
+            height: 12,
+            child: CustomPaint(painter: _DashPainter(c.paperMuted)),
+          ),
+          l.partsNow,
+        ),
+      ],
+    );
+  }
+}
+
+class _DashPainter extends CustomPainter {
+  _DashPainter(this.color);
+  final Color color;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final p = Paint()
+      ..color = color
+      ..strokeWidth = 1;
+    for (var y = 0.0; y < size.height; y += 6) {
+      canvas.drawLine(
+        Offset(size.width / 2, y),
+        Offset(size.width / 2, math.min(y + 3, size.height)),
+        p,
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashPainter old) => old.color != color;
+}
+
 class _RainBandPainter extends CustomPainter {
   _RainBandPainter({
     required this.points,
@@ -225,6 +315,14 @@ class _RainBandPainter extends CustomPainter {
     canvas.drawRRect(
       RRect.fromLTRBR(ax, base + 4, bx, base + 8, const Radius.circular(2)),
       Paint()..color = colors.marker.withValues(alpha: .55),
+    );
+    // Arrival: the bracket ends on a flag post.
+    canvas.drawLine(
+      Offset(bx, base + 2),
+      Offset(bx, base + 10),
+      Paint()
+        ..color = colors.marker
+        ..strokeWidth = 2,
     );
 
     // Now tick.

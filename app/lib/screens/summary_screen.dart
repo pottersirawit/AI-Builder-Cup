@@ -121,21 +121,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final saved = await pickPlace(
       context,
       kind: PlaceKind.other,
-      initialQuery: t.locationTextTh,
+      initialQuery: t.locationTextTh ?? inferPlaceQueryFromTitle(t.titleTh),
     );
     if (saved == null || !mounted) return;
-    _openTrip(
-      Trip(
-        id: 'app-${t.id}',
-        titleTh: t.titleTh,
-        source: 'app',
-        origin: t.origin,
-        destination: saved.asPlace,
-        arriveBy: t.arriveBy,
-        endsAt: t.endsAt,
-        mode: t.mode,
-      ),
-    );
+    final updated = await widget.repo.saveTripDestination(t, saved.asPlace);
+    if (!mounted) return;
+    _openTrip(updated);
   }
 
   Future<void> _calibrateLocation() async {
@@ -265,6 +256,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
                 mode: plan?.best?.mode,
                 departAt: ctrl?.departAt,
               ),
+        onDismiss: () => dismissTripWithUndo(context, repo, next),
         onRetry: ctrl?.load,
         onResolvePlace: () => _resolveTrip(next),
         onAsk: () => showAskSheet(context),
@@ -512,6 +504,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                       now: now,
                                       plan: _planFor(t, now),
                                       weather: outlook,
+                                      onDismiss: () => dismissTripWithUndo(
+                                        context,
+                                        repo,
+                                        t,
+                                      ),
                                       onTap: t.unresolved
                                           ? () => _resolveTrip(t)
                                           : (t.travels ||

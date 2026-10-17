@@ -107,6 +107,7 @@ void main() {
           tester.getTopLeft(find.text('เทียบวิธีเดินทาง')).dy,
           lessThan(tester.getTopLeft(find.text('เส้นทางที่ใช้คำนวณ')).dy),
         );
+        await reveal(tester, find.text('จุดน้ำท่วมบนเส้นทาง'));
         expect(
           tester.getTopLeft(find.text('เส้นทางที่ใช้คำนวณ')).dy,
           lessThan(tester.getTopLeft(find.text('จุดน้ำท่วมบนเส้นทาง')).dy),

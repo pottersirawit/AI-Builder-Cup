@@ -1595,7 +1595,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String verdictModeStatusWithProb(int eta, String status, int prob) {
-    return '$eta น. · $status ($prob%)';
+    return '$eta น. · $status (โอกาสฝน $prob%)';
   }
 
   @override
@@ -1773,6 +1773,108 @@ class AppLocalizationsTh extends AppLocalizations {
       'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
 
   @override
+  String eventsInferredPlacePrompt(String place) {
+    return 'AI แนะนำสถานที่: $place';
+  }
+
+  @override
+  String get eventsConfirmPlace => 'ยืนยันสถานที่';
+
+  @override
+  String get eventsChangePlace => 'เปลี่ยน';
+
+  @override
+  String get partsBandTitle => 'ฝนตามเส้นทาง';
+
+  @override
+  String get partsBandHint =>
+      'แท่งยิ่งสูง ฝนยิ่งหนัก · ลากหมุดหรือแตะเวลาด้านล่างเพื่อเปลี่ยน';
+
+  @override
+  String get partsLegendOnRoad => 'ช่วงที่อยู่บนถนน';
+
+  @override
+  String partsPickArrive(String time) {
+    return 'ถึง $time';
+  }
+
+  @override
+  String get partsPickLeaveHelp => 'จะออกกี่โมง';
+
+  @override
+  String get partsPickArriveHelp => 'อยากไปถึงกี่โมง';
+
+  @override
+  String partsPickTimeSemantic(String what) {
+    return 'เปลี่ยนเวลา $what';
+  }
+
+  @override
+  String get partsUseSuggested => 'ใช้เวลาที่แนะนำ';
+
+  @override
+  String partsHeadlineLeaveArrive(String leave, String arrive) {
+    return 'ออก $leave ถึง $arrive';
+  }
+
+  @override
+  String partsHeadlineLate(String leave, int min) {
+    return 'ออก $leave จะสาย $min นาที';
+  }
+
+  @override
+  String get verdictGearTitle => 'ของที่ควรพก';
+
+  @override
+  String verdictGearWeather(int temp, int feels) {
+    return 'ช่วงเดินทาง $temp° รู้สึกเหมือน $feels°';
+  }
+
+  @override
+  String get verdictGearTooFar =>
+      'พยากรณ์รายชั่วโมงยังไปไม่ถึงเวลานี้ ใกล้เวลาแล้วจะบอกว่าควรพกอะไร';
+
+  @override
+  String get verdictGearNothingBody => 'อากาศช่วงเดินทางกำลังดี';
+
+  @override
+  String get carryJacket => 'เสื้อกันหนาว';
+
+  @override
+  String carryWhyCold(String c, String from, String to) {
+    return 'อากาศเย็น รู้สึกเหมือน $c° · $from–$to';
+  }
+
+  @override
+  String get partsBandOutOfRange =>
+      'พยากรณ์ฝนละเอียดดูได้ล่วงหน้าแค่ 5 ชม. ใกล้เวลาเดินทางแล้วค่อยเปิดดูอีกครั้ง';
+
+  @override
+  String partsHeadlineWet(String time) {
+    return 'ออก $time โดนฝนกลางทาง';
+  }
+
+  @override
+  String partsHeadlineRisky(String time) {
+    return 'ออก $time ไม่แนะนำ';
+  }
+
+  @override
+  String partsAltMode(String mode, String leave, String arrive) {
+    return '$mode ไปได้ ออก $leave ถึง $arrive';
+  }
+
+  @override
+  String partsAltModeAction(String mode) {
+    return 'เปลี่ยนเป็น$mode';
+  }
+
+  @override
+  String partsAltWait(String leave, String arrive) {
+    return 'หรือรอออก $leave ฝนซาแล้ว ถึง $arrive';
+  }
+
+  @override
   String get notificationsTitle => 'การแจ้งเตือน';
 
   @override
@@ -1780,7 +1882,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get notificationsEmptyBody =>
-      'เมื่อใกล้เวลาออกเดินทางหรือมีฝนบนเส้นทาง แอปจะแจ้งเตือนที่นี่';
+      'เมื่อมีความเสี่ยงเรื่องฝน น้ำท่วม หรือเวลาออกเดินทาง ระบบจะแจ้งเตือนที่นี่';
 
   @override
   String get notificationsMarkAllRead => 'อ่านทั้งหมด';

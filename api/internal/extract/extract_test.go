@@ -433,3 +433,98 @@ func TestExtract_UsesFastModelAndCachesPayload(t *testing.T) {
 		t.Fatalf("cached payload did not preserve SourceRef or fields: p1=%+v p2=%+v", p1, p2)
 	}
 }
+
+func TestExtract_GmailDateOnlyEvent_AllDay(t *testing.T) {
+	now := bangkokTime(2026, 10, 17, 10, 0)
+
+	t.Run("date only string YYYY-MM-DD", func(t *testing.T) {
+		geminiJSON := `{
+			"is_trip": true,
+			"all_day": true,
+			"title_th": "นัดเจอกันที่ BTS ศาลาแดง",
+			"origin_text": "",
+			"destination_text": "BTS ศาลาแดง",
+			"arrive_by": "2026-10-18",
+			"depart_at": null,
+			"mode": "transit",
+			"confidence": 0.9,
+			"evidence_th": "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง"
+		}`
+		fake := &fakeGenerator{reply: geminiJSON}
+		client := &agent.Gemini{Gen: fake, Model: "test"}
+		raw := RawMessage{
+			Source:    SourceGmail,
+			SourceRef: "msg-date-only-1",
+			Title:     "Test",
+			Body:      "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง",
+		}
+		p, err := WithGemini(context.Background(), client, raw, now)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !p.IsTrip || !p.AllDay {
+			t.Errorf("expected IsTrip=true and AllDay=true, got IsTrip=%v AllDay=%v", p.IsTrip, p.AllDay)
+		}
+		want := bangkokTime(2026, 10, 18, 0, 0)
+		if p.ArriveBy == nil || !p.ArriveBy.Equal(want) {
+			t.Errorf("ArriveBy = %v, want %v", p.ArriveBy, want)
+		}
+	})
+
+	t.Run("RFC3339 midnight with all_day flag", func(t *testing.T) {
+		geminiJSON := `{
+			"is_trip": true,
+			"all_day": true,
+			"title_th": "นัดเจอกันที่ BTS ศาลาแดง",
+			"origin_text": "",
+			"destination_text": "BTS ศาลาแดง",
+			"arrive_by": "2026-10-18T00:00:00+07:00",
+			"depart_at": null,
+			"mode": "transit",
+			"confidence": 0.9,
+			"evidence_th": "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง"
+		}`
+		fake := &fakeGenerator{reply: geminiJSON}
+		client := &agent.Gemini{Gen: fake, Model: "test"}
+		raw := RawMessage{
+			Source:    SourceGmail,
+			SourceRef: "msg-date-only-2",
+			Title:     "Test",
+			Body:      "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง",
+		}
+		p, err := WithGemini(context.Background(), client, raw, now)
+		if err != nil {
+			t.Fatalf("unexpected error: %v", err)
+		}
+		if !p.IsTrip || !p.AllDay {
+			t.Errorf("expected IsTrip=true and AllDay=true, got IsTrip=%v AllDay=%v", p.IsTrip, p.AllDay)
+		}
+		want := bangkokTime(2026, 10, 18, 0, 0)
+		if p.ArriveBy == nil || !p.ArriveBy.Equal(want) {
+			t.Errorf("ArriveBy = %v, want %v", p.ArriveBy, want)
+		}
+	})
+}
+
+func TestWithGemini_CachesResult(t *testing.T) {
+	now := bangkokTime(2026, 10, 17, 10, 0)
+	fake := &fakeGenerator{reply: `{"is_trip":true,"title_th":"นัดเจอกัน","destination_text":"BTS ศาลาแดง","arrive_by":"2026-10-18T00:00:00+07:00","all_day":true,"confidence":0.9,"evidence_th":"18 ตุลา"}`}
+	client := &agent.Gemini{Gen: fake, Model: "test"}
+	raw := RawMessage{Source: SourceGmail, SourceRef: "m-cache", Title: "Test", Body: "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง"}
+
+	p1, err := WithGemini(context.Background(), client, raw, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p2, err := WithGemini(context.Background(), client, raw, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fake.models) != 1 {
+		t.Errorf("expected 1 Gemini API call due to caching, got %d", len(fake.models))
+	}
+	if p1.SourceRef != "m-cache" || p2.SourceRef != "m-cache" || !p2.AllDay {
+		t.Errorf("unexpected cached payload: p1=%+v p2=%+v", p1, p2)
+	}
+}
+

@@ -3,11 +3,14 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../config.dart';
+import '../departure.dart';
 import '../design/design.dart';
+import '../events.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../time_th.dart';
 import '../trip_controller.dart';
+import 'event_cards.dart' show leaveSentence;
 import 'place_picker.dart';
 
 /// The top trip printed as a pass: verdict, segments, rain band.
@@ -46,6 +49,7 @@ class TripPass extends StatelessWidget {
     final verdict = controller.verdict ?? d.verdict;
     final risk = sel?.risk ?? riskOfVerdict(verdict);
     final motion = Motion.of(context);
+    final headlineText = passHeadline(l, controller, now);
 
     final header = Row(
       children: [
@@ -90,8 +94,8 @@ class TripPass extends StatelessWidget {
         ),
       ),
       child: Text(
-        keepLastWordTogether(controller.headline),
-        key: ValueKey(controller.headline),
+        keepLastWordTogether(headlineText),
+        key: ValueKey(headlineText),
         style: tabular(t.displayMedium!).copyWith(color: c.paperInk),
       ),
     );
@@ -121,7 +125,7 @@ class TripPass extends StatelessWidget {
 
     return Pass(
       onTap: onTap,
-      semanticLabel: '${controller.headline} ${trip?.titleTh ?? ''}',
+      semanticLabel: '$headlineText ${trip?.titleTh ?? ''}',
       sections: [
         PassSection(
           child: Column(
@@ -166,6 +170,11 @@ class TripPass extends StatelessWidget {
               ),
               const SizedBox(height: Space.x3),
               summary,
+              if (controller.otherMode != null ||
+                  controller.waitOut != null) ...[
+                const SizedBox(height: Space.x3),
+                _Alternatives(controller: controller),
+              ],
             ],
           ),
         ),
@@ -194,39 +203,43 @@ class TripPass extends StatelessWidget {
             children: [
               Row(
                 children: [
-                  Icon(Symbols.swipe_rounded, size: 16, color: c.paperMuted),
-                  const SizedBox(width: Space.x1),
+                  Icon(Symbols.rainy_rounded, size: 18, color: c.paperMuted),
+                  const SizedBox(width: Space.x2),
                   Expanded(
                     child: Text(
-                      l.partsDragHint,
-                      style: t.labelMedium!.copyWith(color: c.paperMuted),
+                      l.partsBandTitle,
+                      style: t.titleSmall!.copyWith(color: c.paperInk),
                     ),
                   ),
-                  if (!departIsNow)
-                    TextButton(
-                      onPressed: controller.resetDeparture,
-                      style: TextButton.styleFrom(
-                        minimumSize: const Size(Space.target, 36),
-                        tapTargetSize: MaterialTapTargetSize.padded,
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: Space.x2,
-                        ),
-                      ),
-                      child: Text(l.partsLeaveNow),
-                    ),
                 ],
               ),
-              const SizedBox(height: Space.x2),
-              RainBand(
-                key: const ValueKey('rain-band'),
-                points: d.rainTimeline,
-                departAt: controller.departAt,
-                earliest: controller.earliest,
-                etaMin: controller.etaMin,
-                now: now,
-                onChanged: controller.drag,
-                onChangeEnd: controller.commit,
-              ),
+              const SizedBox(height: Space.x1),
+              if (_inBand(d.rainTimeline, controller.departAt)) ...[
+                Text(
+                  l.partsBandHint,
+                  style: t.labelMedium!.copyWith(color: c.paperMuted),
+                ),
+                const SizedBox(height: Space.x3),
+                RainBand(
+                  key: const ValueKey('rain-band'),
+                  points: d.rainTimeline,
+                  departAt: controller.departAt,
+                  earliest: controller.earliest,
+                  etaMin: controller.etaMin,
+                  now: now,
+                  onChanged: controller.drag,
+                  onChangeEnd: controller.commit,
+                ),
+                const SizedBox(height: Space.x2),
+                const RainBandLegend(),
+              ] else
+                Text(
+                  key: const ValueKey('band-out-of-range'),
+                  l.partsBandOutOfRange,
+                  style: t.bodyMedium!.copyWith(color: c.paperMuted),
+                ),
+              const SizedBox(height: Space.x4),
+              _DepartureTimes(controller: controller, now: now, trip: trip),
               const SizedBox(height: Space.x3),
               GeneratedBy(d.generatedBy),
               if (actions.isNotEmpty) ...[
@@ -241,6 +254,252 @@ class TripPass extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// The band covers the server's rain timeline only (the next few hours); a
+/// departure outside it would sit pinned to an edge over the wrong rain.
+bool _inBand(List<RainPoint> points, DateTime departAt) =>
+    points.isNotEmpty &&
+    !departAt.isBefore(points.first.time) &&
+    departAt.isBefore(points.last.time.add(const Duration(minutes: 15)));
+
+/// The pass headline. The agent judges the departure it was asked about, so
+/// its "leave now" is wrong for a later one: an event says its leave-by time
+/// until the user picks their own; from then on the headline stays a leave
+/// time for the chosen mode, and better options show under it as actions.
+String passHeadline(AppLocalizations l, TripController c, DateTime now) {
+  final sel = c.selected;
+  if (sel == null) return c.headline;
+  final plan = c.plan;
+  if (plan != null && !c.userSet) return leaveSentence(l, plan);
+  final departIsNow = c.departAt.difference(now).inMinutes.abs() < 5;
+  if (!c.userSet && departIsNow) return c.headline;
+  final leave = hhmm(c.departAt);
+  if (sel.verdict != Verdict.leaveNow) {
+    final rain = c.decision?.rainTimeline ?? const <RainPoint>[];
+    return peakRain(rain, c.departAt, sel.arriveAt) >= lightRain
+        ? l.partsHeadlineWet(leave)
+        : l.partsHeadlineRisky(leave);
+  }
+  final late = c.deadline == null
+      ? 0
+      : sel.arriveAt.difference(c.deadline!).inMinutes;
+  return late > 0
+      ? l.partsHeadlineLate(leave, late)
+      : l.partsHeadlineLeaveArrive(leave, hhmm(sel.arriveAt));
+}
+
+/// What to do instead when the chosen mode and time cannot go: another mode
+/// at the same time, or the same mode once the rain eases. The user decides.
+class _Alternatives extends StatelessWidget {
+  const _Alternatives({required this.controller});
+  final TripController controller;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final c = FonColors.of(context);
+    final t = Theme.of(context).textTheme;
+    final other = controller.otherMode;
+    final wait = controller.waitOut;
+    Widget row(
+      Key key,
+      IconData icon,
+      String text,
+      String action,
+      VoidCallback onPressed,
+    ) => Padding(
+      key: key,
+      padding: const EdgeInsets.only(bottom: Space.x2),
+      child: Row(
+        children: [
+          Icon(icon, size: 18, color: c.paperMuted),
+          const SizedBox(width: Space.x2),
+          Expanded(
+            child: Text(
+              text,
+              style: tabular(t.bodyMedium!).copyWith(color: c.paperInk),
+            ),
+          ),
+          const SizedBox(width: Space.x2),
+          FilledButton.tonal(onPressed: onPressed, child: Text(action)),
+        ],
+      ),
+    );
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (other != null)
+          row(
+            const ValueKey('alt-mode'),
+            other.mode.icon,
+            l.partsAltMode(
+              other.mode.label(l),
+              hhmm(other.departAt),
+              hhmm(other.arriveAt),
+            ),
+            l.partsAltModeAction(other.mode.shortLabel(l)),
+            () => controller.setMode(other.mode),
+          ),
+        if (wait != null)
+          row(
+            const ValueKey('alt-wait'),
+            Symbols.schedule_rounded,
+            l.partsAltWait(hhmm(wait.departAt), hhmm(wait.arriveAt)),
+            l.rainBandLeave(hhmm(wait.departAt)),
+            () => controller.commit(wait.departAt),
+          ),
+      ],
+    );
+  }
+}
+
+/// Leave and arrive times under the band, each tappable to set by hand, and
+/// the way back to the suggested time.
+class _DepartureTimes extends StatelessWidget {
+  const _DepartureTimes({
+    required this.controller,
+    required this.now,
+    required this.trip,
+  });
+  final TripController controller;
+  final DateTime now;
+  final Trip? trip;
+
+  Future<void> _pick(
+    BuildContext context,
+    DateTime initial,
+    String help,
+    Future<void> Function(DateTime) apply,
+  ) async {
+    final b = toBangkok(initial);
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: TimeOfDay(hour: b.hour, minute: b.minute),
+      helpText: help,
+      initialEntryMode: TimePickerEntryMode.dial,
+      builder: (context, child) => MediaQuery(
+        data: MediaQuery.of(context).copyWith(alwaysUse24HourFormat: true),
+        child: child!,
+      ),
+    );
+    if (picked == null) return;
+    await apply(bangkokAt(initial, picked.hour, picked.minute));
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final c = FonColors.of(context);
+    final ctrl = controller;
+    final arrive = ctrl.selected?.arriveAt;
+    final departIsNow = ctrl.departAt.difference(now).inMinutes.abs() < 5;
+    final event = ctrl.deadline != null;
+    // Another day's times carry the date, or 21:29 reads as tonight.
+    String at(DateTime t) => bangkokDay(t) == bangkokDay(now)
+        ? hhmm(t)
+        : '${dayOfMonth(t)} ${monthShort(l, t)} ${hhmm(t)}';
+    final arriveBy = trip?.arriveBy;
+    final Widget? reset = event
+        ? (ctrl.userSet
+              ? TextButton(
+                  onPressed: ctrl.useSuggested,
+                  child: Text(l.partsUseSuggested),
+                )
+              : null)
+        : (!departIsNow &&
+                  (arriveBy == null || bangkokDay(arriveBy) == bangkokDay(now))
+              ? TextButton(
+                  onPressed: ctrl.resetDeparture,
+                  child: Text(l.partsLeaveNow),
+                )
+              : null);
+    return Wrap(
+      spacing: Space.x2,
+      runSpacing: Space.x2,
+      crossAxisAlignment: WrapCrossAlignment.center,
+      children: [
+        _TimeChip(
+          key: const ValueKey('pick-leave'),
+          icon: Symbols.directions_walk_rounded,
+          label: l.rainBandLeave(at(ctrl.departAt)),
+          onTap: () =>
+              _pick(context, ctrl.departAt, l.partsPickLeaveHelp, ctrl.commit),
+        ),
+        Icon(Symbols.arrow_forward_rounded, size: 16, color: c.paperMuted),
+        _TimeChip(
+          key: const ValueKey('pick-arrive'),
+          icon: Symbols.flag_rounded,
+          label: arrive == null ? '–' : l.partsPickArrive(at(arrive)),
+          onTap: arrive == null
+              ? null
+              : () => _pick(
+                  context,
+                  arrive,
+                  l.partsPickArriveHelp,
+                  ctrl.arriveAt,
+                ),
+        ),
+        ?reset,
+      ],
+    );
+  }
+}
+
+class _TimeChip extends StatelessWidget {
+  const _TimeChip({
+    super.key,
+    required this.icon,
+    required this.label,
+    this.onTap,
+  });
+  final IconData icon;
+  final String label;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final c = FonColors.of(context);
+    final t = Theme.of(context).textTheme;
+    return Semantics(
+      button: true,
+      label: context.l10n.partsPickTimeSemantic(label),
+      excludeSemantics: true,
+      child: Material(
+        color: c.marker.withValues(alpha: .12),
+        borderRadius: BorderRadius.circular(Radii.pill),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(Radii.pill),
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(minHeight: Space.target),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: Space.x3),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(icon, size: 18, color: c.paperInk),
+                  const SizedBox(width: Space.x1),
+                  Flexible(
+                    child: Text(
+                      label,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: tabular(t.labelLarge!).copyWith(color: c.paperInk),
+                    ),
+                  ),
+                  if (onTap != null) ...[
+                    const SizedBox(width: Space.x1),
+                    Icon(Symbols.edit_rounded, size: 14, color: c.paperMuted),
+                  ],
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

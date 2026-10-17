@@ -1166,7 +1166,7 @@
       }
     }
   },
-  "verdictModeStatusWithProb": "{eta} min · {status} ({prob}%)",
+  "verdictModeStatusWithProb": "{eta} min · {status} ({prob}% chance of rain)",
   "@verdictModeStatusWithProb": {
     "placeholders": {
       "eta": {
@@ -1296,8 +1296,141 @@
     }
   },
   "verdictAccuracyDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.",
+  "eventsInferredPlacePrompt": "AI suggested place: {place}",
+  "@eventsInferredPlacePrompt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsConfirmPlace": "Confirm place",
+  "eventsChangePlace": "Change",
+  "partsBandTitle": "Rain along your route",
+  "partsBandHint": "Taller bars mean heavier rain. Drag the pin or tap a time below to change it.",
+  "partsLegendOnRoad": "On the road",
+  "partsPickArrive": "Arrive {time}",
+  "@partsPickArrive": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsPickLeaveHelp": "When do you want to leave?",
+  "partsPickArriveHelp": "When do you want to arrive?",
+  "partsPickTimeSemantic": "Change time: {what}",
+  "@partsPickTimeSemantic": {
+    "placeholders": {
+      "what": {
+        "type": "String"
+      }
+    }
+  },
+  "partsUseSuggested": "Use suggested time",
+  "partsHeadlineLeaveArrive": "Leave {leave}, arrive {arrive}",
+  "@partsHeadlineLeaveArrive": {
+    "placeholders": {
+      "leave": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  },
+  "partsHeadlineLate": "Leave {leave}: {min} min late",
+  "@partsHeadlineLate": {
+    "placeholders": {
+      "leave": {
+        "type": "String"
+      },
+      "min": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictGearTitle": "What to bring",
+  "verdictGearWeather": "{temp}° on the way, feels like {feels}°",
+  "@verdictGearWeather": {
+    "placeholders": {
+      "temp": {
+        "type": "int"
+      },
+      "feels": {
+        "type": "int"
+      }
+    }
+  },
+  "verdictGearTooFar": "The hourly forecast doesn't reach this trip yet. Check back closer to the time.",
+  "verdictGearNothingBody": "The weather on the way looks fine",
+  "carryJacket": "A jacket",
+  "carryWhyCold": "Chilly, feels like {c}° · {from}–{to}",
+  "@carryWhyCold": {
+    "placeholders": {
+      "c": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "partsBandOutOfRange": "The detailed rain forecast only covers the next 5 hours. Check back closer to your trip.",
+  "partsHeadlineWet": "Leave {time}: rain on the way",
+  "@partsHeadlineWet": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsHeadlineRisky": "Leave {time}: not advised",
+  "@partsHeadlineRisky": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "partsAltMode": "{mode} works: leave {leave}, arrive {arrive}",
+  "@partsAltMode": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      },
+      "leave": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  },
+  "partsAltModeAction": "Switch to {mode}",
+  "@partsAltModeAction": {
+    "placeholders": {
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "partsAltWait": "Or wait until {leave} for the rain to ease, arrive {arrive}",
+  "@partsAltWait": {
+    "placeholders": {
+      "leave": {
+        "type": "String"
+      },
+      "arrive": {
+        "type": "String"
+      }
+    }
+  },
   "notificationsTitle": "Notifications",
   "notificationsEmptyTitle": "No notifications yet",
-  "notificationsEmptyBody": "When it's almost time to leave or rain is on your route, alerts will show up here.",
+  "notificationsEmptyBody": "Rain, flood, and trip alerts will show up here",
   "notificationsMarkAllRead": "Mark all read"
 }

@@ -101,9 +101,7 @@ int hourRainLevel(WeatherHour h) {
   final byMm = rainLevel(h.rainMmPerHr);
   if (byMm > 0) return byMm;
   return switch (h.condition) {
-    'HEAVY_RAIN' ||
-    'HEAVY_RAIN_SHOWERS' ||
-    'HEAVY_THUNDERSTORM' => 3,
+    'HEAVY_RAIN' || 'HEAVY_RAIN_SHOWERS' || 'HEAVY_THUNDERSTORM' => 3,
     'THUNDERSTORM' ||
     'THUNDERSHOWER' ||
     'SCATTERED_THUNDERSTORMS' ||
@@ -505,6 +503,12 @@ class _RainIntensityBars extends StatelessWidget {
       title: l.carryWater,
       why: l.carryWhyHeat('${i.value}'),
       accent: const Color(0xFF5FD4E8),
+    ),
+    CarryKind.jacket => (
+      icon: Symbols.checkroom_rounded,
+      title: l.carryJacket,
+      why: l.carryWhyCold('${i.value}', from, to),
+      accent: const Color(0xFF9FB4FF),
     ),
     CarryKind.shoes => (
       icon: Symbols.footprint_rounded,

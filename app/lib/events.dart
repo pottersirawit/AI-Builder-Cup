@@ -237,13 +237,18 @@ LeavePlan leavePlan(
   // before the event, is not about this trip: back off the event's start
   // instead, else leave at the planned time.
   final lb = d.leaveBy;
+  final futureDay =
+      (deadline != null && bangkokDay(deadline).isAfter(bangkokDay(now))) ||
+      (planned != null && bangkokDay(planned).isAfter(bangkokDay(now)));
   final stale =
       lb != null &&
       ((planned != null && planned.isAfter(now) && lb.isBefore(planned)) ||
           (deadline != null && lb.isBefore(deadline.subtract(staleLead))));
-  final time = !stale
+  final time = (!stale && lb != null)
       ? lb
-      : (deadline?.subtract(eta + arrivalSlack) ?? planned);
+      : (stale || futureDay)
+      ? (deadline?.subtract(eta + arrivalSlack) ?? planned)
+      : null;
   final kind = switch (d.verdict) {
     Verdict.dontGo => LeaveKind.avoid,
     _ when time == null => LeaveKind.now,

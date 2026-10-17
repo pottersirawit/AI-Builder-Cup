@@ -542,17 +542,15 @@ class GlassTicket extends StatelessWidget {
         // Glass halves carry no shadow: it would show through the notches.
         boxShadow: GlassSurface.opaqueFor(context) ? c.passShadow : null,
       ),
-      child: Stack(
-        children: [
-          ticket,
-          if (onTap != null)
-            Positioned.fill(
-              child: Material(
-                type: MaterialType.transparency,
-                child: InkWell(borderRadius: BorderRadius.all(r), onTap: onTap),
+      child: Material(
+        type: MaterialType.transparency,
+        child: onTap == null
+            ? ticket
+            : InkWell(
+                borderRadius: BorderRadius.all(r),
+                onTap: onTap,
+                child: ticket,
               ),
-            ),
-        ],
       ),
     );
   }

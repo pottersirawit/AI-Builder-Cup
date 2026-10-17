@@ -35,6 +35,7 @@ type Payload struct {
 	Source          string       `json:"source"`
 	SourceRef       string       `json:"source_ref"`
 	IsTrip          bool         `json:"is_trip"`
+	AllDay          bool         `json:"all_day,omitempty"`
 	TitleTH         string       `json:"title_th"`
 	OriginText      string       `json:"origin_text"`
 	DestinationText string       `json:"destination_text"`
@@ -48,11 +49,12 @@ type Payload struct {
 // jsonSchemaPayload matches the LLM output representation.
 type jsonSchemaPayload struct {
 	IsTrip          bool    `json:"is_trip"`
+	AllDay          bool    `json:"all_day"`
 	TitleTH         string  `json:"title_th"`
 	OriginText      string  `json:"origin_text"`
 	DestinationText string  `json:"destination_text"`
-	ArriveBy        *string `json:"arrive_by"` // RFC 3339 string
-	DepartAt        *string `json:"depart_at"` // RFC 3339 string
+	ArriveBy        *string `json:"arrive_by"` // RFC 3339 or YYYY-MM-DD string
+	DepartAt        *string `json:"depart_at"` // RFC 3339 or YYYY-MM-DD string
 	Mode            *string `json:"mode"`
 	Confidence      float64 `json:"confidence"`
 	EvidenceTH      string  `json:"evidence_th"`
@@ -71,7 +73,7 @@ const calendarPrompt = `คุณคือระบบสกัดข้อม�
 const gmailPrompt = `คุณคือระบบคัดกรองและสกัดข้อมูลแผนการเดินทางจากอีเมล (Gmail Email Ingestion System) สำหรับแจ้งเตือนสภาพอากาศและน้ำท่วมล่วงหน้าในกรุงเทพฯ
 
 หน้าที่:
-วิเคราะห์ข้อความอีเมลเพื่อแยกแยะระหว่าง "อีเมลที่ไม่เกี่ยวข้องหรือโฆษณา" กับ "การนัดหมายหรือแผนกิจกรรมจริงที่ผู้ใช้ต้องเดินทาง" โดยต้องมีทั้ง "สถานที่ปลายทางที่ชัดเจน" และ "วันเวลาที่แน่นอน" จึงจะถือว่าเป็นทริปการเดินทาง (is_trip = true)
+วิเคราะห์ข้อความอีเมลเพื่อแยกแยะระหว่าง "อีเมลที่ไม่เกี่ยวข้องหรือโฆษณา" กับ "การนัดหมายหรือแผนกิจกรรมจริงที่ผู้ใช้ต้องเดินทาง" โดยต้องมีทั้ง "สถานที่ปลายทางที่ชัดเจน" และ "วันที่หรือวันเวลาที่แน่นอน" จึงจะถือว่าเป็นทริปการเดินทาง (is_trip = true)
 
 กฎเกณฑ์สำคัญในการจำแนก (Classification Rules):
 
@@ -81,25 +83,29 @@ const gmailPrompt = `คุณคือระบบคัดกรองแล�
    - ใบเสร็จชำระเงิน, สรุปยอดเงิน, การแจ้งส่งพัสดุ (Shipping update) หรือการซื้อของออนไลน์ที่ไม่มีการนัดหมายเดินทางไปรับด้วยตนเอง
    - การประชุมออนไลน์หรือกิจกรรมเสมือนจริง (Google Meet, Zoom, Microsoft Teams, Webinar)
    - สแปม, อีเมลแจ้งเตือนความปลอดภัยของระบบ, รหัส OTP, บัญชีธนาคาร
-   - ข้อความเชิญชวนหรือโปรโมทสถานที่ที่ไม่มีการยืนยันการจองจริง (เช่น "แวะมาชิมอาหารร้านใหม่", "สถานที่ท่องเที่ยวแนะนำ")
+   - ข้อความเชิญชวนหรือโปรโมทสถานที่ที่ไม่มีการยืนยันการจองหรือนัดหมายจริง (เช่น "แวะมาชิมอาหารร้านใหม่", "สถานที่ท่องเที่ยวแนะนำ")
 
-2. ตั้งค่า is_trip = true เฉพาะเมื่อเป็น "นัดหมายหรือแผนกิจกรรมจริงที่มีการยืนยันแล้ว" เช่น:
+2. ตั้งค่า is_trip = true เมื่อเป็น "นัดหมายหรือแผนกิจกรรมจริง" เช่น:
    - ตั๋วหรือการจองกิจกรรมที่มีสถานที่จริง: ตั๋วคอนเสิร์ต, ตั๋วการแสดง, งานนิทรรศการ, งานสัมมนา On-site, กิจกรรมกีฬา
    - การเดินทาง: ตั๋วเครื่องบิน (Flight confirmation), รถไฟ, รถทัวร์, การจองโรงแรม/ที่พัก (Hotel booking)
-   - การนัดหมายส่วนตัวหรือธุรกิจแบบพบเจอตัวจริง (In-person meeting): นัดพบลูกค้า, นัดสัมภาษณ์งาน, นัดทานอาหาร/จองโต๊ะร้านอาหาร, นัดพบแพทย์/ทันตแพทย์, นัดหมายคลินิกหรือร้านเสริมสวย
+   - การนัดหมายส่วนตัวหรือธุรกิจแบบพบเจอตัวจริง (In-person meeting): นัดเจอกันกับเพื่อน/คนรู้จัก (เช่น "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง"), นัดพบลูกค้า, นัดสัมภาษณ์งาน, นัดทานอาหาร/จองโต๊ะร้านอาหาร, นัดพบแพทย์/ทันตแพทย์, นัดหมายคลินิกหรือร้านเสริมสวย
 
-3. เงื่อนไขบังคับด้านสถานที่ปลายทางและเวลา (Clear Destination + Time Required):
-   - ต้องมี "สถานที่ปลายทางทางกายภาพที่ชัดเจน" (Concrete physical destination) ใน destination_text เช่น ชื่อสถานที่, อาคาร, ร้านอาหาร, โรงแรม, สถานีรถไฟฟ้า หรือที่อยู่จริง หากไม่ระบุสถานที่ชัดเจน หรือระบุเพียง "ออนไลน์", "ทุกสาขา", "ร้านใกล้คุณ" ให้ is_trip = false ทันที
-   - ต้องมี "วันและเวลาที่แน่นอน" (Specific date and time) สำหรับ arrive_by (เวลาที่ต้องไปถึงสถานที่ เช่น เวลาเริ่มนัดหมาย, เวลาเริ่มคอนเสิร์ต, เวลาขึ้นเครื่องบิน) หรือ depart_at ในรูปแบบ RFC 3339 เวลาไทย (+07:00) โดยอ้างอิงจากเวลาปัจจุบันที่ระบุ หากมีเพียงช่วงเวลาลอยๆ ที่ไม่มีวันเวลานัดหมายชัดเจน (เช่น "ใช้สิทธิ์ได้ภายใน 30 วัน", "เปิดบริการทุกวัน") ให้ is_trip = false ทันที
-   - หากขาดข้อใดข้อหนึ่งระหว่าง "สถานที่ปลายทาง" หรือ "เวลาที่แน่นอน" ให้ถือว่าไม่ใช่แผนการเดินทางที่ใช้คำนวณเส้นทางได้ (is_trip = false)
+3. เงื่อนไขบังคับด้านสถานที่ปลายทางและเวลา (Clear Destination + Date/Time Required):
+   - ต้องมี "สถานที่ปลายทางทางกายภาพที่ชัดเจน" (Concrete physical destination) ใน destination_text เช่น ชื่อสถานที่, อาคาร, ร้านอาหาร, โรงแรม, สถานีรถไฟฟ้า (เช่น BTS ศาลาแดง, MRT สุขุมวิท) หรือที่อยู่จริง หากไม่ระบุสถานที่ชัดเจน หรือระบุเพียง "ออนไลน์", "ทุกสาขา", "ร้านใกล้คุณ" ให้ is_trip = false ทันที
+   - ต้องมี "วันและเวลาที่แน่นอน" หรืออย่างน้อยต้องมี "วันที่นัดหมายที่แน่นอน":
+     * กรณีมีทั้งวันที่และเวลาชัดเจน: ตั้งค่า all_day = false และใส่ arrive_by ในรูปแบบ RFC 3339 เวลาไทย (+07:00) เช่น "2026-10-18T14:00:00+07:00"
+     * กรณีมีวันที่นัดหมายชัดเจนแต่ไม่ได้ระบุเวลา (Date-only event เช่น "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง"): ให้ถือว่าเป็นทริปได้ (is_trip = true) โดยตั้งค่า all_day = true และใส่ arrive_by เป็นเวลาเที่ยงคืนของวันนั้นในรูปแบบ RFC 3339 เวลาไทย เช่น "2026-10-18T00:00:00+07:00" (อ้างอิงปีจากเวลาปัจจุบันที่ระบุ)
+     * หากมีเพียงช่วงเวลาลอยๆ ที่ไม่มีวันที่นัดหมายชัดเจน (เช่น "ใช้สิทธิ์ได้ภายใน 30 วัน", "เปิดบริการทุกวัน") ให้ is_trip = false ทันที
+   - หากขาดข้อใดข้อหนึ่งระหว่าง "สถานที่ปลายทาง" หรือ "วันที่/เวลาที่แน่นอน" ให้ถือว่าไม่ใช่แผนการเดินทางที่ใช้คำนวณเส้นทางได้ (is_trip = false)
 
 4. รูปแบบผลลัพธ์:
-   - title_th: ชื่องาน, จุดประสงค์, หรือชื่อการนัดหมายสั้นๆ ได้ใจความ
+   - title_th: ชื่องาน, จุดประสงค์, หรือชื่อการนัดหมายสั้นๆ ได้ใจความ (หากหัวข้ออีเมล Subject เป็นคำทั่วไปที่ไม่สื่อความหมาย เช่น "Test", "สวัสดี", "Fwd:" ให้สรุปชื่อนัดหมายจากเนื้อหาอีเมลแทน เช่น "นัดเจอกันที่ BTS ศาลาแดง")
+   - all_day: true หากอีเมลระบุเฉพาะวันที่แต่ไม่ได้ระบุเวลาที่แน่นอน, false หากมีเวลาที่แน่นอน
    - destination_text: ชื่อสถานที่ปลายทางที่ชัดเจน (หาก is_trip = false ให้ใส่ค่าว่าง "")
-   - arrive_by: เวลาที่ต้องไปถึงในรูปแบบ RFC 3339 (+07:00) หรือ null
+   - arrive_by: เวลาที่ต้องไปถึงในรูปแบบ RFC 3339 (+07:00) (หาก all_day = true ให้ใช้ YYYY-MM-DDT00:00:00+07:00) หรือ null
    - depart_at: เวลาออกเดินทางที่ระบุในอีเมล (ถ้ามี) หรือ null
-   - mode: "car", "transit" (รถไฟฟ้า), หรือ "moto" (ถ้ามีระบุในอีเมล) ไม่ระบุให้เป็น null
-   - confidence: ระดับความมั่นใจ 0.0 - 1.0 (หากเป็นตั๋ว/นัดหมายที่มีสถานที่และเวลาครบถ้วนให้ใส่ >= 0.85)
+   - mode: "car", "transit" (รถไฟฟ้า BTS/MRT/ARL), หรือ "moto" (ถ้ามีระบุหรือสื่อถึงในอีเมล) ไม่ระบุให้เป็น null
+   - confidence: ระดับความมั่นใจ 0.0 - 1.0 (หากเป็นตั๋ว/นัดหมายที่มีสถานที่และวันเวลาครบถ้วนให้ใส่ >= 0.85)
    - evidence_th: เหตุผลและข้อความอ้างอิงภาษาไทยที่แสดงว่าเหตุใดจึงเป็นทริปหรือทำไมจึงเป็นอีเมลโฆษณา/ไม่เกี่ยวข้อง
 
 ข้อความต้นฉบับอาจเป็นภาษาไทยหรือภาษาอังกฤษ สกัดได้เหมือนกัน
@@ -154,10 +160,11 @@ func responseSchema() *genai.Schema {
 		Type: genai.TypeObject,
 		Properties: map[string]*genai.Schema{
 			"is_trip":          {Type: genai.TypeBoolean, Description: "true ถ้านัดหมายหรืออีเมลนี้เกี่ยวข้องกับการเดินทางไปยังสถานที่"},
+			"all_day":          {Type: genai.TypeBoolean, Description: "true ถ้าระบุเฉพาะวันที่แต่ไม่ได้ระบุเวลาที่แน่นอน (นัดหมายตลอดวัน)"},
 			"title_th":         {Type: genai.TypeString, Description: "ชื่องานหรือจุดประสงค์ภาษาไทยสั้นๆ"},
 			"origin_text":      {Type: genai.TypeString, Description: "ต้นทางที่ระบุ (ถ้ามี)"},
 			"destination_text": {Type: genai.TypeString, Description: "ปลายทางหรือสถานที่นัดหมาย"},
-			"arrive_by":        {Type: genai.TypeString, Description: "เวลาที่ต้องถึงสถานที่ รูปแบบ RFC 3339 (+07:00) หรือ null"},
+			"arrive_by":        {Type: genai.TypeString, Description: "เวลาที่ต้องถึงสถานที่ รูปแบบ RFC 3339 (+07:00) หรือ YYYY-MM-DD หรือ null"},
 			"depart_at":        {Type: genai.TypeString, Description: "เวลาที่ระบุให้ออกเดินทาง รูปแบบ RFC 3339 (+07:00) หรือ null"},
 			"mode":             {Type: genai.TypeString, Description: "car, transit หรือ moto หรือ null"},
 			"confidence":       {Type: genai.TypeNumber, Description: "ความมั่นใจ 0.0 - 1.0"},
@@ -208,12 +215,34 @@ func WithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now time.T
 	if !g.Available() {
 		return Payload{}, errors.New("gemini is not configured")
 	}
+	cacheKey := extractCacheKey(raw, now)
+	if cached, ok := g.GetCached(cacheKey); ok {
+		if p, ok := cached.(Payload); ok {
+			p.Source, p.SourceRef = raw.Source, raw.SourceRef
+			return p, nil
+		}
+	}
 	out, err := extractWithGemini(ctx, g, raw, now)
 	if err != nil {
 		return Payload{}, err
 	}
+	g.SetCached(cacheKey, out, extractCacheTTL)
 	out.Source, out.SourceRef = raw.Source, raw.SourceRef
 	return out, nil
+}
+
+func parseExtractedTime(raw string) (t time.Time, dateOnly bool, ok bool) {
+	raw = strings.TrimSpace(raw)
+	if raw == "" {
+		return time.Time{}, false, false
+	}
+	if parsed, err := time.Parse(time.RFC3339, raw); err == nil {
+		return parsed.In(domain.Bangkok), false, true
+	}
+	if parsed, err := time.ParseInLocation(time.DateOnly, raw, domain.Bangkok); err == nil {
+		return parsed, true, true
+	}
+	return time.Time{}, false, false
 }
 
 func extractWithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now time.Time) (Payload, error) {
@@ -253,6 +282,7 @@ func extractWithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now
 
 	res := Payload{
 		IsTrip:          parsed.IsTrip,
+		AllDay:          parsed.AllDay,
 		TitleTH:         parsed.TitleTH,
 		OriginText:      parsed.OriginText,
 		DestinationText: parsed.DestinationText,
@@ -260,13 +290,16 @@ func extractWithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now
 		EvidenceTH:      parsed.EvidenceTH,
 	}
 
-	if parsed.ArriveBy != nil && *parsed.ArriveBy != "" {
-		if t, err := time.Parse(time.RFC3339, *parsed.ArriveBy); err == nil {
+	if parsed.ArriveBy != nil {
+		if t, dateOnly, ok := parseExtractedTime(*parsed.ArriveBy); ok {
 			res.ArriveBy = &t
+			if dateOnly {
+				res.AllDay = true
+			}
 		}
 	}
-	if parsed.DepartAt != nil && *parsed.DepartAt != "" {
-		if t, err := time.Parse(time.RFC3339, *parsed.DepartAt); err == nil {
+	if parsed.DepartAt != nil {
+		if t, _, ok := parseExtractedTime(*parsed.DepartAt); ok {
 			res.DepartAt = &t
 		}
 	}
