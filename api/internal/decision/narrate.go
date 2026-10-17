@@ -155,8 +155,8 @@ func buildExplanation(in Input, res Result) Explanation {
 	}
 
 	// Community reports factor
-	if len(in.Reports) > 0 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("รายงานชุมชน: มีการแจ้งเตือนน้ำท่วมจริงในพื้นที่ %d จุด", len(in.Reports)))
+	if n := usableReports(in.Reports); n > 0 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("รายงานชุมชน: มีการแจ้งเตือนน้ำท่วมจริงในพื้นที่ %d จุด", n))
 	}
 
 	// 3. Avoid spots

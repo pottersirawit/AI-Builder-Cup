@@ -309,6 +309,16 @@ func UsableReport(r domain.Report) bool {
 	return r.GeneratedBy != "fallback" && r.Confidence >= minReportConfidence
 }
 
+func usableReports(rs []domain.Report) int {
+	n := 0
+	for _, r := range rs {
+		if UsableReport(r) {
+			n++
+		}
+	}
+	return n
+}
+
 // reportCorroborated reports whether enough usable reports already existing at t
 // sit within corroborationRadiusM and corroborationWindow of r.
 func reportCorroborated(r domain.Report, all []domain.Report, t time.Time) bool {
@@ -492,7 +502,7 @@ func confidence(in Input, e Eval) float64 {
 		c -= 0.08
 	}
 	for _, r := range in.Reports {
-		if !r.CreatedAt.After(in.Now) && in.Now.Sub(r.CreatedAt) < reportTTL {
+		if UsableReport(r) && !r.CreatedAt.After(in.Now) && in.Now.Sub(r.CreatedAt) < reportTTL {
 			c += 0.03
 			break
 		}

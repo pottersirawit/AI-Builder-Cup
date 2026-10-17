@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"runtime"
+	"slices"
 	"strings"
 	"testing"
 	"time"
@@ -405,6 +406,37 @@ func TestWaitReasonNamesWaterOnlyWhenThereIsSome(t *testing.T) {
 		drain.Lang = tt.lang
 		if r := Decide(drain).Explanation.ReasonWhyTH; !strings.Contains(r, tt.water) {
 			t.Errorf("%s 19:30 drain: reason should name the standing water: %q", tt.lang, r)
+		}
+	}
+}
+
+func TestOnlyUsableReportsCount(t *testing.T) {
+	unusable := []domain.Report{
+		{ID: "r1", Lat: 13.7, Lng: 100.5, CreatedAt: at(7, 50), DepthCMMax: 30, Confidence: 0.2},
+		{ID: "r2", Lat: 13.7, Lng: 100.5, CreatedAt: at(7, 55), DepthCMMax: 30, Confidence: 0.9, GeneratedBy: "fallback"},
+	}
+	usable := domain.Report{ID: "r3", Lat: 13.7, Lng: 100.5, CreatedAt: at(7, 55), DepthCMMax: 3, Confidence: 0.9, GeneratedBy: "gemini"}
+	for _, tt := range []struct {
+		lang   domain.Lang
+		factor string
+		one    string
+	}{{domain.LangTH, "รายงานชุมชน", "พื้นที่ 1 จุด"}, {domain.LangEN, "Community reports", "1 real flood report"}} {
+		base := Decide(dryInput(tt.lang, time.Time{}))
+		in := dryInput(tt.lang, time.Time{})
+		in.Reports = unusable
+		res := Decide(in)
+		if res.Confidence != base.Confidence {
+			t.Errorf("%s: unusable reports raised confidence %v -> %v", tt.lang, base.Confidence, res.Confidence)
+		}
+		for _, f := range res.Explanation.FactorsTH {
+			if strings.Contains(f, tt.factor) {
+				t.Errorf("%s: unusable reports listed as a factor: %q", tt.lang, f)
+			}
+		}
+		in.Reports = append(unusable, usable)
+		res = Decide(in)
+		if !slices.ContainsFunc(res.Explanation.FactorsTH, func(f string) bool { return strings.Contains(f, tt.one) }) || res.Confidence <= base.Confidence {
+			t.Errorf("%s: one usable report should count once and raise confidence: %q %v", tt.lang, res.Explanation.FactorsTH, res.Confidence)
 		}
 	}
 }
