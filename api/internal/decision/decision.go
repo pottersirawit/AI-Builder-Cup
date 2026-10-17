@@ -376,6 +376,12 @@ func LeaveBy(in Input, m domain.Mode) *time.Time {
 	return nil
 }
 
+// weatherEndsLeaveBy reports whether rain or water, rather than the
+// appointment, makes departing right after leaveBy not OK.
+func weatherEndsLeaveBy(in Input, leaveBy time.Time) bool {
+	return EvaluateMode(in, in.Mode, leaveBy.Add(step)).Risk != RiskLow
+}
+
 func rainOnset(in Input) *time.Time {
 	for _, s := range in.Rain {
 		if s.Time.Before(in.Now.Truncate(15*time.Minute)) || s.MMPerHr < rainLight {

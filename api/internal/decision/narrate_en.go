@@ -38,7 +38,7 @@ func narrateEN(in Input, res Result) (headline, summary string, exp Explanation)
 		}
 		parts = append(parts, conditionsEN(e))
 		parts = append(parts, fmt.Sprintf("%s, the trip takes %d min and you arrive%s around %s%s.", when, e.Minutes, atEN(in.DestinationTH), hhmm(e.Arrive), deadlineEN(in, e)))
-		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil {
+		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil && weatherEndsLeaveBy(in, *res.LeaveBy) {
 			parts = append(parts, fmt.Sprintf("If you leave after %s you will hit rain on the way.", hhmm(*res.LeaveBy)))
 		}
 		if in.Mode == domain.ModeTransit && e.MaxRainMM >= rainLight {
@@ -83,8 +83,12 @@ func buildExplanationEN(in Input, res Result) Explanation {
 	switch res.Verdict {
 	case LeaveNow:
 		switch {
-		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && weatherEndsLeaveBy(in, *res.LeaveBy):
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s) so you get there before heavy rain builds up and floods the route.", hhmm(*res.LeaveBy), mode)
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && !in.ArriveBy.IsZero():
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s) to make your %s appointment.", hhmm(*res.LeaveBy), mode, hhmm(in.ArriveBy))
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest leaving by %s (%s).", hhmm(*res.LeaveBy), mode)
 		case e.Late():
 			exp.ReasonWhyTH = fmt.Sprintf("The route is passable by %s, but you would arrive %d min past your %s appointment.", mode, e.LateMinutes, hhmm(in.ArriveBy))
 		default:

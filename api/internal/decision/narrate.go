@@ -36,7 +36,7 @@ func narrate(in Input, res Result) (headline, summary string, exp Explanation) {
 		}
 		parts = append(parts, conditionsTH(e))
 		parts = append(parts, fmt.Sprintf("%s ใช้เวลา %d นาที ถึง%sราว %s%s", when, e.Minutes, in.DestinationTH, hhmm(e.Arrive), deadlineTH(in, e)))
-		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil {
+		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil && weatherEndsLeaveBy(in, *res.LeaveBy) {
 			parts = append(parts, fmt.Sprintf("ถ้าออกหลัง %s จะเจอฝนกลางทาง", hhmm(*res.LeaveBy)))
 		}
 		if in.Mode == domain.ModeTransit && e.MaxRainMM >= rainLight {
@@ -81,8 +81,12 @@ func buildExplanation(in Input, res Result) Explanation {
 	switch res.Verdict {
 	case LeaveNow:
 		switch {
-		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && weatherEndsLeaveBy(in, *res.LeaveBy):
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s เพื่อให้ถึงปลายทางก่อนกลุ่มฝนตกหนักสะสมจนเกิดน้ำท่วมขังบนเส้นทาง", hhmm(*res.LeaveBy), in.Mode.NameTH())
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && !in.ArriveBy.IsZero():
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s เพื่อให้ถึงปลายทางทันนัด %s", hhmm(*res.LeaveBy), in.Mode.NameTH(), hhmm(in.ArriveBy))
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s", hhmm(*res.LeaveBy), in.Mode.NameTH())
 		case e.Late():
 			exp.ReasonWhyTH = fmt.Sprintf("เส้นทางพอไปได้ด้วย%s แต่จะถึงปลายทางเลยเวลานัดหมาย %s ไป %d นาที", in.Mode.NameTH(), hhmm(in.ArriveBy), e.LateMinutes)
 		default:

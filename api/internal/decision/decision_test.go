@@ -333,3 +333,31 @@ func TestDryDayWithoutDeadlineHasNoLeaveBy(t *testing.T) {
 		}
 	}
 }
+
+func TestLeaveByReasonFollowsWhatEndsTheWindow(t *testing.T) {
+	dry := Decide(dryInput(domain.LangTH, at(12, 0)))
+	if dry.LeaveBy == nil || dry.LeaveBy.Format("15:04") != "11:30" {
+		t.Fatalf("leave_by = %v, want 11:30", dry.LeaveBy)
+	}
+	if r := dry.Explanation.ReasonWhyTH; strings.Contains(r, "ฝน") || !strings.Contains(r, "ทันนัด 12:00") {
+		t.Errorf("dry reason should name the 12:00 appointment, not rain: %q", r)
+	}
+	dryEN := Decide(dryInput(domain.LangEN, at(12, 0)))
+	if r := dryEN.Explanation.ReasonWhyTH; strings.Contains(r, "rain") || !strings.Contains(r, "12:00 appointment") {
+		t.Errorf("dry English reason should name the 12:00 appointment, not rain: %q", r)
+	}
+	laterRain := dryInput(domain.LangEN, at(12, 0))
+	laterRain.Rain = []domain.RainSample{{Time: at(14, 0), MMPerHr: 20}}
+	if s := Decide(laterRain).SummaryTH; strings.Contains(s, "hit rain") {
+		t.Errorf("rain at 14:00 does not end an 11:30 leave-by: %q", s)
+	}
+
+	rainy := heroInput(t, at(16, 10), at(16, 10), domain.ModeCar)
+	if r := Decide(rainy).Explanation.ReasonWhyTH; !strings.Contains(r, "ฝน") {
+		t.Errorf("hero leave-by is set by the 17:30 rain, reason should say so: %q", r)
+	}
+	rainy.Lang = domain.LangEN
+	if r := Decide(rainy).Explanation.ReasonWhyTH; !strings.Contains(r, "rain") {
+		t.Errorf("hero leave-by is set by the 17:30 rain, English reason should say so: %q", r)
+	}
+}
