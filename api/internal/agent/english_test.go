@@ -79,7 +79,7 @@ func TestSystemPromptLanguage(t *testing.T) {
 		t.Fatal("the Thai prompt must be unchanged")
 	}
 	en := systemPromptFor(domain.LangEN)
-	if !strings.HasPrefix(en, systemPrompt) || !strings.Contains(en, "in short, friendly English") || !strings.Contains(en, "at most 30 characters") {
+	if !strings.HasPrefix(en, systemPrompt) || !strings.Contains(en, "in short, friendly English") || !strings.Contains(en, "at most 30 characters") || !strings.Contains(en, `"motorbike"`) {
 		t.Fatalf("English prompt lacks the instruction: %q", en[len(systemPrompt):])
 	}
 	if strings.Contains(systemPrompt, "English") {
@@ -151,5 +151,24 @@ func TestUngroundedEnglishLeaveBy(t *testing.T) {
 	}
 	if got := g.Ungrounded("Arrive around 18:10"); len(got) != 1 {
 		t.Errorf("want 18:10 flagged, got %v", got)
+	}
+}
+
+func TestAgentPromptNamesModeInReadersWords(t *testing.T) {
+	final := `{"verdict":"leave_now","headline_th":"Leave now","summary_th":"Dry.","confidence":0.8}`
+	for lang, want := range map[domain.Lang]string{domain.LangEN: "motorbike", domain.LangTH: "มอเตอร์ไซค์"} {
+		fake := &scriptedGemini{replies: []*genai.GenerateContentResponse{
+			reply(call("get_trip", nil)), reply(&genai.Part{Text: final}),
+		}}
+		s := session(t, at(16, 10))
+		s.Lang = lang
+		_, _ = Decide(context.Background(), &Gemini{Gen: fake, Model: "test"}, s, Request{Mode: "moto"}, nil)
+		user := fake.seen[0][0].Parts[0].Text
+		if !strings.Contains(user, want) {
+			t.Errorf("%s prompt lacks %q: %s", lang, want, user)
+		}
+		if strings.Contains(strings.ReplaceAll(user, "motorbike", ""), "moto") {
+			t.Errorf("%s prompt leaks the raw mode code: %s", lang, user)
+		}
 	}
 }
