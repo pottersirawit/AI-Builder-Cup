@@ -2234,6 +2234,30 @@ abstract class AppLocalizations {
   /// **'ตอนนี้'**
   String get wxNow;
 
+  /// No description provided for @wxHumidity.
+  ///
+  /// In th, this message translates to:
+  /// **'ความชื้น'**
+  String get wxHumidity;
+
+  /// No description provided for @wxWind.
+  ///
+  /// In th, this message translates to:
+  /// **'ลม'**
+  String get wxWind;
+
+  /// No description provided for @wxWindKph.
+  ///
+  /// In th, this message translates to:
+  /// **'{kph} กม./ชม.'**
+  String wxWindKph(Object kph);
+
+  /// No description provided for @wxSunset.
+  ///
+  /// In th, this message translates to:
+  /// **'อาทิตย์ตก'**
+  String get wxSunset;
+
   /// No description provided for @carryTitle.
   ///
   /// In th, this message translates to:

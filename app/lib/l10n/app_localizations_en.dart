@@ -1284,6 +1284,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wxNow => 'Now';
 
   @override
+  String get wxHumidity => 'Humidity';
+
+  @override
+  String get wxWind => 'Wind';
+
+  @override
+  String wxWindKph(Object kph) {
+    return '$kph km/h';
+  }
+
+  @override
+  String get wxSunset => 'Sunset';
+
+  @override
   String get carryTitle => 'Take with you today';
 
   @override
