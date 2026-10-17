@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:fontokmai/design/design.dart';
+import 'package:fontokmai/screens/event_cards.dart';
 import 'package:fontokmai/screens/plan_cards.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
 
@@ -254,6 +255,31 @@ void main() {
     expect(find.text('วันนี้ไม่มีนัดแล้ว'), findsNothing);
 
     await tester.pump(const Duration(seconds: 4));
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(
+      find.byType(LargeTitleHeader),
+      findsOneWidget,
+      reason: 'the title stays put while the page fades in under it',
+    );
+    double shown(String text) => find
+        .text(text)
+        .evaluate()
+        .map(
+          (e) => tester
+              .widgetList<FadeTransition>(
+                find.ancestor(
+                  of: find.byWidget(e.widget),
+                  matching: find.byType(FadeTransition),
+                ),
+              )
+              .fold(1.0, (o, f) => o * f.opacity.value),
+        )
+        .fold(0.0, (a, b) => a + b);
+    expect(
+      shown('สรุป') == 0 || shown('วันนี้อีก 3 นัด') == 0,
+      isTrue,
+      reason: 'the old title fades out before the new one fades in',
+    );
     await settle(tester);
     expect(find.byKey(const ValueKey('summary-skeleton')), findsNothing);
     expect(find.byType(UpNextCard), findsWidgets);

@@ -121,7 +121,24 @@ class LargeTitleHeader extends StatelessWidget {
                       ...badges,
                     ],
                   ),
-                  Text(title, style: t.headlineLarge!.copyWith(color: ink)),
+                  // The old title fades out before the new one fades in, so
+                  // the two never draw over each other.
+                  AnimatedSwitcher(
+                    duration: Motion.of(
+                      context,
+                    ).d(const Duration(milliseconds: 300)),
+                    switchInCurve: const Interval(0.5, 1),
+                    switchOutCurve: const Interval(0.5, 1),
+                    layoutBuilder: (current, previous) => Stack(
+                      alignment: AlignmentDirectional.topStart,
+                      children: [...previous, ?current],
+                    ),
+                    child: Text(
+                      title,
+                      key: ValueKey(title),
+                      style: t.headlineLarge!.copyWith(color: ink),
+                    ),
+                  ),
                 ],
               ),
             ),

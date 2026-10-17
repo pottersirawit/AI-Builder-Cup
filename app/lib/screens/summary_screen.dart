@@ -313,21 +313,24 @@ class _SummaryScreenState extends State<SummaryScreen> {
       body: RefreshIndicator(
         onRefresh: widget.onRefresh,
         edgeOffset: MediaQuery.paddingOf(context).top,
-        child: AnimatedSwitcher(
-          duration: Motion.of(context).d(const Duration(milliseconds: 250)),
-          child: skeleton
-              ? CustomScrollView(
-                  key: const ValueKey('summary-skeleton'),
+        // One scroll view: the header stays put and only the page under it
+        // swaps from the skeleton to the loaded plan, which fades in.
+        child: CustomScrollView(
+          slivers: [
+            header,
+            if (skeleton)
+              SliverMainAxisGroup(
+                key: const ValueKey('summary-skeleton'),
+                slivers: [_pad(const _SummarySkeleton())],
+              )
+            else
+              _FadeIn(
+                key: const ValueKey('summary'),
+                duration: Motion.of(
+                  context,
+                ).d(const Duration(milliseconds: 250)),
+                sliver: SliverMainAxisGroup(
                   slivers: [
-                    header,
-                    _pad(const _SummarySkeleton()),
-                    bottomInset,
-                  ],
-                )
-              : CustomScrollView(
-                  key: const ValueKey('summary'),
-                  slivers: [
-                    header,
                     if (state.flood && home != null && savedHome != null)
                       _pad(
                         FloodAlertCard(
@@ -432,9 +435,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           child: WeatherPeek(outlook: outlook, now: now),
                         ),
                       ),
-                    bottomInset,
                   ],
                 ),
+              ),
+            bottomInset,
+          ],
         ),
       ),
     );
@@ -452,6 +457,21 @@ class _SummaryScreenState extends State<SummaryScreen> {
         ? null
         : planOf(d, planDepartFor(t, now), now, deadline: t.arriveBy);
   }
+}
+
+/// Fades [sliver] in once, when it first appears.
+class _FadeIn extends StatelessWidget {
+  const _FadeIn({super.key, required this.duration, required this.sliver});
+  final Duration duration;
+  final Widget sliver;
+
+  @override
+  Widget build(BuildContext context) => TweenAnimationBuilder<double>(
+    tween: Tween(begin: 0, end: 1),
+    duration: duration,
+    builder: (_, v, child) => SliverOpacity(opacity: v, sliver: child),
+    child: sliver,
+  );
 }
 
 /// A titled block on the page surface below the sky.
