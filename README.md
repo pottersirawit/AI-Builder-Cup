@@ -1,121 +1,198 @@
-# Bangkok Weather Resilience AI (ระบบเตือนภัยและรับมือน้ำท่วม/สภาพอากาศเชิงรุก)
-> **Mobile app (ฝนตกไหม):** Flutter app อยู่ใน `app/` และ Go API อยู่ใน `api/` ดูวิธีรันที่ [`RUNNING.md`](RUNNING.md) และแผนรวมไอเดียที่ [`docs/plan/merged-flow.md`](docs/plan/merged-flow.md)
+# Fon Tok Mai (ฝนตกไหม)
 
-> ผสานพลัง **Google WeatherNext 3 (5km FGN)**, **Google Cloud Vertex AI (Gemini 1.5)** และโทรมาตรท้องถิ่นกรุงเทพฯ (เรดาร์ กทม. + ThaiWater Standard API) เพื่อสร้างการแจ้งเตือนและการเตรียมตัวเชิงรุกเฉพาะบุคคล (Hyper-personalized Proactive Advisory)
+**Proactive, route-aware rain and flood advisories for Bangkok commuters, powered by a Gemini agent.**
 
----
+Fon Tok Mai ("Is it raining?") answers one question before the user thinks to ask it: *should I leave now?* A Gemini agent reads the user's upcoming trips from Google Calendar, Gmail e-tickets, or a plain-Thai question, checks forecast rain along the actual route against Bangkok flood-spot thresholds for the user's vehicle, and returns a verdict with a leave-by time, reasons, data sources, and a confidence level. Flooding is treated as the severe mode of the same answer rather than a separate product.
 
-## 🌟 จุดเด่นของระบบ (Key Capabilities)
+Built for the AI Builder Cup 2026.
 
-1. **Google WeatherNext 3 Integration**:
-   - พยากรณ์อากาศความละเอียดสูง **5 km grid** (คมชัดกว่าเดิม 5 เท่า) อัปเดตรายชั่วโมง (**Hourly Refresh**)
-   - ฝึกฝนจากภาพถ่ายดาวเทียม Geostationary ดิบโดยตรง ทำให้ตรวจจับปรากฏการณ์ **Urban Microclimate** ฝนตกหนักเฉพาะเขตใน กทม. ได้อย่างแม่นยำ
-2. **Local Bangkok Flood Telemetry Coupling**:
-   - เชื่อมต่อข้อมูลโทรมาตรระดับน้ำในคลองสายหลัก (คลองแสนแสบ, คลองลาดพร้าว, คลองเปรมประชากร) จาก **สสน. (Thaiwater Standard API)**
-   - คำนวณ Geofencing จุดตัดพิกัดผู้ใช้และเส้นทางเดินทางกับ **70+ จุดเฝ้าระวังน้ำท่วมขังบนผิวถนน กทม. (BKK Risk Map)**
-   - วิเคราะห์เวกเตอร์การเคลื่อนตัวของกลุ่มฝนจาก **เรดาร์ กทม. สถานีหนองจอกและหนองแขม** (dBZ)
-3. **Google Calendar Weather Integration**:
-   - ซิงก์ตารางนัดหมายของผู้ใช้จาก **Google Calendar API** ล่วงหน้า
-   - ดึงพิกัดสถานที่นัดหมาย (Geocoding) และจับคู่กับพยากรณ์อากาศรายชั่วโมงระดับ 5km จาก **WeatherNext 3**
-   - ตรวจจับข้อน่ากังวลสภาพอากาศ ณ เวลาและสถานที่นัดหมาย (เช่น เสี่ยงน้ำท่วมผิวจราจร, ฝนตกหนักขัดขวางการเดินทาง, หรือดัชนีความร้อนจัดในกิจกรรมกลางแจ้ง) พร้อมส่งคำแนะนำเชิงรุกก่อนเดินทาง
-4. **Vertex AI & Gemini Multimodal Weather Reasoning**:
-   - แปลงตัวเลขพยากรณ์ที่ซับซ้อนให้กลายเป็น **Actionable Checklist** ภาษาไทยที่เข้าใจง่ายและปฏิบัติตามได้ทันที
-   - แนะนำเฉพาะบุคคลตามประเภทยานพาหนะ (เช่น รถเก๋งเตี้ย vs มอเตอร์ไซค์), เส้นทางกลับบ้าน, และช่วงเวลาเลิกงาน
-5. **Polyglot Hybrid Architecture (Go + Python)**:
-   - **Go Gateway & Dispatcher**: จัดการ Webhook และใช้ Goroutine Worker Pool ยิง Push Message หาประชาชนนับหมื่น/แสนคนพร้อมกันด้วยความเร็วสูงและใช้หน่วยความจำต่ำ
-   - **Python AI Engine**: รันโมเดลวิทยาศาสตร์ข้อมูล, คำนวณ Spatial Matching และเชื่อมต่อ Vertex AI Generative AI
+| Component | Location |
+|---|---|
+| Web app | https://ai-cup-511208.web.app |
+| API (Cloud Run) | https://fontokmai-api-945826169258.asia-southeast1.run.app |
 
 ---
 
-## 🏗️ โครงสร้างสถาปัตยกรรม (System Architecture)
+## Key Capabilities
+
+- **Departure verdicts per trip and per travel mode.** Leave now, wait until a given time, switch mode, or do not travel. Sedan, motorcycle, and BTS/MRT verdicts differ because each has a different flood clearance.
+- **Calendar- and Gmail-triggered planning.** After the user connects a Google account, upcoming events and e-tickets are geocoded and evaluated automatically. The app also works with nothing connected through a plain-Thai ask bar.
+- **Agentic reasoning with numerical guardrails.** Gemini 2.5 Flash on Vertex AI uses function-calling tools (`get_trip`, `get_route`, `get_rain_along_route`, `get_flood_spots_on_route`, `evaluate_departure`). Deterministic risk assessment in Go keeps every number the agent reports verifiable.
+- **Community flood reports.** A user photographs a flooded street, Gemini vision estimates the water depth, and users whose route passes within roughly 300 m are notified.
+- **Home flood mode.** Canal levels from ThaiWater, an ordered action checklist, and neighbour alerts for flood-prone homes.
+- **Transparent sources.** Every card shows where its data came from and how confident the system is.
+
+## Data Sources
+
+| Source | Purpose |
+|---|---|
+| Google WeatherNext 3 (BigQuery) | 5 km hourly forecast grid, cached per 6-hour model run |
+| Google Maps Platform (Weather, Routes, Geocoding) | Live conditions, routing, and place resolution |
+| ThaiWater Standard API | Rainfall accumulation and canal stage levels |
+| BMA flood-prone spots (`data/bkk_flood_risk_points.json`) | 70+ road segments with rain and vehicle-depth thresholds |
+| Google Calendar and Gmail | The user's trips, read with the user's own OAuth token |
+
+---
+
+## Architecture
 
 ```
-/Weather
-├── data/
-│   └── bkk_flood_risk_points.json  # ฐานข้อมูล 70+ จุดเสี่ยงน้ำท่วมผิวจราจร กทม.
-├── engine/                         # [Python] Weather Pipeline, Geospatial & Vertex AI Brain
-│   ├── collectors/                 # ตัวดึงข้อมูล (WeatherNext 3, ThaiWater API, BMA Radar)
-│   ├── geospatial/                 # โมดูลคำนวณระยะห่างจุดเสี่ยงน้ำท่วมและเกณฑ์ฝนวิกฤต
-│   ├── ai/                         # Vertex AI Gemini Reasoner & Fallback Engine
-│   ├── main.py                     # FastAPI REST Endpoints
-│   └── requirements.txt
-├── gateway/                        # [Go] API Gateway & Real-time Notification Engine
-│   ├── cmd/server/main.go          # Main entry point
-│   ├── internal/api/               # REST Endpoints สำหรับ LIFF Web App
-│   ├── internal/line/              # ตัวสร้าง LINE Flex Message Bubble JSON
-│   ├── internal/dispatcher/        # Goroutine Worker Pool สำหรับยิง Push Notification
-│   └── go.mod
-├── simulator/
-│   ├── scenarios.json              # จำลองเหตุการณ์พายุฝนน้ำท่วม, ฮีทเวฟ, สรุปตอนเช้า
-│   └── run_simulation.py           # สคริปต์รันจำลองระบบ End-to-End
-├── docker-compose.yml              # PostgreSQL(PostGIS) + Redis + Go Gateway + Python Engine
-└── .env.example                    # ตัวอย่างการตั้งค่า API Keys
+Browser / Android / iOS
+  Flutter app (app/)
+        |
+        v
+  Go API on Cloud Run (api/)
+        |-- Gemini 2.5 Flash on Vertex AI (agent, vision)
+        |-- Google Weather, Routes, and Maps APIs
+        |-- WeatherNext 3 via BigQuery, ThaiWater telemetry
+        |-- Google Calendar and Gmail (per-user OAuth)
+        `-- Firestore (community flood reports)
+```
+
+The web build is served from Firebase Hosting and calls the Cloud Run API directly. Google sign-in runs through `/v1/oauth/start` on the API, which redirects back to the app once the account is connected.
+
+## Repository Layout
+
+```
+.
+├── app/            Flutter client for Android, iOS, and web
+├── api/            Go API: Gemini agent, decision engine, live data, OAuth, reports
+│   ├── cmd/server      HTTP server entry point
+│   ├── cmd/scorecard   Offline evaluation of agent answers
+│   ├── internal/       agent, decision, floodspot, geocode, live, planner, vision, ...
+│   └── deploy/         Cloud Run deployment scripts (bash and PowerShell)
+├── data/           BMA flood-prone spot dataset
+├── gateway/        Phase 1: Go LINE gateway and push dispatcher
+├── engine/         Phase 1: Python FastAPI engine and geospatial pipeline
+├── simulator/      Phase 1: end-to-end storm and calendar scenarios
+├── tests/          Phase 1 test suites
+└── docs/           Deployment guide, plans, AI handoff notes, privacy policy
 ```
 
 ---
 
-## 🚀 วิธีการทดสอบและรันระบบ (Quick Start)
+## Getting Started
 
-### 1. ทดสอบการจำลองสถานการณ์พายุและน้ำท่วม (End-to-End Simulator)
-คุณสามารถรันตัวจำลองเพื่อดูการประมวลผลข้อมูล WeatherNext 3, การจับคู่จุดเสี่ยงน้ำท่วม และการสร้างคำแนะนำภาษาไทยได้ทันที:
+### Prerequisites
+
+- Go 1.26 or later (with `GOTOOLCHAIN=auto`, older installs download the required toolchain automatically)
+- Flutter 3.35 or later, with `flutter doctor` passing
+- Xcode or Android Studio for device simulators (optional; the app runs in Chrome)
+- `gcloud` and `firebase-tools` for deployment only
+
+### Run the app against the hosted API
+
+The app targets the deployed Cloud Run API by default, so no local backend is required.
 
 ```bash
-# 1.1 รันการจำลองสถานการณ์พายุฝนและฮีทเวฟทั่วไป
+cd app
+flutter pub get
+flutter run -d chrome --dart-define=DEMO_CLOCK=16:10
+```
+
+`DEMO_CLOCK` replays the scripted 29 September 2026 storm scenario. Omit it to use the real clock.
+
+### Run the API locally
+
+The API runs in demo mode with no keys or network access required.
+
+```bash
+cd api
+go run ./cmd/server   # listens on :8080
+```
+
+Then point the app at it:
+
+```bash
+cd app
+flutter run -d chrome  --dart-define=API_BASE_URL=http://localhost:8080
+flutter run -d android --dart-define=API_BASE_URL=http://10.0.2.2:8080
+```
+
+Example requests and the full endpoint list are in [`api/README.md`](api/README.md).
+
+### Demo clock
+
+Tap the clock chip in the top-left corner of the app, pass `--dart-define=DEMO_CLOCK=HH:MM`, or send an `X-Demo-Clock` header to the API.
+
+| Time | Scene |
+|---|---|
+| 16:10 | Calendar-triggered alert: leave before 16:45 |
+| 18:52 | Flood photo report assessed by Gemini vision |
+| 21:40 | Home flood mode |
+| live | Real time and live data |
+
+### Tests
+
+```bash
+cd api && go vet ./... && go test ./...
+cd app && flutter analyze && flutter test
+```
+
+---
+
+## Configuration
+
+Key API environment variables:
+
+| Variable | Default | Description |
+|---|---|---|
+| `PORT` | `8080` | HTTP port |
+| `DEMO_MODE` | `1` | `1` replays the demo scenario; `0` uses the real clock and live data |
+| `GEMINI_MODEL` | `gemini-2.5-flash` | Model used by the agent |
+| `GEMINI_API_KEY` | none | AI Studio key for local runs; Cloud Run uses Vertex AI through its service account instead |
+| `GOOGLE_MAPS_API_KEY` | none | Optional; enables live Weather and Routes calls |
+| `REPORT_STORE` | `memory` | Set to `firestore` to persist flood reports |
+
+The complete list is in [`api/README.md`](api/README.md). Phase 1 services read their settings from `.env` (copy `.env.example`).
+
+## Deployment
+
+The API deploys to Cloud Run in `asia-southeast1` and the web build to Firebase Hosting. Always deploy the API before the web app, because new web builds call endpoints that older API revisions do not serve.
+
+```bash
+PROJECT=ai-cup-511208 api/deploy/cloudrun.sh
+(cd app && flutter build web --release)
+firebase deploy --only hosting
+```
+
+See [`docs/DEPLOY.md`](docs/DEPLOY.md) for the current deployment state, required secrets, OAuth setup, rollback, and known pitfalls.
+
+---
+
+## Phase 1: LINE Channel
+
+The `gateway/` and `engine/` directories contain the original LINE-based delivery channel: a Go gateway that builds LINE Flex Messages and dispatches push notifications through a goroutine worker pool, and a Python FastAPI engine that performs geospatial matching against flood-prone spots.
+
+```bash
+# End-to-end storm and calendar simulations
 ./venv/bin/python simulator/run_simulation.py
-
-# 1.2 รันการจำลองเชื่อมต่อ Google Calendar ตรวจจับสภาพอากาศตามนัดหมาย
 ./venv/bin/python simulator/run_calendar_simulation.py
-```
 
-### 2. รัน Go API Gateway
-```bash
-cd gateway
-go run ./cmd/server
-# เซิร์ฟเวอร์จะเปิดที่พอร์ต http://localhost:8080
-```
+# Go gateway on :8080
+cd gateway && go run ./cmd/server
 
-### 3. รัน Python AI Engine
-```bash
+# Python engine on :8000 (Swagger UI at /docs)
 ./venv/bin/uvicorn engine.main:app --host 0.0.0.0 --port 8000 --reload
-# เอกสาร Swagger API: http://localhost:8000/docs
-```
 
-### 4. รันผ่าน Docker Compose ครบวงจร
-```bash
+# Full stack: PostgreSQL (PostGIS), Redis, gateway, and engine
 docker compose up --build
 ```
 
 ---
 
-## 📋 ตัวอย่างผลลัพธ์การเตือนภัยเชิงรุก (LINE Flex Message)
+## Documentation
 
-เมื่อโมเดลตรวจพบกลุ่มฝนตกหนักมุ่งหน้าสู่อโศก-สุขุมวิท ระบบจะประเมินความเสี่ยงต่อรถยนต์ขนาดเล็กและส่งข้อความเตือนภัย:
+| Document | Contents |
+|---|---|
+| [`RUNNING.md`](RUNNING.md) | Detailed run instructions (Thai) |
+| [`docs/DEPLOY.md`](docs/DEPLOY.md) | Deployment guide and live configuration |
+| [`api/README.md`](api/README.md) | API endpoints, environment variables, agent scorecard |
+| [`app/README.md`](app/README.md) | Flutter app structure |
+| [`docs/plan/merged-flow.md`](docs/plan/merged-flow.md) | Product flow and API contract |
+| [`docs/ai/HANDOFF.md`](docs/ai/HANDOFF.md) | Gemini agent design notes |
+| [`CONTEXT.md`](CONTEXT.md) | Domain glossary |
+| [`PRODUCT.md`](PRODUCT.md) and [`DESIGN.md`](DESIGN.md) | Product principles and design system |
+| [`docs/PRIVACY.md`](docs/PRIVACY.md) | Privacy policy |
 
-```
-🚨 [CRITICAL] เตือนภัยระดับวิกฤต
-พาดหัว: แจ้งเตือนด่วน: พายุฝนและเสี่ยงน้ำท่วมขัง ถนนอโศกมนตรี (วัฒนา)
-สถานการณ์: กลุ่มฝนฟ้าคะนองกำลังเคลื่อนเข้าพื้นที่ของคุณในอีก 25-35 นาที 
-         อัตราฝน 48.5 มม./ชม. เสี่ยงน้ำท่วมขังผิวจราจร 20 ซม. (ถนนสุขุมวิท ช่วงอโศก - พร้อมพงษ์)
-
-⏱️ ช่วงเวลาวิกฤต: 16:45 - 18:30 น.
-🚗 ผลกระทบต่อพาหนะ: ระดับน้ำคาดการณ์ 20 ซม. เสี่ยงน้ำเข้าท่อไอเสียและห้องเครื่องของ รถเก๋งเตี้ยของคุณ
-
-📋 แผนการเตรียมตัวเชิงรุก (Action Checklist):
-   1. หากจอดรถในที่ลุ่มต่ำ แนะนำรีบขยับรถขึ้นที่สูงทันทีก่อนฝนตกหนัก
-   2. หากกำลังจะเลิกงาน แนะนำเลื่อนเวลาเดินทางออกไป หรือออกทันทีใน 15 นาทีนี้
-   3. หลีกเลี่ยงการขับผ่านจุดเสี่ยง: สุขุมวิท 21 - 39 และซอยอุดมสุข
-
-🛣️ เส้นทางสำรอง: คลองแสนแสบใกล้ล้นตลิ่ง แนะนำใช้ทางด่วนหรือรถไฟฟ้า BTS แทนเส้นทางผิวถนน
-```
-
----
-
-## 🔑 การตั้งค่า Environment Variables (`.env`)
-
-คัดลอกไฟล์ `.env.example` ไปเป็น `.env` และกรอกข้อมูล:
-```bash
-cp .env.example .env
-```
-- `GEMINI_API_KEY`: API Key จาก Google AI Studio หรือ Google Cloud Vertex AI
-- `WEATHER_DATA_MODE`: ตั้งเป็น `mock` สำหรับการทดสอบออฟไลน์ หรือ `live` สำหรับเชื่อมต่อ Google Maps Platform Weather API
-- `LINE_CHANNEL_ACCESS_TOKEN`: Token จาก LINE Developers Console สำหรับยิง Push Notification จริง
+All scenario figures in the demo (the persona, notification counts, confidence values) are synthetic and are labelled as such in the app.
