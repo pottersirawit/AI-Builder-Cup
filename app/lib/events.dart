@@ -140,6 +140,22 @@ LeavePlan leavePlan(
   final best = board.firstOrNull;
   final eta = Duration(minutes: best?.etaMin ?? 0);
   final planned = best?.departAt;
+  // The server's leave-by is for the mode it was asked about. When that mode
+  // must wait or switch but the top of the board can go, the plan is the
+  // board's: back off the event's start, or go now.
+  final alternative =
+      (d.verdict == Verdict.wait || d.verdict == Verdict.switchMode) &&
+      best?.verdict == Verdict.leaveNow;
+  if (alternative) {
+    final time = deadline?.subtract(eta + arrivalSlack);
+    final kind = time == null
+        ? LeaveKind.now
+        : time.isBefore(now)
+        ? LeaveKind.overdue
+        : LeaveKind.before;
+    final from = kind == LeaveKind.before ? time! : now;
+    return (kind: kind, time: time, best: best, arriveAt: from.add(eta));
+  }
   // An answer about an earlier departure than the one planned, or hours
   // before the event, is not about this trip: back off the event's start
   // instead, else leave at the planned time.
@@ -154,7 +170,8 @@ LeavePlan leavePlan(
   final kind = switch (d.verdict) {
     Verdict.dontGo => LeaveKind.avoid,
     _ when time == null => LeaveKind.now,
-    Verdict.wait => LeaveKind.at,
+    Verdict.wait || Verdict.switchMode when time.isBefore(now) => LeaveKind.now,
+    Verdict.wait || Verdict.switchMode => LeaveKind.at,
     _ when time.isBefore(now) => LeaveKind.overdue,
     _ => LeaveKind.before,
   };

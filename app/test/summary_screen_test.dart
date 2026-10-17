@@ -97,14 +97,14 @@ void main() {
     expect(find.byType(GlassNavBar), findsOneWidget);
   });
 
-  testWidgets('waiting past the event start says how late you would be', (
+  testWidgets('the car must wait, so the hero is the BTS that still makes it', (
     tester,
   ) async {
     await pumpApp(tester, '2026-09-29T17:40:00+07:00', height: 2400);
 
-    expect(find.text('ออกได้ตอน'), findsOneWidget);
-    expect(find.text('19:15'), findsOneWidget);
-    expect(find.text('ถึงหลังเวลานัด 1 ชม. 35 นาที'), findsOneWidget);
+    expect(find.textContaining('17:30'), findsWidgets, reason: 'BTS leave-by');
+    expect(find.text('19:15'), findsNothing, reason: "the car's wait");
+    expect(find.textContaining('ถึงหลังเวลานัด'), findsNothing);
   });
 
   testWidgets('the hero opens the detail, where the rain band still drags', (

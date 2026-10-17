@@ -150,10 +150,43 @@ void main() {
       expect(hhmm(p.arriveAt), '17:30');
     });
 
-    test('wait: leave at the server time', () {
-      final p = plan('decide_car_storm', at);
+    test('wait on the car, but the BTS goes now: the plan is the BTS', () {
+      final d = _fixture('decide_car_storm');
+      final dinner = DateTime.parse('2026-09-29T18:30:00+07:00');
+      final p = leavePlan(
+        d,
+        rankOptions(serverOptions(d, at)),
+        at,
+        deadline: dinner,
+      );
+      expect(p.best!.mode, TravelMode.transit);
+      expect(p.kind, LeaveKind.before);
+      expect(hhmm(p.time!), '17:30', reason: '18:30 - 50 min - 10 min');
+      expect(hhmm(p.arriveAt), '18:20');
+    });
+
+    test('switch mode never reads the leave-by as "leave before"', () {
+      final p = plan('decide_moto_storm', at);
+      expect(p.best!.mode, TravelMode.transit);
+      expect(p.kind, LeaveKind.now, reason: 'no event to back off from');
+      expect(hhmm(p.arriveAt), '17:00');
+    });
+
+    test('wait when nothing else can go: leave at the server time', () {
+      final d = _fixture('decide_car_storm');
+      final carOnly = rankOptions(
+        serverOptions(d, at).where((o) => o.mode == TravelMode.car).toList(),
+      );
+      final p = leavePlan(d, carOnly, at);
       expect(p.kind, LeaveKind.at);
       expect(hhmm(p.time!), '19:15');
+      final later = leavePlan(
+        d,
+        carOnly,
+        DateTime.parse('2026-09-29T19:40:00+07:00'),
+      );
+      expect(later.kind, LeaveKind.now, reason: 'the wait is over');
+      expect(hhmm(later.arriveAt), '21:15', reason: '19:40 + 95 min');
     });
 
     test('a leave-by before the planned departure is stale, not overdue', () {
