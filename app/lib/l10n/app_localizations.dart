@@ -2546,6 +2546,12 @@ abstract class AppLocalizations {
   /// **'เลิกราว {time} อย่าลืมพกร่มกลับด้วย'**
   String alertWetReturnBody(String time);
 
+  /// No description provided for @alertWetReturnMoto.
+  ///
+  /// In th, this message translates to:
+  /// **'เลิกราว {time} พกเสื้อกันฝนไว้ขี่กลับด้วย'**
+  String alertWetReturnMoto(Object time);
+
   /// No description provided for @alertNeedsPlace.
   ///
   /// In th, this message translates to:

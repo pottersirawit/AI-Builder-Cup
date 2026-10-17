@@ -40,6 +40,14 @@ void main() {
       findsOneWidget,
       reason: 'heavy rain at 21:30 on the way back from the gym',
     );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('alert-wetReturn-cal-gym')),
+        matching: find.textContaining('เสื้อกันฝน'),
+      ),
+      findsOneWidget,
+      reason: 'the gym trip is by motorbike: a raincoat, not an umbrella',
+    );
     expect(find.text('พกไปด้วย'), findsOneWidget);
     expect(find.byType(WeatherPeek), findsOneWidget);
     expect(find.byType(WeatherHeroCard), findsNothing, reason: 'on tap only');

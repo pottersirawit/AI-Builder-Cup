@@ -1499,6 +1499,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String alertWetReturnMoto(Object time) {
+    return 'It ends around $time. Pack a raincoat for the ride home';
+  }
+
+  @override
   String alertNeedsPlace(String title) {
     return '$title has no place yet';
   }

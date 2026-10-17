@@ -1480,6 +1480,11 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String alertWetReturnMoto(Object time) {
+    return 'เลิกราว $time พกเสื้อกันฝนไว้ขี่กลับด้วย';
+  }
+
+  @override
   String alertNeedsPlace(String title) {
     return '$title ยังไม่มีสถานที่';
   }

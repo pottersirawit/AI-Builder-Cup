@@ -1055,6 +1055,7 @@
       }
     }
   },
+  "alertWetReturnMoto": "It ends around {time}. Pack a raincoat for the ride home",
   "alertNeedsPlace": "{title} has no place yet",
   "@alertNeedsPlace": {
     "placeholders": {

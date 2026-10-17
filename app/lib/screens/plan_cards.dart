@@ -418,7 +418,9 @@ class AlertsCard extends StatelessWidget {
           icon: Symbols.umbrella_rounded,
           color: const Color(0xFF6EA8FF),
           title: l.alertWetReturn(to, '${a.value}'),
-          body: l.alertWetReturnBody(when),
+          body: a.trip.mode == TravelMode.moto
+              ? l.alertWetReturnMoto(when)
+              : l.alertWetReturnBody(when),
         );
       case AlertKind.needsPlace:
         final at = a.trip.arriveBy;

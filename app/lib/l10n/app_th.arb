@@ -1055,6 +1055,7 @@
       }
     }
   },
+  "alertWetReturnMoto": "เลิกราว {time} พกเสื้อกันฝนไว้ขี่กลับด้วย",
   "alertNeedsPlace": "{title} ยังไม่มีสถานที่",
   "@alertNeedsPlace": {
     "placeholders": {
