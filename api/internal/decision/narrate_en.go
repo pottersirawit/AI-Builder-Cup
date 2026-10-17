@@ -95,13 +95,21 @@ func buildExplanationEN(in Input, res Result) Explanation {
 			exp.ReasonWhyTH = fmt.Sprintf("Conditions on your route are safe right now: no heavy rain and no standing water in the way. You can head out by %s.", mode)
 		}
 	case SwitchMode:
-		if e.MaxDepthCM >= 1 {
+		switch {
+		case e.MaxDepthCM >= 1 && e.Risk == RiskHigh:
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because there is about %.0f cm of standing water%s, beyond the safe clearance (%s). Trains run above or below the street, so flooding does not affect them.",
 				mode, e.MaxDepthCM, whereEN(e.DeepestTH), clearanceEN(in.Mode))
-		} else if e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto {
+		case e.MaxDepthCM >= 1:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because about %.0f cm of standing water%s will slow you down (safe clearance: %s). Trains run above or below the street, so flooding does not affect them.",
+				mode, e.MaxDepthCM, whereEN(e.DeepestTH), clearanceEN(in.Mode))
+		case e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto:
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the motorbike because wind gusts of %.0f km/h on the route make it easy to lose control.", e.WindGustKMH)
-		} else {
+		case e.Risk == RiskHigh:
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT because the road route is high risk in this weather. The train takes about %d min and is safer.", tr.Minutes)
+		case e.MaxRainMM < rainLight && e.WindGustKMH >= motoWindGustCautionKMH:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because wind gusts of %.0f km/h on the route make riding harder. The train takes about %d min.", mode, e.WindGustKMH, tr.Minutes)
+		default:
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because of rain on the way (about %.0f mm/h) and slick roads. The train takes about %d min.", mode, e.MaxRainMM, tr.Minutes)
 		}
 	case Wait:
 		if res.WaitUntil != nil {
@@ -127,8 +135,8 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		exp.FactorsTH = append(exp.FactorsTH, "Water depth: no standing water found on the route")
 	}
 
-	if e.WindGustKMH >= 30 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind: gusts up to %.0f km/h (motorbike caution threshold is 45 km/h)", e.WindGustKMH))
+	if e.WindGustKMH >= motoWindGustCautionKMH {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind: gusts up to %.0f km/h (motorbike caution threshold is %.0f km/h)", e.WindGustKMH, motoWindGustThresholdKMH))
 	}
 
 	if !in.ArriveBy.IsZero() {
@@ -204,6 +212,9 @@ func hazardEN(e Eval) string {
 		return "water still draining" + whereEN(e.DeepestTH)
 	case e.MaxRainMM >= rainLight:
 		return "rain on the way and slick roads"
+	}
+	if e.Mode == domain.ModeMoto && e.WindGustKMH >= motoWindGustCautionKMH {
+		return fmt.Sprintf("wind gusts of %.0f km/h", e.WindGustKMH)
 	}
 	return "some risk on the way"
 }

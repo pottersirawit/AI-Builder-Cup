@@ -346,6 +346,50 @@ func TestAlreadyLateNeverWaitsToArriveLater(t *testing.T) {
 	}
 }
 
+func TestMotoMediumRiskWaitsOutTheShowerFirst(t *testing.T) {
+	drizzle := func(from, to int) []domain.RainSample {
+		var rain []domain.RainSample
+		for h := from; h < to; h++ {
+			rain = append(rain, domain.RainSample{Time: at(h, 0), MMPerHr: 2})
+		}
+		return rain
+	}
+	moto := func(lang domain.Lang, rain []domain.RainSample, gust float64) Result {
+		in := dryInput(lang, time.Time{})
+		in.Mode, in.Rain, in.WindGustKMH = domain.ModeMoto, rain, gust
+		return Decide(in)
+	}
+
+	if res := moto(domain.LangTH, drizzle(8, 9), 0); res.Verdict != Wait || res.WaitUntil.Format("15:04") != "09:00" {
+		t.Errorf("an hour of 2 mm/h drizzle: got %s wait_until=%v, want wait until 09:00", res.Verdict, res.WaitUntil)
+	}
+
+	for _, tt := range []struct {
+		name      string
+		rain      []domain.RainSample
+		gust      float64
+		wantCause map[domain.Lang]string
+	}{
+		{"drizzle all day", drizzle(6, 20), 0, map[domain.Lang]string{domain.LangTH: "ฝน", domain.LangEN: "rain"}},
+		{"31 km/h gusts", nil, 31, map[domain.Lang]string{domain.LangTH: "31 กม./ชม.", domain.LangEN: "31 km/h"}},
+	} {
+		for lang, cause := range tt.wantCause {
+			res := moto(lang, tt.rain, tt.gust)
+			if res.Verdict != SwitchMode {
+				t.Errorf("%s %s: verdict = %s, want switch_mode when it does not clear", tt.name, lang, res.Verdict)
+				continue
+			}
+			r := res.Explanation.ReasonWhyTH
+			if strings.Contains(r, "ความเสี่ยงสูง") || strings.Contains(r, "high risk") || !strings.Contains(r, cause) {
+				t.Errorf("%s %s: medium-risk reason should name %q and not claim high risk: %q", tt.name, lang, cause, r)
+			}
+			if !strings.Contains(res.SummaryTH, cause) {
+				t.Errorf("%s %s: summary should name %q: %q", tt.name, lang, cause, res.SummaryTH)
+			}
+		}
+	}
+}
+
 func TestTransitUmbrellaOnlyWhenItRains(t *testing.T) {
 	for _, tt := range []struct {
 		lang     domain.Lang

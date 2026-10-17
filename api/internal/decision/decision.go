@@ -45,6 +45,7 @@ const (
 	carSlowDepthCM           = 5.0  // sedan slows, water sprays the floor
 	carStallDepthCM          = 15.0 // sedan clearance
 	motoStallDepthCM         = 10.0
+	motoWindGustCautionKMH   = 30.0 // gusts make riding harder
 	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 )
 
@@ -215,7 +216,7 @@ func riskFor(mode domain.Mode, rain, depth, windGustKMH float64) Risk {
 		if depth >= motoStallDepthCM || rain >= rainModerate || windGustKMH >= motoWindGustThresholdKMH {
 			return RiskHigh
 		}
-		if depth >= 1 || rain >= rainLight || windGustKMH >= 30.0 {
+		if depth >= 1 || rain >= rainLight || windGustKMH >= motoWindGustCautionKMH {
 			return RiskMedium
 		}
 	case domain.ModeTransit:
@@ -341,11 +342,9 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 	if e.Risk == RiskLow || (m == domain.ModeTransit && e.Risk == RiskMedium) {
 		return LeaveNow, nil
 	}
-	if m != domain.ModeTransit {
-		tr := evals[domain.ModeTransit]
-		if tr.Risk.rank() < e.Risk.rank() && (e.Risk == RiskHigh || tr.OK()) {
-			return SwitchMode, nil
-		}
+	tr := evals[domain.ModeTransit]
+	if m != domain.ModeTransit && tr.Risk.rank() < e.Risk.rank() && (e.Risk == RiskHigh || (m != domain.ModeMoto && tr.OK())) {
+		return SwitchMode, nil
 	}
 	// Already late, a wait that arrives even later is no answer; the train is,
 	// when it is no riskier and gets there sooner.
@@ -361,11 +360,12 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 		}
 		return Wait, &t
 	}
-	if clearsTooLate && m != domain.ModeTransit {
-		tr := evals[domain.ModeTransit]
-		if tr.Risk.rank() <= e.Risk.rank() && tr.Arrive.Before(e.Arrive) {
-			return SwitchMode, nil
-		}
+	if clearsTooLate && m != domain.ModeTransit && tr.Risk.rank() <= e.Risk.rank() && tr.Arrive.Before(e.Arrive) {
+		return SwitchMode, nil
+	}
+	// A rider waits out a shower; only weather that does not clear calls for the train.
+	if m == domain.ModeMoto && tr.OK() {
+		return SwitchMode, nil
 	}
 	return DontGo, nil
 }
