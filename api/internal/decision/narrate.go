@@ -169,7 +169,10 @@ func buildExplanation(in Input, res Result) Explanation {
 		}
 	} else {
 		if in.Mode == domain.ModeTransit {
-			exp.RouteAdviceTH = "เส้นทางรถไฟฟ้าไม่ได้รับผลกระทบจากจุดเสี่ยงน้ำท่วมบนถนน สามารถเดินทางตามปกติ (พกร่มช่วงเดินเข้า-ออกสถานี)"
+			exp.RouteAdviceTH = "เส้นทางรถไฟฟ้าไม่ได้รับผลกระทบจากจุดเสี่ยงน้ำท่วมบนถนน สามารถเดินทางตามปกติ"
+			if e.MaxRainMM >= rainLight {
+				exp.RouteAdviceTH += " (พกร่มช่วงเดินเข้า-ออกสถานี)"
+			}
 		} else {
 			exp.RouteAdviceTH = "เส้นทางปัจจุบันไม่ผ่านจุดเสี่ยงน้ำท่วมวิกฤตของ กทม. สามารถใช้เส้นทางหลักได้ตามปกติ"
 		}

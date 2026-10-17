@@ -334,6 +334,27 @@ func TestDryDayWithoutDeadlineHasNoLeaveBy(t *testing.T) {
 	}
 }
 
+func TestTransitUmbrellaOnlyWhenItRains(t *testing.T) {
+	for _, tt := range []struct {
+		lang     domain.Lang
+		rain     float64
+		umbrella string
+		want     bool
+	}{
+		{domain.LangTH, 0, "ร่ม", false},
+		{domain.LangEN, 0, "umbrella", false},
+		{domain.LangTH, 3, "ร่ม", true},
+		{domain.LangEN, 3, "umbrella", true},
+	} {
+		in := dryInput(tt.lang, time.Time{})
+		in.Mode = domain.ModeTransit
+		in.Rain = []domain.RainSample{{Time: at(8, 0), MMPerHr: tt.rain}}
+		if got := strings.Contains(Decide(in).Explanation.RouteAdviceTH, tt.umbrella); got != tt.want {
+			t.Errorf("%s rain %v mm/h: route advice mentions umbrella = %v, want %v", tt.lang, tt.rain, got, tt.want)
+		}
+	}
+}
+
 func TestLeaveByReasonFollowsWhatEndsTheWindow(t *testing.T) {
 	dry := Decide(dryInput(domain.LangTH, at(12, 0)))
 	if dry.LeaveBy == nil || dry.LeaveBy.Format("15:04") != "11:30" {

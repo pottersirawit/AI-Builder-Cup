@@ -165,7 +165,10 @@ func buildExplanationEN(in Input, res Result) Explanation {
 			exp.RouteAdviceTH = fmt.Sprintf("Watch for flooding at %s. If heavy rain hits, switch to the elevated expressway or a nearby main road.", spots)
 		}
 	} else if in.Mode == domain.ModeTransit {
-		exp.RouteAdviceTH = "Your train route is not affected by flooded roads, so travel as normal (bring an umbrella for the walk to and from the station)."
+		exp.RouteAdviceTH = "Your train route is not affected by flooded roads, so travel as normal."
+		if e.MaxRainMM >= rainLight {
+			exp.RouteAdviceTH = "Your train route is not affected by flooded roads, so travel as normal (bring an umbrella for the walk to and from the station)."
+		}
 	} else {
 		exp.RouteAdviceTH = "Your route does not pass any critical flood spot in Bangkok, so you can take the main route as usual."
 	}
