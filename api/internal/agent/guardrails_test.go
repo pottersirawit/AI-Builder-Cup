@@ -200,6 +200,8 @@ func TestContradicts(t *testing.T) {
 		{"Leave now by BTS / MRT instead of driving.", decision.Wait, true},
 		{"You can leave now by car. The train is slower.", decision.SwitchMode, true},
 		{"รถยนต์ออกได้เลย ไม่มีปัญหา", decision.SwitchMode, true},
+		{"ขับรถออกได้เลย น้ำยังไม่ลึก ส่วนรถไฟฟ้าช้ากว่า", decision.SwitchMode, true},
+		{"รีบออกเลย ก่อนฝนมา", decision.Wait, true},
 	}
 	for _, tt := range tests {
 		if got := Contradicts(tt.text, tt.verdict); got != tt.want {
@@ -357,4 +359,15 @@ func (d *deadlineGen) GenerateContent(ctx context.Context, _ string, _ []*genai.
 		d.ok, d.left = true, time.Until(dl)
 	}
 	return nil, errors.New("stop")
+}
+
+// With no engine leave-by, any "leave before HH:MM" is invented, however
+// known the time itself is.
+func TestLeaveByWithoutEngineLeaveByIsUngrounded(t *testing.T) {
+	g := Grounding{known: map[string]bool{"13:00": true, "15:00": true}}
+	for _, text := range []string{"ออกก่อน 13:00", "Leave by 15:00"} {
+		if got := g.Ungrounded(text); len(got) != 1 {
+			t.Errorf("%q: got %v, want the leave-by flagged", text, got)
+		}
+	}
 }
