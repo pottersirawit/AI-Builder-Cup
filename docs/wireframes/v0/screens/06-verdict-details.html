@@ -1,0 +1,107 @@
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>6 · Decision (scrolled)</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+:root { --ink:#1b1f24; --mid:#6b7280; --line:#9aa1ab; --fill:#f1f3f5; --fill2:#e3e6ea; --paper:#fff; --accent:#1f2937; }
+* { box-sizing:border-box; margin:0; padding:0; }
+body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-ui,sans-serif; color:var(--ink); background:#fafafa; }
+.sheet { padding:48px 48px 64px; }
+.sheet h1 { font-size:34px; letter-spacing:.2px; }
+.sheet .sub { color:var(--mid); margin:6px 0 36px; font-size:16px; }
+.row { display:flex; flex-wrap:wrap; gap:48px 36px; align-items:flex-start; }
+.cell { width:390px; }
+.cell .phone { margin-top:6px; }
+.cell h2 { font-size:18px; margin:0 0 4px; }
+.cell .goal { color:var(--mid); font-size:13px; margin-bottom:12px; min-height:34px; }
+.phone { width:390px; height:860px; border:2px solid var(--ink); border-radius:34px; background:var(--paper); position:relative; overflow:hidden; display:flex; flex-direction:column; }
+.status { height:30px; display:flex; justify-content:space-between; padding:9px 22px 0; font-size:12px; color:var(--mid); }
+.body { flex:1; padding:6px 16px 14px 26px; overflow:hidden; display:flex; flex-direction:column; gap:12px; position:relative; }
+.nav { height:64px; border-top:2px solid var(--ink); display:flex; background:var(--paper); }
+.nav div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.nav div i { width:22px; height:22px; border:2px solid var(--line); border-radius:6px; display:block; }
+.nav div.on { color:var(--ink); font-weight:700; } .nav div.on i { border-color:var(--ink); background:var(--fill2); }
+.top { display:flex; align-items:center; gap:10px; min-height:40px; }
+.top .back { width:30px; height:30px; border:2px solid var(--line); border-radius:50%; flex:none; }
+.top b { font-size:20px; } .top small { color:var(--mid); display:block; font-size:12px; font-weight:400; }
+.top .gear { margin-left:auto; width:30px; height:30px; border:2px solid var(--line); border-radius:8px; }
+.h1 { font-size:22px; font-weight:700; line-height:1.25; }
+.h2 { font-size:16px; font-weight:700; }
+.t { font-size:13px; line-height:1.4; } .mut { color:var(--mid); }
+.box { border:2px solid var(--line); border-radius:12px; padding:12px; background:var(--paper); }
+.box.dark { border-color:var(--ink); background:var(--fill); }
+.card { border:2px solid var(--ink); border-radius:14px; padding:14px; background:var(--fill); display:flex; flex-direction:column; gap:10px; }
+.img { border:2px dashed var(--line); border-radius:10px; background:repeating-linear-gradient(45deg,var(--fill),var(--fill) 8px,var(--fill2) 8px,var(--fill2) 16px); display:flex; align-items:center; justify-content:center; color:var(--mid); font-size:12px; text-align:center; padding:6px; }
+.btn { border:2px solid var(--ink); border-radius:10px; padding:10px 12px; text-align:center; font-size:14px; font-weight:700; background:var(--paper); }
+.btn.fill { background:var(--ink); color:#fff; } .btn.ghost { border-color:var(--line); color:var(--mid); font-weight:400; }
+.chips { display:flex; flex-wrap:wrap; gap:8px; }
+.chip { border:2px solid var(--line); border-radius:20px; padding:6px 12px; font-size:13px; }
+.chip.on { border-color:var(--ink); background:var(--ink); color:#fff; }
+.seg { display:flex; gap:8px; } .seg div { flex:1; border:2px solid var(--line); border-radius:8px; padding:6px 4px; font-size:12px; text-align:center; background:var(--paper); }
+.seg b { display:block; font-size:16px; } .seg span { color:var(--mid); }
+.rb { height:54px; border:2px solid var(--line); border-radius:8px; position:relative; background:var(--paper); }
+.rb .bars { position:absolute; left:6px; right:6px; bottom:6px; height:30px; display:flex; align-items:flex-end; gap:3px; }
+.rb .bars i { flex:1; background:var(--fill2); border:1px solid var(--line); display:block; }
+.rb .pin { position:absolute; top:2px; bottom:2px; width:0; border-left:2px solid var(--ink); }
+.rb .pin::before { content:''; position:absolute; top:-2px; left:-6px; width:10px; height:10px; border-radius:50%; background:var(--ink); }
+.rows { display:flex; flex-direction:column; gap:8px; }
+.r { display:flex; align-items:center; gap:10px; border:2px solid var(--line); border-radius:10px; padding:10px; background:var(--paper); }
+.r .ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); }
+.r .grow { flex:1; } .r .tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; }
+.r .time { font-weight:700; font-size:16px; min-width:46px; }
+.banner { border:2px solid var(--ink); border-radius:12px; padding:10px 12px; background:var(--paper); display:flex; gap:10px; align-items:center; font-size:13px; box-shadow:0 3px 0 var(--fill2); }
+.banner .ic { width:28px; height:28px; border-radius:7px; background:var(--ink); flex:none; }
+.ask { border:2px solid var(--line); border-radius:26px; padding:11px 16px; display:flex; justify-content:space-between; align-items:center; color:var(--mid); font-size:14px; background:var(--paper); }
+.ask i { width:24px; height:24px; border-radius:50%; background:var(--fill2); border:2px solid var(--line); }
+.trace { display:flex; flex-direction:column; }
+.trace .s { display:flex; gap:10px; padding-bottom:10px; position:relative; }
+.trace .s::before { content:''; position:absolute; left:11px; top:24px; bottom:0; border-left:2px solid var(--fill2); }
+.trace .s:last-child::before { display:none; }
+.trace .n { width:24px; height:24px; border-radius:50%; background:var(--fill2); display:flex; align-items:center; justify-content:center; font-size:12px; flex:none; }
+.bubble { max-width:82%; padding:10px 12px; border-radius:14px; font-size:13px; line-height:1.4; }
+.bubble.me { align-self:flex-end; background:var(--ink); color:#fff; border-bottom-right-radius:4px; }
+.bubble.ai { align-self:flex-start; background:var(--fill); border:2px solid var(--line); border-bottom-left-radius:4px; }
+.field { border:2px solid var(--line); border-radius:10px; padding:10px 12px; font-size:14px; color:var(--mid); display:flex; justify-content:space-between; }
+.toggle { width:40px; height:22px; border:2px solid var(--ink); border-radius:12px; position:relative; flex:none; }
+.toggle::after { content:''; position:absolute; top:2px; right:2px; width:14px; height:14px; border-radius:50%; background:var(--ink); }
+.toggle.off::after { right:auto; left:2px; background:var(--line); } .toggle.off { border-color:var(--line); }
+.anc { height:0; position:relative; margin:0 0 -12px; z-index:5; }
+.anc .pinno { left:-25px; top:-2px; }
+.pinno { position:absolute; width:22px; height:22px; border-radius:50%; background:#fff; color:var(--ink); border:2px solid var(--ink); font-weight:700; font-size:12px; display:flex; align-items:center; justify-content:center; z-index:5; box-shadow:0 0 0 3px rgba(255,255,255,.9); }
+.legend { margin-top:14px; display:flex; flex-direction:column; gap:7px; }
+.legend div { display:flex; gap:9px; font-size:13px; line-height:1.35; }
+.legend b { flex:none; width:20px; height:20px; border-radius:50%; background:var(--ink); color:#fff; font-size:11px; display:flex; align-items:center; justify-content:center; margin-top:1px; }
+.flow { display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin:0 0 40px; }
+.flow .f { border:2px solid var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; background:#fff; font-weight:700; }
+.flow .a { color:var(--mid); font-size:20px; }
+.page { padding:36px; display:inline-block; }
+
+.navbar { position:absolute; left:16px; right:16px; bottom:14px; height:58px; display:flex; gap:10px; z-index:3; }
+.navbar .pill { flex:1; border:2px solid var(--ink); border-radius:30px; display:flex; background:var(--paper); }
+.navbar .pill div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.navbar .pill div i { width:20px; height:20px; border:2px solid var(--line); border-radius:6px; display:block; }
+.navbar .pill div.on { color:var(--ink); font-weight:700; } .navbar .pill div.on i { border-color:var(--ink); background:var(--fill2); }
+.navbar .spark { width:58px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phone .body { padding-bottom:84px; }
+.dim { position:absolute; inset:0; background:rgba(27,31,36,.35); z-index:6; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; background:var(--paper); border-top:2px solid var(--ink); border-radius:24px 24px 0 0; padding:10px 16px 18px 26px; display:flex; flex-direction:column; gap:10px; z-index:7; }
+.bsheet .grab { width:40px; height:5px; border-radius:3px; background:var(--line); align-self:center; margin-bottom:4px; }
+.acts { margin-left:auto; display:flex; gap:8px; } .top .acts .gear, .acts .gear { margin-left:0; width:30px; height:30px; border:2px solid var(--line); border-radius:50%; display:block; }
+.grow { flex:1; min-width:0; }
+.stub { flex:none; border:2px solid var(--ink); border-radius:10px; background:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.stub b { font-size:18px; } .stub span { font-size:11px; color:var(--mid); }
+.ticket { border:2px solid var(--ink); border-radius:16px; background:var(--fill); display:flex; flex-direction:column; flex:none; }
+.tk-top, .tk-bot { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.perf { border-top:2px dashed var(--line); margin:0 10px; position:relative; }
+.perf::before, .perf::after { content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--ink); }
+.perf::before { left:-21px; clip-path:inset(0 0 0 50%); } .perf::after { right:-21px; clip-path:inset(0 50% 0 0); }
+.ring { width:76px; height:76px; border-radius:50%; border:6px solid var(--ink); border-right-color:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; flex:none; }
+.ring b { font-size:20px; } .ring span { font-size:9px; color:var(--mid); }
+.sec { display:flex; flex-direction:column; gap:8px; }
+.hscroll { display:flex; gap:10px; overflow:hidden; }
+.mini { width:170px; flex:none; border:2px solid var(--line); border-radius:12px; padding:10px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+.tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.tag.ok { border-color:var(--line); }
+.ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); display:inline-block; }
+.ic.round { border-radius:50%; } .ic.sq { width:26px; height:26px; }
+.chip.ghost { color:var(--mid); border-style:dashed; }
+.rb .bubble-t { position:absolute; top:2px; background:var(--ink); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; }
+.rb .bracket { position:absolute; bottom:12px; height:6px; border:2px solid var(--ink); border-top:none; }
+.rb .hours { position:absolute; left:6px; right:6px; bottom:0; display:flex; justify-content:space-between; font-size:9px; color:var(--mid); }
+</style></head><body><div class="page"><div class="cell"><h2>6 · Decision (scrolled)</h2><div class="goal">Why, the other ways to go, the real route, flood spots and every step the agent took.</div><div class="phone"><div class="status"><span>18:52</span><span>● ● ▮</span></div><div class="body"><div class="h2">ทำไมถึงแนะนำแบบนี้ ✦</div><div class="anc"><div class="pinno">1</div></div><div class="t">รัชดามีน้ำรอระบายราว 25 ซม. ออกตอนนี้จะถึงราว 19:05 เลยนัด รอฝนซาหลัง 19:15 หรือเปลี่ยนเป็น BTS</div><div class="chips"><span class="chip">เลี่ยง แยกรัชดา-ลาดพร้าว</span><span class="chip ghost">ดูปัจจัยที่ใช้ตัดสิน (4)</span></div><div class="anc"><div class="pinno">2</div></div><div class="h2">เทียบวิธีเดินทาง</div><div class="seg"><div><span>รถยนต์</span><b style="font-size:12px">95 น. · รอก่อน</b></div><div style="border-color:var(--ink);background:var(--fill2)"><span>รถไฟฟ้า</span><b style="font-size:12px">50 น. · เผื่อเวลา</b></div><div><span>มอไซค์</span><b style="font-size:12px">60 น. · งดไป</b></div></div><div class="anc"><div class="pinno">3</div></div><div class="h2">เส้นทางที่ใช้คำนวณ</div><div class="chips"><span class="chip on">สีลม ซอย 3</span><span class="t mut">→ MRT สีลม → MRT ลาดพร้าว →</span><span class="chip on">บ้านลาดพร้าว</span></div><div class="r"><span class="tag">MRT สายสีน้ำเงิน</span><div class="grow t mut">ขึ้น สีลม → ลง ลาดพร้าว · 11 สถานี</div></div><div class="anc"><div class="pinno">4</div></div><div class="h2">จุดน้ำท่วมบนเส้นทาง</div><div class="r"><span class="ic"></span><div class="grow"><b class="t">แยกรัชดา-ลาดพร้าว</b><div class="t mut">คาดน้ำสูง 25 ซม.</div></div><span class="tag">เสี่ยงสูง</span></div><div class="anc"><div class="pinno">5</div></div><div class="h2">เหตุผลที่แนะนำแบบนี้ ✦</div><div class="trace"><div class="s"><span class="n">1</span><div><b class="t">ดูทริปของคุณ</b><div class="t mut">นัด 18:30 = ต้องถึงก่อน 18:30</div></div></div><div class="s"><span class="n">2</span><div><b class="t">เช็กฝนระหว่างทาง</b><div class="t mut">ฝนหนักสุด 18:15</div></div></div><div class="s"><span class="n">3</span><div><b class="t">ประเมินความเสี่ยง</b><div class="t mut">รถยนต์เสี่ยงสูงจนถึง 19:15</div></div></div></div><div class="chips"><span class="chip">Google Weather</span><span class="chip">Routes API</span><span class="chip">BMA</span></div><div class="t mut" style="font-size:11px">ข้อมูลจาก AI อาจคลาดเคลื่อน โปรดตรวจสอบสภาพจริงก่อนออกเดินทาง</div></div></div><div class="legend"><div><b>1</b><span>Why, in one paragraph, with spots to avoid and the factors behind it</span></div><div><b>2</b><span>Three modes with time and verdict; tap one to re-decide</span></div><div><b>3</b><span>The route the answer was computed on, with transit line and stations</span></div><div><b>4</b><span>BMA flood spots on this route with expected depth</span></div><div><b>5</b><span>Each tool the agent called, sources, confidence and the accuracy note</span></div></div></div></div></body></html>

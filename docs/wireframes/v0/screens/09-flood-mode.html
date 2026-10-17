@@ -1,4 +1,4 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><title>6 · Report flooding</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>9 · Flood near home</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 :root { --ink:#1b1f24; --mid:#6b7280; --line:#9aa1ab; --fill:#f1f3f5; --fill2:#e3e6ea; --paper:#fff; --accent:#1f2937; }
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-ui,sans-serif; color:var(--ink); background:#fafafa; }
@@ -71,4 +71,37 @@ body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-u
 .flow .f { border:2px solid var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; background:#fff; font-weight:700; }
 .flow .a { color:var(--mid); font-size:20px; }
 .page { padding:36px; display:inline-block; }
-</style></head><body><div class="page"><div class="cell"><h2>6 · Report flooding</h2><div class="goal">Community loop: one photo warns everyone whose route crosses the spot.</div><div class="phone"><div class="status"><span>18:52</span><span>● ● ▮</span></div><div class="body"><div class="top"><div><b>รายงานน้ำท่วม</b><small>ถ่ายน้ำบนถนน เตือนคนที่กำลังจะผ่าน</small></div></div><div class="anc"><div class="pinno">1</div></div><div class="img" style="height:230px">กล้อง · ใส่ล้อรถหรือขอบทางในภาพ<br>camera · include a wheel or the curb</div><div style="display:flex;gap:8px"><div class="btn fill" style="flex:1">ถ่ายภาพ</div><div class="btn" style="flex:1">เลือกจากคลัง</div></div><div class="t mut">📍 ใช้ GPS ของเครื่อง · 18:52</div><div class="anc"><div class="pinno">2</div></div><div class="card" style="background:var(--paper)"><div class="h2">AI ดูภาพแล้ว</div><div class="h1" style="font-size:24px">น้ำลึกราว 20–25 ซม.</div><div class="seg"><div><span>รถยนต์</span><b>ผ่านช้า ๆ</b></div><div><span>รถไฟฟ้า</span><b>ผ่านได้</b></div><div><span>มอไซค์</span><b>ไม่ควรผ่าน</b></div></div><div class="anc"><div class="pinno">3</div></div><div class="t mut">แจ้งเตือน 27 คนที่เส้นทางผ่านจุดนี้ · ยืนยันกับอีก 2 รายงาน</div></div></div><div class="nav"><div class=""><i></i>เดินทาง</div><div class="on"><i></i>รายงานน้ำท่วม</div><div class=""><i></i>บ้าน</div></div></div><div class="legend"><div><b>1</b><span>Photo with a reference object (wheel / curb)</span></div><div><b>2</b><span>Vision AI estimates depth and which vehicles can pass</span></div><div><b>3</b><span>Fan-out: only people whose route passes within ~300 m are notified</span></div></div></div></div></body></html>
+
+.navbar { position:absolute; left:16px; right:16px; bottom:14px; height:58px; display:flex; gap:10px; z-index:3; }
+.navbar .pill { flex:1; border:2px solid var(--ink); border-radius:30px; display:flex; background:var(--paper); }
+.navbar .pill div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.navbar .pill div i { width:20px; height:20px; border:2px solid var(--line); border-radius:6px; display:block; }
+.navbar .pill div.on { color:var(--ink); font-weight:700; } .navbar .pill div.on i { border-color:var(--ink); background:var(--fill2); }
+.navbar .spark { width:58px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phone .body { padding-bottom:84px; }
+.dim { position:absolute; inset:0; background:rgba(27,31,36,.35); z-index:6; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; background:var(--paper); border-top:2px solid var(--ink); border-radius:24px 24px 0 0; padding:10px 16px 18px 26px; display:flex; flex-direction:column; gap:10px; z-index:7; }
+.bsheet .grab { width:40px; height:5px; border-radius:3px; background:var(--line); align-self:center; margin-bottom:4px; }
+.acts { margin-left:auto; display:flex; gap:8px; } .top .acts .gear, .acts .gear { margin-left:0; width:30px; height:30px; border:2px solid var(--line); border-radius:50%; display:block; }
+.grow { flex:1; min-width:0; }
+.stub { flex:none; border:2px solid var(--ink); border-radius:10px; background:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.stub b { font-size:18px; } .stub span { font-size:11px; color:var(--mid); }
+.ticket { border:2px solid var(--ink); border-radius:16px; background:var(--fill); display:flex; flex-direction:column; flex:none; }
+.tk-top, .tk-bot { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.perf { border-top:2px dashed var(--line); margin:0 10px; position:relative; }
+.perf::before, .perf::after { content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--ink); }
+.perf::before { left:-21px; clip-path:inset(0 0 0 50%); } .perf::after { right:-21px; clip-path:inset(0 50% 0 0); }
+.ring { width:76px; height:76px; border-radius:50%; border:6px solid var(--ink); border-right-color:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; flex:none; }
+.ring b { font-size:20px; } .ring span { font-size:9px; color:var(--mid); }
+.sec { display:flex; flex-direction:column; gap:8px; }
+.hscroll { display:flex; gap:10px; overflow:hidden; }
+.mini { width:170px; flex:none; border:2px solid var(--line); border-radius:12px; padding:10px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+.tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.tag.ok { border-color:var(--line); }
+.ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); display:inline-block; }
+.ic.round { border-radius:50%; } .ic.sq { width:26px; height:26px; }
+.chip.ghost { color:var(--mid); border-style:dashed; }
+.rb .bubble-t { position:absolute; top:2px; background:var(--ink); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; }
+.rb .bracket { position:absolute; bottom:12px; height:6px; border:2px solid var(--ink); border-top:none; }
+.rb .hours { position:absolute; left:6px; right:6px; bottom:0; display:flex; justify-content:space-between; font-size:9px; color:var(--mid); }
+</style></head><body><div class="page"><div class="cell"><h2>9 · Flood near home</h2><div class="goal">When home is in danger the whole app turns flood-red and Summary leads with it.</div><div class="phone"><div class="status"><span>21:40</span><span>● ● ▮</span></div><div class="body"><div class="acts" style="justify-content:flex-end"><span class="gear"></span><span class="gear"></span></div><div class="t mut">อังคาร 29 ก.ย.</div><div class="h1" style="font-size:28px;margin-top:-8px">วันนี้ไม่มีนัดแล้ว</div><div class="anc"><div class="pinno">1</div></div><div class="card" style="background:var(--ink);color:#fff"><div class="t" style="color:#cbd5e1">น้ำท่วมใกล้บ้าน</div><div class="h1">น้ำจะถึงหน้าบ้านใน 40 นาที</div><div class="btn" style="color:var(--ink)">ดูสิ่งที่ต้องทำ</div></div></div><div class="navbar"><div class="pill"><div class="on"><i></i>สรุป</div><div class=""><i></i>อีเวนต์</div></div><div class="spark">✦</div></div><div class="dim"></div><div class="bsheet" style="height:560px"><div class="grab"></div><div class="anc"><div class="pinno">2</div></div><div class="ticket"><div class="tk-top"><div class="t mut">⌂ บ้านลาดพร้าว · 21:40</div><div class="h1" style="font-size:24px">น้ำจะถึงหน้าบ้านใน 40 นาที</div><span class="tag" style="align-self:flex-start">อันตราย</span></div><div class="perf"></div><div class="tk-bot"><div class="seg"><div><span>ระดับคลอง</span><b>1.8/1.8 ม.</b></div><div><span>ขึ้นใน 2 ชม.</span><b>40 ซม.</b></div><div><span>ถึงตลิ่ง</span><b>ถึงแล้ว</b></div></div></div></div><div class="anc"><div class="pinno">3</div></div><div class="h2">ทำตอนนี้ เรียงตามลำดับ</div><div class="rows"><div class="r"><b>1</b><div class="grow t">ย้ายรถไปลานจอดเซ็นทรัลลาดพร้าว ถนนยังแห้งอีก 25 นาที</div></div><div class="r"><b>2</b><div class="grow t">ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม.</div></div><div class="r"><b>3</b><div class="grow t">เตรียมกระสอบทรายหน้าประตู</div></div></div></div></div><div class="legend"><div><b>1</b><span>Flood card on Summary, above everything else</span></div><div><b>2</b><span>Home pass: canal level, rise in 2 h, distance to the bank (or rain, spots and reports when no gauge)</span></div><div><b>3</b><span>Ordered checklist: what to do first, second, third</span></div></div></div></div></body></html>

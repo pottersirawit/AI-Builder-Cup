@@ -1,4 +1,4 @@
-<!doctype html><html lang="th"><head><meta charset="utf-8"><title>8 · Settings</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+<!doctype html><html lang="th"><head><meta charset="utf-8"><title>4 · Ask (✦ button)</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
 :root { --ink:#1b1f24; --mid:#6b7280; --line:#9aa1ab; --fill:#f1f3f5; --fill2:#e3e6ea; --paper:#fff; --accent:#1f2937; }
 * { box-sizing:border-box; margin:0; padding:0; }
 body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-ui,sans-serif; color:var(--ink); background:#fafafa; }
@@ -71,4 +71,37 @@ body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-u
 .flow .f { border:2px solid var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; background:#fff; font-weight:700; }
 .flow .a { color:var(--mid); font-size:20px; }
 .page { padding:36px; display:inline-block; }
-</style></head><body><div class="page"><div class="cell"><h2>8 · Settings</h2><div class="goal">Everything stays on the device. Language, places, what feeds the agent.</div><div class="phone"><div class="status"><span>16:10</span><span>● ● ▮</span></div><div class="body"><div class="top"><span class="back"></span><div><b>ตั้งค่า</b><small>ข้อมูลเก็บไว้ในเครื่องนี้</small></div></div><div class="anc"><div class="pinno">1</div></div><div class="h2">ภาษา · Language</div><div class="seg"><div style="border-color:var(--ink);background:var(--fill2)"><b style="font-size:14px">ไทย</b></div><div><b style="font-size:14px">English</b></div></div><div class="anc"><div class="pinno">2</div></div><div class="h2">สถานที่ของฉัน</div><div class="rows"><div class="r"><span class="ic"></span><div class="grow t"><b>บ้าน</b> · คอนโดลาดพร้าว</div></div><div class="r"><span class="ic"></span><div class="grow t"><b>ที่ทำงาน</b> · จ–ศ ออก 18:00</div></div><div class="r"><span class="ic"></span><div class="grow t mut">＋ เพิ่มสถานที่ (1 จาก 5)</div></div></div><div class="anc"><div class="pinno">3</div></div><div class="h2">ให้แอปหาทริปให้เอง</div><div class="rows"><div class="r"><div class="grow t"><b>Google Calendar</b><div class="mut">เฉพาะนัดที่มีสถานที่</div></div><span class="toggle"></span></div><div class="r"><div class="grow t"><b>Gmail</b><div class="mut">เฉพาะอีเมลยืนยันตั๋วและนัดหมาย</div></div><span class="toggle"></span></div></div><div class="h2">ชุมชนและน้ำท่วม</div><div class="rows"><div class="r"><div class="grow t"><b>แจ้งเตือนน้ำท่วมที่บ้าน</b><div class="mut">แม้ปิดแอปอยู่</div></div><span class="toggle"></span></div><div class="r"><div class="grow t"><b>SMS สำรอง</b><div class="mut">เมื่อไม่มีอินเทอร์เน็ต</div></div><span class="toggle off"></span></div></div></div></div><div class="legend"><div><b>1</b><span>Interface language switch: Thai / English, including the AI's answers</span></div><div><b>2</b><span>Saved places stay on-device</span></div><div><b>3</b><span>Calendar and Gmail are what make the app proactive; each can be turned off</span></div></div></div></div></body></html>
+
+.navbar { position:absolute; left:16px; right:16px; bottom:14px; height:58px; display:flex; gap:10px; z-index:3; }
+.navbar .pill { flex:1; border:2px solid var(--ink); border-radius:30px; display:flex; background:var(--paper); }
+.navbar .pill div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.navbar .pill div i { width:20px; height:20px; border:2px solid var(--line); border-radius:6px; display:block; }
+.navbar .pill div.on { color:var(--ink); font-weight:700; } .navbar .pill div.on i { border-color:var(--ink); background:var(--fill2); }
+.navbar .spark { width:58px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phone .body { padding-bottom:84px; }
+.dim { position:absolute; inset:0; background:rgba(27,31,36,.35); z-index:6; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; background:var(--paper); border-top:2px solid var(--ink); border-radius:24px 24px 0 0; padding:10px 16px 18px 26px; display:flex; flex-direction:column; gap:10px; z-index:7; }
+.bsheet .grab { width:40px; height:5px; border-radius:3px; background:var(--line); align-self:center; margin-bottom:4px; }
+.acts { margin-left:auto; display:flex; gap:8px; } .top .acts .gear, .acts .gear { margin-left:0; width:30px; height:30px; border:2px solid var(--line); border-radius:50%; display:block; }
+.grow { flex:1; min-width:0; }
+.stub { flex:none; border:2px solid var(--ink); border-radius:10px; background:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.stub b { font-size:18px; } .stub span { font-size:11px; color:var(--mid); }
+.ticket { border:2px solid var(--ink); border-radius:16px; background:var(--fill); display:flex; flex-direction:column; flex:none; }
+.tk-top, .tk-bot { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.perf { border-top:2px dashed var(--line); margin:0 10px; position:relative; }
+.perf::before, .perf::after { content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--ink); }
+.perf::before { left:-21px; clip-path:inset(0 0 0 50%); } .perf::after { right:-21px; clip-path:inset(0 50% 0 0); }
+.ring { width:76px; height:76px; border-radius:50%; border:6px solid var(--ink); border-right-color:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; flex:none; }
+.ring b { font-size:20px; } .ring span { font-size:9px; color:var(--mid); }
+.sec { display:flex; flex-direction:column; gap:8px; }
+.hscroll { display:flex; gap:10px; overflow:hidden; }
+.mini { width:170px; flex:none; border:2px solid var(--line); border-radius:12px; padding:10px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+.tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.tag.ok { border-color:var(--line); }
+.ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); display:inline-block; }
+.ic.round { border-radius:50%; } .ic.sq { width:26px; height:26px; }
+.chip.ghost { color:var(--mid); border-style:dashed; }
+.rb .bubble-t { position:absolute; top:2px; background:var(--ink); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; }
+.rb .bracket { position:absolute; bottom:12px; height:6px; border:2px solid var(--ink); border-top:none; }
+.rb .hours { position:absolute; left:6px; right:6px; bottom:0; display:flex; justify-content:space-between; font-size:9px; color:var(--mid); }
+</style></head><body><div class="page"><div class="cell"><h2>4 · Ask (✦ button)</h2><div class="goal">One sentence from anywhere: the sparkle next to the tabs opens it.</div><div class="phone"><div class="status"><span>16:10</span><span>● ● ▮</span></div><div class="body"><div class="acts" style="justify-content:flex-end"><span class="gear"></span><span class="gear"></span></div><div class="t mut">อังคาร 29 ก.ย.</div><div class="h1" style="font-size:28px;margin-top:-8px">วันนี้อีก 3 นัด</div><div class="ticket" style="height:300px"></div></div><div class="navbar"><div class="pill"><div class="on"><i></i>สรุป</div><div class=""><i></i>อีเวนต์</div></div><div class="spark">✦</div></div><div class="dim"></div><div class="bsheet" style="height:300px"><div class="grab"></div><div class="h1">อยากไปไหน</div><div class="anc"><div class="pinno">1</div></div><div class="ask"><span>✦ ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม</span><i></i></div><div class="anc"><div class="pinno">2</div></div><div class="chips"><span class="chip">⌂ กลับบ้านตอนนี้</span><span class="chip">ไปสยามตอนนี้</span><span class="chip">ไปทองหล่อตอนนี้</span><span class="chip">พรุ่งนี้เช้าฝนตกไหม</span></div></div></div><div class="legend"><div><b>1</b><span>Plain Thai or English; Gemini reads the place and time</span></div><div><b>2</b><span>Suggestions from saved places; tapping one opens the decision right away</span></div></div></div></div></body></html>

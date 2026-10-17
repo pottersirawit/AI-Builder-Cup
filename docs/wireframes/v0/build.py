@@ -84,6 +84,39 @@ body { font-family:'Chakra Petch','Sarabun','Thonburi','Noto Sans Thai',system-u
 .flow .f { border:2px solid var(--ink); border-radius:10px; padding:8px 12px; font-size:14px; background:#fff; font-weight:700; }
 .flow .a { color:var(--mid); font-size:20px; }
 .page { padding:36px; display:inline-block; }
+
+.navbar { position:absolute; left:16px; right:16px; bottom:14px; height:58px; display:flex; gap:10px; z-index:3; }
+.navbar .pill { flex:1; border:2px solid var(--ink); border-radius:30px; display:flex; background:var(--paper); }
+.navbar .pill div { flex:1; display:flex; flex-direction:column; align-items:center; justify-content:center; gap:3px; font-size:12px; color:var(--mid); }
+.navbar .pill div i { width:20px; height:20px; border:2px solid var(--line); border-radius:6px; display:block; }
+.navbar .pill div.on { color:var(--ink); font-weight:700; } .navbar .pill div.on i { border-color:var(--ink); background:var(--fill2); }
+.navbar .spark { width:58px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; font-size:22px; }
+.phone .body { padding-bottom:84px; }
+.dim { position:absolute; inset:0; background:rgba(27,31,36,.35); z-index:6; }
+.bsheet { position:absolute; left:0; right:0; bottom:0; background:var(--paper); border-top:2px solid var(--ink); border-radius:24px 24px 0 0; padding:10px 16px 18px 26px; display:flex; flex-direction:column; gap:10px; z-index:7; }
+.bsheet .grab { width:40px; height:5px; border-radius:3px; background:var(--line); align-self:center; margin-bottom:4px; }
+.acts { margin-left:auto; display:flex; gap:8px; } .top .acts .gear, .acts .gear { margin-left:0; width:30px; height:30px; border:2px solid var(--line); border-radius:50%; display:block; }
+.grow { flex:1; min-width:0; }
+.stub { flex:none; border:2px solid var(--ink); border-radius:10px; background:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; }
+.stub b { font-size:18px; } .stub span { font-size:11px; color:var(--mid); }
+.ticket { border:2px solid var(--ink); border-radius:16px; background:var(--fill); display:flex; flex-direction:column; flex:none; }
+.tk-top, .tk-bot { padding:12px 14px; display:flex; flex-direction:column; gap:8px; }
+.perf { border-top:2px dashed var(--line); margin:0 10px; position:relative; }
+.perf::before, .perf::after { content:''; position:absolute; top:-9px; width:16px; height:16px; border-radius:50%; background:var(--paper); border:2px solid var(--ink); }
+.perf::before { left:-21px; clip-path:inset(0 0 0 50%); } .perf::after { right:-21px; clip-path:inset(0 50% 0 0); }
+.ring { width:76px; height:76px; border-radius:50%; border:6px solid var(--ink); border-right-color:var(--fill2); display:flex; flex-direction:column; align-items:center; justify-content:center; line-height:1.05; flex:none; }
+.ring b { font-size:20px; } .ring span { font-size:9px; color:var(--mid); }
+.sec { display:flex; flex-direction:column; gap:8px; }
+.hscroll { display:flex; gap:10px; overflow:hidden; }
+.mini { width:170px; flex:none; border:2px solid var(--line); border-radius:12px; padding:10px; background:var(--paper); display:flex; flex-direction:column; gap:3px; }
+.tag { border:2px solid var(--ink); border-radius:12px; padding:2px 10px; font-size:12px; font-weight:700; white-space:nowrap; }
+.tag.ok { border-color:var(--line); }
+.ic { width:30px; height:30px; border:2px solid var(--line); border-radius:8px; flex:none; background:var(--fill); display:inline-block; }
+.ic.round { border-radius:50%; } .ic.sq { width:26px; height:26px; }
+.chip.ghost { color:var(--mid); border-style:dashed; }
+.rb .bubble-t { position:absolute; top:2px; background:var(--ink); color:#fff; font-size:10px; border-radius:8px; padding:1px 6px; }
+.rb .bracket { position:absolute; bottom:12px; height:6px; border:2px solid var(--ink); border-top:none; }
+.rb .hours { position:absolute; left:6px; right:6px; bottom:0; display:flex; justify-content:space-between; font-size:9px; color:var(--mid); }
 """
 
 
@@ -95,54 +128,69 @@ def pin(n):
     return f'<div class="anc"><div class="pinno">{n}</div></div>'
 
 
-def phone(body, tab=None, status="16:10"):
+def phone(body, tab=None, status="16:10", overlay=""):
     nav = ""
     if tab is not None:
-        labels = [("เดินทาง", "trip"), ("รายงานน้ำท่วม", "report"), ("บ้าน", "home")]
-        nav = '<div class="nav">' + "".join(
-            f'<div class="{"on" if k == tab else ""}"><i></i>{l}</div>' for l, k in labels
-        ) + "</div>"
+        labels = [("สรุป", "summary"), ("อีเวนต์", "events")]
+        nav = (
+            '<div class="navbar"><div class="pill">'
+            + "".join(f'<div class="{"on" if k == tab else ""}"><i></i>{l}</div>' for l, k in labels)
+            + '</div><div class="spark">✦</div></div>'
+        )
     return (
         '<div class="phone"><div class="status"><span>%s</span><span>● ● ▮</span></div>'
-        '<div class="body">%s</div>%s</div>' % (status, body, nav)
+        '<div class="body">%s</div>%s%s</div>' % (status, body, nav, overlay)
     )
 
 
-def top(title, sub="", gear=False, back=True):
+def sheet(body, height):
+    return f'<div class="dim"></div><div class="bsheet" style="height:{height}px"><div class="grab"></div>{body}</div>'
+
+
+def top(title, sub="", back=True, actions=0):
+    acts = "".join('<span class="gear"></span>' for _ in range(actions))
     return (
-        '<div class="top">%s<div><b>%s</b>%s</div>%s</div>'
+        '<div class="top">%s<div><b>%s</b>%s</div><div class="acts">%s</div></div>'
         % (
             '<span class="back"></span>' if back else "",
             e(title),
             f"<small>{e(sub)}</small>" if sub else "",
-            '<span class="gear"></span>' if gear else "",
+            acts,
         )
     )
 
 
-def pass_card(headline, summary, segs, band=True, rbpin=0):
-    seg = "".join(f"<div><span>{e(a)}</span><b>{e(b)}</b></div>" for a, b in segs)
-    bars = "".join(f'<i style="height:{h}%"></i>' for h in [8, 8, 10, 14, 30, 60, 85, 70, 40, 22, 12, 8])
-    rb = (
-        (pin(rbpin) if rbpin else '') + f'<div class="rb"><div class="bars">{bars}</div><div class="pin" style="left:34%"></div></div>'
-        if band
-        else ""
-    )
+def large_header(eyebrow, title, actions=2):
+    acts = "".join('<span class="gear"></span>' for _ in range(actions))
     return (
-        f'<div class="card"><div class="h1" style="font-size:30px">{e(headline)}</div>'
-        f'<div class="t">{e(summary)}</div><div class="seg">{seg}</div>{rb}</div>'
+        f'<div class="acts" style="justify-content:flex-end">{acts}</div>'
+        f'<div class="t mut">{e(eyebrow)}</div><div class="h1" style="font-size:28px;margin-top:-8px">{e(title)}</div>'
     )
 
 
-def mode_rows():
-    rows = [("รถยนต์ · 50 นาที", "ถึงก่อนฝนตก ทันนัด 18:30", "ออกได้", "17:05"),
-            ("รถไฟฟ้า · 42 นาที", "ไม่ต้องกางร่ม", "ออกได้", "16:52"),
-            ("มอเตอร์ไซค์ · 45 นาที", "ฝนหนักระหว่างทาง งดมอไซค์", "งดไป", "—")]
-    return '<div class="rows">' + "".join(
-        f'<div class="r"><span class="ic"></span><div class="grow"><div class="h2" style="font-size:14px">{a}</div>'
-        f'<div class="t mut">{b}</div></div><span class="tag">{c}</span><span class="time">{d}</span></div>'
-        for a, b, c, d in rows
-    ) + "</div>"
+def stub(day, mon, w=52):
+    return f'<div class="stub" style="width:{w}px;height:{w}px"><b>{day}</b><span>{mon}</span></div>'
+
+
+def ticket(top_html, bottom_html):
+    return f'<div class="ticket"><div class="tk-top">{top_html}</div><div class="perf"></div><div class="tk-bot">{bottom_html}</div></div>'
+
+
+def section(title, inner, trail=""):
+    t = f'<span class="mut t" style="margin-left:auto">{e(trail)}</span>' if trail else ""
+    return f'<div class="sec"><div style="display:flex;align-items:baseline"><div class="h2">{e(title)}</div>{t}</div>{inner}</div>'
+
+
+def rain_band(n):
+    bars = "".join(f'<i style="height:{h}%"></i>' for h in [10, 12, 18, 30, 55, 80, 95, 90, 70, 45, 25, 15, 10, 8, 20, 40])
+    return (
+        pin(n)
+        + '<div class="rb" style="height:78px"><div class="bubble-t" style="left:6%">ออก 16:10</div>'
+        f'<div class="bars" style="bottom:20px;height:36px">{bars}</div>'
+        '<div class="pin" style="left:8%;top:22px;bottom:18px"></div>'
+        '<div class="bracket" style="left:8%;width:17%"></div>'
+        '<div class="hours"><span>16:00</span><span>17:00</span><span>18:00</span><span>19:00</span></div></div>'
+    )
 
 
 def screens():
@@ -150,155 +198,212 @@ def screens():
 
     # 1 Onboarding
     S.append(dict(
-        id="01-onboarding", title="1 · Onboarding", goal="Two optional taps so the app can warn before you head home. Skippable: asking always works.",
+        id="01-onboarding", title="1 · Onboarding", goal="First launch only. Set home and work on a pass, or skip: asking always works.",
         body=phone(
-            '<div style="height:36px"></div>'
-            '<div class="img" style="height:110px;border-radius:50%;width:110px;align-self:center">โลโก้<br>ฝนตกไหม</div>'
-            '<div class="h1" style="text-align:center">ให้แอปเตือนก่อนกลับบ้าน</div>'
-            '' + pin(1) + '<div class="box"><div class="h2">บ้าน</div><div class="t mut">ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน</div>'
-            '<div style="display:flex;gap:8px;margin-top:10px"><div class="btn" style="flex:1">ใช้ตำแหน่งตอนนี้</div><div class="btn" style="flex:1">ค้นหา</div></div></div>'
-            '' + pin(2) + '<div class="box"><div class="h2">ที่ทำงาน <span class="mut" style="font-weight:400">· ไม่บังคับ</span></div>'
-            '<div class="t mut">ทำให้เตือนตอนเลิกงานได้แม่นขึ้น</div>'
-            '<div style="display:flex;gap:8px;margin-top:10px"><div class="btn" style="flex:1">ใช้ตำแหน่งตอนนี้</div><div class="btn" style="flex:1">ค้นหา</div></div></div>'
-            '<div style="flex:1"></div><div class="btn fill">เริ่มใช้</div>' + pin(3) + '<div class="btn ghost">ข้ามไปก่อน</div>'
-            '<div class="t mut" style="text-align:center">ใช้โปรไฟล์เดโม (มิว)</div>',
+            '<div class="t" style="display:flex;gap:8px;align-items:center;margin-top:8px"><span class="ic sq"></span><b>ฝนตกไหม</b></div>'
+            '<div class="h1" style="font-size:30px">ให้แอปเตือนก่อนกลับบ้าน</div>'
+            '<div class="t mut">บอกว่าบ้านกับที่ทำงานอยู่ไหน แอปจะเช็กฝนและน้ำท่วมบนทางกลับให้ทุกเย็น และดูความเสี่ยงน้ำท่วมหน้าบ้าน</div>'
+            + pin(1) + '<div class="ticket"><div class="tk-top"><div class="h2">บ้าน</div><div class="t mut">ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน</div>'
+            '<div style="display:flex;gap:8px;margin-top:8px"><div class="btn" style="flex:1">ใช้ตำแหน่งตอนนี้</div><div class="btn" style="flex:1">ค้นหา</div></div></div>'
+            '<div class="perf"></div><div class="tk-bot">' + pin(2) + '<div style="display:flex;justify-content:space-between"><div class="h2">ที่ทำงาน</div><span class="tag ok">ตั้งแล้ว</span></div>'
+            '<div class="t mut">สีลม ซอย 3 · จ–ศ ออก 18:00</div><div class="t" style="text-align:right">แก้ไข</div></div>'
+            '<div class="perf"></div><div class="tk-bot t mut">🔒 ข้ามไปก่อนก็ได้ ถามเองได้เสมอ</div></div>'
+            '<div style="flex:1"></div><div class="btn fill">เริ่มใช้</div>' + pin(3) + '<div class="btn ghost">ข้ามไปก่อน</div>',
             status="09:00"),
-        legend=["Home place: for the warning before you leave and flood risk at your door",
-                "Work place (optional): makes the end-of-day warning accurate",
-                "Skip is a first-class path: the ask bar works with nothing connected"]))
+        legend=["Home slot: GPS or search, then confirm on a pin",
+                "Work slot is optional; once set it shows the days and usual leave time",
+                "Skip is a first-class path: the Ask button works with nothing set"]))
 
-    # 2 Home / Travel
+    # 2 Summary
     S.append(dict(
-        id="02-home", title="2 · Travel (home tab)", goal="Opens on a verdict, not a dashboard. The proactive push lands here.",
+        id="02-summary", title="2 · Summary tab", goal="Opens on the next event's leave time, then what to know before going, then the rest of the day.",
         body=phone(
-            '' + pin(1) + '<div class="banner"><span class="ic"></span><div><b>ออกก่อน 16:45</b><div class="t mut">ทันนัดกินข้าวที่บ้าน 18:30</div></div></div>'
-                        + pin(2) + pass_card("ออกก่อน 16:45", "ฝนถึงพระราม 4 ราว 17:30 ออกก่อนจะไม่เจอฝน", [("ออก", "16:45"), ("ถึง", "17:35"), ("โหมด", "รถยนต์"), ("มั่นใจ", "78%")], rbpin=3)
-            + '' + pin(4) + '<div class="h2">เทียบวิธีเดินทาง</div>' + mode_rows()
-            + '<div class="h2">ถามเร็ว</div><div class="chips"><span class="chip">กลับบ้านตอนนี้</span><span class="chip">ไปสยามตอนนี้</span><span class="chip">ไปทองหล่อตอนนี้</span></div>'
-            + '<div style="flex:1"></div>' + pin(5) + '<div class="ask"><span>ไปไหน ตอนไหน เช่น “สยาม 5 โมงเย็น”</span><i></i></div>',
-            tab="trip"),
-        legend=["Push notification from Calendar trigger: proactive, one line",
-                "Verdict first: leave-by time in big letters, one sentence of why",
-                "Rain-along-route band: drag the pin to preview other departure times",
-                "Three travel modes ranked: car / BTS-MRT / motorbike differ by flood clearance",
-                "Ask bar: plain Thai or English, no menu needed"]))
+            large_header("อังคาร 29 ก.ย.", "วันนี้อีก 3 นัด", actions=2)
+            + pin(1) + ticket(
+                '<div style="display:flex;gap:10px">' + stub("29", "ก.ย.") +
+                '<div class="grow"><div class="t mut">อีก 2 ชม. 20 นาที</div><div class="h2">กินข้าวเย็นกับที่บ้าน</div><div class="t mut">▢ 18:30 · บ้านลาดพร้าว</div></div><span class="mut">›</span></div>',
+                '<div style="display:flex;justify-content:space-between;align-items:center"><div><div class="t mut">ควรออกก่อน</div><div class="h1" style="font-size:40px">16:45</div></div>'
+                + pin(2) + '<div class="ring"><span>ต้องออกใน</span><b>35</b><span>นาที</span></div></div>'
+                '<div class="t">ศาลาแดง → ลาดพร้าว 40 นาที ถึงราว 16:55 ก่อนฝนมา</div>'
+                '<div class="seg"><div><span>ไปด้วย</span><b style="font-size:13px">BTS / MRT</b></div><div><span>ถึงราว</span><b>16:55</b></div><div><span>ฝนระหว่างทาง</span><b style="font-size:13px">เสี่ยงต่ำ</b></div></div>'
+                + pin(3) + '<div class="chips"><span class="t mut">พกไปด้วย</span><span class="chip">☂ ร่มพับติดกระเป๋า</span></div>')
+            + pin(4) + section("ต้องรู้ก่อนออก",
+                '<div class="rows"><div class="r"><span class="ic round"></span><div class="grow t"><b>ฝน 85% ตอนออกไป กินข้าวเย็นกับที่บ้าน</b><div class="mut">ราว 17:00 เลือกทางที่ไม่ต้องเดินกลางฝน</div></div></div>'
+                '<div class="r"><span class="ic round"></span><div class="grow t"><b>นัดทำฟัน ยังไม่มีสถานที่</b><div class="mut">17:00 · ระบุสถานที่เพื่อวางแผนเวลาออก</div></div></div></div>')
+            + pin(5) + section("ถัดไป", '<div class="hscroll"><div class="mini"><b class="t">14:00 · ฝน 45%</b><div class="t">ประชุมลูกค้า Q4</div><div class="t mut">ออก 13:20 · รถไฟฟ้า</div></div>'
+                '<div class="mini"><b class="t">20:30 · ฝน 85%</b><div class="t">เวทเทรนนิ่ง</div><div class="t mut">ออก 20:05 · มอไซค์</div></div></div>', "ดูทั้งหมด"),
+            tab="summary"),
+        legend=["Next-event ticket: date stub, countdown, title, time and place; tap opens the decision",
+                "Leave answer in big type with a countdown ring (blue, amber under 15 min, red when due)",
+                "Go by / arrive / rain risk, plus what to bring and why",
+                "“Before you go” alerts: wet leave, wet return, tight or impossible hops, events with no place",
+                "Up next: horizontal cards; below them (scroll) “Today at a glance” day strip and “Weather now”"]))
 
-    # 3 Verdict detail
+    # 3 Events
     S.append(dict(
-        id="03-verdict", title="3 · Verdict detail", goal="Why we say so: reasoning trace, flood spots on the route, sources, confidence.",
+        id="03-events", title="3 · Events tab", goal="Every synced Calendar and Gmail event, grouped by day, each with its leave time.",
         body=phone(
-            top("ไปบ้านลาดพร้าว", "สีลม ซอย 3 → บ้านลาดพร้าว")
-            + pass_card("ออกก่อน 16:45", "ฝนถึงพระราม 4 ราว 17:30", [("ออก", "16:45"), ("ถึง", "17:35"), ("โหมด", "รถยนต์")], band=False)
-            + '' + pin(1) + '<div class="h2">จุดน้ำท่วมบนเส้นทาง</div>'
-            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">แยกรัชดา–ลาดพร้าว</b><div class="t mut">คาดว่าลึก 15 ซม. · ตอนนี้ยังแห้ง</div></div><span class="tag">เสี่ยงกลาง</span></div>'
-            '' + pin(2) + '<div class="h2">ขั้นตอนที่ใช้ตัดสิน</div>'
+            large_header("จาก Google Calendar · miw.demo@gmail.com", "อีเวนต์", actions=2)
+            + pin(1) + '<div class="chips" style="flex-wrap:nowrap"><span class="chip on">ทุกวัน</span><span class="chip">วันนี้</span><span class="chip">พรุ่งนี้</span><span class="chip">พฤ 1 ต.ค.</span></div>'
+            '<div class="h2">วันนี้ <span class="mut" style="font-weight:400">29 ก.ย. · 3 อีเวนต์</span></div>'
+            + pin(2) + ticket('<div style="display:flex;gap:10px">' + stub("29", "ก.ย.", 44) + '<div class="grow"><div class="t mut">▢ 14:00</div><b class="t">ประชุมลูกค้า Q4</b></div><span class="mut">›</span></div>',
+                '<div class="t mut">⌖ สามย่านมิตรทาวน์</div><div style="display:flex;justify-content:space-between"><b class="t">ออก 13:20 · BTS / MRT</b><span class="tag">เสี่ยงต่ำ</span></div>')
+            + ticket('<div style="display:flex;gap:10px">' + stub("29", "ก.ย.", 44) + '<div class="grow"><div class="t mut">▢ 18:30</div><b class="t">กินข้าวเย็นกับที่บ้าน</b></div><span class="mut">›</span></div>',
+                '<div class="t mut">⌖ บ้านลาดพร้าว</div><div style="display:flex;justify-content:space-between"><b class="t">ออก 16:45 · BTS / MRT</b><span class="tag">เสี่ยงต่ำ</span></div>')
+            + '<div class="h2">พรุ่งนี้ <span class="mut" style="font-weight:400">30 ก.ย. · 5 อีเวนต์</span></div>'
+            + pin(3) + ticket('<div style="display:flex;gap:10px">' + stub("30", "ก.ย.", 44) + '<div class="grow"><div class="t mut">▢ 17:00</div><b class="t">นัดทำฟัน</b></div><span class="mut">›</span></div>',
+                '<div class="t"><b>? ระบุสถานที่</b></div>')
+            + ticket('<div style="display:flex;gap:10px">' + stub("30", "ก.ย.", 44) + '<div class="grow"><div class="t mut">▢ 11:00</div><b class="t">ซิงก์งานกับทีม (Google Meet)</b></div></div>',
+                '<div class="t mut">ออนไลน์ · ไม่ต้องเดินทาง</div>'),
+            tab="events"),
+        legend=["Day filter chips; the calendar icon opens a month sheet that filters too",
+                "Event ticket: time, title, place and the leave line with its risk",
+                "No place yet: tap to pick one (also flagged by a dot on the Events tab)"]))
+
+    # 4 Ask sheet
+    S.append(dict(
+        id="04-ask-sheet", title="4 · Ask (✦ button)", goal="One sentence from anywhere: the sparkle next to the tabs opens it.",
+        body=phone(
+            large_header("อังคาร 29 ก.ย.", "วันนี้อีก 3 นัด", actions=2)
+            + '<div class="ticket" style="height:300px"></div>',
+            tab="summary",
+            overlay=sheet(
+                '<div class="h1">อยากไปไหน</div>'
+                + pin(1) + '<div class="ask"><span>✦ ไปไหน กี่โมง? เช่น ห้าโมงไปสยาม</span><i></i></div>'
+                + pin(2) + '<div class="chips"><span class="chip">⌂ กลับบ้านตอนนี้</span><span class="chip">ไปสยามตอนนี้</span><span class="chip">ไปทองหล่อตอนนี้</span><span class="chip">พรุ่งนี้เช้าฝนตกไหม</span></div>',
+                300)),
+        legend=["Plain Thai or English; Gemini reads the place and time",
+                "Suggestions from saved places; tapping one opens the decision right away"]))
+
+    # 5 Verdict pass
+    S.append(dict(
+        id="05-verdict", title="5 · Decision (top)", goal="The answer as a boarding pass. Drag the pin to try other departure times.",
+        body=phone(
+            top("ไป บ้านลาดพร้าว", "สีลม ซอย 3 → บ้านลาดพร้าว ✎")
+            + '<div class="ticket"><div class="tk-top">'
+            '<div style="display:flex;justify-content:space-between" class="t"><span>▢ กินข้าวเย็นกับที่บ้าน</span><b>ถึงก่อน 18:30</b></div>'
+            + pin(1) + '<div class="h1" style="font-size:40px">ไปได้เลย</div>'
+            '<div style="display:flex;gap:8px;align-items:center"><span class="tag">ออกได้</span><span class="t mut">ใช้เวลา 40 นาที</span></div>'
+            '<div class="t">ออกตอนนี้ถึงราว 16:55 ฝนเริ่ม 17:00 ไม่ต้องพกร่มก็ได้</div></div>'
+            '<div class="perf"></div><div class="tk-bot">' + pin(2) + '<div class="seg"><div><span>ออก</span><b>ตอนนี้</b></div><div><span>ถึง</span><b>16:55</b></div><div><span>โหมด</span><b style="font-size:13px">รถไฟฟ้า</b></div><div><span>มั่นใจ</span><b>86%</b></div></div></div>'
+            '<div class="perf"></div><div class="tk-bot"><div class="t mut">↔ ลากหมุดเพื่อลองเวลาออก</div>' + rain_band(3)
+            + '<div class="t mut">✦ AI วิเคราะห์ให้</div><div class="chips"><span class="chip">เปลี่ยนจุดเริ่มต้น</span><span class="chip">บันทึกที่นี่ไว้</span></div></div></div>'
+            '<div style="flex:1"></div>' + pin(4) + '<div class="btn fill">ถามต่อ</div>',
+            status="16:10"),
+        legend=["Headline in plain words, the verdict chip and travel time",
+                "Leave / arrive / mode / confidence",
+                "Rain band: 15-minute bars, the trip bracket and a draggable departure pin; release re-asks the agent",
+                "Ask a follow-up about this trip"]))
+
+    # 6 Verdict details
+    S.append(dict(
+        id="06-verdict-details", title="6 · Decision (scrolled)", goal="Why, the other ways to go, the real route, flood spots and every step the agent took.",
+        body=phone(
+            '<div class="h2">ทำไมถึงแนะนำแบบนี้ ✦</div>'
+            + pin(1) + '<div class="t">รัชดามีน้ำรอระบายราว 25 ซม. ออกตอนนี้จะถึงราว 19:05 เลยนัด รอฝนซาหลัง 19:15 หรือเปลี่ยนเป็น BTS</div>'
+            '<div class="chips"><span class="chip">เลี่ยง แยกรัชดา-ลาดพร้าว</span><span class="chip ghost">ดูปัจจัยที่ใช้ตัดสิน (4)</span></div>'
+            + pin(2) + '<div class="h2">เทียบวิธีเดินทาง</div>'
+            '<div class="seg"><div><span>รถยนต์</span><b style="font-size:12px">95 น. · รอก่อน</b></div><div style="border-color:var(--ink);background:var(--fill2)"><span>รถไฟฟ้า</span><b style="font-size:12px">50 น. · เผื่อเวลา</b></div><div><span>มอไซค์</span><b style="font-size:12px">60 น. · งดไป</b></div></div>'
+            + pin(3) + '<div class="h2">เส้นทางที่ใช้คำนวณ</div>'
+            '<div class="chips"><span class="chip on">สีลม ซอย 3</span><span class="t mut">→ MRT สีลม → MRT ลาดพร้าว →</span><span class="chip on">บ้านลาดพร้าว</span></div>'
+            '<div class="r"><span class="tag">MRT สายสีน้ำเงิน</span><div class="grow t mut">ขึ้น สีลม → ลง ลาดพร้าว · 11 สถานี</div></div>'
+            + pin(4) + '<div class="h2">จุดน้ำท่วมบนเส้นทาง</div>'
+            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">แยกรัชดา-ลาดพร้าว</b><div class="t mut">คาดน้ำสูง 25 ซม.</div></div><span class="tag">เสี่ยงสูง</span></div>'
+            + pin(5) + '<div class="h2">เหตุผลที่แนะนำแบบนี้ ✦</div>'
             '<div class="trace">'
-            '<div class="s"><span class="n">1</span><div><b class="t">เข้าใจคำถาม</b><div class="t mut">ไปบ้านลาดพร้าว</div></div></div>'
-            '<div class="s"><span class="n">2</span><div><b class="t">เช็กฝนระหว่างทาง</b><div class="t mut">ฝนหนักสุด 18:15 ราว 16 มม./ชม.</div></div></div>'
-            '<div class="s"><span class="n">3</span><div><b class="t">ประเมินความเสี่ยง</b><div class="t mut">รถยนต์เสี่ยงต่ำ ถ้าออกก่อน 16:45</div></div></div></div>'
-            '' + pin(3) + '<div class="chips"><span class="chip">Google Weather</span><span class="chip">ThaiWater</span><span class="chip">BMA</span></div>',
-            ),
-        legend=["Flood spots on the actual route with expected depth for your vehicle",
-                "“How we got here”: each tool the AI agent called, in plain words",
-                "Sources and confidence on every answer"]))
+            '<div class="s"><span class="n">1</span><div><b class="t">ดูทริปของคุณ</b><div class="t mut">นัด 18:30 = ต้องถึงก่อน 18:30</div></div></div>'
+            '<div class="s"><span class="n">2</span><div><b class="t">เช็กฝนระหว่างทาง</b><div class="t mut">ฝนหนักสุด 18:15</div></div></div>'
+            '<div class="s"><span class="n">3</span><div><b class="t">ประเมินความเสี่ยง</b><div class="t mut">รถยนต์เสี่ยงสูงจนถึง 19:15</div></div></div></div>'
+            '<div class="chips"><span class="chip">Google Weather</span><span class="chip">Routes API</span><span class="chip">BMA</span></div>'
+            '<div class="t mut" style="font-size:11px">ข้อมูลจาก AI อาจคลาดเคลื่อน โปรดตรวจสอบสภาพจริงก่อนออกเดินทาง</div>',
+            status="18:52"),
+        legend=["Why, in one paragraph, with spots to avoid and the factors behind it",
+                "Three modes with time and verdict; tap one to re-decide",
+                "The route the answer was computed on, with transit line and stations",
+                "BMA flood spots on this route with expected depth",
+                "Each tool the agent called, sources, confidence and the accuracy note"]))
 
-    # 4 Ask
+    # 7 Ask follow-up
     S.append(dict(
-        id="04-ask", title="4 · Ask a follow-up", goal="Re-plans from a plain sentence. Works with nothing connected.",
+        id="07-ask-chat", title="7 · Ask a follow-up", goal="Keeps the trip in context; every answer is a small pass with its own confidence.",
         body=phone(
-            top("ถามต่อ", "")
-            + '' + pin(1) + '<div class="bubble me">ถ้ารอถึงสองทุ่มล่ะ</div>'
-            '<div class="bubble ai"><b>รอได้ ออก 20:00 ก็ถึงก่อนเที่ยงคืน</b><div class="t mut" style="margin-top:4px">ฝนซาหลัง 19:30 แต่แยกรัชดา–ลาดพร้าวยังมีน้ำขังราว 10 ซม.</div></div>'
-            '' + pin(2) + '<div class="card" style="background:var(--paper)"><div class="h1" style="font-size:22px">รอถึง 20:00 ค่อยออก</div>'
-            '<div class="seg"><div><span>ออก</span><b>20:00</b></div><div><span>ถึง</span><b>20:50</b></div><div><span>มั่นใจ</span><b>71%</b></div></div>'
-            '<div class="t mut">วิเคราะห์โดย AI · ดูเหตุผลและทางเลือก ›</div></div>'
-            '' + pin(3) + '<div class="chips"><span class="chip">ไปรถไฟฟ้าแทนดีไหม</span><span class="chip">ถ้ารอถึงสองทุ่มล่ะ</span></div>'
-            '<div style="flex:1"></div><div class="ask"><span>พิมพ์คำถาม เช่น “แล้วมอไซค์ล่ะ”</span><i></i></div>',
-            ),
-        legend=["Natural language in (Thai or English)",
-                "AI re-plans with real route, rain and flood data: new verdict card",
-                "Suggested follow-ups keep the conversation one tap long"]))
-
-    # 5 Place picker
-    S.append(dict(
-        id="05-place-picker", title="5 · Pick a place", goal="Used when a question names a place the app can't resolve, or to save home/work.",
-        body=phone(
-            top("ตั้งบ้าน", "ค้นหา หรือใช้ตำแหน่งตอนนี้")
-            + '' + pin(1) + '<div class="field"><span>อารีย์</span><span>ล้าง</span></div>'
-            '<div class="rows">'
-            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">BTS อารีย์</b><div class="t mut">เขตพญาไท กรุงเทพมหานคร</div></div></div>'
-            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">อารีย์ ซอย 1</b><div class="t mut">เขตพญาไท กรุงเทพมหานคร</div></div></div>'
-            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">ตลาดอารีย์</b><div class="t mut">เขตพญาไท กรุงเทพมหานคร</div></div></div></div>'
-            '<div class="t mut">ผลการค้นหาจาก Google Maps</div>'
-            '' + pin(2) + '<div class="btn">ใช้ตำแหน่งตอนนี้</div>'
+            top("ถามต่อ", "กินข้าวเย็นกับที่บ้าน")
+            + '<div class="bubble ai">✦ ตอนนี้แนะนำ “อย่าเพิ่งออก” นะ มีอะไรอยากถามต่อไหม</div>'
+            + pin(1) + '<div class="bubble me">ถ้ารอถึงสองทุ่มค่อยกลับล่ะ</div>'
+            + pin(2) + '<div class="ticket" style="max-width:90%"><div class="tk-top"><div class="h2" style="font-size:18px">ออกสองทุ่มได้ แต่เลยนัด</div><span class="tag" style="align-self:flex-start">รอก่อน</span>'
+            '<div class="t">รัชดาน้ำเริ่มลดหลัง 20:00 ออกสองทุ่มถึงบ้านราว 21:05</div></div><div class="perf"></div>'
+            '<div class="tk-bot t mut">มั่นใจ ▮▮▮▮▯ 71% · ✦ AI วิเคราะห์ให้</div></div>'
             '<div style="flex:1"></div>'
-            '' + pin(3) + '<div class="box dark"><div class="img" style="height:110px">แผนที่ + หมุด · map + pin</div>'
-            '<div class="h2" style="margin-top:8px">ยืนยันบ้าน</div><div class="t mut">BTS อารีย์ · อยู่ในพื้นที่ให้บริการ</div>'
-            '<div class="btn fill" style="margin-top:8px">บันทึก</div></div>',
-            ),
-        legend=["Search by BTS, mall, soi or district",
-                "Or use GPS: no typing at all",
-                "Confirm on a map pin; the app says if it's outside the covered area"]))
+            + pin(3) + '<div class="chips"><span class="chip ghost">ถ้ารอถึงสองทุ่มค่อยกลับล่ะ</span><span class="chip">ไป BTS แทนดีไหม</span></div>'
+            '<div class="ask"><span>พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ</span><i></i></div>'
+            '<div class="t mut" style="font-size:11px;text-align:center">ข้อมูลจาก AI อาจคลาดเคลื่อน</div>',
+            status="18:52"),
+        legend=["Natural language in, Thai or English",
+                "Answer as a mini pass: headline, verdict, why, confidence",
+                "Two suggestions; each greys out once used"]))
 
-    # 6 Report flood
+    # 8 Place picker
     S.append(dict(
-        id="06-report", title="6 · Report flooding", goal="Community loop: one photo warns everyone whose route crosses the spot.",
+        id="08-place-picker", title="8 · Pick a place", goal="For home, work, an event with no place, or a question the app can't place.",
         body=phone(
-            top("รายงานน้ำท่วม", "ถ่ายน้ำบนถนน เตือนคนที่กำลังจะผ่าน", back=False)
-            + '' + pin(1) + '<div class="img" style="height:230px">กล้อง · ใส่ล้อรถหรือขอบทางในภาพ<br>camera · include a wheel or the curb</div>'
-            '<div style="display:flex;gap:8px"><div class="btn fill" style="flex:1">ถ่ายภาพ</div><div class="btn" style="flex:1">เลือกจากคลัง</div></div>'
-            '<div class="t mut">📍 ใช้ GPS ของเครื่อง · 18:52</div>'
-            '' + pin(2) + '<div class="card" style="background:var(--paper)"><div class="h2">AI ดูภาพแล้ว</div>'
-            '<div class="h1" style="font-size:24px">น้ำลึกราว 20–25 ซม.</div>'
-            '<div class="seg"><div><span>รถยนต์</span><b>ผ่านช้า ๆ</b></div><div><span>รถไฟฟ้า</span><b>ผ่านได้</b></div><div><span>มอไซค์</span><b>ไม่ควรผ่าน</b></div></div>'
-            '' + pin(3) + '<div class="t mut">แจ้งเตือน 27 คนที่เส้นทางผ่านจุดนี้ · ยืนยันกับอีก 2 รายงาน</div></div>',
-            tab="report", status="18:52"),
-        legend=["Photo with a reference object (wheel / curb)",
-                "Vision AI estimates depth and which vehicles can pass",
-                "Fan-out: only people whose route passes within ~300 m are notified"]))
+            top("เพิ่มสถานที่", "ค้นหา หรือใช้ตำแหน่งตอนนี้")
+            + pin(1) + '<div class="field"><span>⌕ คลินิกทันตกรรมอารีย์</span><span>✕</span></div>'
+            + pin(2) + '<div class="r"><span class="ic"></span><div class="grow t"><b>ใช้ตำแหน่งตอนนี้</b><div class="mut">หาจาก GPS แล้วให้ยืนยันก่อนบันทึก</div></div></div>'
+            '<div class="rows">'
+            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">BTS อารีย์</b><div class="t mut">เขตพญาไท · Ari</div></div></div>'
+            '<div class="r"><span class="ic"></span><div class="grow"><b class="t">อารีย์ ซอย 1</b><div class="t mut">เขตพญาไท</div></div></div></div>'
+            '<div class="t mut">ผลการค้นหาจาก Google Maps</div>',
+            overlay=sheet(
+                '<div class="h2">ยืนยันสถานที่</div>'
+                + pin(3) + '<div class="img" style="height:90px">หมุด + วงความแม่นยำ · pin preview</div>'
+                '<div class="t"><b>BTS อารีย์</b> <span class="mut">· Google Maps</span></div>'
+                '<div class="field"><span>ชื่อที่เรียก: คลินิกทำฟัน</span></div>'
+                '<div class="chips">' + "".join('<span class="ic sq"></span>' for _ in range(8)) + '</div>'
+                '<div class="btn fill">บันทึก</div>',
+                380)),
+        legend=["Search prefilled from the event's own location text",
+                "GPS row with every permission state spelled out (ask, denied, off, timeout)",
+                "Confirm sheet: pin preview, name, icon; work adds days and usual leave time"]))
 
-    # 7 Flood mode
+    # 9 Flood mode
     S.append(dict(
-        id="07-flood-mode", title="7 · Home · flood mode", goal="Same question, higher stakes. Screen goes dark and the actions are ordered.",
+        id="09-flood-mode", title="9 · Flood near home", goal="When home is in danger the whole app turns flood-red and Summary leads with it.",
         body=phone(
-            '' + pin(1) + '<div class="card" style="background:var(--ink);color:#fff;border-color:var(--ink)">'
-            '<div class="t" style="color:#cbd5e1">โหมดน้ำท่วม · บ้านลาดพร้าว</div>'
-            '<div class="h1" style="font-size:28px">น้ำจะถึงหน้าบ้านใน 40 นาที</div>'
-            '<div class="seg"><div style="background:transparent;color:#fff;border-color:#64748b"><span style="color:#cbd5e1">ระดับคลอง</span><b>1.8/1.8 ม.</b></div>'
-            '<div style="background:transparent;color:#fff;border-color:#64748b"><span style="color:#cbd5e1">ขึ้นใน 2 ชม.</span><b>+40 ซม.</b></div>'
-            '<div style="background:transparent;color:#fff;border-color:#64748b"><span style="color:#cbd5e1">ฝนวันนี้</span><b>68 มม.</b></div></div></div>'
-            '' + pin(2) + '<div class="h2">ทำตอนนี้ เรียงตามลำดับ</div>'
-            '<div class="rows"><div class="r"><b>1</b><div class="grow t">ย้ายรถขึ้นที่สูง ลานจอดชั้น 2</div></div>'
-            '<div class="r"><b>2</b><div class="grow t">ยกของมีค่าขึ้นชั้นบน ปิดไฟชั้นล่าง</div></div>'
-            '<div class="r"><b>3</b><div class="grow t">วางกระสอบทรายหน้าประตู</div></div></div>'
-            '' + pin(3) + '<div class="h2">เพื่อนบ้านในซอย</div><div class="box"><div class="t">11 คนได้รับการเตือนเดียวกัน · แจ้งผ่าน LINE / SMS</div></div>'
-            '<div class="h2">จุดเสี่ยงน้ำท่วมใกล้บ้าน</div>'
-            '<div class="r"><span class="ic"></span><div class="grow t"><b>ซอยลาดพร้าว 71</b> · 350 ม. จากบ้าน</div></div>',
-            tab="home", status="21:40"),
-        legend=["Countdown to the doorstep from canal level (ThaiWater) and rain",
-                "Ordered checklist: what to do first, second, third",
-                "Neighbours alerted, including people without the app (LINE / SMS)"]))
+            large_header("อังคาร 29 ก.ย.", "วันนี้ไม่มีนัดแล้ว", actions=2)
+            + pin(1) + '<div class="card" style="background:var(--ink);color:#fff"><div class="t" style="color:#cbd5e1">น้ำท่วมใกล้บ้าน</div>'
+            '<div class="h1">น้ำจะถึงหน้าบ้านใน 40 นาที</div><div class="btn" style="color:var(--ink)">ดูสิ่งที่ต้องทำ</div></div>',
+            tab="summary", status="21:40",
+            overlay=sheet(
+                pin(2) + '<div class="ticket"><div class="tk-top"><div class="t mut">⌂ บ้านลาดพร้าว · 21:40</div><div class="h1" style="font-size:24px">น้ำจะถึงหน้าบ้านใน 40 นาที</div><span class="tag" style="align-self:flex-start">อันตราย</span></div>'
+                '<div class="perf"></div><div class="tk-bot"><div class="seg"><div><span>ระดับคลอง</span><b>1.8/1.8 ม.</b></div><div><span>ขึ้นใน 2 ชม.</span><b>40 ซม.</b></div><div><span>ถึงตลิ่ง</span><b>ถึงแล้ว</b></div></div></div></div>'
+                + pin(3) + '<div class="h2">ทำตอนนี้ เรียงตามลำดับ</div>'
+                '<div class="rows"><div class="r"><b>1</b><div class="grow t">ย้ายรถไปลานจอดเซ็นทรัลลาดพร้าว ถนนยังแห้งอีก 25 นาที</div></div>'
+                '<div class="r"><b>2</b><div class="grow t">ยกปลั๊กไฟและของชั้นล่างขึ้นสูงกว่า 50 ซม.</div></div>'
+                '<div class="r"><b>3</b><div class="grow t">เตรียมกระสอบทรายหน้าประตู</div></div></div>',
+                560)),
+        legend=["Flood card on Summary, above everything else",
+                "Home pass: canal level, rise in 2 h, distance to the bank (or rain, spots and reports when no gauge)",
+                "Ordered checklist: what to do first, second, third"]))
 
-    # 8 Settings
+    # 10 Settings
     S.append(dict(
-        id="08-settings", title="8 · Settings", goal="Everything stays on the device. Language, places, what feeds the agent.",
+        id="10-settings", title="10 · Settings", goal="From the gear on Summary. Language, places, default mode and the Google link.",
         body=phone(
             top("ตั้งค่า", "ข้อมูลเก็บไว้ในเครื่องนี้")
-            + '' + pin(1) + '<div class="h2">ภาษา · Language</div><div class="seg"><div style="border-color:var(--ink);background:var(--fill2)"><b style="font-size:14px">ไทย</b></div><div><b style="font-size:14px">English</b></div></div>'
-            '' + pin(2) + '<div class="h2">สถานที่ของฉัน</div>'
-            '<div class="rows"><div class="r"><span class="ic"></span><div class="grow t"><b>บ้าน</b> · คอนโดลาดพร้าว</div></div>'
-            '<div class="r"><span class="ic"></span><div class="grow t"><b>ที่ทำงาน</b> · จ–ศ ออก 18:00</div></div>'
-            '<div class="r"><span class="ic"></span><div class="grow t mut">＋ เพิ่มสถานที่ (1 จาก 5)</div></div></div>'
-            '' + pin(3) + '<div class="h2">ให้แอปหาทริปให้เอง</div>'
-            '<div class="rows"><div class="r"><div class="grow t"><b>Google Calendar</b><div class="mut">เฉพาะนัดที่มีสถานที่</div></div><span class="toggle"></span></div>'
-            '<div class="r"><div class="grow t"><b>Gmail</b><div class="mut">เฉพาะอีเมลยืนยันตั๋วและนัดหมาย</div></div><span class="toggle"></span></div></div>'
-            '<div class="h2">ชุมชนและน้ำท่วม</div>'
-            '<div class="rows"><div class="r"><div class="grow t"><b>แจ้งเตือนน้ำท่วมที่บ้าน</b><div class="mut">แม้ปิดแอปอยู่</div></div><span class="toggle"></span></div>'
-            '<div class="r"><div class="grow t"><b>SMS สำรอง</b><div class="mut">เมื่อไม่มีอินเทอร์เน็ต</div></div><span class="toggle off"></span></div></div>',
+            + pin(1) + '<div class="h2">ภาษา</div><div class="seg"><div style="border-color:var(--ink);background:var(--fill2)"><b style="font-size:14px">ไทย</b></div><div><b style="font-size:14px">English</b></div></div>'
+            + pin(2) + '<div class="h2">สถานที่ของฉัน</div>'
+            '<div class="rows"><div class="r"><span class="ic"></span><div class="grow t"><b>บ้าน</b> · บ้านลาดพร้าว</div></div>'
+            '<div class="r"><span class="ic"></span><div class="grow t"><b>ที่ทำงาน</b> · สีลม ซอย 3 · จ–ศ ออก 18:00</div></div>'
+            '<div class="r"><span class="ic"></span><div class="grow t mut">＋ เพิ่มสถานที่ · ยิม โรงเรียนลูก บ้านพ่อแม่ · 3 จาก 5</div></div></div>'
+            + pin(3) + '<div class="h2">การเดินทาง</div><div class="seg"><div><b style="font-size:13px">รถยนต์</b></div><div style="border-color:var(--ink);background:var(--fill2)"><b style="font-size:13px">รถไฟฟ้า</b></div><div><b style="font-size:13px">มอไซค์</b></div></div>'
+            + pin(4) + '<div class="h2">ให้แอปหาทริปให้เอง</div>'
+            '<div class="rows"><div class="r"><div class="grow t"><b>Google Calendar</b><div class="mut">miw.demo@gmail.com · เชื่อมต่อแล้ว</div></div><span class="btn ghost" style="padding:4px 10px">ยกเลิก</span></div>'
+            '<div class="r"><div class="grow t"><b>Gmail</b><div class="mut">เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล</div></div></div></div>',
             ),
-        legend=["Interface language switch: Thai / English, including the AI's answers",
-                "Saved places stay on-device",
-                "Calendar and Gmail are what make the app proactive; each can be turned off"]))
+        legend=["Thai / English, including the AI's answers",
+                "Home, work and up to five saved places, all on-device",
+                "Default way to travel",
+                "One Google sign-in, read-only, for Calendar and Gmail booking emails"]))
     return S
 
 
@@ -320,13 +425,13 @@ def page(inner, title):
 def main():
     S = screens()
     flow = (
-        '<div class="flow"><span class="f">Push 16:10</span><span class="a">→</span><span class="f">2 Travel</span><span class="a">→</span>'
-        '<span class="f">3 Verdict detail</span><span class="a">→</span><span class="f">4 Ask follow-up</span><span class="a">·</span>'
-        '<span class="f">6 Report flood</span><span class="a">→</span><span class="f">7 Flood mode (home)</span></div>'
+        '<div class="flow"><span class="f">1 Onboarding</span><span class="a">→</span><span class="f">2 Summary</span><span class="a">/</span><span class="f">3 Events</span><span class="a">→</span>'
+        '<span class="f">5–6 Decision</span><span class="a">→</span><span class="f">7 Ask follow-up</span><span class="a">·</span>'
+        '<span class="f">4 Ask (✦)</span><span class="a">→</span><span class="f">5 Decision</span><span class="a">·</span><span class="f">9 Flood near home</span></div>'
     )
     sheet = (
         '<div class="sheet"><h1>ฝนตกไหม · Wireframe v0</h1>'
-        '<div class="sub">Should I leave now? Rain and flood decisions for Bangkok trips. Low-fidelity, 8 screens, Thai UI copy with English annotations.</div>'
+        '<div class="sub">Should I leave now? Rain and flood decisions for Bangkok trips. Low-fidelity, 10 screens of the app as of 17 Oct 2026, Thai UI copy with English annotations.</div>'
         + flow + '<div class="row">' + "".join(cell(s) for s in S) + "</div></div>"
     )
     with open(os.path.join(HERE, "index.html"), "w", encoding="utf8") as f:
