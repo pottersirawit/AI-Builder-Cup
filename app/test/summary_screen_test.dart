@@ -18,6 +18,11 @@ void main() {
     expect(find.byType(DemoClockChip), findsNothing);
   });
 
+  testWidgets('a demo build keeps its clock chip on real time', (tester) async {
+    await pumpApp(tester, null, places: await emptyStore(), demoTools: true);
+    expect(find.byType(DemoClockChip), findsOneWidget);
+  });
+
   testWidgets('the summary is the day\'s plan, with weather kept small', (
     tester,
   ) async {
@@ -204,9 +209,7 @@ void main() {
     );
   });
 
-  testWidgets('ask and settings open without errors', (
-    tester,
-  ) async {
+  testWidgets('ask and settings open without errors', (tester) async {
     await pumpApp(tester, '2026-09-29T16:10:00+07:00');
 
     await tapAndSettle(tester, find.byTooltip('ถามเส้นทาง'));

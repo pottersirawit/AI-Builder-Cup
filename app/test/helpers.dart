@@ -47,13 +47,18 @@ Future<AppState> pumpApp(
   Future<bool> Function(Uri url)? launch,
   Uri? appBase,
   Duration Function(http.Request req)? latency,
+  bool demoTools = false,
 }) async {
   tester.view.physicalSize = Size(402 * 3, height * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
 
   // Most widget tests read the Thai copy; English ones switch explicitly.
-  final state = AppState(demoClock: clock, locale: const Locale('th'));
+  final state = AppState(
+    demoClock: clock,
+    locale: const Locale('th'),
+    demoTools: demoTools,
+  );
   final store = places ??= await demoStore();
   final api = FonTokMaiApi(
     baseUrl: 'http://offline.test',

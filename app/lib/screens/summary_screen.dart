@@ -296,7 +296,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
             if (state.usingSample) const SampleBadge(onField: true),
           ],
           actions: [
-            if (state.demoClock != null) DemoClockChip(state: state, sky: sky),
+            if (state.demoTools || state.demoClock != null)
+              DemoClockChip(state: state, sky: sky),
             IconButton(
               tooltip: l.homeSettings,
               onPressed: () => _push(const SettingsScreen()),

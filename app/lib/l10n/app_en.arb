@@ -170,7 +170,7 @@
   },
   "partsRealTime": "Live time",
   "partsDemoTime": "Demo time",
-  "partsDemoReplay": "Replays the storm of Tue 29 Sep 2026 · sent as X-Demo-Clock",
+  "partsDemoReplay": "Replays the storm day on today's date · sent as X-Demo-Clock",
   "partsRealTimeNoHeader": "Live time (no header sent)",
   "partsPreset1610": "Before leaving work, rain not here yet",
   "partsPreset1852": "Storm over Ratchada, water waiting to drain",

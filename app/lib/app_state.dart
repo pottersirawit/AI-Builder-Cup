@@ -9,9 +9,13 @@ import 'places.dart';
 
 /// App-wide state: demo clock, offline flag and local-only settings.
 class AppState extends ChangeNotifier {
-  AppState({String? demoClock, Locale? locale})
+  AppState({String? demoClock, Locale? locale, this.demoTools = false})
     : _demoClock = demoClock,
       _locale = locale ?? defaultLocale;
+
+  /// A demo build (DEMO_CLOCK set): the demo-time chip stays on screen even
+  /// after switching back to real time.
+  final bool demoTools;
 
   String? _demoClock;
 

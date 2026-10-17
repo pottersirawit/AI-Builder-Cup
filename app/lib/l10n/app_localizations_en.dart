@@ -250,7 +250,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get partsDemoReplay =>
-      'Replays the storm of Tue 29 Sep 2026 · sent as X-Demo-Clock';
+      'Replays the storm day on today\'s date · sent as X-Demo-Clock';
 
   @override
   String get partsRealTimeNoHeader => 'Live time (no header sent)';

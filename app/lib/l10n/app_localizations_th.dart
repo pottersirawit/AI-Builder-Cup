@@ -239,7 +239,7 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get partsDemoReplay =>
-      'เล่นซ้ำพายุ อังคาร 29 ก.ย. 2026 · ส่งเป็น X-Demo-Clock';
+      'เล่นซ้ำวันพายุบนวันที่วันนี้ · ส่งเป็น X-Demo-Clock';
 
   @override
   String get partsRealTimeNoHeader => 'เวลาจริง (ไม่ส่ง header)';

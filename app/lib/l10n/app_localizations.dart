@@ -497,7 +497,7 @@ abstract class AppLocalizations {
   /// No description provided for @partsDemoReplay.
   ///
   /// In th, this message translates to:
-  /// **'เล่นซ้ำพายุ อังคาร 29 ก.ย. 2026 · ส่งเป็น X-Demo-Clock'**
+  /// **'เล่นซ้ำวันพายุบนวันที่วันนี้ · ส่งเป็น X-Demo-Clock'**
   String get partsDemoReplay;
 
   /// No description provided for @partsRealTimeNoHeader.

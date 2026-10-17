@@ -48,13 +48,9 @@ class PlacesStore extends ChangeNotifier {
     _read();
   }
 
-  /// Loads the device store; a first launch with the demo clock set starts
-  /// in มิว's demo profile so the scripted video still works.
-  static Future<PlacesStore> open({required bool demoByDefault}) async {
-    final store = PlacesStore(await SharedPreferences.getInstance());
-    if (!store._initialized && demoByDefault) store.useDemoProfile();
-    return store;
-  }
+  /// Loads the device store.
+  static Future<PlacesStore> open() async =>
+      PlacesStore(await SharedPreferences.getInstance());
 
   static const maxOthers = 8;
   static const duplicateRadiusM = 150.0;
@@ -84,8 +80,6 @@ class PlacesStore extends ChangeNotifier {
   LinkState _gmail = LinkState.notConnected;
   String? _calendarEmail;
   String? _gmailEmail;
-
-  bool get _initialized => _prefs.containsKey(_kOnboarded);
 
   void _read() {
     final raw = _prefs.getString(_kPlaces);

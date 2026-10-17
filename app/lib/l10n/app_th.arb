@@ -170,7 +170,7 @@
   },
   "partsRealTime": "เวลาจริง",
   "partsDemoTime": "เวลาสาธิต",
-  "partsDemoReplay": "เล่นซ้ำพายุ อังคาร 29 ก.ย. 2026 · ส่งเป็น X-Demo-Clock",
+  "partsDemoReplay": "เล่นซ้ำวันพายุบนวันที่วันนี้ · ส่งเป็น X-Demo-Clock",
   "partsRealTimeNoHeader": "เวลาจริง (ไม่ส่ง header)",
   "partsPreset1610": "ก่อนเลิกงาน ฝนยังไม่มา",
   "partsPreset1852": "พายุบนรัชดา น้ำรอระบาย",

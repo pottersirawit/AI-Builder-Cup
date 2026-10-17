@@ -15,6 +15,11 @@ void main() {
       expect(initialDemoClock(), isNull);
     });
 
+    test('a demo preset replays the storm on today\'s Bangkok date', () {
+      final now = DateTime.parse('2026-10-20T23:30:00Z'); // 06:30 on the 21st
+      expect(demoClockIso('18:52', now: now), '2026-10-21T18:52:00+07:00');
+    });
+
     test('AppState.now() returns current system time when demoClock is null', () {
       final state = AppState(demoClock: null);
       final before = DateTime.now();
