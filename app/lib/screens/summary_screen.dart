@@ -42,11 +42,13 @@ class SummaryScreen extends StatefulWidget {
 class _SummaryScreenState extends State<SummaryScreen> {
   TripController? _ctrl;
   String? _ctrlFor;
+  final Set<String> _readIds = {};
+  final Set<String> _dismissedBannerIds = {};
 
   /// Packing covers the trip and a while at the event.
   static const _tripTail = Duration(hours: 2);
 
-  /// Small cards after the hero, up to [alertHorizon] ahead.
+  /// Small cards after the hero.
   static const _upNextLimit = 6;
 
   @override
@@ -70,7 +72,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final state = AppScope.readState(context);
     final now = state.now();
     final next = nextEvent(widget.repo.trips, now);
-    final key = next == null || next.unresolved
+    final key =
+        next == null || next.unresolved || !next.destination.resolved
         ? null
         : '${next.id}|${next.arriveBy}|${next.destination.lat},${next.destination.lng}|${state.locale.languageCode}|${state.demoClock}';
     if (key != _ctrlFor) {
@@ -171,7 +174,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final next = nextEvent(repo.trips, now);
     final plan = d == null
         ? null
-        : leavePlan(d, ctrl!.board, now, deadline: next?.arriveBy);
+        : leavePlan(
+            d,
+            ctrl!.board,
+            now,
+            deadline: next != null && !next.allDay ? next.arriveBy : null,
+          );
     final sky = state.flood
         ? SkyState.flood
         : (ctrl?.sky(home: state.homeLevel) ?? SkyState.clear);
@@ -211,13 +219,15 @@ class _SummaryScreenState extends State<SummaryScreen> {
     } else {
       final unresolved = next.unresolved || ctrl?.needsPlace != null;
       final outlook = repo.outlook;
-      final bring = outlook == null || plan == null
+      final bring = outlook == null || (plan == null && !next.allDay)
           ? const <CarryItem>[]
           : whatToCarry(
               outlook,
               now: now,
-              until: next.arriveBy?.add(_tripTail),
-              mode: plan.best?.mode,
+              until: next.allDay
+                  ? now.add(const Duration(hours: 6))
+                  : next.arriveBy?.add(_tripTail),
+              mode: plan?.best?.mode ?? next.mode,
             );
       hero = NextEventCard(
         key: ValueKey('hero-${next.id}'),
@@ -230,14 +240,26 @@ class _SummaryScreenState extends State<SummaryScreen> {
         unresolved: unresolved,
         footer: bring.isEmpty
             ? null
-            : BringRow(items: bring, moto: plan?.best?.mode == TravelMode.moto),
-        aside: switch (leaveTimeOf(plan)) {
-          final leave? when leave.difference(now) <= planningWindow =>
-            CountdownRing(leaveAt: leave, now: now),
-          _ => null,
-        },
+            : BringRow(
+                items: bring,
+                moto: (plan?.best?.mode ?? next.mode) == TravelMode.moto,
+              ),
+        aside: next.allDay
+            ? null
+            : switch (leaveTimeOf(plan)) {
+                final leave? when leave.difference(now) <= planningWindow =>
+                  CountdownRing(leaveAt: leave, now: now),
+                _ => null,
+              },
         onTap: unresolved
             ? () => _resolveTrip(next)
+            : (next.allDay && !next.destination.resolved)
+            ? () => showAllDaySheet(
+                context,
+                trip: next,
+                now: now,
+                outlook: outlook,
+              )
             : () => _openTrip(
                 next,
                 mode: plan?.best?.mode,
@@ -245,6 +267,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
               ),
         onRetry: ctrl?.load,
         onResolvePlace: () => _resolveTrip(next),
+        onAsk: () => showAskSheet(context),
       );
     }
 
@@ -252,12 +275,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     LeavePlan? planFor(Trip t) => t.id == next?.id ? plan : _planFor(t, now);
     DateTime? leaveAt(Trip t) => departureOf(planFor(t), now);
     final upNext = upcoming(repo.trips, now)
-        .where(
-          (t) =>
-              t.id != next?.id &&
-              t.arriveBy != null &&
-              t.arriveBy!.difference(now) <= alertHorizon,
-        )
+        .where((t) => t.id != next?.id && t.arriveBy != null)
         .take(_upNextLimit)
         .toList();
     // Online and all-day events still fill the day.
@@ -283,6 +301,53 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final savedHome = store.home;
     final lowGps = here != null && here.lowAccuracy;
     final outlook = repo.outlook;
+    final notifications = state.notificationsDenied
+        ? const <AppNotification>[]
+        : buildNotifications(
+            l: l,
+            colors: FonColors.of(context),
+            now: now,
+            next: next,
+            nextPlan: plan,
+            nextDecision: d,
+            alerts: alerts,
+            home: home,
+            homeName: savedHome?.nameTh,
+            floodMode: state.flood,
+          );
+    final hasUnread = notifications.any((n) => !_readIds.contains(n.id));
+    final activeBanner = notifications
+        .where(
+          (n) =>
+              n.liveBanner &&
+              !_readIds.contains(n.id) &&
+              !_dismissedBannerIds.contains(n.id),
+        )
+        .firstOrNull;
+
+    void openNotification(AppNotification n) {
+      setState(() {
+        _readIds.add(n.id);
+        _dismissedBannerIds.add(n.id);
+      });
+      if (n.kind == NotificationKind.flood &&
+          home != null &&
+          savedHome != null) {
+        showFloodSheet(context, status: home, placeName: savedHome.nameTh);
+        return;
+      }
+      final t = n.trip;
+      if (t == null) return;
+      if (n.alert?.kind == AlertKind.needsPlace || t.unresolved) {
+        _resolveTrip(t);
+      } else {
+        _openTrip(
+          t,
+          mode: n.mode ?? _planFor(t, now)?.best?.mode,
+          departAt: t.id == next?.id ? ctrl?.departAt : null,
+        );
+      }
+    }
 
     final header = SliverToBoxAdapter(
       child: SafeArea(
@@ -305,6 +370,21 @@ class _SummaryScreenState extends State<SummaryScreen> {
           actions: [
             if (state.demoTools || state.demoClock != null)
               DemoClockChip(state: state, sky: sky),
+            NotificationBellButton(
+              hasUnread: hasUnread,
+              onPressed: () => showNotificationsSheet(
+                context,
+                notifications: notifications,
+                readIds: _readIds,
+                onMarkAllRead: () => setState(() {
+                  for (final n in notifications) {
+                    _readIds.add(n.id);
+                    _dismissedBannerIds.add(n.id);
+                  }
+                }),
+                onSelect: openNotification,
+              ),
+            ),
             IconButton(
               tooltip: l.eventsRefresh,
               onPressed: widget.onRefresh,
@@ -358,7 +438,27 @@ class _SummaryScreenState extends State<SummaryScreen> {
                         ),
                         bottom: Space.x4,
                       ),
-                    _pad(hero),
+                    _pad(
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          if (activeBanner != null) ...[
+                            NotificationBanner(
+                              time: activeBanner.time,
+                              title: activeBanner.title,
+                              body: activeBanner.body,
+                              onOpen: () => openNotification(activeBanner),
+                              onDismiss: () => setState(
+                                () => _dismissedBannerIds.add(activeBanner.id),
+                              ),
+                            ),
+                            const SizedBox(height: Space.x4),
+                          ],
+                          hero,
+                        ],
+                      ),
+                    ),
                     if (lowGps)
                       _pad(
                         Notice(

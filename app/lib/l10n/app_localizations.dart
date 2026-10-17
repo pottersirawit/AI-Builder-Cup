@@ -3049,6 +3049,30 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
   String get verdictAccuracyDisclaimer;
+
+  /// No description provided for @notificationsTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'การแจ้งเตือน'**
+  String get notificationsTitle;
+
+  /// No description provided for @notificationsEmptyTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ยังไม่มีการแจ้งเตือน'**
+  String get notificationsEmptyTitle;
+
+  /// No description provided for @notificationsEmptyBody.
+  ///
+  /// In th, this message translates to:
+  /// **'เมื่อใกล้เวลาออกเดินทางหรือมีฝนบนเส้นทาง แอปจะแจ้งเตือนที่นี่'**
+  String get notificationsEmptyBody;
+
+  /// No description provided for @notificationsMarkAllRead.
+  ///
+  /// In th, this message translates to:
+  /// **'อ่านทั้งหมด'**
+  String get notificationsMarkAllRead;
 }
 
 class _AppLocalizationsDelegate

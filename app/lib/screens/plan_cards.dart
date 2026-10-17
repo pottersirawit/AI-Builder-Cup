@@ -323,7 +323,7 @@ class AlertsCard extends StatelessWidget {
                 ),
               Builder(
                 builder: (context) {
-                  final look = _look(l, c, a);
+                  final itemLook = look(l, c, a);
                   return InkWell(
                     key: ValueKey('alert-${a.kind.name}-${a.trip.id}'),
                     onTap: () => onTap(a),
@@ -337,13 +337,13 @@ class AlertsCard extends StatelessWidget {
                             height: 28,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              color: look.color.withValues(alpha: .18),
+                              color: itemLook.color.withValues(alpha: .18),
                             ),
                             child: Icon(
-                              look.icon,
+                              itemLook.icon,
                               size: 16,
                               fill: 1,
-                              color: look.color,
+                              color: itemLook.color,
                             ),
                           ),
                           const SizedBox(width: Space.x3),
@@ -351,10 +351,10 @@ class AlertsCard extends StatelessWidget {
                             child: Column(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(look.title, style: t.titleSmall),
+                                Text(itemLook.title, style: t.titleSmall),
                                 const SizedBox(height: 2),
                                 Text(
-                                  look.body,
+                                  itemLook.body,
                                   style: tabular(
                                     t.bodySmall!,
                                   ).copyWith(color: scheme.onSurfaceVariant),
@@ -380,7 +380,7 @@ class AlertsCard extends StatelessWidget {
     );
   }
 
-  static ({IconData icon, Color color, String title, String body}) _look(
+  static ({IconData icon, Color color, String title, String body}) look(
     AppLocalizations l,
     FonColors c,
     PlanAlert a,
@@ -442,6 +442,359 @@ class AlertsCard extends StatelessWidget {
     }
   }
 }
+
+enum NotificationKind { flood, departure, planAlert }
+
+/// A proactive alert shown in the top live banner and kept in the inbox sheet.
+class AppNotification {
+  const AppNotification({
+    required this.id,
+    required this.kind,
+    required this.icon,
+    required this.color,
+    required this.time,
+    required this.title,
+    required this.body,
+    this.trip,
+    this.alert,
+    this.mode,
+    this.liveBanner = false,
+  });
+
+  final String id;
+  final NotificationKind kind;
+  final IconData icon;
+  final Color color;
+  final String time;
+  final String title;
+  final String body;
+  final Trip? trip;
+  final PlanAlert? alert;
+  final TravelMode? mode;
+  final bool liveBanner;
+}
+
+/// Builds the ordered list of proactive notifications for the current plan.
+List<AppNotification> buildNotifications({
+  required AppLocalizations l,
+  required FonColors colors,
+  required DateTime now,
+  Trip? next,
+  LeavePlan? nextPlan,
+  Decision? nextDecision,
+  List<PlanAlert> alerts = const [],
+  HomeStatus? home,
+  String? homeName,
+  bool floodMode = false,
+}) {
+  final out = <AppNotification>[];
+
+  if (home != null &&
+      (home.level == HomeLevel.danger || home.level == HomeLevel.watch)) {
+    out.add(
+      AppNotification(
+        id: 'flood-${home.level.name}',
+        kind: NotificationKind.flood,
+        icon: Symbols.flood_rounded,
+        color: home.level == HomeLevel.danger
+            ? colors.riskHigh
+            : colors.warning,
+        time: hhmm(now),
+        title: homeName != null && homeName.isNotEmpty
+            ? '${l.summaryFloodTitle} · $homeName'
+            : l.summaryFloodTitle,
+        body: home.headlineTh,
+        liveBanner: false,
+      ),
+    );
+  }
+
+  var hasNextDeparture = false;
+  if (next != null && !next.allDay && !next.unresolved && nextPlan != null) {
+    final leave = leaveTimeOf(nextPlan);
+    final dueSoon =
+        (leave != null && leave.difference(now) <= planningWindow) ||
+        nextPlan.kind == LeaveKind.now ||
+        nextPlan.kind == LeaveKind.overdue ||
+        nextPlan.kind == LeaveKind.avoid;
+    if (dueSoon) {
+      hasNextDeparture = true;
+      final best = nextPlan.best;
+      final modeLabel = best?.mode.label(l);
+      final reason = (nextDecision?.summaryTh ?? '').isNotEmpty
+          ? nextDecision!.summaryTh
+          : '';
+      final body = [
+        if (modeLabel != null && modeLabel.isNotEmpty) modeLabel,
+        if (reason.isNotEmpty) reason,
+      ].join(' · ');
+      out.add(
+        AppNotification(
+          id: 'departure-${next.id}-${nextPlan.kind.name}-${best?.mode.name ?? 'none'}',
+          kind: NotificationKind.departure,
+          icon: Symbols.rainy_rounded,
+          color: best != null ? colors.riskInk(best.risk) : colors.warning,
+          time: hhmm(now),
+          title: '${leaveSentence(l, nextPlan)} · ${next.titleTh}',
+          body: body.isNotEmpty ? body : next.destination.nameTh,
+          trip: next,
+          mode: best?.mode,
+          liveBanner: !floodMode,
+        ),
+      );
+    }
+  }
+
+  for (final a in alerts) {
+    if (hasNextDeparture &&
+        a.kind == AlertKind.wetLeave &&
+        a.trip.id == next?.id) {
+      continue;
+    }
+    final look = AlertsCard.look(l, colors, a);
+    out.add(
+      AppNotification(
+        id: 'alert-${a.kind.name}-${a.trip.id}',
+        kind: NotificationKind.planAlert,
+        icon: look.icon,
+        color: look.color,
+        time: hhmm(a.at ?? now),
+        title: look.title,
+        body: look.body,
+        trip: a.trip,
+        alert: a,
+        mode: a.mode,
+      ),
+    );
+  }
+
+  return out;
+}
+
+/// Bell button in the summary header with an unread indicator dot.
+class NotificationBellButton extends StatelessWidget {
+  const NotificationBellButton({
+    super.key,
+    required this.hasUnread,
+    required this.onPressed,
+  });
+
+  final bool hasUnread;
+  final VoidCallback onPressed;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final c = FonColors.of(context);
+    return IconButton(
+      key: const ValueKey('notifications-button'),
+      tooltip: l.notificationsTitle,
+      onPressed: onPressed,
+      icon: Stack(
+        clipBehavior: Clip.none,
+        children: [
+          const Icon(Symbols.notifications_rounded),
+          if (hasUnread)
+            Positioned(
+              right: -1,
+              top: -1,
+              child: Container(
+                key: const ValueKey('notifications-badge'),
+                width: 9,
+                height: 9,
+                decoration: BoxDecoration(
+                  color: c.riskHigh,
+                  shape: BoxShape.circle,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Opens the Notification Inbox bottom sheet.
+Future<void> showNotificationsSheet(
+  BuildContext context, {
+  required List<AppNotification> notifications,
+  required Set<String> readIds,
+  required VoidCallback onMarkAllRead,
+  required ValueChanged<AppNotification> onSelect,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  showDragHandle: true,
+  useSafeArea: true,
+  builder: (context) => StatefulBuilder(
+    builder: (context, setSheetState) {
+      final l = context.l10n;
+      final t = Theme.of(context).textTheme;
+      final scheme = Theme.of(context).colorScheme;
+      final hasUnread = notifications.any((n) => !readIds.contains(n.id));
+      return SafeArea(
+        key: const ValueKey('notifications-sheet'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Space.gutter,
+            0,
+            Space.gutter,
+            Space.x6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(l.notificationsTitle, style: t.titleLarge),
+                  ),
+                  if (hasUnread)
+                    TextButton(
+                      key: const ValueKey('notifications-mark-all-read'),
+                      onPressed: () {
+                        onMarkAllRead();
+                        setSheetState(() {});
+                      },
+                      child: Text(l.notificationsMarkAllRead),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Space.x3),
+              if (notifications.isEmpty)
+                GlassSurface(
+                  padding: const EdgeInsets.all(Space.x5),
+                  child: EmptyState(
+                    icon: Symbols.notifications_none_rounded,
+                    title: l.notificationsEmptyTitle,
+                    message: l.notificationsEmptyBody,
+                  ),
+                )
+              else
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: GlassSurface(
+                      radius: Radii.lg,
+                      child: Material(
+                        type: MaterialType.transparency,
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            for (final (i, n) in notifications.indexed) ...[
+                              if (i > 0)
+                                Divider(
+                                  height: 1,
+                                  indent: 56,
+                                  color: Colors.white.withValues(alpha: .10),
+                                ),
+                              InkWell(
+                                key: ValueKey('inbox-${n.id}'),
+                                onTap: () {
+                                  Navigator.of(context).pop();
+                                  onSelect(n);
+                                },
+                                child: Padding(
+                                  padding: const EdgeInsets.all(Space.x4),
+                                  child: Row(
+                                    crossAxisAlignment:
+                                        CrossAxisAlignment.start,
+                                    children: [
+                                      Container(
+                                        width: 32,
+                                        height: 32,
+                                        decoration: BoxDecoration(
+                                          shape: BoxShape.circle,
+                                          color: n.color.withValues(alpha: .18),
+                                        ),
+                                        child: Icon(
+                                          n.icon,
+                                          size: 18,
+                                          fill: 1,
+                                          color: n.color,
+                                        ),
+                                      ),
+                                      const SizedBox(width: Space.x3),
+                                      Expanded(
+                                        child: Column(
+                                          crossAxisAlignment:
+                                              CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              children: [
+                                                Text(
+                                                  n.time,
+                                                  style: tabular(t.labelSmall!)
+                                                      .copyWith(
+                                                        color: scheme
+                                                            .onSurfaceVariant,
+                                                      ),
+                                                ),
+                                                if (!readIds.contains(
+                                                  n.id,
+                                                )) ...[
+                                                  const SizedBox(
+                                                    width: Space.x2,
+                                                  ),
+                                                  Container(
+                                                    width: 7,
+                                                    height: 7,
+                                                    decoration: BoxDecoration(
+                                                      color: scheme.primary,
+                                                      shape: BoxShape.circle,
+                                                    ),
+                                                  ),
+                                                ],
+                                              ],
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              n.title,
+                                              style: t.titleSmall!.copyWith(
+                                                fontWeight:
+                                                    readIds.contains(n.id)
+                                                    ? FontWeight.w500
+                                                    : FontWeight.w700,
+                                              ),
+                                            ),
+                                            const SizedBox(height: 2),
+                                            Text(
+                                              n.body,
+                                              maxLines: 2,
+                                              overflow: TextOverflow.ellipsis,
+                                              style: tabular(t.bodySmall!)
+                                                  .copyWith(
+                                                    color:
+                                                        scheme.onSurfaceVariant,
+                                                  ),
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                      Icon(
+                                        Symbols.chevron_right_rounded,
+                                        size: 20,
+                                        color: scheme.onSurfaceVariant,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      );
+    },
+  ),
+);
+
 
 /// Now until midnight on one bar: rain behind, events and the travel to
 /// them in front, so a ride through a downpour is seen at a glance.

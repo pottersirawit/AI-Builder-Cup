@@ -1771,4 +1771,17 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String get verdictAccuracyDisclaimer =>
       'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
+
+  @override
+  String get notificationsTitle => 'การแจ้งเตือน';
+
+  @override
+  String get notificationsEmptyTitle => 'ยังไม่มีการแจ้งเตือน';
+
+  @override
+  String get notificationsEmptyBody =>
+      'เมื่อใกล้เวลาออกเดินทางหรือมีฝนบนเส้นทาง แอปจะแจ้งเตือนที่นี่';
+
+  @override
+  String get notificationsMarkAllRead => 'อ่านทั้งหมด';
 }

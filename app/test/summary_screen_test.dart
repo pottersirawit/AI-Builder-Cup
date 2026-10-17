@@ -874,6 +874,185 @@ void main() {
       expect(rect.height, lessThan(700));
     },
   );
+
+  testWidgets(
+    'in-app live notification banner and notification inbox show proactive alerts, support dismiss, mark-all-read, and open verdict',
+    (tester) async {
+      await pumpApp(tester, '2026-09-29T16:10:00+07:00', height: 2400);
+
+      // 1. In-app Live Banner is shown for the upcoming departure at 16:45
+      final banner = find.byType(NotificationBanner);
+      expect(banner, findsOneWidget);
+      expect(
+        find.descendant(
+          of: banner,
+          matching: find.text('ควรออกก่อน 16:45 · กินข้าวเย็นกับที่บ้าน'),
+        ),
+        findsOneWidget,
+      );
+
+      // 2. Notification Inbox bell button shows unread badge
+      final bellBtn = find.byKey(const ValueKey('notifications-button'));
+      expect(bellBtn, findsOneWidget);
+      expect(find.byKey(const ValueKey('notifications-badge')), findsOneWidget);
+
+      // 3. Dismissing the live banner hides it from the top of the screen
+      await tapAndSettle(
+        tester,
+        find.descendant(of: banner, matching: find.byTooltip('ปิดแจ้งเตือน')),
+      );
+      expect(find.byType(NotificationBanner), findsNothing);
+
+      // 4. Opening the Notification Inbox sheet still shows all notifications
+      await tapAndSettle(tester, bellBtn);
+      final sheet = find.byKey(const ValueKey('notifications-sheet'));
+      expect(sheet, findsOneWidget);
+      expect(find.text('การแจ้งเตือน'), findsOneWidget);
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.text('ควรออกก่อน 16:45 · กินข้าวเย็นกับที่บ้าน'),
+        ),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(
+          of: sheet,
+          matching: find.textContaining('ขากลับจาก'),
+        ),
+        findsOneWidget,
+      );
+
+      // 5. Mark all read clears the unread badge
+      final markAllBtn = find.byKey(
+        const ValueKey('notifications-mark-all-read'),
+      );
+      expect(markAllBtn, findsOneWidget);
+      await tapAndSettle(tester, markAllBtn);
+
+      // Close sheet and verify badge is gone
+      Navigator.of(tester.element(sheet)).pop();
+      await settle(tester);
+      expect(find.byKey(const ValueKey('notifications-badge')), findsNothing);
+
+      // 6. Reopen inbox and tap a notification item to open VerdictScreen
+      await tapAndSettle(tester, bellBtn);
+      await tapAndSettle(
+        tester,
+        find.descendant(
+          of: find.byKey(const ValueKey('notifications-sheet')),
+          matching: find.text('ควรออกก่อน 16:45 · กินข้าวเย็นกับที่บ้าน'),
+        ),
+      );
+      await reveal(tester, find.text('เทียบวิธีเดินทาง'));
+      expect(find.text('เทียบวิธีเดินทาง'), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'up next shows upcoming events even when they are more than 36 hours ahead',
+    (tester) async {
+      await pumpApp(tester, '2026-09-30T13:30:00+07:00', height: 2400);
+
+      // On 30 Sep 13:30, gmail-concert is on 3 Oct 19:00 (~77h ahead, > 36h)
+      // and gmail-flight is on 4 Oct 07:30 (~90h ahead, > 36h)
+      expect(find.byKey(const ValueKey('next-gmail-concert')), findsOneWidget);
+      expect(find.byKey(const ValueKey('next-gmail-flight')), findsOneWidget);
+    },
+  );
+
+  testWidgets(
+    'all-day events appear in the summary hero card with route decision when placed, or day overview when unplaced',
+    (tester) async {
+      final allDayPlaced = {
+        'id': 'cal-allday-bitec',
+        'title_th': 'งานสถาปนิก 2026',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.72, 'lng': 100.52},
+        'destination': {'name_th': 'ไบเทค บางนา', 'lat': 13.67, 'lng': 100.61},
+        'arrive_by': '2026-09-30T00:00:00+07:00',
+        'ends_at': '2026-10-01T00:00:00+07:00',
+        'mode': 'car',
+        'all_day': true,
+      };
+      final allDayHoliday = {
+        'id': 'cal-holiday',
+        'title_th': 'วันหยุดประจำปี',
+        'source': 'calendar',
+        'origin': {'name_th': 'บ้าน', 'lat': 13.72, 'lng': 100.52},
+        'destination': {'name_th': '', 'lat': 0, 'lng': 0},
+        'arrive_by': '2026-09-30T00:00:00+07:00',
+        'ends_at': '2026-10-01T00:00:00+07:00',
+        'mode': 'car',
+        'all_day': true,
+      };
+
+      // Case 1: Placed all-day event becomes the Hero Card with a departure plan,
+      // while the placeless holiday appears in Up Next.
+      await pumpApp(
+        tester,
+        '2026-09-30T08:00:00+07:00',
+        height: 2400,
+        respond: (req) {
+          if (req.url.path == '/v1/trips' || req.url.path == '/v1/trips/sync') {
+            return jsonResponse({
+              'trips': [allDayHoliday, allDayPlaced],
+            });
+          }
+          return null;
+        },
+      );
+
+      final placedHero = find.byKey(const ValueKey('hero-cal-allday-bitec'));
+      expect(placedHero, findsOneWidget);
+      expect(
+        find.descendant(of: placedHero, matching: find.textContaining('ทั้งวัน')),
+        findsWidgets,
+      );
+      expect(
+        find.descendant(of: placedHero, matching: find.textContaining('ไบเทค บางนา')),
+        findsOneWidget,
+      );
+      expect(find.byKey(const ValueKey('next-cal-holiday')), findsOneWidget);
+
+      // Tapping the placed all-day Hero Card opens VerdictScreen
+      await tapAndSettle(tester, placedHero);
+      await reveal(tester, find.text('เทียบวิธีเดินทาง'));
+      expect(find.text('เทียบวิธีเดินทาง'), findsOneWidget);
+      await tapAndSettle(tester, find.byTooltip('กลับ'));
+
+      // Case 2: Only a placeless all-day event -> becomes Hero Card with day overview & actions
+      await tester.pumpWidget(const SizedBox.shrink());
+      await pumpApp(
+        tester,
+        '2026-09-30T08:00:00+07:00',
+        height: 2400,
+        respond: (req) {
+          if (req.url.path == '/v1/trips' || req.url.path == '/v1/trips/sync') {
+            return jsonResponse({
+              'trips': [allDayHoliday],
+            });
+          }
+          return null;
+        },
+      );
+
+      final holidayHero = find.byKey(const ValueKey('hero-cal-holiday'));
+      expect(holidayHero, findsOneWidget);
+      expect(
+        find.descendant(of: holidayHero, matching: find.text('วันหยุดประจำปี')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: holidayHero, matching: find.text('ระบุสถานที่')),
+        findsOneWidget,
+      );
+      expect(
+        find.descendant(of: holidayHero, matching: find.text('ถามเส้นทางเอง')),
+        findsOneWidget,
+      );
+    },
+  );
 }
 
 

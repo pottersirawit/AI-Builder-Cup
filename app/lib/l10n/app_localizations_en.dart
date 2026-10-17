@@ -1793,4 +1793,17 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get verdictAccuracyDisclaimer =>
       'AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.';
+
+  @override
+  String get notificationsTitle => 'Notifications';
+
+  @override
+  String get notificationsEmptyTitle => 'No notifications yet';
+
+  @override
+  String get notificationsEmptyBody =>
+      'When it\'s almost time to leave or rain is on your route, alerts will show up here.';
+
+  @override
+  String get notificationsMarkAllRead => 'Mark all read';
 }

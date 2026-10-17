@@ -164,6 +164,7 @@ class NextEventCard extends StatelessWidget {
     this.onTap,
     this.onRetry,
     this.onResolvePlace,
+    this.onAsk,
     this.footer,
     this.aside,
   });
@@ -186,6 +187,7 @@ class NextEventCard extends StatelessWidget {
   final VoidCallback? onTap;
   final VoidCallback? onRetry;
   final VoidCallback? onResolvePlace;
+  final VoidCallback? onAsk;
 
   @override
   Widget build(BuildContext context) {
@@ -213,11 +215,49 @@ class NextEventCard extends StatelessWidget {
           ),
         ],
       );
+    } else if (trip.allDay && !trip.hasDestination) {
+      body = Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            l.allDayNoLeave,
+            style: t.headlineSmall!.copyWith(color: c.paperInk),
+          ),
+          const SizedBox(height: Space.x1),
+          Text(
+            l.allDayNote,
+            style: t.bodyMedium!.copyWith(color: muted),
+          ),
+          if (footer != null) ...[
+            const SizedBox(height: Space.x4),
+            footer!,
+          ],
+          const SizedBox(height: Space.x4),
+          Wrap(
+            spacing: Space.x2,
+            runSpacing: Space.x2,
+            children: [
+              if (onResolvePlace != null)
+                FilledButton.tonalIcon(
+                  onPressed: onResolvePlace,
+                  icon: const Icon(Symbols.add_location_alt_rounded),
+                  label: Text(l.summarySetPlace),
+                ),
+              if (onAsk != null)
+                OutlinedButton.icon(
+                  onPressed: onAsk,
+                  icon: const GeminiMark(size: 16),
+                  label: Text(l.summaryAskInstead),
+                ),
+            ],
+          ),
+        ],
+      );
     } else if (p != null) {
       body = _LeaveBlock(
         plan: p,
         summary: summary,
-        deadline: arriveBy,
+        deadline: trip.allDay ? null : arriveBy,
         footer: footer,
         aside: aside,
       );
@@ -250,7 +290,9 @@ class NextEventCard extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  arriveBy == null
+                  trip.allDay
+                      ? allDayLabel(l, trip, dated: true)
+                      : arriveBy == null
                       ? l.summaryNextEvent
                       : untilText(l, arriveBy.difference(now)),
                   maxLines: 1,
@@ -272,7 +314,10 @@ class NextEventCard extends StatelessWidget {
                     Expanded(
                       child: Text(
                         [
-                          if (arriveBy != null) hhmm(arriveBy),
+                          if (trip.allDay)
+                            l.allDay
+                          else if (arriveBy != null)
+                            hhmm(arriveBy),
                           unresolved
                               ? (trip.locationTextTh ?? '')
                               : trip.destination.nameTh,

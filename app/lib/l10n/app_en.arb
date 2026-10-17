@@ -1295,5 +1295,9 @@
       }
     }
   },
-  "verdictAccuracyDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling."
+  "verdictAccuracyDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.",
+  "notificationsTitle": "Notifications",
+  "notificationsEmptyTitle": "No notifications yet",
+  "notificationsEmptyBody": "When it's almost time to leave or rain is on your route, alerts will show up here.",
+  "notificationsMarkAllRead": "Mark all read"
 }

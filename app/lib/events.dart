@@ -30,10 +30,34 @@ List<Trip> upcoming(List<Trip> trips, DateTime now) {
   return [...timed, ...trips.where((t) => _isEvent(t) && t.arriveBy == null)];
 }
 
-/// The event the summary is about: the first one coming up that means
-/// going somewhere. Online and all-day events need no departure.
-Trip? nextEvent(List<Trip> trips, DateTime now) =>
-    upcoming(trips, now).where((t) => t.travels).firstOrNull;
+/// The event the summary is about: the first upcoming event that is not
+/// online. Timed travel events on the same day take priority over an
+/// all-day banner (which starts at 00:00), and all-day events with a
+/// venue take priority over placeless ones on the same day.
+Trip? nextEvent(List<Trip> trips, DateTime now) {
+  final candidates = upcoming(
+    trips,
+    now,
+  ).where((t) => !t.virtual && t.arriveBy != null).toList();
+  if (candidates.isEmpty) return null;
+  final first = candidates.first;
+  if (first.travels) return first;
+
+  final firstDay = eventDay(first, now);
+  final timedSameDay = candidates
+      .where((t) => t.travels && bangkokDay(t.arriveBy!) == firstDay)
+      .firstOrNull;
+  if (timedSameDay != null) return timedSameDay;
+
+  final placedSameDay = candidates
+      .where(
+        (t) => t.allDay && t.hasDestination && eventDay(t, now) == firstDay,
+      )
+      .firstOrNull;
+  if (placedSameDay != null) return placedSameDay;
+
+  return first;
+}
 
 /// The preceding event on the same Bangkok day with a resolved destination
 /// that can serve as the starting point for [current].
