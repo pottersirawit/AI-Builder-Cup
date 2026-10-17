@@ -144,6 +144,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get askRetry => 'Ask again';
 
   @override
+  String get askDisclaimer =>
+      'AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.';
+
+  @override
   String partsQuestion(String question) {
     return 'Question: “$question”';
   }
@@ -1790,4 +1794,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String verdictHotlineCopied(String number, String purpose) {
     return 'Copied $number ($purpose) to clipboard';
   }
+
+  @override
+  String get verdictAccuracyDisclaimer =>
+      'AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.';
 }

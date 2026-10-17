@@ -133,6 +133,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get askRetry => 'ถามใหม่';
 
   @override
+  String get askDisclaimer =>
+      'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
+
+  @override
   String partsQuestion(String question) {
     return 'คำถาม: “$question”';
   }
@@ -1766,4 +1770,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String verdictHotlineCopied(String number, String purpose) {
     return 'คัดลอกเบอร์ $number ($purpose) แล้ว';
   }
+
+  @override
+  String get verdictAccuracyDisclaimer =>
+      'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
 }

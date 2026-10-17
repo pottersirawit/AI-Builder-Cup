@@ -85,16 +85,27 @@ void main() {
       },
     );
 
-    // Enter related question.
-    await tester.enterText(find.byType(TextField), 'ไปลาดพร้าวตอนทุ่มนึงดีไหม');
-    await tester.tap(find.byIcon(Symbols.arrow_upward_rounded));
+    // Tap suggested question chip.
+    await tester.tap(find.widgetWithText(ActionChip, 'ถ้ารอถึงสองทุ่มค่อยกลับล่ะ'));
     await settle(tester);
-
-    // User's question is displayed.
-    expect(find.text('ไปลาดพร้าวตอนทุ่มนึงดีไหม'), findsOneWidget);
 
     // Pass card is rendered for legitimate trip query.
     expect(find.byType(Pass), findsOneWidget);
     expect(find.text(validDecision['headline_th'] as String), findsOneWidget);
+  });
+
+  testWidgets('ask screen displays persistent accuracy disclaimer at the bottom', (
+    tester,
+  ) async {
+    await pumpApp(
+      tester,
+      '2026-09-29T16:10:00+07:00',
+      demoLaunch: const DemoLaunch(screen: 'ask'),
+    );
+
+    expect(
+      find.text('ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'),
+      findsOneWidget,
+    );
   });
 }

@@ -552,5 +552,42 @@ func TestRelatedQuestion_NotRefused(t *testing.T) {
 	}
 }
 
+func TestAccuracyInquiry_ReturnsDisclaimerGuardrail(t *testing.T) {
+	s := session(t, at(16, 10))
+	req := Request{
+		TripID:     "cal-dinner",
+		QuestionTH: "ข้อมูลนี้แม่นยำ 100% ไหม",
+	}
+	resp, err := Decide(context.Background(), nil, s, req, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Refused {
+		t.Fatalf("accuracy question should not be refused as off-topic")
+	}
+	if !strings.Contains(resp.SummaryTH, "100%") {
+		t.Fatalf("expected accuracy disclaimer mentioning 100%%, got %q", resp.SummaryTH)
+	}
+}
+
+func TestAccuracyInquiry_English_ReturnsDisclaimerGuardrail(t *testing.T) {
+	s := session(t, at(16, 10))
+	s.Lang = domain.LangEN
+	req := Request{
+		TripID:     "cal-dinner",
+		QuestionTH: "Is this advice 100% accurate?",
+	}
+	resp, err := Decide(context.Background(), nil, s, req, nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if resp.Refused {
+		t.Fatalf("accuracy question should not be refused as off-topic")
+	}
+	if !strings.Contains(resp.SummaryTH, "100% accurate") {
+		t.Fatalf("expected English accuracy disclaimer mentioning 100%% accurate, got %q", resp.SummaryTH)
+	}
+}
+
 
 

@@ -403,6 +403,11 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     ),
                     const SizedBox(height: Space.x4),
                     GeneratedBy(d.generatedBy),
+                    const SizedBox(height: Space.x2),
+                    Text(
+                      l.verdictAccuracyDisclaimer,
+                      style: t.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
                   ],
                 ),
               ),

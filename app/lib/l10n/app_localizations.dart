@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'ถามใหม่'**
   String get askRetry;
 
+  /// No description provided for @askDisclaimer.
+  ///
+  /// In th, this message translates to:
+  /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
+  String get askDisclaimer;
+
   /// No description provided for @partsQuestion.
   ///
   /// In th, this message translates to:
@@ -3061,6 +3067,12 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'คัดลอกเบอร์ {number} ({purpose}) แล้ว'**
   String verdictHotlineCopied(String number, String purpose);
+
+  /// No description provided for @verdictAccuracyDisclaimer.
+  ///
+  /// In th, this message translates to:
+  /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
+  String get verdictAccuracyDisclaimer;
 }
 
 class _AppLocalizationsDelegate
