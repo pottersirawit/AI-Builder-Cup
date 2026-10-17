@@ -644,3 +644,56 @@ func TestAccuracyInquiry_English_ReturnsDisclaimerGuardrail(t *testing.T) {
 		t.Fatalf("expected English accuracy disclaimer mentioning 100%% accurate, got %q", resp.SummaryTH)
 	}
 }
+
+func TestEverydayTripQuestions_NotRefused(t *testing.T) {
+	for _, q := range []string{
+		"ต้องเตรียมอะไรไปบ้าง",
+		"ควรพกร่มไปไหม",
+		"ใส่รองเท้าอะไรดี น้ำจะท่วมไหม",
+		"หกโมงไปกินเบอร์เกอร์ที่สยามดีไหม",
+		"แวะซื้อข้าวมันไก่ก่อนกลับทันไหม",
+		"What should I bring for this trip?",
+	} {
+		resp, err := Decide(context.Background(), nil, session(t, at(16, 10)), Request{TripID: "cal-dinner", QuestionTH: q}, nil)
+		if err != nil {
+			t.Fatalf("%q: %v", q, err)
+		}
+		if resp.Refused {
+			t.Errorf("%q should not be refused: %q", q, resp.SummaryTH)
+		}
+	}
+}
+
+func TestPreparationQuestion_FallbackAnswersWhatToBring(t *testing.T) {
+	resp, err := Decide(context.Background(), nil, session(t, at(16, 10)), Request{TripID: "cal-dinner", QuestionTH: "ต้องเตรียมอะไรไปบ้าง"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(resp.SummaryTH, "เตรียม") {
+		t.Fatalf("expected preparation advice, got %q", resp.SummaryTH)
+	}
+
+	s := session(t, at(16, 10))
+	s.Lang = domain.LangEN
+	resp, err = Decide(context.Background(), nil, s, Request{TripID: "cal-dinner", QuestionTH: "What should I bring?"}, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(resp.SummaryTH, "Bring") {
+		t.Fatalf("expected English preparation advice, got %q", resp.SummaryTH)
+	}
+}
+
+func TestPromptsAllowEverydayTripQuestions(t *testing.T) {
+	for _, lang := range []domain.Lang{domain.LangTH, domain.LangEN} {
+		p := systemPromptFor(lang)
+		for _, want := range []string{"การเตรียมตัว", "summary_th"} {
+			if !strings.Contains(p, want) {
+				t.Errorf("%s prompt missing %q", lang, want)
+			}
+		}
+	}
+	if !strings.Contains(englishPrompt, "preparing for the trip") {
+		t.Errorf("English prompt does not allow preparation questions")
+	}
+}
