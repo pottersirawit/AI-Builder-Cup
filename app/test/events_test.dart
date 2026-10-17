@@ -32,6 +32,19 @@ Trip _trip(
   allDay: allDay,
 );
 
+/// An all-day calendar event from [start] up to the exclusive [end] date.
+Trip _allDay(String id, String start, String end, {String place = ''}) => Trip(
+  id: id,
+  titleTh: id,
+  source: 'calendar',
+  origin: const Place(nameTh: 'สีลม', lat: 13.72, lng: 100.53),
+  destination: Place(nameTh: place, lat: 0, lng: 0),
+  arriveBy: DateTime.parse('${start}T00:00:00+07:00'),
+  endsAt: DateTime.parse('${end}T00:00:00+07:00'),
+  mode: TravelMode.car,
+  allDay: true,
+);
+
 void main() {
   final now = DateTime.parse('2026-10-17T16:00:00+07:00');
 
@@ -149,10 +162,68 @@ void main() {
       expect(hhmm(p.arriveAt), '17:30');
     });
 
-    test('wait: leave at the server time', () {
-      final p = plan('decide_car_storm', at);
+    test('wait on the car, but the BTS goes now: the plan is the BTS', () {
+      final d = _fixture('decide_car_storm');
+      final dinner = DateTime.parse('2026-09-29T18:30:00+07:00');
+      final p = leavePlan(
+        d,
+        rankOptions(serverOptions(d, at)),
+        at,
+        deadline: dinner,
+      );
+      expect(p.best!.mode, TravelMode.transit);
+      expect(p.kind, LeaveKind.before);
+      expect(
+        hhmm(p.time!),
+        '16:55',
+        reason: 'the latest BTS trip that stays out of the 17:45 downpour',
+      );
+      expect(hhmm(p.arriveAt), '17:45');
+    });
+
+    test('the alternative is "now", not overdue, while it still makes it', () {
+      final d = _fixture('decide_car_storm');
+      final dinner = DateTime.parse('2026-09-29T18:30:00+07:00');
+      final board = rankOptions(serverOptions(d, at));
+      final p = leavePlan(
+        d,
+        board,
+        DateTime.parse('2026-09-29T17:31:00+07:00'),
+        deadline: dinner,
+      );
+      expect(p.kind, LeaveKind.now, reason: '17:31 + 50 min is 18:21');
+      final late = leavePlan(
+        d,
+        board,
+        DateTime.parse('2026-09-29T17:50:00+07:00'),
+        deadline: dinner,
+      );
+      expect(late.kind, LeaveKind.overdue);
+      expect(hhmm(late.time!), '17:30');
+    });
+
+    test('switch mode never reads the leave-by as "leave before"', () {
+      final p = plan('decide_moto_storm', at);
+      expect(p.best!.mode, TravelMode.transit);
+      expect(p.kind, LeaveKind.now, reason: 'no event to back off from');
+      expect(hhmm(p.arriveAt), '17:00');
+    });
+
+    test('wait when nothing else can go: leave at the server time', () {
+      final d = _fixture('decide_car_storm');
+      final carOnly = rankOptions(
+        serverOptions(d, at).where((o) => o.mode == TravelMode.car).toList(),
+      );
+      final p = leavePlan(d, carOnly, at);
       expect(p.kind, LeaveKind.at);
       expect(hhmm(p.time!), '19:15');
+      final later = leavePlan(
+        d,
+        carOnly,
+        DateTime.parse('2026-09-29T19:40:00+07:00'),
+      );
+      expect(later.kind, LeaveKind.now, reason: 'the wait is over');
+      expect(hhmm(later.arriveAt), '21:15', reason: '19:40 + 95 min');
     });
 
     test('a leave-by before the planned departure is stale, not overdue', () {
@@ -172,19 +243,62 @@ void main() {
         reason: '19:00 - 40 min by BTS - 10 min to spare',
       );
     });
-  
-    test('a leave-by far earlier than the event is stale even when planning from now', () {
-      final d = _fixture('decide_transit');
-      final now = DateTime.parse('2026-09-30T08:00:00+07:00');
-      final event = DateTime.parse('2026-09-30T09:30:00+07:00');
-      final p = leavePlan(
-        d,
-        rankOptions(serverOptions(d, now)),
-        now,
-        deadline: event,
-      );
-      expect(p.kind, LeaveKind.before);
-      expect(hhmm(p.time!), '08:40', reason: '09:30 - 40 min - 10 min');
+
+    test(
+      'a leave-by far earlier than the event is stale even when planning from now',
+      () {
+        final d = _fixture('decide_transit');
+        final now = DateTime.parse('2026-09-30T08:00:00+07:00');
+        final event = DateTime.parse('2026-09-30T09:30:00+07:00');
+        final p = leavePlan(
+          d,
+          rankOptions(serverOptions(d, now)),
+          now,
+          deadline: event,
+        );
+        expect(p.kind, LeaveKind.before);
+        expect(hhmm(p.time!), '08:40', reason: '09:30 - 40 min - 10 min');
+      },
+    );
+  });
+
+  group('all-day events', () {
+    final trip = _allDay('chiangmai', '2026-10-15', '2026-10-19');
+    final today = DateTime.utc(2026, 10, 17);
+
+    test('a trip that started days ago files under today, first', () {
+      final out = upcoming([
+        _trip('dinner', '2026-10-17T19:00:00+07:00'),
+        trip,
+      ], now);
+      expect(out.map((t) => t.id), ['chiangmai', 'dinner']);
+      final groups = groupByDay(out, now: now);
+      expect(groups.single.day, today);
+      expect(eventDay(trip, now), today);
+    });
+
+    test('covers every day up to its exclusive end', () {
+      expect(daysOf(trip), [
+        DateTime.utc(2026, 10, 15),
+        DateTime.utc(2026, 10, 16),
+        today,
+        DateTime.utc(2026, 10, 18),
+      ]);
+      expect(onDay(trip, today), isTrue);
+      expect(onDay(trip, DateTime.utc(2026, 10, 19)), isFalse);
+      final timed = _trip('dinner', '2026-10-17T19:00:00+07:00');
+      expect(daysOf(timed), [today]);
+      expect(onDay(timed, DateTime.utc(2026, 10, 18)), isFalse);
+    });
+
+    test('drops off once its last day is over', () {
+      final over = DateTime.parse('2026-10-19T00:30:00+07:00');
+      expect(upcoming([trip], over), isEmpty);
+    });
+
+    test('a future one keeps its own day', () {
+      final later = _allDay('holiday', '2026-10-23', '2026-10-24');
+      expect(eventDay(later, now), DateTime.utc(2026, 10, 23));
     });
   });
 

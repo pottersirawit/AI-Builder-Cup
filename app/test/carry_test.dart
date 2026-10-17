@@ -87,4 +87,41 @@ void main() {
     expect(isRaining(_storm.hours[5]), isTrue);
     expect(isRaining(_storm.hours[3]), isFalse, reason: '30% is not rain');
   });
+
+  test('a 40-59% chance is a spare umbrella, not a forecast of rain', () {
+    final maybe = Outlook(
+      now: _h(13),
+      hours: [_h(13), _h(14, prob: 45), _h(15, prob: 55), _h(16, prob: 20)],
+    );
+    final items = whatToCarry(maybe, now: at(13));
+    expect(_kinds(items), [CarryKind.spareUmbrella]);
+    expect(items.single.value, 55);
+    expect(hhmm(items.single.to!), '16:00');
+  });
+
+  test('the umbrella covers the likely hours, not the maybe ones', () {
+    final items = whatToCarry(_storm, now: at(13, 30));
+    final umbrella = items.firstWhere((i) => i.kind == CarryKind.umbrella);
+    expect(hhmm(umbrella.from!), '17:00');
+    final mixed = Outlook(
+      now: _h(13),
+      hours: [_h(13, prob: 45), _h(14), _h(15, prob: 70)],
+    );
+    final u = whatToCarry(mixed, now: at(13)).single;
+    expect(u.kind, CarryKind.umbrella);
+    expect(hhmm(u.from!), '15:00', reason: 'the 45% hour is not why');
+    expect(u.value, 70);
+  });
+
+  test('measurable rain counts as likely whatever the chance says', () {
+    final drizzle = Outlook(now: _h(9), hours: [_h(9, prob: 30, mm: 0.8)]);
+    expect(_kinds(whatToCarry(drizzle, now: at(9))), [CarryKind.umbrella]);
+  });
+
+  test('a rider at a 40-59% chance packs a raincoat just in case', () {
+    final maybe = Outlook(now: _h(13), hours: [_h(13), _h(14, prob: 45)]);
+    expect(_kinds(whatToCarry(maybe, now: at(13), mode: TravelMode.moto)), [
+      CarryKind.spareRaincoat,
+    ]);
+  });
 }

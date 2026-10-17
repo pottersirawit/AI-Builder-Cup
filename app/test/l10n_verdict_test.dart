@@ -58,10 +58,18 @@ void main() {
     expect(find.text('ตั้งค่า'), findsNothing);
     expect(find.text('สถานที่ของฉัน'), findsNothing);
 
-    await reveal(tester, find.text('For the team'));
-    expect(find.text('Design system'), findsOneWidget);
-    expect(find.text('Demo clock'), findsOneWidget);
-    expect(find.textContaining('Tue 29 Sep'), findsOneWidget);
+    await reveal(tester, find.text('Gmail'));
+    for (final hidden in [
+      'Community and flooding',
+      'Profile',
+      'For the team',
+      'Design system',
+      'Demo clock',
+      'Learn my routine',
+      'Remind me ahead',
+    ]) {
+      expect(find.text(hidden), findsNothing, reason: hidden);
+    }
 
     await tester.drag(
       find.byType(Scrollable).hitTestable().first,

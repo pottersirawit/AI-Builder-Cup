@@ -4,8 +4,12 @@
 import 'departure.dart';
 import 'models.dart';
 
-/// Rain this likely counts as "it will rain" for packing.
+/// Rain this likely is worth packing for: a spare umbrella at least.
 const wetChancePct = 40;
+
+/// Rain this likely, or any measurable rain, is "it will rain": the umbrella
+/// stops being just in case.
+const likelyRainPct = 60;
 
 /// Strong enough sun to protect skin (WHO "high").
 const highUv = 6;
@@ -19,7 +23,16 @@ const hotFeelsLikeC = 40.0;
 /// How far ahead packing looks when no event bounds the day.
 const carryHorizon = Duration(hours: 12);
 
-enum CarryKind { raincoat, umbrella, sunUmbrella, sunscreen, water, shoes }
+enum CarryKind {
+  raincoat,
+  umbrella,
+  spareUmbrella,
+  spareRaincoat,
+  sunUmbrella,
+  sunscreen,
+  water,
+  shoes,
+}
 
 /// One thing to take, the hours it is for, and the peak that earned it:
 /// rain chance %, UV index, or feels-like °C.
@@ -27,6 +40,10 @@ typedef CarryItem = ({CarryKind kind, DateTime? from, DateTime? to, num value});
 
 bool isRaining(WeatherHour h) =>
     h.rainProbPct >= wetChancePct || h.rainMmPerHr >= lightRain;
+
+/// Rain worth calling rain, not just a chance of it.
+bool likelyRain(WeatherHour h) =>
+    h.rainProbPct >= likelyRainPct || h.rainMmPerHr >= lightRain;
 
 /// Hours from the one containing [now] up to [until].
 List<WeatherHour> hoursAhead(
@@ -60,8 +77,11 @@ List<CarryItem> whatToCarry(
       (kind: k, from: hs.first.time, to: hs.last.time.add(hour), value: value);
 
   final wet = hours.where(isRaining).toList();
+  final likely = wet.where(likelyRain).toList();
+  int peakChance(List<WeatherHour> hs) =>
+      hs.fold(0, (m, h) => h.rainProbPct > m ? h.rainProbPct : m);
   final sunny = hours.where((h) => h.uvIndex >= highUv).toList();
-  final peakProb = wet.fold(0, (m, h) => h.rainProbPct > m ? h.rainProbPct : m);
+  final peakProb = peakChance(wet);
   final peakUv = sunny.fold(0, (m, h) => h.uvIndex > m ? h.uvIndex : m);
   final hot = hours.where((h) => h.feelsLikeC >= hotFeelsLikeC).toList();
   final peakFeels = hot.fold(
@@ -73,9 +93,16 @@ List<CarryItem> whatToCarry(
   final moto = mode == TravelMode.moto;
 
   return [
-    if (wet.isNotEmpty && (heavy || moto))
+    if (moto && likely.isNotEmpty)
+      span(CarryKind.raincoat, likely, peakChance(likely))
+    else if (moto && wet.isNotEmpty)
+      span(CarryKind.spareRaincoat, wet, peakProb)
+    else if (heavy)
       span(CarryKind.raincoat, wet, peakProb),
-    if (wet.isNotEmpty && !moto) span(CarryKind.umbrella, wet, peakProb),
+    if (likely.isNotEmpty && !moto)
+      span(CarryKind.umbrella, likely, peakChance(likely))
+    else if (wet.isNotEmpty && !moto)
+      span(CarryKind.spareUmbrella, wet, peakProb),
     if (wet.isEmpty && peakUv >= veryHighUv && !moto)
       span(CarryKind.sunUmbrella, sunny, peakUv),
     if (sunny.isNotEmpty) span(CarryKind.sunscreen, sunny, peakUv),

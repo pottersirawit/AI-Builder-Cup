@@ -555,15 +555,23 @@ func TestTripsConnectedWhenTokenExists(t *testing.T) {
 
 func TestTripsDemoHeaderStillReturnsScenario(t *testing.T) {
 	h := newServerMode(t, false)
-	for _, path := range []string{"/v1/trips?email=real.person@example.com", "/v1/trips/sync?email=real.person@example.com", "/v1/trips?email=" + DemoEmail, "/v1/trips"} {
-		clock := "16:10"
-		if !strings.Contains(path, "real.person") {
-			clock = ""
-		}
-		_, out := do(t, h, "GET", path, clock, nil, "")
+	for _, path := range []string{"/v1/trips?email=" + DemoEmail, "/v1/trips"} {
+		_, out := do(t, h, "GET", path, "16:10", nil, "")
 		trips := out["trips"].([]any)
 		if len(trips) == 0 || trips[0].(map[string]any)["id"] != "cal-dinner" {
 			t.Fatalf("%s: trips = %v, want scenario", path, out["trips"])
+		}
+	}
+}
+
+// A real account recording the demo replays the storm on its own calendar:
+// an empty one stays empty instead of showing มิว's trips.
+func TestTripsDemoHeaderNeverGivesRealAccountsScenario(t *testing.T) {
+	h := newServerMode(t, false)
+	for _, path := range []string{"/v1/trips?email=real.person@example.com", "/v1/trips/sync?email=real.person@example.com"} {
+		_, out := do(t, h, "GET", path, "16:10", nil, "")
+		if trips := out["trips"].([]any); len(trips) != 0 {
+			t.Fatalf("%s: trips = %v, want none", path, trips)
 		}
 	}
 }

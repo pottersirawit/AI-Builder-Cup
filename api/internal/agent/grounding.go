@@ -80,7 +80,9 @@ func NewGrounding(resp Response, core decision.Result, extra ...time.Time) Groun
 // depths, rain rates, ETAs, lateness, wind, the clearance thresholds and the
 // minutes between the departure (or appointment) and each known time.
 func (g *Grounding) collectNumbers(resp Response, core decision.Result) {
-	g.addNum("cm", 15, 10)
+	for unit, vs := range decision.Thresholds() {
+		g.addNum(unit, vs...)
+	}
 	for _, f := range slices.Concat(core.FloodSpots, resp.FloodSpots) {
 		g.addNum("cm", float64(f.ExpectedDepthCM))
 	}
@@ -154,7 +156,18 @@ var (
 	// or dont_go answer may say. Thai has no spaces, so a negation such as
 	// "ยังออกไม่ได้เลย" cannot be told from the phrase by pattern; the check
 	// accepts that and only catches the plain affirmative forms.
-	contradicts = regexp.MustCompile(`(?i)ออกได้เลย|ไปได้เลย|ออกเลย\b|\bleave now\b|\bgo now\b|\bsafe to leave\b`)
+	contradicts = regexp.MustCompile(`(?i)ออกได้เลย|ไปได้เลย|ออกเลย|\bleave now\b|\bgo now\b|\bsafe to leave\b`)
+	// negatedEN and negatedTH end the text right before a contradicts match
+	// that is negated ("don't leave now", "อย่าไปได้เลย").
+	negatedEN = regexp.MustCompile(`(?i)\b(?:don'?t|don’t|do not|never)\s+(?:\w+\s+)?$`)
+	negatedTH = regexp.MustCompile(`(?:ไม่|อย่า)(?:เพิ่ง|ควร)?\s*$`)
+	// transitNamed is the train a switch_mode answer tells the reader to take
+	// now, which is not a contradiction.
+	transitNamed = regexp.MustCompile(`(?i)\bBTS\b|\bMRT\b|รถไฟฟ้า|\btrains?\b|\bskytrain\b|\bsubway\b|\bmetro\b`)
+	sentenceEnd  = regexp.MustCompile(`[.!?\n]`)
+	// Thai marks a clause with a space, not punctuation.
+	clauseEndTH = regexp.MustCompile(`[.!?\s]`)
+	thaiScript  = regexp.MustCompile(`\p{Thai}`)
 )
 
 type quantity struct {
@@ -199,8 +212,41 @@ func (g Grounding) UngroundedNumbers(texts ...string) []string {
 	return out
 }
 
-// Contradicts reports text that tells the reader to leave now.
-func Contradicts(text string) bool { return contradicts.MatchString(text) }
+// Contradicts reports text that tells the reader to leave now when verdict
+// says otherwise. For switch_mode, leaving now in a sentence that names the
+// train is the advice itself.
+func Contradicts(text string, verdict decision.Verdict) bool {
+	if verdict == decision.LeaveNow {
+		return false
+	}
+	for _, loc := range contradicts.FindAllStringIndex(text, -1) {
+		before := text[:loc[0]]
+		if negatedEN.MatchString(before) || negatedTH.MatchString(before) {
+			continue
+		}
+		end := sentenceEnd
+		if thaiScript.MatchString(text[loc[0]:loc[1]]) {
+			end = clauseEndTH
+		}
+		if verdict == decision.SwitchMode && transitNamed.MatchString(sentenceAround(text, loc, end)) {
+			continue
+		}
+		return true
+	}
+	return false
+}
+
+func sentenceAround(text string, loc []int, sentenceEnd *regexp.Regexp) string {
+	start := 0
+	if ends := sentenceEnd.FindAllStringIndex(text[:loc[0]], -1); len(ends) > 0 {
+		start = ends[len(ends)-1][1]
+	}
+	end := len(text)
+	if next := sentenceEnd.FindStringIndex(text[loc[1]:]); next != nil {
+		end = loc[1] + next[0]
+	}
+	return text[start:end]
+}
 
 // ToolTimes are times the tools returned beyond core's own: community
 // report times and the arrival when leaving at the engine's wait-until.
@@ -233,9 +279,6 @@ func (g Grounding) Ungrounded(texts ...string) []string {
 			if t := matchHHMM(m); !g.known[t] {
 				add(t)
 			}
-		}
-		if g.leaveBy == "" {
-			continue
 		}
 		for _, re := range []*regexp.Regexp{leaveBefore, leaveBeforeEN} {
 			for _, m := range re.FindAllStringSubmatch(text, -1) {

@@ -20,9 +20,13 @@ List<Trip> upcoming(List<Trip> trips, DateTime now) {
   bool ahead(Trip t) => t.allDay
       ? (t.endsAt ?? t.arriveBy!.add(const Duration(days: 1))).isAfter(now)
       : t.arriveBy!.isAfter(cutoff);
+  // A multi-day event already under way sorts from today's midnight.
+  final midnight = _midnight(now);
+  DateTime key(Trip t) =>
+      t.allDay && t.arriveBy!.isBefore(midnight) ? midnight : t.arriveBy!;
   final timed =
       trips.where((t) => _isEvent(t) && t.arriveBy != null && ahead(t)).toList()
-        ..sort((a, b) => a.arriveBy!.compareTo(b.arriveBy!));
+        ..sort((a, b) => key(a).compareTo(key(b)));
   return [...timed, ...trips.where((t) => _isEvent(t) && t.arriveBy == null)];
 }
 
@@ -58,10 +62,15 @@ Trip? previousEventFor(List<Trip> trips, Trip current) {
 typedef DayGroup = ({DateTime? day, List<Trip> trips});
 
 /// Splits already-sorted [trips] into Bangkok days, keeping their order.
-List<DayGroup> groupByDay(List<Trip> trips) {
+/// With [now], an all-day event under way files under today.
+List<DayGroup> groupByDay(List<Trip> trips, {DateTime? now}) {
   final groups = <DayGroup>[];
   for (final t in trips) {
-    final day = t.arriveBy == null ? null : bangkokDay(t.arriveBy!);
+    final day = t.arriveBy == null
+        ? null
+        : now == null
+        ? bangkokDay(t.arriveBy!)
+        : eventDay(t, now);
     if (groups.isNotEmpty && groups.last.day == day) {
       groups.last.trips.add(t);
     } else {
@@ -70,6 +79,32 @@ List<DayGroup> groupByDay(List<Trip> trips) {
   }
   return groups;
 }
+
+/// The Bangkok day [t] is listed under: its start, or today for an all-day
+/// event that began earlier and is still on.
+DateTime eventDay(Trip t, DateTime now) {
+  final start = bangkokDay(t.arriveBy!);
+  final today = bangkokDay(now);
+  return t.allDay && start.isBefore(today) && onDay(t, today) ? today : start;
+}
+
+/// Every Bangkok day [t] covers: one for a timed event, each day up to the
+/// exclusive end for an all-day one.
+List<DateTime> daysOf(Trip t) {
+  final start = bangkokDay(t.arriveBy!);
+  final end = t.allDay && t.endsAt != null ? bangkokDay(t.endsAt!) : null;
+  if (end == null || !end.isAfter(start)) return [start];
+  return [
+    for (var d = start; d.isBefore(end); d = d.add(const Duration(days: 1))) d,
+  ];
+}
+
+/// Whether [t] falls on the Bangkok [day].
+bool onDay(Trip t, DateTime day) =>
+    t.arriveBy != null && daysOf(t).contains(day);
+
+DateTime _midnight(DateTime now) =>
+    bangkokDay(now).subtract(const Duration(hours: 7));
 
 /// The Bangkok date of [t] as a UTC midnight, for comparing days.
 DateTime bangkokDay(DateTime t) {
@@ -139,6 +174,41 @@ LeavePlan leavePlan(
   final best = board.firstOrNull;
   final eta = Duration(minutes: best?.etaMin ?? 0);
   final planned = best?.departAt;
+  // The server's leave-by is for the mode it was asked about. When that mode
+  // must wait or switch but the top of the board can go, the plan is the
+  // board's: back off the event's start, or go now.
+  final alternative =
+      (d.verdict == Verdict.wait || d.verdict == Verdict.switchMode) &&
+      best?.verdict == Verdict.leaveNow;
+  if (alternative) {
+    // The latest departure that still makes it and stays out of the
+    // downpour the asked mode is waiting out.
+    final latest = deadline?.subtract(eta + arrivalSlack);
+    DateTime? safe;
+    for (
+      var t = latest;
+      t != null && !t.isBefore(now);
+      t = t.subtract(const Duration(minutes: 5))
+    ) {
+      if (peakRain(d.rainTimeline, t, t.add(eta)) < moderateRain) {
+        safe = t;
+        break;
+      }
+    }
+    final late = deadline != null && now.add(eta).isAfter(deadline);
+    final kind = safe != null
+        ? LeaveKind.before
+        : late
+        ? LeaveKind.overdue
+        : LeaveKind.now;
+    final from = safe ?? now;
+    return (
+      kind: kind,
+      time: safe ?? (late ? latest : null),
+      best: best,
+      arriveAt: from.add(eta),
+    );
+  }
   // An answer about an earlier departure than the one planned, or hours
   // before the event, is not about this trip: back off the event's start
   // instead, else leave at the planned time.
@@ -153,7 +223,8 @@ LeavePlan leavePlan(
   final kind = switch (d.verdict) {
     Verdict.dontGo => LeaveKind.avoid,
     _ when time == null => LeaveKind.now,
-    Verdict.wait => LeaveKind.at,
+    Verdict.wait || Verdict.switchMode when time.isBefore(now) => LeaveKind.now,
+    Verdict.wait || Verdict.switchMode => LeaveKind.at,
     _ when time.isBefore(now) => LeaveKind.overdue,
     _ => LeaveKind.before,
   };

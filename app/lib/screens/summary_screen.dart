@@ -11,6 +11,7 @@ import '../location.dart';
 import '../models.dart';
 import '../trip_controller.dart';
 import '../trips_repository.dart';
+import 'all_day_sheet.dart';
 import 'ask_sheet.dart';
 import 'event_cards.dart';
 import 'parts.dart';
@@ -227,7 +228,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
         loading: ctrl?.loading ?? false,
         failed: ctrl?.error != null && d == null,
         unresolved: unresolved,
-        footer: bring.isEmpty ? null : BringRow(items: bring),
+        footer: bring.isEmpty
+            ? null
+            : BringRow(items: bring, moto: plan?.best?.mode == TravelMode.moto),
         aside: switch (leaveTimeOf(plan)) {
           final leave? when leave.difference(now) <= planningWindow =>
             CountdownRing(leaveAt: leave, now: now),
@@ -246,8 +249,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
     }
 
     final today = bangkokDay(now);
-    DateTime? leaveAt(Trip t) =>
-        t.id == next?.id ? leaveTimeOf(plan) : leaveTimeOf(_planFor(t, now));
+    LeavePlan? planFor(Trip t) => t.id == next?.id ? plan : _planFor(t, now);
+    DateTime? leaveAt(Trip t) => departureOf(planFor(t), now);
     final upNext = upcoming(repo.trips, now)
         .where(
           (t) =>
@@ -258,15 +261,17 @@ class _SummaryScreenState extends State<SummaryScreen> {
         .take(_upNextLimit)
         .toList();
     // Online and all-day events still fill the day.
-    final todayLeft = upcoming(repo.trips, now)
-        .where((t) => t.arriveBy != null && bangkokDay(t.arriveBy!) == today)
-        .length;
+    final todayLeft = upcoming(
+      repo.trips,
+      now,
+    ).where((t) => onDay(t, today)).length;
     final pending = repo.trips.isEmpty && (repo.loading || repo.error != null);
     final skeleton = repo.connected && repo.loading && repo.trips.isEmpty;
     final alerts = planAlerts(
       trips: repo.trips,
       now: now,
       leaveAt: leaveAt,
+      modeOf: (t) => planFor(t)?.best?.mode,
       outlook: repo.outlook,
     );
     final todayTrips = upcoming(
@@ -298,7 +303,8 @@ class _SummaryScreenState extends State<SummaryScreen> {
             if (state.usingSample) const SampleBadge(onField: true),
           ],
           actions: [
-            DemoClockChip(state: state, sky: sky),
+            if (state.demoTools || state.demoClock != null)
+              DemoClockChip(state: state, sky: sky),
             IconButton(
               tooltip: l.eventsRefresh,
               onPressed: widget.onRefresh,
@@ -417,6 +423,13 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                                 t,
                                                 now,
                                               )?.best?.mode,
+                                            )
+                                          : t.allDay
+                                          ? () => showAllDaySheet(
+                                              context,
+                                              trip: t,
+                                              now: now,
+                                              outlook: outlook,
                                             )
                                           : widget.onSeeAll,
                                     ),

@@ -163,14 +163,59 @@ func TestUngroundedNumbers(t *testing.T) {
 	}
 }
 
-func TestContradicts(t *testing.T) {
-	for text, want := range map[string]bool{
-		"ออกได้เลย": true, "You can leave now": true, "Leave now!": true,
-		"รอก่อน": false, "Leave by 16:45": false, "ไปรถไฟฟ้าดีกว่า": false,
+func TestEngineThresholdsAreGrounded(t *testing.T) {
+	g := NewGrounding(Response{}, decision.Result{})
+	for _, text := range []string{
+		"Water over 5 cm slows a sedan; 15 cm stalls it and 10 cm stalls a motorbike.",
+		"Rain from 1 mm/h is light, 10 mm/h moderate and 35 mm/h heavy.",
+		"Gusts of 30 km/h make riding harder and 45 km/h is dangerous.",
+		"น้ำเกิน 5 ซม. ฝน 10 มม./ชม. ลม 45 กม./ชม.",
 	} {
-		if Contradicts(text) != want {
-			t.Errorf("Contradicts(%q) = %v", text, !want)
+		if got := g.UngroundedNumbers(text); len(got) > 0 {
+			t.Errorf("%q: engine thresholds flagged as ungrounded: %v", text, got)
 		}
+	}
+}
+
+func TestContradicts(t *testing.T) {
+	tests := []struct {
+		text    string
+		verdict decision.Verdict
+		want    bool
+	}{
+		{"ออกได้เลย", decision.Wait, true},
+		{"You can leave now", decision.Wait, true},
+		{"Leave now!", decision.DontGo, true},
+		{"รอก่อน", decision.Wait, false},
+		{"Leave by 16:45", decision.Wait, false},
+		{"ไปรถไฟฟ้าดีกว่า", decision.SwitchMode, false},
+		{"ออกได้เลย", decision.LeaveNow, false},
+		{"Don't leave now, the road is flooded.", decision.Wait, false},
+		{"Do not go now by car.", decision.SwitchMode, false},
+		{"Never leave now in this rain.", decision.DontGo, false},
+		{"อย่าไปได้เลย น้ำท่วม", decision.Wait, false},
+		{"ยังไม่ออกได้เลย", decision.Wait, false},
+		{"Don't worry, leave now.", decision.Wait, true},
+		{"Ratchadaphisek floods. Leave now by BTS / MRT instead of driving.", decision.SwitchMode, false},
+		{"ถนนรัชดาน้ำท่วม นั่งรถไฟฟ้าไปได้เลย", decision.SwitchMode, false},
+		{"Leave now by BTS / MRT instead of driving.", decision.Wait, true},
+		{"You can leave now by car. The train is slower.", decision.SwitchMode, true},
+		{"รถยนต์ออกได้เลย ไม่มีปัญหา", decision.SwitchMode, true},
+		{"ขับรถออกได้เลย น้ำยังไม่ลึก ส่วนรถไฟฟ้าช้ากว่า", decision.SwitchMode, true},
+		{"รีบออกเลย ก่อนฝนมา", decision.Wait, true},
+	}
+	for _, tt := range tests {
+		if got := Contradicts(tt.text, tt.verdict); got != tt.want {
+			t.Errorf("Contradicts(%q, %s) = %v, want %v", tt.text, tt.verdict, got, tt.want)
+		}
+	}
+}
+
+func TestSwitchModeTextNamingTheTrainIsKept(t *testing.T) {
+	out := `{"verdict":"switch_mode","headline_th":"Take BTS / MRT instead","summary_th":"Ratchadaphisek floods. Leave now by BTS / MRT instead of driving.","explanation":{"reason_why_th":"The train avoids the flooded road.","factors_th":["Flooding on the road"]}}`
+	resp := decideWith(t, domain.LangEN, at(16, 10), Request{DepartAt: "18:00", Mode: "car"}, out)
+	if resp.Verdict != decision.SwitchMode || resp.SummaryTH != "Ratchadaphisek floods. Leave now by BTS / MRT instead of driving." {
+		t.Fatalf("Gemini's switch_mode text should be kept, got %s %q", resp.Verdict, resp.SummaryTH)
 	}
 }
 
@@ -315,6 +360,17 @@ func (d *deadlineGen) GenerateContent(ctx context.Context, _ string, _ []*genai.
 		d.ok, d.left = true, time.Until(dl)
 	}
 	return nil, errors.New("stop")
+}
+
+// With no engine leave-by, any "leave before HH:MM" is invented, however
+// known the time itself is.
+func TestLeaveByWithoutEngineLeaveByIsUngrounded(t *testing.T) {
+	g := Grounding{known: map[string]bool{"13:00": true, "15:00": true}}
+	for _, text := range []string{"ออกก่อน 13:00", "Leave by 15:00"} {
+		if got := g.Ungrounded(text); len(got) != 1 {
+			t.Errorf("%q: got %v, want the leave-by flagged", text, got)
+		}
+	}
 }
 
 type inspectGen struct {
@@ -588,6 +644,3 @@ func TestAccuracyInquiry_English_ReturnsDisclaimerGuardrail(t *testing.T) {
 		t.Fatalf("expected English accuracy disclaimer mentioning 100%% accurate, got %q", resp.SummaryTH)
 	}
 }
-
-
-

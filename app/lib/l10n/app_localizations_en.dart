@@ -43,6 +43,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Trains run in the rain, but platforms get crowded. Leave extra time.';
 
   @override
+  String get boardNoteTransitWalk => 'Rain on the walk to the station';
+
+  @override
   String get boardNoteDry => 'No rain on the way';
 
   @override
@@ -50,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Heavy rain, slow drainage, traffic building up';
 
   @override
-  String get boardNoteCarDrizzle => 'Light rain near the end. Drive slower.';
+  String get boardNoteCarDrizzle => 'Rain on the way. Drive slower.';
 
   @override
   String get boardNoteBeatRain => 'You get there before the rain';
@@ -254,7 +257,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get partsDemoReplay =>
-      'Replays the storm of Tue 29 Sep 2026 · sent as X-Demo-Clock';
+      'Replays the storm day on today\'s date · sent as X-Demo-Clock';
 
   @override
   String get partsRealTimeNoHeader => 'Live time (no header sent)';
@@ -622,9 +625,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get onboardingSkip => 'Skip for now';
-
-  @override
-  String get onboardingDemo => 'Use the demo profile (Miw)';
 
   @override
   String get onboardingSet => 'Set';
@@ -1255,6 +1255,14 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String wxMaybeRainFrom(String time) {
+    return 'Chance of rain from about $time';
+  }
+
+  @override
+  String get wxMaybeRainNow => 'Chance of rain this hour, then dry';
+
+  @override
   String get wxDryAhead => 'No rain for 12 hours';
 
   @override
@@ -1291,6 +1299,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String get wxNow => 'Now';
 
   @override
+  String get wxHumidity => 'Humidity';
+
+  @override
+  String get wxWind => 'Wind';
+
+  @override
+  String wxWindKph(String kph) {
+    return '$kph km/h';
+  }
+
+  @override
+  String get wxSunset => 'Sunset';
+
+  @override
   String get carryTitle => 'Take with you today';
 
   @override
@@ -1304,6 +1326,17 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get carryUmbrella => 'Umbrella';
+
+  @override
+  String get carrySpareRaincoat => 'Raincoat, just in case';
+
+  @override
+  String get carrySpareUmbrella => 'Umbrella, just in case';
+
+  @override
+  String carryWhyMaybeRain(String pct, String from, String to) {
+    return 'Maybe rain, $pct% · $from–$to';
+  }
 
   @override
   String get carrySunUmbrella => 'Sun umbrella';
@@ -1496,6 +1529,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String alertWetReturnMoto(String time) {
+    return 'It ends around $time. Pack a raincoat for the ride home';
+  }
+
+  @override
   String alertNeedsPlace(String title) {
     return '$title has no place yet';
   }
@@ -1513,6 +1551,18 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get allDay => 'All day';
+
+  @override
+  String get allDayNoLeave => 'No leave time';
+
+  @override
+  String get allDayNote =>
+      'All-day events have no start time, so there is no leave time.';
+
+  @override
+  String allDayAskRoute(String place) {
+    return 'Ask the way to $place';
+  }
 
   @override
   String get stripTitle => 'Today at a glance';
@@ -1679,12 +1729,6 @@ class AppLocalizationsEn extends AppLocalizations {
   String get settingsTravelGroup => 'Travel';
 
   @override
-  String get settingsRemindAhead => 'Remind me ahead';
-
-  @override
-  String get settingsRemindAheadHint => '2 hours before you should leave';
-
-  @override
   String get settingsAutoGroup => 'Let the app find trips';
 
   @override
@@ -1698,72 +1742,6 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String get settingsGmailHint =>
       'Only ticket and appointment confirmations. We don\'t store email content.';
-
-  @override
-  String get settingsRoutine => 'Learn my routine';
-
-  @override
-  String get settingsRoutineHint =>
-      'Notices you head home around 6 pm every day · coming soon';
-
-  @override
-  String get settingsCommunityGroup => 'Community and flooding';
-
-  @override
-  String get settingsShareReports => 'Share my flood reports';
-
-  @override
-  String get settingsShareReportsHint =>
-      'Anonymous. Only location and water depth.';
-
-  @override
-  String get settingsHomeAlerts => 'Flood alerts for home';
-
-  @override
-  String get settingsHomeAlertsHint => 'Even when the app is closed';
-
-  @override
-  String get settingsSmsBackup => 'SMS backup';
-
-  @override
-  String get settingsSmsBackupHint => 'When there\'s no internet';
-
-  @override
-  String get settingsProfileGroup => 'Profile';
-
-  @override
-  String get settingsExitDemo => 'Leave the demo profile';
-
-  @override
-  String get settingsExitDemoHint =>
-      'Removes Mew\'s places and goes back to the start';
-
-  @override
-  String get settingsUseDemo => 'Use the demo profile (Mew)';
-
-  @override
-  String get settingsUseDemoHint =>
-      'Mew\'s sample places and appointments, for demos';
-
-  @override
-  String get settingsTeamGroup => 'For the team';
-
-  @override
-  String get settingsDesignSystem => 'Design system';
-
-  @override
-  String get settingsDesignSystemHint =>
-      'Colour, type, spacing and components in every sky state';
-
-  @override
-  String get settingsDemoClock => 'Demo clock';
-
-  @override
-  String get settingsRealTime => 'Real time';
-
-  @override
-  String get settingsDemoNote =>
-      'The name “Mew”, user counts and community reports in this app are simulated for the demo.';
 
   @override
   String get settingsPlaceHome => 'Home';

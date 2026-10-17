@@ -9,9 +9,13 @@ import 'places.dart';
 
 /// App-wide state: demo clock, offline flag and local-only settings.
 class AppState extends ChangeNotifier {
-  AppState({String? demoClock, Locale? locale})
+  AppState({String? demoClock, Locale? locale, this.demoTools = false})
     : _demoClock = demoClock,
       _locale = locale ?? defaultLocale;
+
+  /// A demo build (DEMO_CLOCK set): the demo-time chip stays on screen even
+  /// after switching back to real time.
+  final bool demoTools;
 
   String? _demoClock;
 
@@ -100,19 +104,6 @@ class AppState extends ChangeNotifier {
   TravelMode get mode => _mode;
   set mode(TravelMode m) {
     _mode = m;
-    notifyListeners();
-  }
-
-  /// Local-only toggles from the settings screen, keyed by setting id.
-  final Map<String, bool> toggles = {
-    'gmail': true,
-    'routine': false,
-    'share_reports': true,
-    'home_alerts': true,
-    'sms_backup': true,
-  };
-  void setToggle(String key, bool v) {
-    toggles[key] = v;
     notifyListeners();
   }
 

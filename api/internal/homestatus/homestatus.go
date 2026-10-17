@@ -166,11 +166,16 @@ func evaluateCanal(st *Status, in Input, c domain.CanalReading) {
 	switch st.Level {
 	case Danger:
 		st.HeadlineTH = l.Pick(fmt.Sprintf("%sล้นตลิ่งแล้ว", name), fmt.Sprintf("%s has overflowed", name))
+		st.SummaryTH = l.Pick(fmt.Sprintf("%sขึ้นถึงตลิ่งแล้ว (%.1f / %.1f ม.)%s ฝนสะสมวันนี้ %.0f มม.", name, c.LevelM, c.BankM, rise, st.RainTodayMM),
+			fmt.Sprintf("%s has reached its bank (%.1f / %.1f m).%s Rain today: %.0f mm.", name, c.LevelM, c.BankM, rise, st.RainTodayMM))
+		if margin > 0 {
+			st.HeadlineTH = l.Pick(fmt.Sprintf("%sใกล้ล้นตลิ่ง", name), fmt.Sprintf("%s is close to its bank", name))
+			st.SummaryTH = l.Pick(fmt.Sprintf("%s %.2f ม. ต่ำกว่าตลิ่ง %.0f ซม.%s ฝนสะสมวันนี้ %.0f มม.", name, c.LevelM, margin*100, rise, st.RainTodayMM),
+				fmt.Sprintf("%s is at %.2f m, %.0f cm below its bank.%s Rain today: %.0f mm.", name, c.LevelM, margin*100, rise, st.RainTodayMM))
+		}
 		if st.MinutesToDoorstep != nil {
 			st.HeadlineTH = l.Pick(fmt.Sprintf("น้ำจะถึงหน้าบ้านใน %d นาที", *st.MinutesToDoorstep), fmt.Sprintf("Water will reach your door in %d minutes", *st.MinutesToDoorstep))
 		}
-		st.SummaryTH = l.Pick(fmt.Sprintf("%sขึ้นถึงตลิ่งแล้ว (%.1f / %.1f ม.)%s ฝนสะสมวันนี้ %.0f มม.", name, c.LevelM, c.BankM, rise, st.RainTodayMM),
-			fmt.Sprintf("%s has reached its bank (%.1f / %.1f m).%s Rain today: %.0f mm.", name, c.LevelM, c.BankM, rise, st.RainTodayMM))
 		dry := 20
 		if st.MinutesToDoorstep != nil {
 			dry = max(5, *st.MinutesToDoorstep-15)
@@ -183,6 +188,9 @@ func evaluateCanal(st *Status, in Input, c domain.CanalReading) {
 		}
 	case Watch:
 		st.HeadlineTH = l.Pick("คืนนี้เสี่ยงน้ำท่วม: ปานกลาง", "Moderate flood risk tonight")
+		if in.Now.In(domain.Bangkok).Hour() < 12 {
+			st.HeadlineTH = l.Pick("วันนี้เสี่ยงน้ำท่วม: ปานกลาง", "Moderate flood risk today")
+		}
 		st.SummaryTH = l.Pick(fmt.Sprintf("%s %.1f ม. ต่ำกว่าตลิ่ง %.1f ม.%s ฝนสะสมวันนี้ %.0f มม.", name, c.LevelM, margin, rise, st.RainTodayMM),
 			fmt.Sprintf("%s is at %.1f m, %.1f m below its bank.%s Rain today: %.0f mm.", name, c.LevelM, margin, rise, st.RainTodayMM))
 		st.Actions = []Action{

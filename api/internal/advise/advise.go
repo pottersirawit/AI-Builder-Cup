@@ -43,6 +43,7 @@ func (e *Evaluator) EvaluateTrip(ctx context.Context, prov planner.Providers, no
 
 	tr := planner.TripRequest{
 		TripID:      ut.Trip.ID,
+		Trip:        &ut.Trip,
 		Origin:      &ut.Trip.Origin,
 		Destination: &ut.Trip.Destination,
 		Places:      ut.Places,

@@ -63,22 +63,36 @@ bool _isNight(WeatherHour h, DateTime? sunset) {
   return b >= 19 || b < 6;
 }
 
+/// While rain is falling, when it eases; null when it is not falling now.
+String? _rainNow(AppLocalizations l, List<WeatherHour> ahead, WeatherHour now) {
+  if (!isRaining(now) || now.rainMmPerHr < lightRain) return null;
+  final dry = ahead.skip(1).where((h) => !isRaining(h)).firstOrNull;
+  return dry == null ? l.wxRainNow : l.wxRainStops(hhmm(dry.time));
+}
+
 /// The day in one line: what it is like now and when rain comes.
 String weatherHeadline(AppLocalizations l, Outlook o, DateTime now) {
   final ahead = hoursAhead(o, now: now);
   final current = ahead.firstOrNull ?? o.now;
-  if (isRaining(current) && current.rainMmPerHr >= lightRain) {
-    final dry = ahead.skip(1).where((h) => !isRaining(h)).firstOrNull;
-    return dry == null ? l.wxRainNow : l.wxRainStops(hhmm(dry.time));
-  }
+  if (_rainNow(l, ahead, current) case final falling?) return falling;
   final mood = current.uvIndex >= veryHighUv
       ? l.wxSunStrong
       : current.feelsLikeC >= hotFeelsLikeC
       ? l.wxHot
       : current.conditionTh;
-  final rain = nextRain(o, now: now);
-  final later = rain == null ? l.wxDryAhead : l.wxRainFrom(hhmm(rain.time));
+  final later = _rainLine(l, ahead, current);
   return mood.isEmpty ? later : '$mood · $later';
+}
+
+/// Rain falling now, else the next wet hour after this one (this hour's
+/// chance is already in the stats), worded by how likely it is.
+String _rainLine(AppLocalizations l, List<WeatherHour> ahead, WeatherHour now) {
+  if (_rainNow(l, ahead, now) case final falling?) return falling;
+  final rain = ahead.skip(1).where(isRaining).firstOrNull;
+  if (rain == null) return isRaining(now) ? l.wxMaybeRainNow : l.wxDryAhead;
+  return likelyRain(rain)
+      ? l.wxRainFrom(hhmm(rain.time))
+      : l.wxMaybeRainFrom(hhmm(rain.time));
 }
 
 /// Now: temperature, sky, feels-like, UV, rain chance, then the hours.
@@ -126,6 +140,7 @@ class WeatherHeroCard extends StatelessWidget {
         Space.x4,
       ),
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
@@ -146,6 +161,13 @@ class WeatherHeroCard extends StatelessWidget {
                     Text(
                       current.conditionTh,
                       style: t.titleMedium!.copyWith(color: scheme.onSurface),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      _rainLine(l, hours, current),
+                      style: t.bodyMedium!.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
                     ),
                   ],
                 ),
@@ -189,6 +211,17 @@ class WeatherHeroCard extends StatelessWidget {
               ),
             ],
           ),
+          const SizedBox(height: Space.x3),
+          Row(
+            children: [
+              stat(l.wxHumidity, '${current.humidityPct}%'),
+              stat(l.wxWind, l.wxWindKph('${current.windKph.round()}')),
+              if (outlook.sunset case final sunset?)
+                stat(l.wxSunset, hhmm(sunset))
+              else
+                const Spacer(),
+            ],
+          ),
           const SizedBox(height: Space.x4),
           Divider(height: 1, color: Colors.white.withValues(alpha: .12)),
           const SizedBox(height: Space.x3),
@@ -208,6 +241,10 @@ class WeatherHeroCard extends StatelessWidget {
               ],
             ),
           ),
+          if (outlook.sources.isNotEmpty) ...[
+            const SizedBox(height: Space.x3),
+            SourceLabel(outlook.sources.join(' · ')),
+          ],
         ],
       ),
     );
@@ -264,10 +301,10 @@ class _HourCell extends StatelessWidget {
             style: tabular(t.labelLarge!).copyWith(color: scheme.onSurface),
           ),
           Text(
-            wet ? '${hour.rainProbPct}%' : ' ',
-            style: tabular(
-              t.labelSmall!,
-            ).copyWith(color: const Color(0xFF8AB4FF)),
+            '${hour.rainProbPct}%',
+            style: tabular(t.labelSmall!).copyWith(
+              color: wet ? const Color(0xFF8AB4FF) : scheme.onSurfaceVariant,
+            ),
           ),
         ],
       ),
@@ -276,10 +313,12 @@ class _HourCell extends StatelessWidget {
 }
 
 /// Words, icon and accent for one thing to carry.
+/// A rider's raincoat is for riding in rain; anyone else's is for a downpour.
 ({IconData icon, String title, String why, Color accent}) carryLook(
   AppLocalizations l,
-  CarryItem i,
-) {
+  CarryItem i, {
+  bool moto = false,
+}) {
   final from = i.from == null ? '' : hhmm(i.from!);
   final to = i.to == null ? '' : hhmm(i.to!);
   const rain = Color(0xFF6EA8FF), sun = Color(0xFFFFB547);
@@ -287,13 +326,25 @@ class _HourCell extends StatelessWidget {
     CarryKind.raincoat => (
       icon: Symbols.apparel_rounded,
       title: l.carryRaincoat,
-      why: l.carryWhyHeavy(from, to),
+      why: moto ? l.carryWhyMoto(from, to) : l.carryWhyHeavy(from, to),
+      accent: rain,
+    ),
+    CarryKind.spareRaincoat => (
+      icon: Symbols.apparel_rounded,
+      title: l.carrySpareRaincoat,
+      why: l.carryWhyMaybeRain('${i.value}', from, to),
       accent: rain,
     ),
     CarryKind.umbrella => (
       icon: Symbols.umbrella_rounded,
       title: l.carryUmbrella,
       why: l.carryWhyRain('${i.value}', from, to),
+      accent: rain,
+    ),
+    CarryKind.spareUmbrella => (
+      icon: Symbols.umbrella_rounded,
+      title: l.carrySpareUmbrella,
+      why: l.carryWhyMaybeRain('${i.value}', from, to),
       accent: rain,
     ),
     CarryKind.sunUmbrella => (
@@ -361,10 +412,8 @@ class CarryStrip extends StatelessWidget {
   }
 
   Widget _tile(AppLocalizations l, CarryItem item) {
-    final look = carryLook(l, item);
-    final why = item.kind == CarryKind.raincoat && moto
-        ? l.carryWhyMoto(hhmm(item.from!), hhmm(item.to!))
-        : look.why;
+    final look = carryLook(l, item, moto: moto);
+    final why = look.why;
     return _CarryTile(
       key: ValueKey('carry-${item.kind.name}'),
       icon: look.icon,
@@ -449,8 +498,9 @@ class _CarryTile extends StatelessWidget {
 
 /// "พกไปด้วย ☂ ร่ม · 🧴 ครีมกันแดด": the trip's packing list as small pills.
 class BringRow extends StatelessWidget {
-  const BringRow({super.key, required this.items});
+  const BringRow({super.key, required this.items, this.moto = false});
   final List<CarryItem> items;
+  final bool moto;
 
   @override
   Widget build(BuildContext context) {
@@ -472,7 +522,7 @@ class BringRow extends StatelessWidget {
             for (final i in items)
               Builder(
                 builder: (context) {
-                  final look = carryLook(l, i);
+                  final look = carryLook(l, i, moto: moto);
                   return Tooltip(
                     message: look.why,
                     child: Container(

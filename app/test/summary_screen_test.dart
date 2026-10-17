@@ -8,6 +8,7 @@ import 'package:fontokmai/design/design.dart';
 import 'package:fontokmai/l10n/l10n.dart';
 import 'package:fontokmai/models.dart';
 import 'package:fontokmai/screens/event_cards.dart';
+import 'package:fontokmai/screens/parts.dart';
 import 'package:fontokmai/screens/plan_cards.dart';
 import 'package:fontokmai/screens/summary_screen.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
@@ -15,6 +16,16 @@ import 'package:fontokmai/screens/weather_cards.dart';
 import 'helpers.dart';
 
 void main() {
+  testWidgets('real time shows no demo clock chip', (tester) async {
+    await pumpApp(tester, null, places: await emptyStore());
+    expect(find.byType(DemoClockChip), findsNothing);
+  });
+
+  testWidgets('a demo build keeps its clock chip on real time', (tester) async {
+    await pumpApp(tester, null, places: await emptyStore(), demoTools: true);
+    expect(find.byType(DemoClockChip), findsOneWidget);
+  });
+
   testWidgets('the summary is the day\'s plan, with weather kept small', (
     tester,
   ) async {
@@ -31,6 +42,14 @@ void main() {
       find.byKey(const ValueKey('alert-wetReturn-cal-gym')),
       findsOneWidget,
       reason: 'heavy rain at 21:30 on the way back from the gym',
+    );
+    expect(
+      find.descendant(
+        of: find.byKey(const ValueKey('alert-wetReturn-cal-gym')),
+        matching: find.textContaining('พกร่ม'),
+      ),
+      findsOneWidget,
+      reason: 'the gym is set to motorbike, but its plan goes by BTS',
     );
     expect(find.text('พกไปด้วย'), findsOneWidget);
     expect(find.byType(WeatherPeek), findsOneWidget);
@@ -89,14 +108,14 @@ void main() {
     expect(find.byType(GlassNavBar), findsOneWidget);
   });
 
-  testWidgets('waiting past the event start says how late you would be', (
+  testWidgets('the car must wait, so the hero is the BTS that still makes it', (
     tester,
   ) async {
     await pumpApp(tester, '2026-09-29T17:40:00+07:00', height: 2400);
 
-    expect(find.text('ออกได้ตอน'), findsOneWidget);
-    expect(find.text('19:15'), findsOneWidget);
-    expect(find.text('ถึงหลังเวลานัด 1 ชม. 35 นาที'), findsOneWidget);
+    expect(find.text('ออกได้เลย'), findsWidgets, reason: 'BTS, 18:30 sharp');
+    expect(find.text('19:15'), findsNothing, reason: "the car's wait");
+    expect(find.textContaining('ถึงหลังเวลานัด'), findsNothing);
   });
 
   testWidgets('the hero opens the detail, where the rain band still drags', (
@@ -201,9 +220,7 @@ void main() {
     );
   });
 
-  testWidgets('ask, settings and design gallery open without errors', (
-    tester,
-  ) async {
+  testWidgets('ask and settings open without errors', (tester) async {
     await pumpApp(tester, '2026-09-29T16:10:00+07:00');
 
     await tapAndSettle(tester, find.byTooltip('ถามเส้นทาง'));
@@ -216,8 +233,7 @@ void main() {
     expect(find.text('บ้านลาดพร้าว'), findsOneWidget);
     await reveal(tester, find.text('Google Calendar'));
     expect(find.text('Google Calendar'), findsOneWidget);
-    await tapAndSettle(tester, find.text('ระบบดีไซน์'));
-    expect(find.text('พื้นท้องฟ้า'), findsOneWidget);
+    expect(find.text('ระบบดีไซน์'), findsNothing);
   });
 
   testWidgets('both tabs fit at 2x text without overflow', (tester) async {

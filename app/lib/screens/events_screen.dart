@@ -86,7 +86,9 @@ class _EventsScreenState extends State<EventsScreen> {
         final month = DateTime.utc(today.year, today.month);
         final eventDays = {
           for (final e in events)
-            if (e.arriveBy != null) bangkokDay(e.arriveBy!),
+            if (e.arriveBy != null)
+              for (final d in daysOf(e))
+                if (!d.isBefore(today)) d,
         };
         final following = DateTime.utc(month.year, month.month + 1);
         // A second month when events run into it, as a wall calendar would.
@@ -101,12 +103,7 @@ class _EventsScreenState extends State<EventsScreen> {
         ];
         final shown = _day == null
             ? events
-            : events
-                  .where(
-                    (e) =>
-                        e.arriveBy != null && bangkokDay(e.arriveBy!) == _day,
-                  )
-                  .toList();
+            : events.where((e) => onDay(e, _day!)).toList();
 
         final Widget? placeholder;
         if (!repo.connected) {
@@ -183,7 +180,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   SliverToBoxAdapter(
                     child: _DayFilter(
                       days: [
-                        for (final g in groupByDay(events))
+                        for (final g in groupByDay(events, now: now))
                           if (g.day != null) g.day!,
                       ],
                       today: today,
@@ -200,7 +197,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       ),
                     ),
-                  for (final g in groupByDay(shown)) ...[
+                  for (final g in groupByDay(shown, now: now)) ...[
                     SliverToBoxAdapter(
                       child: DayHeader(
                         day: g.day,
@@ -348,15 +345,19 @@ class EventTicket extends StatelessWidget {
                           color: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: Space.x1),
-                        Text(
-                          at == null
-                              ? l.eventsNoTime
-                              : trip.allDay
-                              ? l.allDay
-                              : hhmm(at),
-                          style: tabular(
-                            t.labelMedium!,
-                          ).copyWith(color: scheme.onSurfaceVariant),
+                        Flexible(
+                          child: Text(
+                            at == null
+                                ? l.eventsNoTime
+                                : trip.allDay
+                                ? allDayLabel(l, trip)
+                                : hhmm(at),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tabular(
+                              t.labelMedium!,
+                            ).copyWith(color: scheme.onSurfaceVariant),
+                          ),
                         ),
                       ],
                     ),

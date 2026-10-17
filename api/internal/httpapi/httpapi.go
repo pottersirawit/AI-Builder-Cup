@@ -121,8 +121,7 @@ func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) h
 	}
 }
 
-// DemoEmail is มิว's address: the only account that sees the scripted trips
-// without an X-Demo-Clock header.
+// DemoEmail is มิว's address: the only account that sees the scripted trips.
 const DemoEmail = "miw.demo@gmail.com"
 
 func requestEmail(r *http.Request) string {
@@ -192,7 +191,8 @@ func hasToken(email string) bool {
 }
 
 // userTrips returns a real account's stored trips, never มิว's scenario: that
-// is only for demo requests, an empty email or DemoEmail.
+// is only for an empty email or DemoEmail. The X-Demo-Clock header replays the
+// storm's weather, not มิว's calendar.
 func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Trip {
 	trips := []domain.Trip{}
 	homePlace := requestHome(r)
@@ -222,8 +222,7 @@ func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Tr
 			})
 		}
 	}
-	demo := r.Header.Get(clock.Header) != "" || email == "" || email == DemoEmail
-	if len(trips) == 0 && demo && s.Planner != nil && s.Planner.Trips != nil {
+	if len(trips) == 0 && (email == "" || email == DemoEmail) && s.Planner != nil && s.Planner.Trips != nil {
 		trips = s.Planner.Trips(rc.now)
 	}
 	if rc.lang == domain.LangEN {
