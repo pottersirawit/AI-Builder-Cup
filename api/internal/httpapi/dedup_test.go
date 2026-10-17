@@ -101,6 +101,30 @@ func TestDeduplicateTrips(t *testing.T) {
 		}
 	})
 
+	t.Run("deduplicates date-only gmail trip when timed calendar trip exists on same day", func(t *testing.T) {
+		calTrip := domain.Trip{
+			ID:          "cal-saladaeng",
+			TitleTH:     "นัดเจอเพื่อน",
+			Source:      "calendar",
+			Destination: domain.Place{NameTH: "BTS ศาลาแดง", Lat: 13.7285, Lng: 100.5341},
+			ArriveBy:    time.Date(2026, 10, 18, 18, 0, 0, 0, bkk),
+		}
+		gmailTrip := domain.Trip{
+			ID:          "gmail-saladaeng",
+			TitleTH:     "นัดเจอกันที่ BTS ศาลาแดง",
+			Source:      "gmail",
+			AllDay:      true,
+			Destination: domain.Place{NameTH: "BTS ศาลาแดง", Lat: 13.7285, Lng: 100.5341},
+			ArriveBy:    time.Date(2026, 10, 18, 0, 0, 0, 0, bkk),
+			EndsAt:      time.Date(2026, 10, 19, 0, 0, 0, 0, bkk),
+		}
+
+		deduped := DeduplicateTrips([]domain.Trip{gmailTrip, calTrip})
+		if len(deduped) != 1 || deduped[0].ID != "cal-saladaeng" {
+			t.Errorf("expected single cal-saladaeng trip, got %+v", deduped)
+		}
+	})
+
 	t.Run("preserves distinct events on the same day", func(t *testing.T) {
 		tripMorning := domain.Trip{
 			ID:          "cal-work",

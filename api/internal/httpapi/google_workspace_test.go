@@ -992,3 +992,40 @@ func TestGmailPartHTMLFallback(t *testing.T) {
 	}
 }
 
+func TestSyncReadsGmailDateOnlyInformalEvent(t *testing.T) {
+	mail := fakeMail{
+		id:      "m-saladaeng",
+		subject: "Test",
+		body:    "วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง",
+	}
+	s := newTestServer(t, false)
+	gen := &replyGenerator{
+		reply: `{"is_trip":true,"all_day":true,"title_th":"นัดเจอกันที่ BTS ศาลาแดง","destination_text":"BTS ศาลาแดง","arrive_by":"2026-10-18","mode":"transit","confidence":0.92,"evidence_th":"วันที่ 18 ตุลา เจอกันที่ BTS ศาลาแดง"}`,
+	}
+	s.Gemini = &agent.Gemini{Gen: gen, Model: "test"}
+	g := &fakeGoogle{email: "saladaeng@example.com", mails: []fakeMail{mail}}
+	g.start(t, s)
+	storeToken(t, g.email, userToken{AccessToken: "at-1"})
+
+	trips := syncedTrips(t, s.Handler(), "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	if strings.Contains(g.gmailQuery, "ticket") || strings.Contains(g.gmailQuery, "booking") {
+		t.Errorf("gmailQuery %q should not filter by hardcoded keyword whitelist; LLM classifies directly", g.gmailQuery)
+	}
+	trip, ok := trips["gmail-m-saladaeng"]
+	if !ok {
+		t.Fatalf("expected gmail-m-saladaeng trip, got %v", trips)
+	}
+	if !trip.AllDay {
+		t.Errorf("expected trip.AllDay = true for date-only email event")
+	}
+	wantStart := time.Date(2026, 10, 18, 0, 0, 0, 0, domain.Bangkok)
+	wantEnd := time.Date(2026, 10, 19, 0, 0, 0, 0, domain.Bangkok)
+	if !trip.ArriveBy.Equal(wantStart) || !trip.EndsAt.Equal(wantEnd) {
+		t.Errorf("trip window = [%v, %v], want [%v, %v]", trip.ArriveBy, trip.EndsAt, wantStart, wantEnd)
+	}
+	if trip.TitleTH != "นัดเจอกันที่ BTS ศาลาแดง" {
+		t.Errorf("trip.TitleTH = %q, want 'นัดเจอกันที่ BTS ศาลาแดง'", trip.TitleTH)
+	}
+}
+
+

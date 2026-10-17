@@ -178,8 +178,8 @@ type gmailMessageItem struct {
 	Body string
 }
 
-// gmailTravelQuery finds bookings, reservations and tickets in Thai and English.
-const gmailTravelQuery = "(ticket OR booking OR reservation OR flight OR concert OR hotel OR event OR ตั๋ว OR จอง OR นัดหมาย OR เที่ยวบิน OR โรงแรม OR คอนเสิร์ต) -category:promotions -category:social"
+// gmailTravelQuery excludes noise tabs so Gemini can classify recent inbox messages directly.
+const gmailTravelQuery = "-category:promotions -category:social"
 
 // gmailPart is a MIME part of a message fetched with format=full.
 type gmailPart struct {
@@ -542,14 +542,21 @@ func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, p ext
 	if title == "" {
 		title = "ตั๋วหรือนัดหมายการเดินทาง"
 	}
+	arr := p.ArriveBy.In(domain.Bangkok)
 	trip = domain.Trip{
 		ID:       "gmail-" + item.ID,
 		TitleTH:  title,
 		Source:   "gmail",
 		Origin:   homeOrigin(savedPlaces),
-		ArriveBy: p.ArriveBy.In(domain.Bangkok),
+		ArriveBy: arr,
 		Mode:     domain.ModeCar,
 		NoteTH:   gmailNoteTH,
+	}
+	if p.AllDay {
+		midnight := time.Date(arr.Year(), arr.Month(), arr.Day(), 0, 0, 0, 0, domain.Bangkok)
+		trip.AllDay = true
+		trip.ArriveBy = midnight
+		trip.EndsAt = midnight.AddDate(0, 0, 1)
 	}
 	if p.Mode != nil {
 		trip.Mode = *p.Mode
