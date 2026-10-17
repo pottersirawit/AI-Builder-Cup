@@ -1,0 +1,28 @@
+{
+  "needs_place": {
+    "query_th": "Central",
+    "candidates": [
+      {
+        "name_th": "CentralWorld",
+        "address_th": "Ratchadamri Rd, Pathum Wan",
+        "lat": 13.7466,
+        "lng": 100.5393,
+        "source": "local"
+      },
+      {
+        "name_th": "Central Ladprao",
+        "address_th": "Phahonyothin Rd, Chatuchak",
+        "lat": 13.8167,
+        "lng": 100.5612,
+        "source": "local"
+      },
+      {
+        "name_th": "Central WestGate",
+        "address_th": "Bang Yai, Nonthaburi",
+        "lat": 13.877,
+        "lng": 100.411,
+        "source": "local"
+      }
+    ]
+  }
+}

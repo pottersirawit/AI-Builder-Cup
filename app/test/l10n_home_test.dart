@@ -1,6 +1,4 @@
-import 'dart:ui';
-
-import 'package:flutter/material.dart' show Text;
+import 'package:flutter/material.dart';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/app_state.dart';
@@ -77,6 +75,50 @@ void main() {
     expect(find.text('Sa 3 Oct'), findsOneWidget);
     expect(find.text('Leave 16:45 · BTS / MRT'), findsOneWidget);
     expect(shown().intersection(chrome), isEmpty);
+  });
+
+  testWidgets('offline sample data reads in English with no Thai left', (
+    tester,
+  ) async {
+    final thai = RegExp('[\u0E00-\u0E7F]');
+    Set<String> thaiShown() => {
+      for (final w in tester.widgetList(
+        find.byWidgetPredicate((w) => w is Text || w is RichText),
+      ))
+        w is Text
+            ? (w.data ?? w.textSpan?.toPlainText() ?? '')
+            : (w as RichText).text.toPlainText(),
+    }.where(thai.hasMatch).toSet();
+
+    for (final clock in [
+      '2026-09-29T16:10:00+07:00',
+      '2026-09-29T18:55:00+07:00',
+      '2026-09-29T21:40:00+07:00',
+    ]) {
+      final state = await pumpApp(tester, clock, height: 2400);
+      state.locale = const Locale('en');
+      await settle(tester);
+      expect(thaiShown(), isEmpty, reason: 'Summary at $clock');
+
+      await tapAndSettle(tester, find.text('Events'));
+      expect(thaiShown(), isEmpty, reason: 'Events at $clock');
+    }
+
+    final state = await pumpApp(
+      tester,
+      '2026-09-29T16:10:00+07:00',
+      height: 2400,
+    );
+    state.locale = const Locale('en');
+    await settle(tester);
+    await tapAndSettle(tester, find.text('Summary').last);
+    await openHero(tester);
+    final list = find.byType(Scrollable).hitTestable().first;
+    for (var i = 0; i < 8; i++) {
+      expect(thaiShown(), isEmpty, reason: 'verdict, scrolled $i');
+      await tester.drag(list, const Offset(0, -300));
+      await tester.pump();
+    }
   });
 
   testWidgets('Ask sheet and the follow-up screen read in English', (

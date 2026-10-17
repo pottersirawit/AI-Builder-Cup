@@ -1,0 +1,138 @@
+{
+  "verdict": "leave_now",
+  "headline_th": "Good to go",
+  "summary_th": "Sala Daeng → Lat Phrao, 40 min, arriving around 16:55 before the rain. No umbrella needed, in time for 18:30.",
+  "leave_by": "2026-09-29T17:15:00+07:00",
+  "confidence": 0.86,
+  "rain_timeline": [
+    {
+      "time": "2026-09-29T16:00:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:15:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:30:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:45:00+07:00",
+      "mm_per_hr": 0.1
+    },
+    {
+      "time": "2026-09-29T17:00:00+07:00",
+      "mm_per_hr": 0.3
+    },
+    {
+      "time": "2026-09-29T17:15:00+07:00",
+      "mm_per_hr": 1.2
+    },
+    {
+      "time": "2026-09-29T17:30:00+07:00",
+      "mm_per_hr": 2.1
+    },
+    {
+      "time": "2026-09-29T17:45:00+07:00",
+      "mm_per_hr": 5.4
+    },
+    {
+      "time": "2026-09-29T18:00:00+07:00",
+      "mm_per_hr": 12.0
+    },
+    {
+      "time": "2026-09-29T18:15:00+07:00",
+      "mm_per_hr": 16.5
+    },
+    {
+      "time": "2026-09-29T18:30:00+07:00",
+      "mm_per_hr": 11.2
+    },
+    {
+      "time": "2026-09-29T18:45:00+07:00",
+      "mm_per_hr": 6.0
+    },
+    {
+      "time": "2026-09-29T19:00:00+07:00",
+      "mm_per_hr": 4.8
+    },
+    {
+      "time": "2026-09-29T19:15:00+07:00",
+      "mm_per_hr": 1.9
+    },
+    {
+      "time": "2026-09-29T19:30:00+07:00",
+      "mm_per_hr": 1.1
+    },
+    {
+      "time": "2026-09-29T19:45:00+07:00",
+      "mm_per_hr": 0.4
+    },
+    {
+      "time": "2026-09-29T20:00:00+07:00",
+      "mm_per_hr": 0.2
+    },
+    {
+      "time": "2026-09-29T20:15:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T20:30:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T20:45:00+07:00",
+      "mm_per_hr": 0.0
+    }
+  ],
+  "mode_options": [
+    {
+      "mode": "car",
+      "verdict": "leave_now",
+      "eta_min": 50,
+      "risk": "low",
+      "note_th": "Arrive around 17:05, before the rain, in time for 18:30"
+    },
+    {
+      "mode": "transit",
+      "verdict": "leave_now",
+      "eta_min": 40,
+      "risk": "low",
+      "note_th": "Sala Daeng → Lat Phrao, no umbrella needed if you leave now"
+    },
+    {
+      "mode": "moto",
+      "verdict": "leave_now",
+      "eta_min": 30,
+      "risk": "medium",
+      "note_th": "Just in time; 15 minutes later and the rain catches you on the way"
+    }
+  ],
+  "flood_spots": [],
+  "reasoning": [
+    {
+      "tool": "get_trip",
+      "summary_th": "Dinner at home at 18:30 (Calendar) = be there by 18:30"
+    },
+    {
+      "tool": "get_route",
+      "summary_th": "Walk 8 min → BTS Sala Daeng → MRT Lat Phrao → walk 7 min into the soi"
+    },
+    {
+      "tool": "get_rain_along_route",
+      "summary_th": "No rain on the walks to and from the stations if you leave before 17:15"
+    },
+    {
+      "tool": "get_flood_spots_on_route",
+      "summary_th": "Trains are not affected by water on the roads"
+    }
+  ],
+  "sources": [
+    "Google Calendar",
+    "Google Weather API",
+    "Google Routes API",
+    "BMA flood spots"
+  ],
+  "generated_by": "gemini"
+}

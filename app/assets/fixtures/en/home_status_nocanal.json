@@ -1,0 +1,22 @@
+{
+  "level": "normal",
+  "headline_th": "No flood worries tonight",
+  "summary_th": "Little rain today and no flooding reported near home",
+  "canal": null,
+  "in_service_area": true,
+  "minutes_to_doorstep": null,
+  "rain_today_mm": 6,
+  "reports_nearby": 0,
+  "flood_spots": [],
+  "actions": [
+    {
+      "order": 1,
+      "text_th": "If more than 60 mm falls in an hour, check this page again"
+    }
+  ],
+  "sources": [
+    "Google Weather API",
+    "BMA flood spots",
+    "User reports"
+  ]
+}

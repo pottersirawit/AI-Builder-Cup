@@ -1,0 +1,14 @@
+{
+  "id": "r1",
+  "depth_cm_min": 20,
+  "depth_cm_max": 25,
+  "confidence": 0.84,
+  "description_th": "Water is about halfway up a car wheel and the pavement is under. Cars can pass slowly in the right lane; motorbikes should not.",
+  "passable": {
+    "car": "slow",
+    "transit": "yes",
+    "moto": "no"
+  },
+  "notified_users": 27,
+  "corroborating_reports": 2
+}

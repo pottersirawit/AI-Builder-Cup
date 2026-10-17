@@ -868,6 +868,19 @@ class AppLocalizationsEn extends AppLocalizations {
   String get onboardingAppName => 'Fon Tok Mai';
 
   @override
+  String get pickerPinnedSpot => 'Pinned location';
+
+  @override
+  String pickerNearPlace(String name) {
+    return 'Near $name';
+  }
+
+  @override
+  String pickerAboutAway(String address, int meters) {
+    return '$address · about $meters m away';
+  }
+
+  @override
   String get settingsGoogleTitle => 'Connect Google';
 
   @override
@@ -1769,4 +1782,12 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get verdictToolEvaluate => 'Weighed the risk';
+
+  @override
+  String get verdictHotlinesTitle => 'Emergency Assistance Helplines';
+
+  @override
+  String verdictHotlineCopied(String number, String purpose) {
+    return 'Copied $number ($purpose) to clipboard';
+  }
 }

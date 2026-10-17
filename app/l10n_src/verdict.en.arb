@@ -157,5 +157,17 @@
   "verdictToolFloodSpots": "Checked flood spots",
   "verdictToolCanals": "Checked canal levels",
   "verdictToolReports": "Read community reports",
-  "verdictToolEvaluate": "Weighed the risk"
+  "verdictToolEvaluate": "Weighed the risk",
+  "verdictHotlinesTitle": "Emergency Assistance Helplines",
+  "verdictHotlineCopied": "Copied {number} ({purpose}) to clipboard",
+  "@verdictHotlineCopied": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "purpose": {
+        "type": "String"
+      }
+    }
+  }
 }

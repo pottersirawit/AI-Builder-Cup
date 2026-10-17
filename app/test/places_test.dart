@@ -293,6 +293,20 @@ void main() {
       expect(far.nameTh, 'ตำแหน่งที่ปักหมุด');
     });
 
+    test('reverse speaks English when the app does', () async {
+      final en = FonTokMaiApi(
+        baseUrl: 'http://api.test',
+        language: () => 'en',
+        client: MockClient((_) => throw http.ClientException('offline')),
+      );
+      expect((await en.reversePlace(13.7456, 100.5341)).data.nameTh, 'Siam');
+      final near = (await en.reversePlace(13.7480, 100.5341)).data;
+      expect(near.nameTh, startsWith('Near '));
+      expect(near.addressTh, startsWith('13.7480, 100.5341 · about '));
+      final far = (await en.reversePlace(13.55, 100.32)).data;
+      expect(far.nameTh, 'Pinned location');
+    });
+
     test('home-status fixture follows where home is', () {
       expect(sampleHomeStatusName(null, lat: 13.816, lng: 100.59), 'home_status_watch');
       expect(sampleHomeStatusName(null, lat: 13.7456, lng: 100.5341), 'home_status_nocanal');

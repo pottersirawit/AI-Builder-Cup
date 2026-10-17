@@ -710,7 +710,7 @@ class _PlaceConfirmSheetState extends State<PlaceConfirmSheet> {
         PlaceKind.home => context.l10n.placeKindHome,
         PlaceKind.work => context.l10n.placeKindWork,
         PlaceKind.other => widget.candidate.nameTh.replaceFirst(
-          RegExp('^ใกล้'),
+          RegExp('^(ใกล้|Near )'),
           '',
         ),
       };

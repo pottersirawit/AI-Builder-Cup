@@ -849,6 +849,19 @@ class AppLocalizationsTh extends AppLocalizations {
   String get onboardingAppName => 'ฝนตกไหม';
 
   @override
+  String get pickerPinnedSpot => 'ตำแหน่งที่ปักหมุด';
+
+  @override
+  String pickerNearPlace(String name) {
+    return 'ใกล้$name';
+  }
+
+  @override
+  String pickerAboutAway(String address, int meters) {
+    return '$address · ห่างราว $meters ม.';
+  }
+
+  @override
   String get settingsGoogleTitle => 'เชื่อมต่อ Google';
 
   @override
@@ -1745,4 +1758,12 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get verdictToolEvaluate => 'ประเมินความเสี่ยง';
+
+  @override
+  String get verdictHotlinesTitle => 'สายด่วนขอความช่วยเหลือฉุกเฉิน';
+
+  @override
+  String verdictHotlineCopied(String number, String purpose) {
+    return 'คัดลอกเบอร์ $number ($purpose) แล้ว';
+  }
 }

@@ -3,9 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:http/http.dart' as http;
 
 import 'events.dart' show bangkokDay;
+import 'l10n/l10n.dart';
 import 'models.dart';
 import 'places.dart';
 
@@ -165,7 +167,12 @@ class FonTokMaiApi {
         () async => PlaceCandidate.fromJson(
           await _get('/v1/places/reverse', {'lat': '$lat', 'lng': '$lng'}),
         ),
-        () async => reverseLocal(await localLandmarks(), lat, lng),
+        () async => reverseLocal(
+          await localLandmarks(),
+          lat,
+          lng,
+          lookupAppLocalizations(Locale(language?.call() ?? 'th')),
+        ),
       );
 
   List<PlaceCandidate>? _landmarks;
@@ -246,9 +253,14 @@ class FonTokMaiApi {
     return jsonDecode(utf8.decode(res.bodyBytes)) as Json;
   }
 
-  Future<Json> _fixture(String name) async =>
-      jsonDecode(await _bundle.loadString('assets/fixtures/$name.json'))
-          as Json;
+  /// The bundled sample [name], in English when the app is (written by
+  /// tool/fixtures_en.py). The landmarks have no twin: they serve search.
+  Future<Json> _fixture(String name) async {
+    final dir = language?.call() == 'en' && name != 'places_local'
+        ? 'assets/fixtures/en'
+        : 'assets/fixtures';
+    return jsonDecode(await _bundle.loadString('$dir/$name.json')) as Json;
+  }
 }
 
 List<PlaceCandidate> _landmarkList(Json j) => [
@@ -287,9 +299,16 @@ List<PlaceCandidate> searchLocal(List<PlaceCandidate> all, String q) {
 }
 
 /// The nearest landmark within 1.5 km ("ใกล้…" beyond 150 m, as the
-/// server's own fallback says it), else the bare coordinates.
+/// server's own fallback says it), else the bare coordinates, written in
+/// [l]'s language. The landmarks have no English address, so English gives
+/// the coordinates instead.
 @visibleForTesting
-PlaceCandidate reverseLocal(List<PlaceCandidate> all, double lat, double lng) {
+PlaceCandidate reverseLocal(
+  List<PlaceCandidate> all,
+  double lat,
+  double lng,
+  AppLocalizations l,
+) {
   PlaceCandidate? best;
   var bestD = double.infinity;
   for (final p in all) {
@@ -300,20 +319,23 @@ PlaceCandidate reverseLocal(List<PlaceCandidate> all, double lat, double lng) {
     }
   }
   final inArea = inServiceArea(lat, lng);
+  final coords = '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
   if (best == null || bestD > 1500) {
     return PlaceCandidate(
-      nameTh: 'ตำแหน่งที่ปักหมุด',
-      addressTh: '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+      nameTh: l.pickerPinnedSpot,
+      addressTh: coords,
       lat: lat,
       lng: lng,
       inServiceArea: inArea,
     );
   }
+  final name = l.isThai ? best.nameTh : best.nameEn ?? best.nameTh;
+  final address = l.isThai ? best.addressTh : coords;
   return PlaceCandidate(
-    nameTh: bestD > 150 ? 'ใกล้${best.nameTh}' : best.nameTh,
+    nameTh: bestD > 150 ? l.pickerNearPlace(name) : name,
     addressTh: bestD > 150
-        ? '${best.addressTh} · ห่างราว ${(bestD / 50).round() * 50} ม.'
-        : best.addressTh,
+        ? l.pickerAboutAway(address, (bestD / 50).round() * 50)
+        : address,
     lat: lat,
     lng: lng,
     inServiceArea: inArea,

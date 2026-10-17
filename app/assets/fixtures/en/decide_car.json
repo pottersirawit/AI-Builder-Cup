@@ -1,0 +1,170 @@
+{
+  "verdict": "leave_now",
+  "headline_th": "Leave by 16:45",
+  "summary_th": "Rain reaches Rama IV around 17:30. Leave now and you are home around 17:00, just ahead of the rain and in good time for dinner at 18:30.",
+  "leave_by": "2026-09-29T16:45:00+07:00",
+  "confidence": 0.78,
+  "rain_timeline": [
+    {
+      "time": "2026-09-29T16:00:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:15:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:30:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:45:00+07:00",
+      "mm_per_hr": 0.1
+    },
+    {
+      "time": "2026-09-29T17:00:00+07:00",
+      "mm_per_hr": 0.3
+    },
+    {
+      "time": "2026-09-29T17:15:00+07:00",
+      "mm_per_hr": 1.2
+    },
+    {
+      "time": "2026-09-29T17:30:00+07:00",
+      "mm_per_hr": 2.1
+    },
+    {
+      "time": "2026-09-29T17:45:00+07:00",
+      "mm_per_hr": 5.4
+    },
+    {
+      "time": "2026-09-29T18:00:00+07:00",
+      "mm_per_hr": 12.0
+    },
+    {
+      "time": "2026-09-29T18:15:00+07:00",
+      "mm_per_hr": 16.5
+    },
+    {
+      "time": "2026-09-29T18:30:00+07:00",
+      "mm_per_hr": 11.2
+    },
+    {
+      "time": "2026-09-29T18:45:00+07:00",
+      "mm_per_hr": 6.0
+    },
+    {
+      "time": "2026-09-29T19:00:00+07:00",
+      "mm_per_hr": 4.8
+    },
+    {
+      "time": "2026-09-29T19:15:00+07:00",
+      "mm_per_hr": 1.9
+    },
+    {
+      "time": "2026-09-29T19:30:00+07:00",
+      "mm_per_hr": 1.1
+    },
+    {
+      "time": "2026-09-29T19:45:00+07:00",
+      "mm_per_hr": 0.4
+    },
+    {
+      "time": "2026-09-29T20:00:00+07:00",
+      "mm_per_hr": 0.2
+    },
+    {
+      "time": "2026-09-29T20:15:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T20:30:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T20:45:00+07:00",
+      "mm_per_hr": 0.0
+    }
+  ],
+  "mode_options": [
+    {
+      "mode": "car",
+      "verdict": "leave_now",
+      "eta_min": 50,
+      "risk": "low",
+      "note_th": "Arrive around 17:05, before the rain, in time for 18:30"
+    },
+    {
+      "mode": "transit",
+      "verdict": "leave_now",
+      "eta_min": 40,
+      "risk": "low",
+      "note_th": "Sala Daeng → Lat Phrao, no umbrella needed if you leave now"
+    },
+    {
+      "mode": "moto",
+      "verdict": "leave_now",
+      "eta_min": 30,
+      "risk": "medium",
+      "note_th": "Just in time; 15 minutes later and the rain catches you on the way"
+    }
+  ],
+  "flood_spots": [
+    {
+      "id": "BKK-FL-012",
+      "name_th": "Ratchada-Lat Phrao Intersection",
+      "lat": 13.8063,
+      "lng": 100.5737,
+      "expected_depth_cm": 0,
+      "risk": "low"
+    },
+    {
+      "id": "BKK-FL-031",
+      "name_th": "Rama IV Rd at Queen Sirikit Centre",
+      "lat": 13.7236,
+      "lng": 100.5592,
+      "expected_depth_cm": 0,
+      "risk": "low"
+    }
+  ],
+  "reasoning": [
+    {
+      "tool": "get_trip",
+      "summary_th": "Dinner at home at 18:30 (Calendar) = be there by 18:30"
+    },
+    {
+      "tool": "get_route",
+      "summary_th": "Silom → Rama IV → Ratchada → Lat Phrao 32 by car, 50 min, traffic is light"
+    },
+    {
+      "tool": "get_rain_along_route",
+      "summary_th": "Rain reaches Rama IV around 17:30, peaking at 18:15 at about 16 mm/h"
+    },
+    {
+      "tool": "get_flood_spots_on_route",
+      "summary_th": "Ratchada-Lat Phrao floods above 40 mm of rain; dry for now"
+    },
+    {
+      "tool": "get_community_reports",
+      "summary_th": "No flooding reported on the route in the last hour"
+    }
+  ],
+  "explanation": {
+    "reason_why_th": "Rain reaches Rama IV around 17:30. Leave by car before 16:45 and you are home around 17:05, ahead of the heavy rain and in time for 18:30.",
+    "factors_th": [
+      "Dinner at home at 18:30, from Calendar",
+      "Rain on Rama IV starts around 17:30 and peaks around 18:15",
+      "Ratchada-Lat Phrao is dry; it floods only above 40 mm of rain",
+      "No flooding reported on the route in the last hour"
+    ],
+    "route_advice_th": "If you leave after 17:15, watch out for Ratchada-Lat Phrao, which floods quickly in heavy rain.",
+    "avoid_spots_th": []
+  },
+  "sources": [
+    "Google Calendar",
+    "Google Weather API",
+    "Google Routes API",
+    "BMA flood spots"
+  ],
+  "generated_by": "gemini"
+}

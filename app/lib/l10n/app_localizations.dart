@@ -1580,6 +1580,24 @@ abstract class AppLocalizations {
   /// **'ฝนตกไหม'**
   String get onboardingAppName;
 
+  /// No description provided for @pickerPinnedSpot.
+  ///
+  /// In th, this message translates to:
+  /// **'ตำแหน่งที่ปักหมุด'**
+  String get pickerPinnedSpot;
+
+  /// No description provided for @pickerNearPlace.
+  ///
+  /// In th, this message translates to:
+  /// **'ใกล้{name}'**
+  String pickerNearPlace(String name);
+
+  /// No description provided for @pickerAboutAway.
+  ///
+  /// In th, this message translates to:
+  /// **'{address} · ห่างราว {meters} ม.'**
+  String pickerAboutAway(String address, int meters);
+
   /// No description provided for @settingsGoogleTitle.
   ///
   /// In th, this message translates to:
@@ -3031,6 +3049,18 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'ประเมินความเสี่ยง'**
   String get verdictToolEvaluate;
+
+  /// No description provided for @verdictHotlinesTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'สายด่วนขอความช่วยเหลือฉุกเฉิน'**
+  String get verdictHotlinesTitle;
+
+  /// No description provided for @verdictHotlineCopied.
+  ///
+  /// In th, this message translates to:
+  /// **'คัดลอกเบอร์ {number} ({purpose}) แล้ว'**
+  String verdictHotlineCopied(String number, String purpose);
 }
 
 class _AppLocalizationsDelegate

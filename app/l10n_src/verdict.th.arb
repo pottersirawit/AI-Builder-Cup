@@ -157,5 +157,17 @@
   "verdictToolFloodSpots": "เช็กจุดน้ำท่วม",
   "verdictToolCanals": "เช็กระดับน้ำในคลอง",
   "verdictToolReports": "ดูรายงานจากคนในพื้นที่",
-  "verdictToolEvaluate": "ประเมินความเสี่ยง"
+  "verdictToolEvaluate": "ประเมินความเสี่ยง",
+  "verdictHotlinesTitle": "สายด่วนขอความช่วยเหลือฉุกเฉิน",
+  "verdictHotlineCopied": "คัดลอกเบอร์ {number} ({purpose}) แล้ว",
+  "@verdictHotlineCopied": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "purpose": {
+        "type": "String"
+      }
+    }
+  }
 }

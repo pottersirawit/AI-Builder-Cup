@@ -267,7 +267,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     if (d.emergencyContacts.isNotEmpty) ...[
                       const SizedBox(height: Space.x4),
                       Text(
-                        l.isThai ? 'สายด่วนขอความช่วยเหลือฉุกเฉิน' : 'Emergency Assistance Helplines',
+                        l.verdictHotlinesTitle,
                         style: t.titleSmall?.copyWith(color: scheme.error),
                       ),
                       const SizedBox(height: Space.x2),
@@ -284,9 +284,12 @@ class _VerdictScreenState extends State<VerdictScreen> {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   SnackBar(
                                     content: Text(
-                                      l.isThai
-                                          ? 'คัดลอกเบอร์ ${contact.number} (${contact.purposeTh}) แล้ว'
-                                          : 'Copied ${contact.number} (${contact.purposeEn}) to clipboard',
+                                      l.verdictHotlineCopied(
+                                        contact.number,
+                                        l.isThai
+                                            ? contact.purposeTh
+                                            : contact.purposeEn,
+                                      ),
                                     ),
                                     duration: const Duration(seconds: 2),
                                   ),

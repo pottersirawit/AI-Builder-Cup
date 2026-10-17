@@ -527,6 +527,26 @@
     }
   },
   "onboardingAppName": "ฝนตกไหม",
+  "pickerPinnedSpot": "ตำแหน่งที่ปักหมุด",
+  "pickerNearPlace": "ใกล้{name}",
+  "@pickerNearPlace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerAboutAway": "{address} · ห่างราว {meters} ม.",
+  "@pickerAboutAway": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      },
+      "meters": {
+        "type": "int"
+      }
+    }
+  },
   "settingsGoogleTitle": "เชื่อมต่อ Google",
   "settingsGoogleSubtitle": "ปฏิทินและ Gmail ลงชื่อเข้าใช้ครั้งเดียว",
   "settingsGoogleUseTitle": "สิ่งที่แอปอ่าน",
@@ -1211,5 +1231,17 @@
   "verdictToolFloodSpots": "เช็กจุดน้ำท่วม",
   "verdictToolCanals": "เช็กระดับน้ำในคลอง",
   "verdictToolReports": "ดูรายงานจากคนในพื้นที่",
-  "verdictToolEvaluate": "ประเมินความเสี่ยง"
+  "verdictToolEvaluate": "ประเมินความเสี่ยง",
+  "verdictHotlinesTitle": "สายด่วนขอความช่วยเหลือฉุกเฉิน",
+  "verdictHotlineCopied": "คัดลอกเบอร์ {number} ({purpose}) แล้ว",
+  "@verdictHotlineCopied": {
+    "placeholders": {
+      "number": {
+        "type": "String"
+      },
+      "purpose": {
+        "type": "String"
+      }
+    }
+  }
 }

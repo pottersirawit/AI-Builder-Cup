@@ -197,5 +197,25 @@
       }
     }
   },
-  "onboardingAppName": "Fon Tok Mai"
+  "onboardingAppName": "Fon Tok Mai",
+  "pickerPinnedSpot": "Pinned location",
+  "pickerNearPlace": "Near {name}",
+  "@pickerNearPlace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerAboutAway": "{address} · about {meters} m away",
+  "@pickerAboutAway": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      },
+      "meters": {
+        "type": "int"
+      }
+    }
+  }
 }
