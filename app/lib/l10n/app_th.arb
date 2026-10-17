@@ -11,9 +11,10 @@
   "designRetry": "ลองอีกครั้ง",
   "designLoadingAnswer": "กำลังโหลดคำตอบ",
   "boardNoteTransitCrowded": "ขบวนไม่สนฝน แต่ชานชาลาแน่น เผื่อเวลา",
+  "boardNoteTransitWalk": "ฝนตกช่วงเดินไปสถานี",
   "boardNoteDry": "ไม่โดนฝนระหว่างทาง",
   "boardNoteCarHeavy": "ฝนหนัก น้ำรอระบาย รถติดสะสม",
-  "boardNoteCarDrizzle": "เจอฝนปรอยช่วงท้าย ขับช้าลง",
+  "boardNoteCarDrizzle": "เจอฝนระหว่างทาง ขับช้าลง",
   "boardNoteBeatRain": "ถึงก่อนฝน",
   "boardNoteMotoHeavy": "ฝนหนักกลางทาง มอเตอร์ไซค์ไม่ควรไป",
   "boardNoteMotoTight": "ทันพอดี ช้ากว่านี้จะโดนฝน",
@@ -171,7 +172,7 @@
   },
   "partsRealTime": "เวลาจริง",
   "partsDemoTime": "เวลาสาธิต",
-  "partsDemoReplay": "เล่นซ้ำพายุ อังคาร 29 ก.ย. 2026 · ส่งเป็น X-Demo-Clock",
+  "partsDemoReplay": "เล่นซ้ำวันพายุบนวันที่วันนี้ · ส่งเป็น X-Demo-Clock",
   "partsRealTimeNoHeader": "เวลาจริง (ไม่ส่ง header)",
   "partsPreset1610": "ก่อนเลิกงาน ฝนยังไม่มา",
   "partsPreset1852": "พายุบนรัชดา น้ำรอระบาย",
@@ -374,7 +375,6 @@
   "onboardingSkipNote": "ข้ามไปก่อนก็ได้ ถามเองได้เสมอ",
   "onboardingStart": "เริ่มใช้",
   "onboardingSkip": "ข้ามไปก่อน",
-  "onboardingDemo": "ใช้โปรไฟล์เดโม (มิว)",
   "onboardingSet": "ตั้งแล้ว",
   "onboardingHomeHint": "ใช้เตือนก่อนกลับบ้าน และดูน้ำท่วมหน้าบ้าน",
   "onboardingWorkHint": "ไม่บังคับ · ทำให้เตือนตอนเลิกงานได้แม่นขึ้น",
@@ -802,6 +802,15 @@
       }
     }
   },
+  "wxMaybeRainFrom": "อาจมีฝนราว {time}",
+  "@wxMaybeRainFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxMaybeRainNow": "อาจมีฝนชั่วโมงนี้ จากนั้นแห้ง",
   "wxDryAhead": "ไม่มีฝนอีก 12 ชม.",
   "wxSunStrong": "แดดแรง",
   "wxHot": "ร้อนจัด",
@@ -814,11 +823,38 @@
   "wxUvVeryHigh": "สูงมาก",
   "wxUvExtreme": "อันตราย",
   "wxNow": "ตอนนี้",
+  "wxHumidity": "ความชื้น",
+  "wxWind": "ลม",
+  "wxWindKph": "{kph} กม./ชม.",
+  "@wxWindKph": {
+    "placeholders": {
+      "kph": {
+        "type": "String"
+      }
+    }
+  },
+  "wxSunset": "อาทิตย์ตก",
   "carryTitle": "วันนี้ควรพก",
   "carryNothing": "ไม่ต้องพกอะไรเพิ่ม",
   "carryNothingBody": "อากาศดีตลอด 12 ชม.ข้างหน้า",
   "carryRaincoat": "เสื้อกันฝน",
   "carryUmbrella": "ร่ม",
+  "carrySpareRaincoat": "เสื้อกันฝนไว้ใต้เบาะ",
+  "carrySpareUmbrella": "ร่มพับติดกระเป๋า",
+  "carryWhyMaybeRain": "อาจมีฝน {pct}% · {from}–{to}",
+  "@carryWhyMaybeRain": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
   "carrySunUmbrella": "ร่มกันแดด",
   "carrySunscreen": "ครีมกันแดด",
   "carryWater": "น้ำดื่ม",
@@ -1055,6 +1091,14 @@
       }
     }
   },
+  "alertWetReturnMoto": "เลิกราว {time} พกเสื้อกันฝนไว้ขี่กลับด้วย",
+  "@alertWetReturnMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
   "alertNeedsPlace": "{title} ยังไม่มีสถานที่",
   "@alertNeedsPlace": {
     "placeholders": {
@@ -1074,6 +1118,16 @@
   "upNextTitle": "ถัดไป",
   "online": "ออนไลน์ · ไม่ต้องเดินทาง",
   "allDay": "ทั้งวัน",
+  "allDayNoLeave": "ไม่มีเวลาออก",
+  "allDayNote": "กิจกรรมทั้งวันไม่มีเวลานัด จึงไม่มีเวลาออกให้",
+  "allDayAskRoute": "ถามทางไป{place}",
+  "@allDayAskRoute": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
   "stripTitle": "ภาพรวมวันนี้",
   "stripEvent": "นัด",
   "stripTravel": "เดินทาง",
@@ -1205,8 +1259,6 @@
     }
   },
   "settingsTravelGroup": "การเดินทาง",
-  "settingsRemindAhead": "เตือนล่วงหน้า",
-  "settingsRemindAheadHint": "2 ชั่วโมงก่อนเวลาที่ควรออก",
   "settingsAutoGroup": "ให้แอปหาทริปให้เอง",
   "settingsCalendarDetail": "เฉพาะนัดที่มีสถานที่",
   "settingsCalendarAccount": "{account} · บัญชีจำลอง",
@@ -1218,26 +1270,6 @@
     }
   },
   "settingsGmailHint": "เฉพาะอีเมลยืนยันตั๋วและนัดหมาย ไม่เก็บเนื้ออีเมล",
-  "settingsRoutine": "เรียนรู้กิจวัตร",
-  "settingsRoutineHint": "รู้เองว่ากลับบ้านราวหกโมงทุกวัน · เร็ว ๆ นี้",
-  "settingsCommunityGroup": "ชุมชนและน้ำท่วม",
-  "settingsShareReports": "แชร์รายงานน้ำท่วมของฉัน",
-  "settingsShareReportsHint": "ไม่ระบุตัว เฉพาะตำแหน่งและระดับน้ำ",
-  "settingsHomeAlerts": "เตือนน้ำท่วมที่บ้าน",
-  "settingsHomeAlertsHint": "แม้ไม่ได้เปิดแอป",
-  "settingsSmsBackup": "สำรองทาง SMS",
-  "settingsSmsBackupHint": "เมื่อไม่มีอินเทอร์เน็ต",
-  "settingsProfileGroup": "โปรไฟล์",
-  "settingsExitDemo": "ออกจากโปรไฟล์เดโม",
-  "settingsExitDemoHint": "ลบสถานที่ของมิวและกลับไปหน้าเริ่มต้น",
-  "settingsUseDemo": "ใช้โปรไฟล์เดโม (มิว)",
-  "settingsUseDemoHint": "สถานที่และนัดจำลองของมิว สำหรับสาธิต",
-  "settingsTeamGroup": "สำหรับทีม",
-  "settingsDesignSystem": "ระบบดีไซน์",
-  "settingsDesignSystemHint": "สี ตัวอักษร ระยะ และคอมโพเนนต์ทุกสถานะท้องฟ้า",
-  "settingsDemoClock": "เวลาสาธิต",
-  "settingsRealTime": "เวลาจริง",
-  "settingsDemoNote": "ชื่อ “มิว” ตัวเลขผู้ใช้ และรายงานชุมชนในแอปนี้เป็นข้อมูลจำลองสำหรับเดโม",
   "settingsPlaceHome": "บ้าน",
   "settingsPlaceWork": "ที่ทำงาน",
   "settingsPlaceSiam": "สยาม",

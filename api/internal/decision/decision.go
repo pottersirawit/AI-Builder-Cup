@@ -38,6 +38,7 @@ func (r Risk) rank() int { return map[Risk]int{RiskLow: 0, RiskMedium: 1, RiskHi
 const (
 	rainLight    = 1.0
 	rainModerate = 10.0
+	rainHeavy    = 35.0
 )
 
 // Vehicle Clearance Profiles (CONTEXT.md): water depth in cm & wind threshold in km/h.
@@ -45,9 +46,36 @@ const (
 	carSlowDepthCM           = 5.0  // sedan slows, water sprays the floor
 	carStallDepthCM          = 15.0 // sedan clearance
 	motoStallDepthCM         = 10.0
+	motoWindGustCautionKMH   = 30.0 // gusts make riding harder
 	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
 	motoRainProbThresholdPct = 60   // PoP >= 60% prompts rain gear advisory
 )
+
+// stallDepthCM is the water a mode cannot pass; slowDepthCM the water that
+// slows it.
+func stallDepthCM(m domain.Mode) float64 {
+	if m == domain.ModeMoto {
+		return motoStallDepthCM
+	}
+	return carStallDepthCM
+}
+
+func slowDepthCM(m domain.Mode) float64 {
+	if m == domain.ModeMoto {
+		return 1
+	}
+	return carSlowDepthCM
+}
+
+// Thresholds are the engine's cut-offs by unit ("cm", "mmh", "kmh"), which
+// advice may quote as facts.
+func Thresholds() map[string][]float64 {
+	return map[string][]float64{
+		"cm":  {carSlowDepthCM, carStallDepthCM, motoStallDepthCM, soloReportCapCM},
+		"mmh": {rainLight, rainModerate, rainHeavy},
+		"kmh": {motoWindGustCautionKMH, motoWindGustThresholdKMH},
+	}
+}
 
 // Water drains from a flood spot linearly over drainWindow after the rain that
 // caused it; a community report is trusted for reportTTL.
@@ -71,7 +99,7 @@ type Input struct {
 	Mode     domain.Mode
 
 	DestinationTH string
-	RoadViaTH     []string                    // named roads on the car route, first one is where rain is reported
+	RoadViaTH     []string                     // named roads on the car route, first one is where rain is reported
 	Routes        map[domain.Mode]domain.Route // calculated route details per mode
 
 	Rain        []domain.RainSample
@@ -328,6 +356,16 @@ func UsableReport(r domain.Report) bool {
 	return r.GeneratedBy != "fallback" && r.Confidence >= minReportConfidence
 }
 
+func usableReports(rs []domain.Report) int {
+	n := 0
+	for _, r := range rs {
+		if UsableReport(r) {
+			n++
+		}
+	}
+	return n
+}
+
 // reportCorroborated reports whether enough usable reports already existing at t
 // sit within corroborationRadiusM and corroborationWindow of r.
 func reportCorroborated(r domain.Report, all []domain.Report, t time.Time) bool {
@@ -372,22 +410,43 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 	if e.Risk == RiskLow || (m == domain.ModeTransit && e.Risk == RiskMedium) {
 		return LeaveNow, nil
 	}
-	if m != domain.ModeTransit {
-		tr := evals[domain.ModeTransit]
-		if tr.Risk.rank() < e.Risk.rank() && (e.Risk == RiskHigh || tr.OK()) {
-			return SwitchMode, nil
-		}
+	tr := evals[domain.ModeTransit]
+	if m != domain.ModeTransit && tr.Risk.rank() < e.Risk.rank() && (e.Risk == RiskHigh || (m != domain.ModeMoto && tr.OK())) {
+		return SwitchMode, nil
 	}
+	// A wait that makes an on-time trip late, or a late one later still, is
+	// no answer; the train is, when it is no riskier and gets there on time or
+	// sooner. Failing that, the first clearing wait still beats staying put.
+	var firstClear *time.Time
 	for t := in.DepartAt.Truncate(15 * time.Minute).Add(15 * time.Minute); !t.After(in.DepartAt.Add(3 * time.Hour)); t = t.Add(15 * time.Minute) {
-		if EvaluateMode(in, m, t).Risk == RiskLow {
-			return Wait, &t
+		later := EvaluateMode(in, m, t)
+		if later.Risk != RiskLow {
+			continue
 		}
+		if (e.Late() && later.Arrive.After(e.Arrive)) || (later.Late() && !e.Late()) {
+			if firstClear == nil {
+				firstClear = &t
+			}
+			continue
+		}
+		return Wait, &t
+	}
+	if firstClear != nil && m != domain.ModeTransit && tr.Risk.rank() <= e.Risk.rank() && (!tr.Late() || tr.Arrive.Before(e.Arrive)) {
+		return SwitchMode, nil
+	}
+	if firstClear != nil {
+		return Wait, firstClear
+	}
+	// A rider waits out a shower; only weather that does not clear calls for the train.
+	if m == domain.ModeMoto && tr.OK() {
+		return SwitchMode, nil
 	}
 	return DontGo, nil
 }
 
 // LeaveBy is the latest departure, from now, such that leaving at any moment
-// until then is low risk and on time. Nil when leaving now is already not OK.
+// until then is low risk and on time. Nil when leaving now is already not OK,
+// and when nothing ends the window within the search horizon.
 func LeaveBy(in Input, m domain.Mode) *time.Time {
 	if !EvaluateMode(in, m, in.Now).OK() {
 		return nil
@@ -399,11 +458,17 @@ func LeaveBy(in Input, m domain.Mode) *time.Time {
 	}
 	for t := ceil(in.Now, step); !t.After(limit); t = t.Add(step) {
 		if !EvaluateMode(in, m, t).OK() {
-			break
+			return &best
 		}
 		best = t
 	}
-	return &best
+	return nil
+}
+
+// weatherEndsLeaveBy reports whether rain or water, rather than the
+// appointment, makes departing right after leaveBy not OK.
+func weatherEndsLeaveBy(in Input, leaveBy time.Time) bool {
+	return EvaluateMode(in, in.Mode, leaveBy.Add(step)).Risk != RiskLow
 }
 
 func rainOnset(in Input) *time.Time {
@@ -490,7 +555,7 @@ func confidence(in Input, e Eval) float64 {
 		c -= 0.08
 	}
 	for _, r := range in.Reports {
-		if !r.CreatedAt.After(in.Now) && in.Now.Sub(r.CreatedAt) < reportTTL {
+		if UsableReport(r) && !r.CreatedAt.After(in.Now) && in.Now.Sub(r.CreatedAt) < reportTTL {
 			c += 0.03
 			break
 		}

@@ -23,9 +23,9 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   final clock = initialDemoClock();
   final launch = DemoLaunch.fromEnvironment();
-  final state = AppState(demoClock: clock);
+  final state = AppState(demoClock: clock, demoTools: clock != null);
   await state.restoreLocale();
-  final places = await PlacesStore.open(demoByDefault: clock != null);
+  final places = await PlacesStore.open();
   if (launch != null) {
     if (launch.screen == 'onboarding') {
       places.resetToFirstRun();
@@ -130,7 +130,7 @@ class _FonTokMaiAppState extends State<FonTokMaiApp>
               trip: trip,
               departAt: hhmm == null
                   ? null
-                  : DateTime.parse('${demoDate}T$hhmm:00+07:00'),
+                  : DateTime.parse(demoClockIso(hhmm)),
               mode: l.mode == null ? null : TravelMode.parse(l.mode),
             ),
           ),

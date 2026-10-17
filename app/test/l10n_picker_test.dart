@@ -31,6 +31,7 @@ void main() {
     expect(find.text('Search'), findsNWidgets(2));
     expect(find.text('Get started'), findsOneWidget);
     expect(find.text('Skip for now'), findsOneWidget);
+    expect(find.text('Use the demo profile (Miw)'), findsNothing);
     expect(thaiTexts(tester), isEmpty);
   });
 

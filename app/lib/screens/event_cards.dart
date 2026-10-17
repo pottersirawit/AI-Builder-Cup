@@ -908,6 +908,21 @@ String dayChipLabel(AppLocalizations l, DateTime day, DateTime today) {
   return '${weekdayInitial(l, toBangkok(at).weekday)} ${dayOfMonth(at)} ${monthShort(l, at)}';
 }
 
+/// "ทั้งวัน", or "ทั้งวัน · 28 ก.ย. – 1 ต.ค." for an all-day event over
+/// several days; [dated] names the day of a single-day one too.
+String allDayLabel(AppLocalizations l, Trip trip, {bool dated = false}) {
+  String date(DateTime day) {
+    final at = day.add(const Duration(hours: 5));
+    return '${dayOfMonth(at)} ${monthShort(l, at)}';
+  }
+
+  final days = daysOf(trip);
+  if (days.length > 1) {
+    return '${l.allDay} · ${date(days.first)} – ${date(days.last)}';
+  }
+  return dated ? '${l.allDay} · ${date(days.first)}' : l.allDay;
+}
+
 /// No calendar yet: the reason to connect one, and a way around it.
 class ConnectCalendarCard extends StatelessWidget {
   const ConnectCalendarCard({

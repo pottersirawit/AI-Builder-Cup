@@ -36,7 +36,7 @@ func narrate(in Input, res Result) (headline, summary string, exp Explanation) {
 		}
 		parts = append(parts, conditionsTH(e))
 		parts = append(parts, fmt.Sprintf("%s ใช้เวลา %d นาที ถึง%sราว %s%s", when, e.Minutes, in.DestinationTH, hhmm(e.Arrive), deadlineTH(in, e)))
-		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil {
+		if res.LeaveBy != nil && !e.Late() && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && res.RainOnset != nil && weatherEndsLeaveBy(in, *res.LeaveBy) {
 			parts = append(parts, fmt.Sprintf("ถ้าออกหลัง %s จะเจอฝนกลางทาง", hhmm(*res.LeaveBy)))
 		}
 		if in.Mode == domain.ModeTransit && e.MaxRainMM >= rainLight {
@@ -52,6 +52,9 @@ func narrate(in Input, res Result) (headline, summary string, exp Explanation) {
 		later := EvaluateMode(in, in.Mode, *res.WaitUntil)
 		parts = append(parts, fmt.Sprintf("%s จะเจอ%s", when, hazardTH(e)))
 		parts = append(parts, fmt.Sprintf("ออก %s ถึง%sราว %s%s", hhmm(later.Depart), in.DestinationTH, hhmm(later.Arrive), deadlineTH(in, later)))
+		if tr, ok := trainNow(in, res); ok {
+			parts = append(parts, fmt.Sprintf("หรือนั่งรถไฟฟ้าไปตอนนี้ ถึงราว %s%s", hhmm(tr.Arrive), deadlineTH(in, tr)))
+		}
 	case DontGo:
 		headline = "อย่าเพิ่งออก"
 		parts = append(parts, fmt.Sprintf("%s จะเจอ%s", when, hazardTH(e)))
@@ -81,24 +84,42 @@ func buildExplanation(in Input, res Result) Explanation {
 	switch res.Verdict {
 	case LeaveNow:
 		switch {
-		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && weatherEndsLeaveBy(in, *res.LeaveBy):
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s เพื่อให้ถึงปลายทางก่อนกลุ่มฝนตกหนักสะสมจนเกิดน้ำท่วมขังบนเส้นทาง", hhmm(*res.LeaveBy), in.Mode.NameTH())
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute && !in.ArriveBy.IsZero():
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s เพื่อให้ถึงปลายทางทันนัด %s", hhmm(*res.LeaveBy), in.Mode.NameTH(), hhmm(in.ArriveBy))
+		case res.LeaveBy != nil && res.LeaveBy.Sub(in.Now) >= 10*time.Minute:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ออกก่อน %s ด้วย%s", hhmm(*res.LeaveBy), in.Mode.NameTH())
 		case e.Late():
 			exp.ReasonWhyTH = fmt.Sprintf("เส้นทางพอไปได้ด้วย%s แต่จะถึงปลายทางเลยเวลานัดหมาย %s ไป %d นาที", in.Mode.NameTH(), hhmm(in.ArriveBy), e.LateMinutes)
+		case in.Mode == domain.ModeTransit && e.MaxRainMM >= rainLight:
+			exp.ReasonWhyTH = "รถไฟฟ้าวิ่งได้ตามปกติแม้ฝนตก ไม่โดนน้ำท่วมบนถนน พกร่มไว้ช่วงเดินไปและกลับจากสถานี"
 		default:
 			exp.ReasonWhyTH = fmt.Sprintf("สภาพเส้นทางปัจจุบันปลอดภัย ฝนไม่หนักและไม่มีน้ำท่วมขังขวางทาง สามารถออกเดินทางด้วย%s ได้ทันที", in.Mode.NameTH())
 		}
 	case SwitchMode:
-		if e.MaxDepthCM >= 1 {
+		switch {
+		case e.MaxDepthCM >= stallDepthCM(in.Mode):
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากเส้นทางมีน้ำท่วมขังที่%s สูงราว %.0f ซม. ซึ่งเกินระยะปลอดภัย (%s) ขณะที่รถไฟฟ้าวิ่งบนทางยกระดับ/ใต้ดิน ไม่ได้รับผลกระทบจากน้ำท่วมผิวถนน",
 				in.Mode.NameTH(), e.DeepestTH, e.MaxDepthCM, clearanceText(in.Mode))
-		} else if e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto {
+		case e.MaxRainMM >= rainModerate:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากมีฝนกลางทางราว %.0f มม./ชม. ถนนลื่น รถไฟฟ้าใช้เวลาราว %d นาที", in.Mode.NameTH(), e.MaxRainMM, tr.Minutes)
+		case e.MaxDepthCM >= slowDepthCM(in.Mode):
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากเส้นทางมีน้ำท่วมขังที่%s สูงราว %.0f ซม. ทำให้ต้องชะลอ (ระยะพ้นน้ำปลอดภัย: %s) ขณะที่รถไฟฟ้าวิ่งบนทางยกระดับ/ใต้ดิน ไม่ได้รับผลกระทบจากน้ำท่วมผิวถนน",
+				in.Mode.NameTH(), e.DeepestTH, e.MaxDepthCM, clearanceText(in.Mode))
+		case e.WindGustKMH >= motoWindGustThresholdKMH && in.Mode == domain.ModeMoto:
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนรถจักรยานยนต์ เนื่องจากตรวจพบลมกระโชกแรง %.0f กม./ชม. บนเส้นทาง เสี่ยงต่อการเสียหลัก", e.WindGustKMH)
-		} else {
+		case e.Risk == RiskHigh:
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าเนื่องจากเส้นทางทางบกมีความเสี่ยงสูงจากสภาพอากาศ รถไฟฟ้าใช้เวลาราว %d นาทีและปลอดภัยกว่า", tr.Minutes)
+		case e.MaxRainMM < rainLight && e.WindGustKMH >= motoWindGustCautionKMH:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากมีลมกระโชก %.0f กม./ชม. บนเส้นทาง ขับขี่ลำบาก รถไฟฟ้าใช้เวลาราว %d นาที", in.Mode.NameTH(), e.WindGustKMH, tr.Minutes)
+		default:
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากมีฝนกลางทางราว %.0f มม./ชม. ถนนลื่น รถไฟฟ้าใช้เวลาราว %d นาที", in.Mode.NameTH(), e.MaxRainMM, tr.Minutes)
 		}
 	case Wait:
-		if res.WaitUntil != nil {
+		if res.WaitUntil != nil && e.MaxDepthCM < 1 {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้รอจนถึง %s เพื่อให้ฝนซาลงก่อนออกเดินทางด้วย%s", hhmm(*res.WaitUntil), in.Mode.NameTH())
+		} else if res.WaitUntil != nil {
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้รอจนถึง %s เพื่อให้น้ำท่วมขังที่%s ระบายลงคลองและฝนซาลงก่อนออกเดินทางด้วย%s", hhmm(*res.WaitUntil), e.DeepestTH, in.Mode.NameTH())
 		} else {
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ชะลอการเดินทางด้วย%s ไว้ก่อน เพื่อรอให้ระดับน้ำท่วมขังบนเส้นทางระบาย", in.Mode.NameTH())
@@ -109,7 +130,11 @@ func buildExplanation(in Input, res Result) Explanation {
 
 	// 2. Factors considered
 	// Rain factor
-	if res.RainOnset != nil {
+	if res.RainOnset != nil && !res.RainOnset.After(in.Now) {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("กลุ่มฝน: กำลังตกบนเส้นทางตอนนี้ (ความแรงสูงสุด %.0f มม./ชม.)", e.MaxRainMM))
+	} else if res.RainOnset != nil && e.MaxRainMM < rainLight {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("กลุ่มฝน: เริ่มตกบนเส้นทางราว %s หลังถึงปลายทาง", hhmm(*res.RainOnset)))
+	} else if res.RainOnset != nil {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("กลุ่มฝน: เริ่มตกบนเส้นทางราว %s (ความแรงสูงสุด %.0f มม./ชม.)", hhmm(*res.RainOnset), e.MaxRainMM))
 	} else if e.MaxRainMM >= rainLight {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("ปริมาณฝน: มีฝนตกระหว่างทางสูงสุด %.0f มม./ชม.", e.MaxRainMM))
@@ -125,8 +150,8 @@ func buildExplanation(in Input, res Result) Explanation {
 	}
 
 	// Wind factor (if relevant)
-	if e.WindGustKMH >= 30 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("แรงลม: ลมกระโชกสูงสุด %.0f กม./ชม. (เกณฑ์เฝ้าระวังมอเตอร์ไซค์ 45 กม./ชม.)", e.WindGustKMH))
+	if e.WindGustKMH >= motoWindGustCautionKMH {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("แรงลม: ลมกระโชกสูงสุด %.0f กม./ชม. (เกณฑ์เฝ้าระวังมอเตอร์ไซค์ %.0f กม./ชม.)", e.WindGustKMH, motoWindGustThresholdKMH))
 	}
 
 	// Deadline / Travel time factor
@@ -141,8 +166,8 @@ func buildExplanation(in Input, res Result) Explanation {
 	}
 
 	// Community reports factor
-	if len(in.Reports) > 0 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("รายงานชุมชน: มีการแจ้งเตือนน้ำท่วมจริงในพื้นที่ %d จุด", len(in.Reports)))
+	if n := usableReports(in.Reports); n > 0 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("รายงานชุมชน: มีการแจ้งเตือนน้ำท่วมจริงในพื้นที่ %d จุด", n))
 	}
 
 	// 3. Avoid spots
@@ -165,7 +190,10 @@ func buildExplanation(in Input, res Result) Explanation {
 		}
 	} else {
 		if in.Mode == domain.ModeTransit {
-			exp.RouteAdviceTH = "เส้นทางรถไฟฟ้าไม่ได้รับผลกระทบจากจุดเสี่ยงน้ำท่วมบนถนน สามารถเดินทางตามปกติ (พกร่มช่วงเดินเข้า-ออกสถานี)"
+			exp.RouteAdviceTH = "เส้นทางรถไฟฟ้าไม่ได้รับผลกระทบจากจุดเสี่ยงน้ำท่วมบนถนน สามารถเดินทางตามปกติ"
+			if e.MaxRainMM >= rainLight {
+				exp.RouteAdviceTH += " (พกร่มช่วงเดินเข้า-ออกสถานี)"
+			}
 		} else {
 			exp.RouteAdviceTH = "เส้นทางปัจจุบันไม่ผ่านจุดเสี่ยงน้ำท่วมวิกฤตของ กทม. สามารถใช้เส้นทางหลักได้ตามปกติ"
 		}
@@ -212,6 +240,9 @@ func hazardTH(e Eval) string {
 	case e.Mode == domain.ModeMoto && e.MaxProbPct >= motoRainProbThresholdPct:
 		return fmt.Sprintf("โอกาสฝนตก %d%% ควรเตรียมเสื้อกันฝน", e.MaxProbPct)
 	}
+	if e.Mode == domain.ModeMoto && e.WindGustKMH >= motoWindGustCautionKMH {
+		return fmt.Sprintf("ลมกระโชก %.0f กม./ชม.", e.WindGustKMH)
+	}
 	return "ความเสี่ยงระหว่างทาง"
 }
 
@@ -255,7 +286,7 @@ func modeNoteTH(in Input, e Eval) string {
 
 // rainWordTH follows the TMD bands: 10-35 mm/h moderate, 35+ heavy.
 func rainWordTH(mm float64) string {
-	if mm >= 35 {
+	if mm >= rainHeavy {
 		return "ฝนหนัก"
 	}
 	return "ฝนตกปานกลาง"
@@ -279,4 +310,18 @@ func nonEmpty(ss []string) []string {
 		}
 	}
 	return out
+}
+
+// trainNow is the train's trip when the asked mode must wait but the train
+// can go now: the app then puts the train first, so the summary offers it.
+func trainNow(in Input, res Result) (Eval, bool) {
+	if in.Mode == domain.ModeTransit {
+		return Eval{}, false
+	}
+	for _, o := range res.ModeOptions {
+		if o.Mode == domain.ModeTransit && o.Verdict == LeaveNow {
+			return res.Evals[domain.ModeTransit], true
+		}
+	}
+	return Eval{}, false
 }

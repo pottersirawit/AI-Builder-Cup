@@ -31,7 +31,7 @@ Login Google:                                                         ├─ Goo
        <─ redirect กลับ APP_URL?connected=<email> <──────────────────── └─ Firestore (รายงานน้ำท่วม)
 ```
 
-- `DEMO_MODE=0` คือใช้เวลาจริงและข้อมูลจริง ถ้า request ส่ง header `X-Demo-Clock` มา API จะเล่นฉากเดโมของ มิว แทน (เว็บที่ build ด้วย `--dart-define=DEMO_CLOCK=...` จะส่ง header นี้)
+- `DEMO_MODE=0` คือใช้เวลาจริงและข้อมูลจริง ถ้า request ส่ง header `X-Demo-Clock` มา API จะเล่นซ้ำอากาศ น้ำท่วม และการจราจรของวันพายุแทน แต่นัดหมายยังมาจากปฏิทินจริงของบัญชีนั้น (เว็บที่ build ด้วย `--dart-define=DEMO_CLOCK=...` จะส่ง header นี้ ดู [DEMO.md](DEMO.md))
 - บัญชีจริงที่ยังไม่ได้ sync จะได้ `{"connected":false,"trips":[]}` ไม่มีข้อมูลของ มิว ปน
 
 ## ขั้นตอน deploy
@@ -109,6 +109,8 @@ firebase hosting:channel:deploy demo
 ```
 
 ได้ URL preview ของ channel `demo` (หมดอายุเองใน 7 วัน) คำสั่งนี้เขียนทับ `app/build/web` ก่อน deploy เว็บหลักรอบถัดไปต้อง build ใหม่ตามขั้น 3
+
+วิธีเตรียมปฏิทินและเวลาที่ใช้อัดอยู่ใน [DEMO.md](DEMO.md)
 
 ## ตั้งค่า OAuth (Google Cloud Console > APIs & Services)
 

@@ -26,12 +26,16 @@ String resolveApiBaseUrl() {
   return android ? 'http://10.0.2.2:8080' : 'http://localhost:8080';
 }
 
-/// Scenario day of the demo: Tuesday 29 September 2026, Bangkok time.
-const demoDate = '2026-09-29';
+/// Moments of the storm day the server replays: its weather is keyed by
+/// time of day, so the demo runs on today's date against the real calendar.
 const demoPresets = ['16:10', '18:52', '21:40'];
 
-/// ISO-8601 string with Bangkok offset for [hhmm] on the demo day.
-String demoClockIso(String hhmm) => '${demoDate}T$hhmm:00+07:00';
+/// ISO-8601 string with Bangkok offset for [hhmm] on today's Bangkok date.
+String demoClockIso(String hhmm, {DateTime? now}) {
+  final b = (now ?? DateTime.now()).toUtc().add(const Duration(hours: 7));
+  String two(int n) => n.toString().padLeft(2, '0');
+  return '${b.year}-${two(b.month)}-${two(b.day)}T$hhmm:00+07:00';
+}
 
 String? initialDemoClock() {
   final v = _env('DEMO_CLOCK') ?? _demoClockDefine;
