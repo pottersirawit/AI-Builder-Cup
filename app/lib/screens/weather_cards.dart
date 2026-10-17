@@ -335,6 +335,12 @@ class _HourCell extends StatelessWidget {
       why: l.carryWhyRain('${i.value}', from, to),
       accent: rain,
     ),
+    CarryKind.spareUmbrella => (
+      icon: Symbols.umbrella_rounded,
+      title: l.carrySpareUmbrella,
+      why: l.carryWhyMaybeRain('${i.value}', from, to),
+      accent: rain,
+    ),
     CarryKind.sunUmbrella => (
       icon: Symbols.beach_access_rounded,
       title: l.carrySunUmbrella,

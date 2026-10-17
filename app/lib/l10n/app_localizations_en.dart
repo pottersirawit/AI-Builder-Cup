@@ -1313,6 +1313,14 @@ class AppLocalizationsEn extends AppLocalizations {
   String get carryUmbrella => 'Umbrella';
 
   @override
+  String get carrySpareUmbrella => 'Umbrella, just in case';
+
+  @override
+  String carryWhyMaybeRain(Object from, Object pct, Object to) {
+    return 'Maybe rain, $pct% · $from–$to';
+  }
+
+  @override
   String get carrySunUmbrella => 'Sun umbrella';
 
   @override

@@ -821,6 +821,8 @@
   "carryNothingBody": "อากาศดีตลอด 12 ชม.ข้างหน้า",
   "carryRaincoat": "เสื้อกันฝน",
   "carryUmbrella": "ร่ม",
+  "carrySpareUmbrella": "ร่มพับติดกระเป๋า",
+  "carryWhyMaybeRain": "อาจมีฝน {pct}% · {from}–{to}",
   "carrySunUmbrella": "ร่มกันแดด",
   "carrySunscreen": "ครีมกันแดด",
   "carryWater": "น้ำดื่ม",

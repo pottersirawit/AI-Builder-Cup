@@ -1294,6 +1294,14 @@ class AppLocalizationsTh extends AppLocalizations {
   String get carryUmbrella => 'ร่ม';
 
   @override
+  String get carrySpareUmbrella => 'ร่มพับติดกระเป๋า';
+
+  @override
+  String carryWhyMaybeRain(Object from, Object pct, Object to) {
+    return 'อาจมีฝน $pct% · $from–$to';
+  }
+
+  @override
   String get carrySunUmbrella => 'ร่มกันแดด';
 
   @override

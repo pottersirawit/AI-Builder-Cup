@@ -2288,6 +2288,18 @@ abstract class AppLocalizations {
   /// **'ร่ม'**
   String get carryUmbrella;
 
+  /// No description provided for @carrySpareUmbrella.
+  ///
+  /// In th, this message translates to:
+  /// **'ร่มพับติดกระเป๋า'**
+  String get carrySpareUmbrella;
+
+  /// No description provided for @carryWhyMaybeRain.
+  ///
+  /// In th, this message translates to:
+  /// **'อาจมีฝน {pct}% · {from}–{to}'**
+  String carryWhyMaybeRain(Object from, Object pct, Object to);
+
   /// No description provided for @carrySunUmbrella.
   ///
   /// In th, this message translates to:
