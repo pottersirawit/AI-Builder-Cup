@@ -2168,6 +2168,12 @@ abstract class AppLocalizations {
   /// **'ฝนมาราว {time}'**
   String wxRainFrom(String time);
 
+  /// No description provided for @wxMaybeRainFrom.
+  ///
+  /// In th, this message translates to:
+  /// **'อาจมีฝนราว {time}'**
+  String wxMaybeRainFrom(Object time);
+
   /// No description provided for @wxDryAhead.
   ///
   /// In th, this message translates to:

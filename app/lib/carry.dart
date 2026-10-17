@@ -40,7 +40,8 @@ typedef CarryItem = ({CarryKind kind, DateTime? from, DateTime? to, num value});
 bool isRaining(WeatherHour h) =>
     h.rainProbPct >= wetChancePct || h.rainMmPerHr >= lightRain;
 
-bool _likelyRain(WeatherHour h) =>
+/// Rain worth calling rain, not just a chance of it.
+bool likelyRain(WeatherHour h) =>
     h.rainProbPct >= likelyRainPct || h.rainMmPerHr >= lightRain;
 
 /// Hours from the one containing [now] up to [until].
@@ -75,7 +76,7 @@ List<CarryItem> whatToCarry(
       (kind: k, from: hs.first.time, to: hs.last.time.add(hour), value: value);
 
   final wet = hours.where(isRaining).toList();
-  final likely = wet.where(_likelyRain).toList();
+  final likely = wet.where(likelyRain).toList();
   int peakChance(List<WeatherHour> hs) =>
       hs.fold(0, (m, h) => h.rainProbPct > m ? h.rainProbPct : m);
   final sunny = hours.where((h) => h.uvIndex >= highUv).toList();

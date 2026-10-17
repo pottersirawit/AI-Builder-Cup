@@ -801,6 +801,7 @@
       }
     }
   },
+  "wxMaybeRainFrom": "อาจมีฝนราว {time}",
   "wxDryAhead": "ไม่มีฝนอีก 12 ชม.",
   "wxSunStrong": "แดดแรง",
   "wxHot": "ร้อนจัด",

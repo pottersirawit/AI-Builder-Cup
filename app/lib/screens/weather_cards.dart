@@ -80,21 +80,19 @@ String weatherHeadline(AppLocalizations l, Outlook o, DateTime now) {
       : current.feelsLikeC >= hotFeelsLikeC
       ? l.wxHot
       : current.conditionTh;
-  final later = _rainAhead(l, o, now);
+  final later = _rainLine(l, ahead, current);
   return mood.isEmpty ? later : '$mood · $later';
 }
 
-String _rainAhead(AppLocalizations l, Outlook o, DateTime now) {
-  final rain = nextRain(o, now: now);
-  return rain == null ? l.wxDryAhead : l.wxRainFrom(hhmm(rain.time));
-}
-
-/// Under the sky word on the card: rain falling now, else the next wet hour
-/// after this one (this hour's chance is already in the stats).
+/// Rain falling now, else the next wet hour after this one (this hour's
+/// chance is already in the stats), worded by how likely it is.
 String _rainLine(AppLocalizations l, List<WeatherHour> ahead, WeatherHour now) {
   if (_rainNow(l, ahead, now) case final falling?) return falling;
   final rain = ahead.skip(1).where(isRaining).firstOrNull;
-  return rain == null ? l.wxDryAhead : l.wxRainFrom(hhmm(rain.time));
+  if (rain == null) return l.wxDryAhead;
+  return likelyRain(rain)
+      ? l.wxRainFrom(hhmm(rain.time))
+      : l.wxMaybeRainFrom(hhmm(rain.time));
 }
 
 /// Now: temperature, sky, feels-like, UV, rain chance, then the hours.

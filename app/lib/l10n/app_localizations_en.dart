@@ -1251,6 +1251,11 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String wxMaybeRainFrom(Object time) {
+    return 'Chance of rain from about $time';
+  }
+
+  @override
   String get wxDryAhead => 'No rain for 12 hours';
 
   @override
