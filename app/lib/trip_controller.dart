@@ -153,6 +153,25 @@ class TripController extends ChangeNotifier {
     return load();
   }
 
+  Place get origin =>
+      _request.origin ??
+      _request.trip?.origin ??
+      _decision?.trip?.origin ??
+      const Place(nameTh: '', lat: 0, lng: 0);
+
+  Future<void> setOrigin(Place newOrigin) {
+    if (newOrigin.lat == origin.lat &&
+        newOrigin.lng == origin.lng &&
+        newOrigin.nameTh == origin.nameTh) {
+      return Future.value();
+    }
+    _request = _request.copyWith(
+      origin: newOrigin,
+      trip: _request.trip?.copyWith(origin: newOrigin),
+    );
+    return load();
+  }
+
   Future<void> setMode(TravelMode m) {
     if (m == _mode) return Future.value();
     _mode = m;

@@ -132,6 +132,8 @@ class _AskScreenState extends State<AskScreen> {
         () => _messages.add(
           d.needsPlace != null
               ? _Message.needs(q, d.needsPlace!)
+              : d.refused
+              ? _Message.ai(d.summaryTh, null)
               : _Message.ai(d.summaryTh, d),
         ),
       );

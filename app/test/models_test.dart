@@ -80,6 +80,26 @@ void main() {
     expect(d.explanation!.routeAdviceTh, contains('เลี่ยงถนนรัชดาภิเษก'));
     expect(d.explanation!.avoidSpotsTh, ['แยกรัชดาภิเษก-ลาดพร้าว']);
     expect(d.explanation!.isEmpty, isFalse);
+    expect(d.refused, isFalse);
+  });
+
+  test('decision parses refused true when request was blocked by guardrails', () {
+    final json = {
+      'verdict': 'wait',
+      'headline_th': 'คำถามไม่เกี่ยวข้องกับทริป',
+      'summary_th': 'ขออภัยด้วยครับ มิวสามารถช่วยตอบได้เฉพาะเรื่องการเดินทาง',
+      'confidence': 0.0,
+      'rain_timeline': <Map<String, dynamic>>[],
+      'mode_options': <Map<String, dynamic>>[],
+      'flood_spots': <Map<String, dynamic>>[],
+      'reasoning': <Map<String, dynamic>>[],
+      'sources': ['Fontokmai Trip Guardrail'],
+      'generated_by': 'fallback',
+      'refused': true,
+    };
+    final d = Decision.fromJson(json);
+    expect(d.refused, isTrue);
+    expect(d.summaryTh, contains('ขออภัยด้วยครับ'));
   });
 
   test('every decision fixture parses with a known verdict', () {
@@ -228,6 +248,43 @@ void main() {
         Trip.fromJson(trip({'all_day': true, 'destination': {'name_th': 'วันหยุด'}})).travels,
         isFalse,
       );
+
+      final allDayResolved = Trip.fromJson(
+        trip({
+          'all_day': true,
+          'destination': {'name_th': 'ไบเทค บางนา', 'lat': 13.67, 'lng': 100.61},
+        }),
+      );
+      expect(allDayResolved.allDay, isTrue);
+      expect(allDayResolved.destination.resolved, isTrue);
+      expect(allDayResolved.hasDestination, isTrue);
+      expect(allDayResolved.unresolved, isFalse);
+      expect(allDayResolved.travels, isFalse);
+
+      final allDayUnresolved = Trip.fromJson(
+        trip({
+          'all_day': true,
+          'location_text_th': 'เกาะร้าง',
+          'destination': {'name_th': 'เกาะร้าง', 'lat': 0, 'lng': 0},
+        }),
+      );
+      expect(allDayUnresolved.allDay, isTrue);
+      expect(allDayUnresolved.destination.resolved, isFalse);
+      expect(allDayUnresolved.hasDestination, isTrue);
+      expect(allDayUnresolved.unresolved, isTrue);
+      expect(allDayUnresolved.locationTextTh, 'เกาะร้าง');
+
+      final allDayNoLocation = Trip.fromJson(
+        trip({
+          'all_day': true,
+          'destination': {'name_th': '', 'lat': 0, 'lng': 0},
+        }),
+      );
+      expect(allDayNoLocation.allDay, isTrue);
+      expect(allDayNoLocation.destination.resolved, isFalse);
+      expect(allDayNoLocation.hasDestination, isFalse);
+      expect(allDayNoLocation.unresolved, isFalse);
+      expect(allDayNoLocation.locationTextTh, isNull);
     });
 
     test('an unplaced event stays unplaced through the device cache', () {

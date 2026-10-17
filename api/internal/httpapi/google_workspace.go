@@ -390,8 +390,14 @@ func ConvertCalendarEventToTrip(ctx context.Context, item googleCalendarItem, ge
 		trip.Virtual = true
 		trip.Destination = domain.Place{NameTH: onlineTH}
 	case trip.AllDay:
-		trip.Destination = domain.Place{NameTH: location}
-		trip.LocationTextTH = location
+		if location != "" {
+			if p, ok := resolveEventPlace(ctx, location, geo, savedPlaces); ok {
+				trip.Destination = p
+			} else {
+				trip.Destination = domain.Place{NameTH: location}
+				trip.LocationTextTH = location
+			}
+		}
 	default:
 		query := location
 		if query == "" {
@@ -553,8 +559,10 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		slog.Warn("fetch google calendar events error", "email", email, "err", err)
 		failed = append(failed, err)
 	} else {
-		for _, trip := range ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces) {
-			if s.UserStore != nil {
+		newTrips := ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces)
+		if s.UserStore != nil {
+			_ = s.UserStore.DeleteTripsBySource(ctx, email, "calendar")
+			for _, trip := range newTrips {
 				_ = s.UserStore.UpsertTrip(ctx, users.UserTrip{
 					UID:       email,
 					Trip:      trip,
@@ -571,8 +579,9 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		failed = append(failed, err)
 	} else {
 		trips := s.gmailTrips(ctx, gmailItems, savedPlaces, now)
-		for _, trip := range trips {
-			if s.UserStore != nil {
+		if s.UserStore != nil {
+			_ = s.UserStore.DeleteTripsBySource(ctx, email, "gmail")
+			for _, trip := range trips {
 				_ = s.UserStore.UpsertTrip(ctx, users.UserTrip{
 					UID:       email,
 					Trip:      trip,

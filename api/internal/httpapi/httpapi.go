@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -147,8 +148,26 @@ func requestHome(r *http.Request) domain.Place {
 	return domain.Place{NameTH: name, Lat: lat, Lng: lng}
 }
 
+// isDefaultOrPlaceholderOrigin reports whether p is an unconfigured or default placeholder origin.
+func isDefaultOrPlaceholderOrigin(p domain.Place) bool {
+	if p.Lat == 0 && p.Lng == 0 {
+		return true
+	}
+	if strings.Contains(p.NameTH, "ยังไม่ได้ตั้งบ้าน") {
+		return true
+	}
+	if p.NameTH == defaultOrigin.NameTH || (p.Lat == defaultOrigin.Lat && p.Lng == defaultOrigin.Lng) {
+		return true
+	}
+	if p.NameTH == "สีลม" && p.Lat == 13.7279 && p.Lng == 100.5281 {
+		return true
+	}
+	return false
+}
+
 // applyHomeOrigin overrides a trip's origin with the user's saved home place
-// unless the trip's destination is already that home place.
+// when the trip starts from a placeholder/unconfigured origin, unless the
+// trip's destination is already that home place.
 func applyHomeOrigin(t domain.Trip, home domain.Place) domain.Trip {
 	if home.Lat == 0 && home.Lng == 0 {
 		return t
@@ -156,6 +175,9 @@ func applyHomeOrigin(t domain.Trip, home domain.Place) domain.Trip {
 	dLat := t.Destination.Lat - home.Lat
 	dLng := t.Destination.Lng - home.Lng
 	if dLat*dLat+dLng*dLng < 0.00001 {
+		return t
+	}
+	if !isDefaultOrPlaceholderOrigin(t.Origin) {
 		return t
 	}
 	t.Origin = home
@@ -188,6 +210,15 @@ func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Tr
 				}
 				trips = append(trips, t)
 			}
+			sort.SliceStable(trips, func(i, j int) bool {
+				if trips[i].ArriveBy.IsZero() {
+					return false
+				}
+				if trips[j].ArriveBy.IsZero() {
+					return true
+				}
+				return trips[i].ArriveBy.Before(trips[j].ArriveBy)
+			})
 		}
 	}
 	demo := r.Header.Get(clock.Header) != "" || email == "" || email == DemoEmail
@@ -264,20 +295,22 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if tripReq.Trip != nil && s.UserStore != nil {
+	if tripReq.Trip != nil {
 		if tripReq.Origin != nil && (tripReq.Origin.Lat != 0 || tripReq.Origin.Lng != 0) {
 			tripReq.Trip.Origin = *tripReq.Origin
 		}
-		email := req.Email
-		if email == "" {
-			email = r.URL.Query().Get("email")
-		}
-		if email != "" {
-			_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
-				UID:       email,
-				Trip:      *tripReq.Trip,
-				UpdatedAt: time.Now(),
-			})
+		if s.UserStore != nil {
+			email := req.Email
+			if email == "" {
+				email = r.URL.Query().Get("email")
+			}
+			if email != "" {
+				_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+					UID:       email,
+					Trip:      *tripReq.Trip,
+					UpdatedAt: time.Now(),
+				})
+			}
 		}
 	} else if tripReq.Trip == nil && tripReq.TripID != "" && s.UserStore != nil {
 		if ut, err := s.UserStore.FindTripByID(r.Context(), tripReq.TripID); err == nil {

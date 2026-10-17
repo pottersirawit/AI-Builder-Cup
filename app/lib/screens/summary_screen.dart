@@ -105,6 +105,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     VerdictScreen(
       request: widget.repo.requestFor(trip),
       trip: trip,
+      previousTrip: previousEventFor(widget.repo.trips, trip),
       departAt:
           departAt ?? planDepartFor(trip, AppScope.readState(context).now()),
       mode: mode,
@@ -296,6 +297,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
           actions: [
             DemoClockChip(state: state, sky: sky),
             IconButton(
+              tooltip: l.eventsRefresh,
+              onPressed: widget.onRefresh,
+              icon: const Icon(Symbols.refresh_rounded),
+            ),
+            IconButton(
               tooltip: l.homeSettings,
               onPressed: () => _push(const SettingsScreen()),
               icon: const Icon(Symbols.settings_rounded),
@@ -399,7 +405,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                       weather: outlook,
                                       onTap: t.unresolved
                                           ? () => _resolveTrip(t)
-                                          : t.travels
+                                          : (t.travels ||
+                                                  (t.allDay &&
+                                                      t.destination.resolved))
                                           ? () => _openTrip(
                                               t,
                                               mode: _planFor(
@@ -455,7 +463,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final d = widget.repo.decisionFor(t.id);
     return d == null
         ? null
-        : planOf(d, planDepartFor(t, now), now, deadline: t.arriveBy);
+        : planOf(
+            d,
+            planDepartFor(t, now),
+            now,
+            deadline: t.allDay ? null : t.arriveBy,
+          );
   }
 }
 

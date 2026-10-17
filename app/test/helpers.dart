@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/api.dart';
 import 'package:fontokmai/app_state.dart';
+import 'package:fontokmai/config.dart';
 import 'package:fontokmai/google_link.dart';
 import 'package:fontokmai/location.dart';
 import 'package:fontokmai/main.dart';
@@ -47,6 +48,7 @@ Future<AppState> pumpApp(
   Future<bool> Function(Uri url)? launch,
   Uri? appBase,
   Duration Function(http.Request req)? latency,
+  DemoLaunch? demoLaunch,
 }) async {
   tester.view.physicalSize = Size(402 * 3, height * 3);
   tester.view.devicePixelRatio = 3;
@@ -84,6 +86,7 @@ Future<AppState> pumpApp(
       api: api,
       locator: locator,
       googleLink: link,
+      launch: demoLaunch,
     ),
   );
   await settle(tester);

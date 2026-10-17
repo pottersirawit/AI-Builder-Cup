@@ -477,8 +477,12 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 		}
 		routesByMode[m] = scenario.LocalizeRoute(r, s.Lang)
 	}
+	arriveBy := s.Trip.ArriveBy
+	if s.Trip.AllDay {
+		arriveBy = time.Time{}
+	}
 	in := decision.Input{
-		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: s.Trip.ArriveBy, Mode: mode,
+		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: arriveBy, Mode: mode,
 		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
 		Routes: routesByMode,
 		Rain:   rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,

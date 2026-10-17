@@ -4,11 +4,13 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../events.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
 import '../trip_controller.dart';
 import 'ask_screen.dart';
+import 'origin_picker.dart';
 import 'parts.dart';
 import 'place_picker.dart';
 
@@ -18,6 +20,7 @@ class VerdictScreen extends StatefulWidget {
     super.key,
     required this.request,
     this.trip,
+    this.previousTrip,
     this.departAt,
     this.mode,
   });
@@ -25,6 +28,7 @@ class VerdictScreen extends StatefulWidget {
   /// A trip id, an origin/destination pair, or a Thai question.
   final DecideRequest request;
   final Trip? trip;
+  final Trip? previousTrip;
   final DateTime? departAt;
   final TravelMode? mode;
 
@@ -36,10 +40,25 @@ class _VerdictScreenState extends State<VerdictScreen> {
   late final TripController _c = TripController(
     api: AppScope.apiOf(context),
     state: AppScope.readState(context),
-    request: widget.request,
+    request: _initialRequest,
     departAt: widget.departAt,
     mode: widget.mode,
   )..addListener(_changed);
+
+  DecideRequest get _initialRequest {
+    final prev = widget.previousTrip;
+    final trip = widget.trip;
+    if (prev != null &&
+        prev.destination.resolved &&
+        trip != null &&
+        (widget.request.origin == null || widget.request.origin!.isPlaceholder)) {
+      return widget.request.copyWith(
+        origin: prev.destination,
+        trip: trip.copyWith(origin: prev.destination),
+      );
+    }
+    return widget.request;
+  }
 
   @override
   void initState() {
@@ -48,6 +67,25 @@ class _VerdictScreenState extends State<VerdictScreen> {
   }
 
   void _changed() => setState(() {});
+
+  Future<void> _openOriginPicker() async {
+    final state = AppScope.readState(context);
+    final store = AppScope.readPlaces(context);
+    final prev = widget.previousTrip ??
+        (widget.trip != null
+            ? previousEventFor(store.cachedTrips, widget.trip!)
+            : null);
+    await showOriginPickerSheet(
+      context: context,
+      currentOrigin: _c.origin,
+      previousTrip: prev,
+      home: store.home,
+      work: store.work,
+      others: store.others,
+      currentLocation: state.currentLocation,
+      onSelected: (place) => _c.setOrigin(place),
+    );
+  }
 
   Future<void> _savePlace(Place dest) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -79,7 +117,8 @@ class _VerdictScreenState extends State<VerdictScreen> {
     final l = context.l10n;
     final state = AppScope.stateOf(context);
     final d = _c.decision;
-    final trip = widget.trip ?? d?.trip;
+    final rawTrip = widget.trip ?? d?.trip;
+    final trip = rawTrip?.copyWith(origin: _c.origin);
     final store = AppScope.placesOf(context);
     final dest = trip?.destination;
     final unsaved =
@@ -108,12 +147,42 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ],
           )
+        : d?.refused == true
+        ? Pass(
+            sections: [
+              PassSection(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      d!.headlineTh,
+                      style: tabular(
+                        t.headlineMedium!,
+                      ).copyWith(color: c.paperInk),
+                    ),
+                    const SizedBox(height: Space.x3),
+                    Text(
+                      d.summaryTh,
+                      style: t.bodyLarge!.copyWith(color: c.paperInk),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )
         : TripPass(
             controller: _c,
             now: state.now(),
             trip: trip,
             question: widget.request.questionTh,
             actions: [
+              if (trip != null)
+                ActionChip(
+                  avatar:
+                      const Icon(Symbols.edit_location_alt_rounded, size: 18),
+                  label: Text(l.isThai ? 'เปลี่ยนจุดเริ่มต้น' : 'Change start'),
+                  onPressed: _openOriginPicker,
+                ),
               if (unsaved && store.canAddOther)
                 ActionChip(
                   avatar: const Icon(Symbols.bookmark_add_rounded, size: 18),
@@ -146,6 +215,10 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       subtitle: trip == null
                           ? l.verdictReadingQuestion
                           : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
+                      onSubtitleTap: trip != null ? _openOriginPicker : null,
+                      subtitleTapLabel: l.isThai
+                          ? 'เปลี่ยนจุดเริ่มต้น'
+                          : 'Change starting point',
                       actions: [
                         if (state.usingSample)
                           const Padding(
@@ -176,7 +249,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ),
           ),
-          if (d != null) ...[
+          if (d != null && !d.refused) ...[
             if (d.explanation case final e? when !e.isEmpty)
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),
@@ -214,6 +287,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
                 decision: d,
                 trip: trip,
                 selectedMode: _c.mode,
+                onChangeOrigin: trip != null ? _openOriginPicker : null,
               ),
             ),
             SliverToBoxAdapter(
@@ -587,11 +661,13 @@ class _CalculatedRouteSection extends StatelessWidget {
     required this.decision,
     required this.trip,
     required this.selectedMode,
+    this.onChangeOrigin,
   });
 
   final Decision decision;
   final Trip? trip;
   final TravelMode selectedMode;
+  final VoidCallback? onChangeOrigin;
 
   @override
   Widget build(BuildContext context) {
@@ -693,6 +769,16 @@ class _CalculatedRouteSection extends StatelessWidget {
             )
           else if (routeStep != null)
             Text(routeStep.summaryTh, style: t.bodyMedium),
+          if (onChangeOrigin != null) ...[
+            const SizedBox(height: Space.x3),
+            OutlinedButton.icon(
+              icon: const Icon(Symbols.edit_location_alt_rounded, size: 18),
+              label: Text(
+                l.isThai ? 'เปลี่ยนจุดเริ่มต้น' : 'Change starting point',
+              ),
+              onPressed: onChangeOrigin,
+            ),
+          ],
           if (transitLegs.isNotEmpty) ...[
             const SizedBox(height: Space.x4),
             if (selectedMode != TravelMode.transit) ...[

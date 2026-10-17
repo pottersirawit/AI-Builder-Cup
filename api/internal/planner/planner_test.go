@@ -445,17 +445,42 @@ func TestOpenRefusesTripsWithNoTravel(t *testing.T) {
 	p := newPlanner(t)
 	ctx := context.Background()
 	unresolved := domain.Trip{ID: "cal-x", TitleTH: "ไม่รู้ที่", Origin: scenario.Home, Destination: domain.Place{NameTH: "ร้านลับ"}, ArriveBy: at(18, 0), Mode: domain.ModeCar}
-	allDay := domain.Trip{ID: "cal-y", TitleTH: "สัมมนา", Origin: scenario.Home, Destination: scenario.Siam, ArriveBy: at(0, 0), AllDay: true, Mode: domain.ModeCar}
+	allDayNoDest := domain.Trip{ID: "cal-y", TitleTH: "สัมมนา", Origin: scenario.Home, Destination: domain.Place{NameTH: "สัมมนา"}, ArriveBy: at(0, 0), AllDay: true, Mode: domain.ModeCar}
 	for name, req := range map[string]TripRequest{
-		"virtual trip id": {TripID: "cal-sync"},
-		"unresolved trip": {Trip: &unresolved},
-		"all-day trip":    {Trip: &allDay},
+		"virtual trip id":            {TripID: "cal-sync"},
+		"unresolved trip":            {Trip: &unresolved},
+		"all-day trip without place": {Trip: &allDayNoDest},
 	} {
 		if _, err := p.Open(ctx, scenarioProviders(), at(16, 10), req); !errors.Is(err, ErrBadTrip) {
 			t.Errorf("%s: err = %v, want ErrBadTrip", name, err)
 		}
 	}
 }
+
+func TestOpenAndBaselineAllDayTripWithLocation(t *testing.T) {
+	p := newPlanner(t)
+	allDay := domain.Trip{
+		ID:          "cal-allday",
+		TitleTH:     "งานสัมมนา",
+		Origin:      scenario.Home,
+		Destination: scenario.Siam,
+		ArriveBy:    at(0, 0),
+		AllDay:      true,
+		Mode:        domain.ModeCar,
+	}
+	s, err := p.Open(context.Background(), scenarioProviders(), at(9, 0), TripRequest{Trip: &allDay})
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	res, err := s.Baseline(at(9, 0), domain.ModeCar)
+	if err != nil {
+		t.Fatalf("Baseline failed: %v", err)
+	}
+	if res.Evals[domain.ModeCar].LateMinutes > 0 {
+		t.Errorf("all-day trip should not have LateMinutes > 0, got %d", res.Evals[domain.ModeCar].LateMinutes)
+	}
+}
+
 
 type countingWeatherNext struct {
 	calls int

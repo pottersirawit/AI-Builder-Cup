@@ -56,4 +56,24 @@ void main() {
     expect(repo.trips, isNotEmpty);
     expect(store.cachedTrips, isEmpty, reason: 'sample trips are never cached');
   });
+
+  test('lastSyncTime is set when sync succeeds and updates trips', () async {
+    final store = (await emptyStore())..connectGoogle('owner.real@example.com');
+    final state = AppState();
+    final api = FonTokMaiApi(
+      baseUrl: 'http://sync.test',
+      client: MockClient((req) async {
+        if (req.url.path == '/v1/trips/sync') {
+          return jsonResponse({'trips': []});
+        }
+        return jsonResponse({});
+      }),
+      bundle: _DiskBundle(),
+    );
+    final repo = TripsRepository(api: api, state: state, places: store);
+
+    expect(repo.lastSyncTime, isNull);
+    await repo.refresh(sync: true);
+    expect(repo.lastSyncTime, isNotNull);
+  });
 }

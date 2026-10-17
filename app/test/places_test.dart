@@ -347,4 +347,44 @@ void main() {
     expect(bodies.last['destination'], isNotNull);
     expect(bodies.last['mode'], 'moto');
   });
+
+  test('TripController setOrigin updates request and sends new origin to decide', () async {
+    final bodies = <Map<String, dynamic>>[];
+    final api = FonTokMaiApi(
+      baseUrl: 'http://api.test',
+      client: MockClient((req) async {
+        bodies.add(jsonDecode(req.body) as Map<String, dynamic>);
+        return jsonResponse({
+          'verdict': 'leave_now',
+          'headline_th': 'ออกได้เลย',
+          'trip': {
+            'id': 'trip-1',
+            'title_th': 'ดินเนอร์',
+            'source': 'calendar',
+            'origin': {'name_th': 'โรงพยาบาล A', 'lat': 13.75, 'lng': 100.55},
+            'destination': {'name_th': 'ร้านอาหาร B', 'lat': 13.80, 'lng': 100.60},
+            'mode': 'car',
+          },
+        });
+      }),
+    );
+    final c = TripController(
+      api: api,
+      state: AppState(demoClock: '2026-09-29T16:10:00+07:00'),
+      request: DecideRequest(
+        tripId: 'trip-1',
+        origin: const Place(nameTh: 'บ้าน', lat: 13.816, lng: 100.59),
+        destination: const Place(nameTh: 'ร้านอาหาร B', lat: 13.80, lng: 100.60),
+      ),
+    );
+    await c.load();
+    expect(bodies.first['origin']['name_th'], 'บ้าน');
+    expect(c.origin.nameTh, 'บ้าน');
+
+    await c.setOrigin(const Place(nameTh: 'โรงพยาบาล A', lat: 13.75, lng: 100.55));
+    expect(bodies.last['origin']['name_th'], 'โรงพยาบาล A');
+    expect(bodies.last['origin']['lat'], 13.75);
+    expect(c.origin.nameTh, 'โรงพยาบาล A');
+  });
 }
+

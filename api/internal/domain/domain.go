@@ -141,7 +141,7 @@ type Trip struct {
 // Plannable reports whether t is travel the planner can route: a real trip
 // with both ends resolved.
 func (t Trip) Plannable() bool {
-	return !t.Virtual && !t.AllDay && t.Origin.Resolved() && t.Destination.Resolved()
+	return !t.Virtual && t.Origin.Resolved() && t.Destination.Resolved()
 }
 
 // TransitLeg is one rail/transit segment from a boarding station to an alighting station.
