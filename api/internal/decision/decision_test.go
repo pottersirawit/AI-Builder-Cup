@@ -528,3 +528,34 @@ func TestWaitSummaryOffersTheTrainWhenItCanGo(t *testing.T) {
 		}
 	}
 }
+
+// A wait that turns an on-time trip into a late one is no answer: the train
+// is, and a rider is not sent to wait an hour past the appointment.
+func TestWaitNeverMakesAnOnTimeTripLate(t *testing.T) {
+	in := dryInput(domain.LangEN, at(9, 0))
+	in.Mode, in.Rain = domain.ModeMoto, []domain.RainSample{{Time: at(8, 0), MMPerHr: 2}}
+	res := Decide(in)
+	if res.Verdict == Wait && EvaluateMode(in, in.Mode, *res.WaitUntil).Late() {
+		t.Fatalf("got wait until %s, arriving late; leaving now is on time", hhmm(*res.WaitUntil))
+	}
+	if res.Verdict != SwitchMode {
+		t.Errorf("got %s, want switch_mode to the on-time train", res.Verdict)
+	}
+}
+
+// Already late with the road clearing only later still and the train slower,
+// the answer is the first clearing wait, not "every option is high risk".
+func TestLateWithASlowerTrainStillWaits(t *testing.T) {
+	in := dryInput(domain.LangEN, at(8, 0))
+	in.Rain = []domain.RainSample{{Time: at(8, 0), MMPerHr: 12}, {Time: at(9, 0), MMPerHr: 0}}
+	in.Travel = func(m domain.Mode, _ time.Time) int {
+		if m == domain.ModeTransit {
+			return 50
+		}
+		return 30
+	}
+	res := Decide(in)
+	if res.Verdict == DontGo {
+		t.Fatalf("got dont_go; the road clears at 09:00 (%q)", res.SummaryTH)
+	}
+}

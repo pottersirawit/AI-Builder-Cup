@@ -367,22 +367,28 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 	if m != domain.ModeTransit && tr.Risk.rank() < e.Risk.rank() && (e.Risk == RiskHigh || (m != domain.ModeMoto && tr.OK())) {
 		return SwitchMode, nil
 	}
-	// Already late, a wait that arrives even later is no answer; the train is,
-	// when it is no riskier and gets there sooner.
-	clearsTooLate := false
+	// A wait that makes an on-time trip late, or a late one later still, is
+	// no answer; the train is, when it is no riskier and gets there on time or
+	// sooner. Failing that, the first clearing wait still beats staying put.
+	var firstClear *time.Time
 	for t := in.DepartAt.Truncate(15 * time.Minute).Add(15 * time.Minute); !t.After(in.DepartAt.Add(3 * time.Hour)); t = t.Add(15 * time.Minute) {
 		later := EvaluateMode(in, m, t)
 		if later.Risk != RiskLow {
 			continue
 		}
-		if e.Late() && later.Arrive.After(e.Arrive) {
-			clearsTooLate = true
+		if (e.Late() && later.Arrive.After(e.Arrive)) || (later.Late() && !e.Late()) {
+			if firstClear == nil {
+				firstClear = &t
+			}
 			continue
 		}
 		return Wait, &t
 	}
-	if clearsTooLate && m != domain.ModeTransit && tr.Risk.rank() <= e.Risk.rank() && tr.Arrive.Before(e.Arrive) {
+	if firstClear != nil && m != domain.ModeTransit && tr.Risk.rank() <= e.Risk.rank() && (!tr.Late() || tr.Arrive.Before(e.Arrive)) {
 		return SwitchMode, nil
+	}
+	if firstClear != nil {
+		return Wait, firstClear
 	}
 	// A rider waits out a shower; only weather that does not clear calls for the train.
 	if m == domain.ModeMoto && tr.OK() {
