@@ -299,6 +299,10 @@
       }
     }
   },
+  "planTitleOneToday": "นัดหมายวันนี้",
+  "planTitleTomorrow": "นัดหมายพรุ่งนี้",
+  "planTitleNextTripTomorrow": "เดินทางพรุ่งนี้",
+  "planTitleUpcoming": "นัดหมายถัดไป",
   "planTitleFree": "วันนี้ไม่มีนัดแล้ว",
   "planToday": "แผนต่อจากนี้",
   "planTomorrow": "พรุ่งนี้",

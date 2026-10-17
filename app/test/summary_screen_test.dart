@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:fontokmai/design/design.dart';
+import 'package:fontokmai/l10n/l10n.dart';
+import 'package:fontokmai/models.dart';
 import 'package:fontokmai/screens/event_cards.dart';
 import 'package:fontokmai/screens/plan_cards.dart';
+import 'package:fontokmai/screens/summary_screen.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
 
 import 'helpers.dart';
@@ -651,6 +654,183 @@ void main() {
 
     // Should recalculate with home origin
     expect(find.textContaining('บ้าน → ร้านอาหารสยาม'), findsWidgets);
+  });
+
+  test('summaryHeaderTitle produces context-aware titles based on next event day', () {
+    final lEn = lookupAppLocalizations(const Locale('en'));
+    final lTh = lookupAppLocalizations(const Locale('th'));
+    final now = DateTime.parse('2026-10-17T15:00:00+07:00');
+    final todayTrip = Trip(
+      id: 'today-trip',
+      titleTh: 'นัดวันนี้',
+      source: 'calendar',
+      mode: TravelMode.car,
+      origin: const Place(nameTh: 'บ้าน', lat: 13.8, lng: 100.5),
+      destination: const Place(nameTh: 'ที่ทำงาน', lat: 13.7, lng: 100.5),
+      arriveBy: DateTime.parse('2026-10-17T18:00:00+07:00'),
+    );
+    final tomorrowTrip = Trip(
+      id: 'tomorrow-trip',
+      titleTh: 'นัดพรุ่งนี้',
+      source: 'calendar',
+      mode: TravelMode.car,
+      origin: const Place(nameTh: 'บ้าน', lat: 13.8, lng: 100.5),
+      destination: const Place(nameTh: 'บางนา', lat: 13.6, lng: 100.6),
+      arriveBy: DateTime.parse('2026-10-18T13:30:00+07:00'),
+    );
+    final futureTrip = Trip(
+      id: 'future-trip',
+      titleTh: 'นัดสัปดาห์หน้า',
+      source: 'calendar',
+      mode: TravelMode.car,
+      origin: const Place(nameTh: 'บ้าน', lat: 13.8, lng: 100.5),
+      destination: const Place(nameTh: 'สยาม', lat: 13.7, lng: 100.5),
+      arriveBy: DateTime.parse('2026-10-21T10:00:00+07:00'),
+    );
+
+    // Case 1: Next event is tomorrow and no events left today
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      "Tomorrow's plan",
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      'นัดหมายพรุ่งนี้',
+    );
+
+    // Case 2: Next travel event is tomorrow, but there is 1 non-travel/online event today
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      'Next trip tomorrow',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      'เดินทางพรุ่งนี้',
+    );
+
+    // Case 3: Next event is 2+ days away
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: futureTrip,
+        now: now,
+      ),
+      'Upcoming trip',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: futureTrip,
+        now: now,
+      ),
+      'นัดหมายถัดไป',
+    );
+
+    // Case 4: Next event is today (1 left)
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: todayTrip,
+        now: now,
+      ),
+      '1 more today',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: todayTrip,
+        now: now,
+      ),
+      'วันนี้อีก 1 นัด',
+    );
+
+    // Case 5: Next event is today (2+ left)
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 2,
+        next: todayTrip,
+        now: now,
+      ),
+      '2 more today',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 2,
+        next: todayTrip,
+        now: now,
+      ),
+      'วันนี้อีก 2 นัด',
+    );
+
+    // Case 6: No events left today and no next event
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: null,
+        now: now,
+      ),
+      'Nothing else today',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: null,
+        now: now,
+      ),
+      'วันนี้ไม่มีนัดแล้ว',
+    );
   });
 }
 

@@ -1399,6 +1399,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get planTitleOneToday => '1 trip today';
+
+  @override
+  String get planTitleTomorrow => 'Tomorrow\'s plan';
+
+  @override
+  String get planTitleNextTripTomorrow => 'Next trip tomorrow';
+
+  @override
+  String get planTitleUpcoming => 'Upcoming trip';
+
+  @override
   String get planTitleFree => 'Nothing else today';
 
   @override

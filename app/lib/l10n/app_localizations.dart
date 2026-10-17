@@ -2396,6 +2396,30 @@ abstract class AppLocalizations {
   /// **'วันนี้อีก {count} นัด'**
   String planTitleToday(String count);
 
+  /// No description provided for @planTitleOneToday.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายวันนี้'**
+  String get planTitleOneToday;
+
+  /// No description provided for @planTitleTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายพรุ่งนี้'**
+  String get planTitleTomorrow;
+
+  /// No description provided for @planTitleNextTripTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'เดินทางพรุ่งนี้'**
+  String get planTitleNextTripTomorrow;
+
+  /// No description provided for @planTitleUpcoming.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายถัดไป'**
+  String get planTitleUpcoming;
+
   /// No description provided for @planTitleFree.
   ///
   /// In th, this message translates to:

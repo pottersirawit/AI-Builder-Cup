@@ -285,11 +285,14 @@ class _SummaryScreenState extends State<SummaryScreen> {
         child: LargeTitleHeader(
           onSky: true,
           eyebrow: dayDate(l, now),
-          title: !repo.connected || pending
-              ? l.summaryTitle
-              : todayLeft == 0
-              ? l.planTitleFree
-              : l.planTitleToday('$todayLeft'),
+          title: summaryHeaderTitle(
+            l: l,
+            connected: repo.connected,
+            pending: pending,
+            todayLeft: todayLeft,
+            next: next,
+            now: now,
+          ),
           badges: [
             if (store.demoProfile) const DemoBadge(onField: true),
             if (state.usingSample) const SampleBadge(onField: true),
@@ -674,4 +677,33 @@ Future<void> showFloodSheet(
       );
     },
   );
+}
+
+/// Calculates the context-aware header title based on when the next trip is scheduled.
+String summaryHeaderTitle({
+  required AppLocalizations l,
+  required bool connected,
+  required bool pending,
+  required int todayLeft,
+  required Trip? next,
+  required DateTime now,
+}) {
+  if (!connected || pending) {
+    return l.summaryTitle;
+  }
+  if (next != null && next.arriveBy != null) {
+    final today = bangkokDay(now);
+    final nextDay = bangkokDay(next.arriveBy!);
+    final diffDays = nextDay.difference(today).inDays;
+    if (diffDays == 1) {
+      return todayLeft > 0 ? l.planTitleNextTripTomorrow : l.planTitleTomorrow;
+    }
+    if (diffDays > 1) {
+      return l.planTitleUpcoming;
+    }
+  }
+  if (todayLeft == 0) {
+    return l.planTitleFree;
+  }
+  return l.planTitleToday('$todayLeft');
 }

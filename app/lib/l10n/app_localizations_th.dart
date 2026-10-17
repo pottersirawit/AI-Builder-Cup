@@ -1380,6 +1380,18 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String get planTitleOneToday => 'นัดหมายวันนี้';
+
+  @override
+  String get planTitleTomorrow => 'นัดหมายพรุ่งนี้';
+
+  @override
+  String get planTitleNextTripTomorrow => 'เดินทางพรุ่งนี้';
+
+  @override
+  String get planTitleUpcoming => 'นัดหมายถัดไป';
+
+  @override
   String get planTitleFree => 'วันนี้ไม่มีนัดแล้ว';
 
   @override
