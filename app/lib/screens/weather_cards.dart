@@ -95,11 +95,57 @@ String _rainLine(AppLocalizations l, List<WeatherHour> ahead, WeatherHour now) {
       : l.wxMaybeRainFrom(hhmm(rain.time));
 }
 
-/// Now: temperature, sky, feels-like, UV, rain chance, then the hours.
+/// 0 none, 1 light, 2 moderate, 3 heavy — from mm/hr, or from condition/chance
+/// when the forecast provider reports condition without QPF quantity.
+int hourRainLevel(WeatherHour h) {
+  final byMm = rainLevel(h.rainMmPerHr);
+  if (byMm > 0) return byMm;
+  return switch (h.condition) {
+    'HEAVY_RAIN' ||
+    'HEAVY_RAIN_SHOWERS' ||
+    'HEAVY_THUNDERSTORM' => 3,
+    'THUNDERSTORM' ||
+    'THUNDERSHOWER' ||
+    'SCATTERED_THUNDERSTORMS' ||
+    'RAIN' ||
+    'RAIN_SHOWERS' ||
+    'RAIN_PERIODICALLY_HEAVY' ||
+    'MODERATE_TO_HEAVY_RAIN' => 2,
+    'LIGHT_RAIN' ||
+    'LIGHT_RAIN_SHOWERS' ||
+    'CHANCE_OF_SHOWERS' ||
+    'LIGHT_THUNDERSTORM_RAIN' => 1,
+    _ => h.rainProbPct >= wetChancePct ? 1 : 0,
+  };
+}
+
+String rainIntensityText(AppLocalizations l, WeatherHour h) =>
+    switch (hourRainLevel(h)) {
+      3 => l.summaryRainHeavy,
+      2 => l.summaryRainModerate,
+      1 => l.summaryRainLight,
+      _ => l.summaryRainNone,
+    };
+
+String formatRainMm(AppLocalizations l, double mm) {
+  final numStr = (mm - mm.roundToDouble()).abs() < 0.05
+      ? '${mm.round()}'
+      : mm.toStringAsFixed(1);
+  return l.isThai ? '$numStr มม.' : '$numStr mm';
+}
+
+/// Now: place, temperature, sky, feels-like, UV, rain chance, hourly intensity,
+/// and data sources.
 class WeatherHeroCard extends StatelessWidget {
-  const WeatherHeroCard({super.key, required this.outlook, required this.now});
+  const WeatherHeroCard({
+    super.key,
+    required this.outlook,
+    required this.now,
+    this.placeName,
+  });
   final Outlook outlook;
   final DateTime now;
+  final String? placeName;
 
   @override
   Widget build(BuildContext context) {
@@ -143,6 +189,30 @@ class WeatherHeroCard extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          if (placeName != null && placeName!.isNotEmpty) ...[
+            Row(
+              children: [
+                Icon(
+                  Symbols.location_on_rounded,
+                  size: 16,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: Space.x1),
+                Expanded(
+                  child: Text(
+                    placeName!,
+                    key: const ValueKey('weather-place'),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: t.labelLarge!.copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.x2),
+          ],
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
@@ -207,7 +277,9 @@ class WeatherHeroCard extends StatelessWidget {
               stat(
                 l.wxRainChance,
                 '${current.rainProbPct}%',
-                color: isRaining(current) ? const Color(0xFF8AB4FF) : null,
+                color: hourRainLevel(current) > 0 || current.rainProbPct > 0
+                    ? const Color(0xFF8AB4FF)
+                    : null,
               ),
             ],
           ),
@@ -228,6 +300,7 @@ class WeatherHeroCard extends StatelessWidget {
           SingleChildScrollView(
             scrollDirection: Axis.horizontal,
             child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 for (final (i, h) in hours.indexed) ...[
                   if (i > 0) const SizedBox(width: Space.x1),
@@ -243,7 +316,10 @@ class WeatherHeroCard extends StatelessWidget {
           ),
           if (outlook.sources.isNotEmpty) ...[
             const SizedBox(height: Space.x3),
-            SourceLabel(outlook.sources.join(' · ')),
+            SourceLabel(
+              outlook.sources.join(' · '),
+              color: scheme.onSurfaceVariant,
+            ),
           ],
         ],
       ),
@@ -265,14 +341,22 @@ class _HourCell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = context.l10n;
     final t = Theme.of(context).textTheme;
     final scheme = Theme.of(context).colorScheme;
     final wet = isRaining(hour);
+    final level = hourRainLevel(hour);
+    final levelColor = switch (level) {
+      3 => const Color(0xFFFFB547),
+      2 => const Color(0xFF6EA8FF),
+      1 => const Color(0xFF8AB4FF),
+      _ => scheme.onSurfaceVariant.withValues(alpha: .45),
+    };
     return Container(
-      constraints: const BoxConstraints(minWidth: 52),
+      constraints: const BoxConstraints(minWidth: 64),
       padding: const EdgeInsets.symmetric(
         vertical: Space.x2,
-        horizontal: Space.x1,
+        horizontal: Space.x2,
       ),
       decoration: current
           ? BoxDecoration(
@@ -281,6 +365,7 @@ class _HourCell extends StatelessWidget {
             )
           : null,
       child: Column(
+        mainAxisSize: MainAxisSize.min,
         children: [
           Text(
             label,
@@ -303,9 +388,65 @@ class _HourCell extends StatelessWidget {
           Text(
             '${hour.rainProbPct}%',
             style: tabular(t.labelSmall!).copyWith(
-              color: wet ? const Color(0xFF8AB4FF) : scheme.onSurfaceVariant,
+              color: wet || level > 0
+                  ? const Color(0xFF8AB4FF)
+                  : scheme.onSurfaceVariant,
             ),
           ),
+          const SizedBox(height: Space.x1),
+          _RainIntensityBars(level: level, activeColor: levelColor),
+          const SizedBox(height: 2),
+          Text(
+            level > 0 ? rainIntensityText(l, hour) : '–',
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: t.labelSmall!.copyWith(
+              color: level > 0
+                  ? levelColor
+                  : scheme.onSurfaceVariant.withValues(alpha: .45),
+            ),
+          ),
+          Text(
+            hour.rainMmPerHr >= lightRain
+                ? formatRainMm(l, hour.rainMmPerHr)
+                : ' ',
+            maxLines: 1,
+            style: tabular(
+              t.labelSmall!,
+            ).copyWith(color: scheme.onSurfaceVariant),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _RainIntensityBars extends StatelessWidget {
+  const _RainIntensityBars({required this.level, required this.activeColor});
+  final int level;
+  final Color activeColor;
+
+  @override
+  Widget build(BuildContext context) {
+    final inactive = Colors.white.withValues(alpha: .14);
+    const heights = [5.0, 9.0, 13.0];
+    return SizedBox(
+      height: 13,
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.end,
+        children: [
+          for (var i = 0; i < 3; i++) ...[
+            if (i > 0) const SizedBox(width: 2),
+            Container(
+              width: 3.5,
+              height: heights[i],
+              decoration: BoxDecoration(
+                color: i < level ? activeColor : inactive,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ],
         ],
       ),
     );
@@ -610,9 +751,15 @@ class WeatherTag extends StatelessWidget {
 
 /// Weather, kept small: one line now, the full card on tap.
 class WeatherPeek extends StatelessWidget {
-  const WeatherPeek({super.key, required this.outlook, required this.now});
+  const WeatherPeek({
+    super.key,
+    required this.outlook,
+    required this.now,
+    this.placeName,
+  });
   final Outlook outlook;
   final DateTime now;
+  final String? placeName;
 
   @override
   Widget build(BuildContext context) {
@@ -638,7 +785,11 @@ class WeatherPeek extends StatelessWidget {
                 Space.gutter,
                 Space.x8,
               ),
-              child: WeatherHeroCard(outlook: outlook, now: now),
+              child: WeatherHeroCard(
+                outlook: outlook,
+                now: now,
+                placeName: placeName,
+              ),
             ),
           ),
           child: Padding(
