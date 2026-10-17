@@ -70,4 +70,98 @@ void main() {
     );
     expect(find.textContaining('ถามทางไป'), findsNothing, reason: 'no place');
   });
+
+  testWidgets(
+    'events page infers location from event name, shows confirmation UI, and persists all-day and hybrid events',
+    (tester) async {
+      final store = (await emptyStore())..connectGoogle('owner@example.com');
+      var serverTrips = <Map<String, Object?>>[
+        // 1. All-day event with location in event name -> AI infers location
+        _allDay(
+          'cal-bookfair',
+          'งานหนังสือที่สยามพารากอน',
+          '2026-09-30',
+          '2026-10-01',
+        ),
+        // 2. Online meeting with Google Meet + physical location -> treated as onsite
+        {
+          'id': 'cal-hybrid',
+          'title_th': 'ประชุมทีม (Google Meet)',
+          'source': 'calendar',
+          'origin': {'name_th': 'Home', 'lat': 13.72, 'lng': 100.53},
+          'destination': {
+            'name_th': 'ไบเทค บางนา',
+            'lat': 13.67,
+            'lng': 100.61,
+          },
+          'arrive_by': '2026-09-30T14:00:00+07:00',
+          'ends_at': '2026-09-30T15:00:00+07:00',
+          'mode': 'car',
+          'virtual': true,
+        },
+      ];
+
+      await pumpApp(
+        tester,
+        '2026-09-30T10:00:00+07:00',
+        height: 2400,
+        places: store,
+        respond: (req) {
+          if (req.url.path.startsWith('/v1/trips')) {
+            return jsonResponse({'trips': serverTrips});
+          }
+          if (req.url.path == '/v1/places/search') {
+            final q = req.url.queryParameters['q'] ?? '';
+            if (q.contains('สยามพารากอน')) {
+              return jsonResponse({
+                'places': [
+                  {
+                    'name_th': 'สยามพารากอน',
+                    'address_th': 'ปทุมวัน กรุงเทพฯ',
+                    'lat': 13.7466,
+                    'lng': 100.5347,
+                    'source': 'geocoder',
+                  },
+                ],
+              });
+            }
+          }
+          return null;
+        },
+      );
+
+      await tapAndSettle(tester, find.text('อีเวนต์'));
+
+      // Hybrid online meeting with location is shown as onsite ('ไบเทค บางนา'), not online
+      expect(find.text('ไบเทค บางนา'), findsOneWidget);
+      expect(find.text('ออนไลน์ · ไม่ต้องเดินทาง'), findsNothing);
+
+      // AI inferred 'สยามพารากอน' from 'งานหนังสือที่สยามพารากอน' and shows confirmation UI
+      expect(
+        find.text('AI แนะนำสถานที่: สยามพารากอน'),
+        findsOneWidget,
+      );
+      expect(
+        find.byKey(const ValueKey('confirm-place-cal-bookfair')),
+        findsOneWidget,
+      );
+
+      // Confirm the inferred location on the all-day event
+      await tapAndSettle(
+        tester,
+        find.byKey(const ValueKey('confirm-place-cal-bookfair')),
+      );
+
+      // Confirmation prompt disappears and the saved place is shown on the all-day event
+      expect(find.text('AI แนะนำสถานที่: สยามพารากอน'), findsNothing);
+      expect(find.text('สยามพารากอน'), findsOneWidget);
+
+      // Refresh events (server still returns unplaced _allDay for cal-bookfair)
+      await tapAndSettle(tester, find.byTooltip('รีเฟรช'));
+
+      // All-day event's saved location persists across refresh!
+      expect(find.text('สยามพารากอน'), findsOneWidget);
+      expect(find.text('AI แนะนำสถานที่: สยามพารากอน'), findsNothing);
+    },
+  );
 }

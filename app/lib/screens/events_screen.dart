@@ -50,22 +50,12 @@ class _EventsScreenState extends State<EventsScreen> {
     final saved = await pickPlace(
       context,
       kind: PlaceKind.other,
-      initialQuery: t.locationTextTh,
+      initialQuery: t.locationTextTh ?? inferPlaceQueryFromTitle(t.titleTh),
     );
     if (saved == null || !mounted) return;
-    _open(
-      Trip(
-        id: 'app-${t.id}',
-        titleTh: t.titleTh,
-        source: 'app',
-        origin: t.origin,
-        destination: saved.asPlace,
-        arriveBy: t.arriveBy,
-        endsAt: t.endsAt,
-        mode: t.mode,
-      ),
-      null,
-    );
+    final updated = await repo.saveTripDestination(t, saved.asPlace);
+    if (!mounted) return;
+    _open(updated, null);
   }
 
   @override
@@ -285,6 +275,12 @@ class _EventsScreenState extends State<EventsScreen> {
       plan: plan,
       deciding: plan == null && repo.awaitsDecision(trip, now),
       onDismiss: () => dismissTripWithUndo(context, repo, trip),
+      onConfirmInferredPlace: trip.inferredPlace
+          ? () => repo.saveTripDestination(trip, trip.destination)
+          : null,
+      onChangeInferredPlace: trip.inferredPlace
+          ? () => _resolve(trip)
+          : null,
       onTap: trip.unresolved
           ? () => _resolve(trip)
           : canOpen
@@ -306,6 +302,8 @@ class EventTicket extends StatelessWidget {
     this.deciding = false,
     this.onTap,
     this.onDismiss,
+    this.onConfirmInferredPlace,
+    this.onChangeInferredPlace,
   });
   final Trip trip;
   final LeavePlan? plan;
@@ -315,6 +313,8 @@ class EventTicket extends StatelessWidget {
   final bool deciding;
   final VoidCallback? onTap;
   final VoidCallback? onDismiss;
+  final VoidCallback? onConfirmInferredPlace;
+  final VoidCallback? onChangeInferredPlace;
 
   @override
   Widget build(BuildContext context) {
@@ -408,43 +408,91 @@ class EventTicket extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Row(
-                children: [
-                  Icon(
-                    trip.unresolved
-                        ? Symbols.help_rounded
-                        : trip.virtual
-                        ? Symbols.videocam_rounded
-                        : (trip.allDay && !trip.hasDestination)
-                        ? Symbols.event_rounded
-                        : Symbols.location_on_rounded,
-                    size: 16,
-                    fill: 1,
-                    color: trip.unresolved
-                        ? c.warning
-                        : scheme.onSurfaceVariant,
-                  ),
-                  const SizedBox(width: Space.x1),
-                  Flexible(
-                    child: Text(
-                      trip.unresolved
-                          ? l.summarySetPlace
-                          : trip.virtual
-                          ? l.online
-                          : (trip.allDay && !trip.hasDestination)
-                          ? l.allDay
-                          : trip.destination.nameTh,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: t.bodySmall!.copyWith(
-                        color: trip.unresolved
-                            ? scheme.primary
-                            : scheme.onSurfaceVariant,
+              if (trip.inferredPlace) ...[
+                Row(
+                  children: [
+                    Icon(
+                      Symbols.auto_awesome_rounded,
+                      size: 16,
+                      fill: 1,
+                      color: scheme.primary,
+                    ),
+                    const SizedBox(width: Space.x1),
+                    Expanded(
+                      child: Text(
+                        l.eventsInferredPlacePrompt(trip.destination.nameTh),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.bodySmall!.copyWith(
+                          color: scheme.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
                       ),
                     ),
-                  ),
-                ],
-              ),
+                  ],
+                ),
+                const SizedBox(height: Space.x2),
+                Wrap(
+                  spacing: Space.x2,
+                  runSpacing: Space.x1,
+                  children: [
+                    FilledButton.tonalIcon(
+                      key: ValueKey('confirm-place-${trip.id}'),
+                      onPressed: onConfirmInferredPlace,
+                      style: FilledButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      icon: const Icon(Symbols.check_rounded, size: 16),
+                      label: Text(l.eventsConfirmPlace),
+                    ),
+                    TextButton(
+                      key: ValueKey('change-place-${trip.id}'),
+                      onPressed: onChangeInferredPlace,
+                      style: TextButton.styleFrom(
+                        visualDensity: VisualDensity.compact,
+                      ),
+                      child: Text(l.eventsChangePlace),
+                    ),
+                  ],
+                ),
+              ] else
+                Row(
+                  children: [
+                    Icon(
+                      trip.unresolved
+                          ? Symbols.help_rounded
+                          : trip.virtual
+                          ? Symbols.videocam_rounded
+                          : (trip.allDay && !trip.hasDestination)
+                          ? Symbols.event_rounded
+                          : Symbols.location_on_rounded,
+                      size: 16,
+                      fill: 1,
+                      color: trip.unresolved
+                          ? c.warning
+                          : scheme.onSurfaceVariant,
+                    ),
+                    const SizedBox(width: Space.x1),
+                    Flexible(
+                      child: Text(
+                        trip.unresolved
+                            ? l.summarySetPlace
+                            : trip.virtual
+                            ? l.online
+                            : (trip.allDay && !trip.hasDestination)
+                            ? l.allDay
+                            : trip.destination.nameTh,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: t.bodySmall!.copyWith(
+                          color: trip.unresolved
+                              ? scheme.primary
+                              : scheme.onSurfaceVariant,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               if (best != null || deciding) ...[
                 const SizedBox(height: Space.x2),
                 ConstrainedBox(

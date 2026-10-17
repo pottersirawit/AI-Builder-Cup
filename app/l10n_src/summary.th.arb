@@ -447,5 +447,15 @@
   "stripTitle": "ภาพรวมวันนี้",
   "stripEvent": "นัด",
   "stripTravel": "เดินทาง",
-  "stripRain": "ฝน"
+  "stripRain": "ฝน",
+  "eventsInferredPlacePrompt": "AI แนะนำสถานที่: {place}",
+  "@eventsInferredPlacePrompt": {
+    "placeholders": {
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsConfirmPlace": "ยืนยันสถานที่",
+  "eventsChangePlace": "เปลี่ยน"
 }
