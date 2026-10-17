@@ -333,9 +333,12 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	sources := sess.SourcesUsed()
 	resp, err := agent.Decide(r.Context(), s.Gemini, sess, req, sources)
 	var needs *agent.NeedsPlace
+	var activity *agent.NeedsActivity
 	switch {
 	case errors.As(err, &needs):
 		writeJSON(w, http.StatusOK, map[string]any{"needs_place": s.needsPlace(r.Context(), needs)})
+	case errors.As(err, &activity):
+		writeJSON(w, http.StatusOK, map[string]any{"activity": activity.Plan})
 	case errors.Is(err, agent.ErrBadRequest), errors.Is(err, planner.ErrBadTrip):
 		writeError(w, http.StatusBadRequest, err.Error())
 	case err != nil:

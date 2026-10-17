@@ -50,6 +50,8 @@ var conditionText = map[string][2]string{
 	"LIGHT_RAIN":         {"ฝนตกเล็กน้อย", "Light rain"},
 	"RAIN":               {"ฝนตก", "Rain"},
 	"HEAVY_RAIN":         {"ฝนตกหนัก", "Heavy rain"},
+	"RAIN_SHOWERS":       {"ฝนตกเป็นช่วง", "Rain showers"},
+	"SCATTERED_SHOWERS":  {"ฝนตกกระจาย", "Scattered showers"},
 	"THUNDERSTORM":       {"พายุฝนฟ้าคะนอง", "Thunderstorm"},
 	"HEAVY_THUNDERSTORM": {"พายุฝนฟ้าคะนองรุนแรง", "Heavy thunderstorm"},
 }

@@ -1704,7 +1704,7 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
-  String get settingsTravelGroup => 'การเดินทาง';
+  String get settingsTravelGroup => 'วิธีเดินทางที่ใช้ประจำ';
 
   @override
   String get settingsAutoGroup => 'ให้แอปหาทริปให้เอง';
@@ -1873,4 +1873,47 @@ class AppLocalizationsTh extends AppLocalizations {
   String partsAltWait(String leave, String arrive) {
     return 'หรือรอออก $leave ฝนซาแล้ว ถึง $arrive';
   }
+
+  @override
+  String get activityWhen => 'วันไหน';
+
+  @override
+  String get activityWhere => 'ที่ไหน';
+
+  @override
+  String get activitySearchPlace => 'ค้นหาสถานที่';
+
+  @override
+  String get activityToday => 'วันนี้';
+
+  @override
+  String get activityTomorrow => 'พรุ่งนี้';
+
+  @override
+  String get activityChecklistTitle => 'ของที่ควรเตรียม';
+
+  @override
+  String get activityGeneralNote =>
+      'รายการทั่วไปสำหรับกิจกรรมนี้ เลือกที่และวันแล้วจะเช็กอากาศให้';
+
+  @override
+  String activityWeatherOn(String day, String place) {
+    return 'อากาศ$dayที่$place';
+  }
+
+  @override
+  String get activityNoForecast =>
+      'พยากรณ์รายวันยังไปไม่ถึงวันนั้น ใกล้วันแล้วค่อยเปิดดูอีกครั้ง';
+
+  @override
+  String get activityNeedsOrigin =>
+      'เปิดตำแหน่งหรือบันทึกบ้านก่อน จะได้คำนวณเส้นทางไปที่นั่น';
+
+  @override
+  String activityChecked(String done, String total) {
+    return '$done/$total ชิ้น';
+  }
+
+  @override
+  String get askActivitySuggestion => 'เสาร์นี้ไปแคมป์ต้องเตรียมอะไร';
 }

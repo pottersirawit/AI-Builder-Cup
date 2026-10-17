@@ -10,6 +10,7 @@ import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
 import '../trip_controller.dart';
+import 'activity_cards.dart';
 import 'ask_screen.dart';
 import 'origin_picker.dart';
 import 'parts.dart';
@@ -109,6 +110,22 @@ class _VerdictScreenState extends State<VerdictScreen> {
     );
   }
 
+  void _planActivity(ActivityPlan plan, Place destination, DateTime day) {
+    final origin = activityOrigin(context);
+    if (origin == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.activityNeedsOrigin)));
+      return;
+    }
+    _c.planActivity(
+      activity: plan.activity,
+      origin: origin,
+      destination: destination,
+      day: day,
+    );
+  }
+
   Future<void> _savePlace(Place dest) async {
     final messenger = ScaffoldMessenger.of(context);
     final l = context.l10n;
@@ -154,7 +171,14 @@ class _VerdictScreenState extends State<VerdictScreen> {
     final c = FonColors.of(context);
 
     final needs = _c.needsPlace;
-    final Widget pass = needs != null
+    final ask = _c.askActivity;
+    final Widget pass = ask != null
+        ? ActivityAskPass(
+            plan: ask,
+            now: state.now(),
+            onPlan: (dest, day) => _planActivity(ask, dest, day),
+          )
+        : needs != null
         ? NeedsPlacePass(needs: needs, onResolved: _c.resolvePlace)
         : _c.error != null && d == null
         ? Pass(
@@ -230,13 +254,17 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     FieldHeader(
                       state: sky,
                       back: true,
-                      title: trip == null
+                      title: ask != null
+                          ? ask.headlineTh
+                          : trip == null
                           ? l.verdictQuestionTitle
                           : trip.source == 'routine' ||
                                 trip.titleTh == 'กลับบ้าน'
                           ? trip.titleTh
                           : l.verdictGoTo(trip.destination.nameTh),
-                      subtitle: trip == null
+                      subtitle: ask != null
+                          ? widget.request.questionTh ?? ''
+                          : trip == null
                           ? l.verdictReadingQuestion
                           : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
                       onSubtitleTap: trip != null ? _openOriginPicker : null,
@@ -278,7 +306,9 @@ class _VerdictScreenState extends State<VerdictScreen> {
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),
               ),
-            if (_outlook case final o?)
+            if (d.activity case final a?)
+              SliverToBoxAdapter(child: ActivitySection(plan: a))
+            else if (_outlook case final o?)
               SliverToBoxAdapter(
                 child: _GearSection(
                   outlook: o,

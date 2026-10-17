@@ -34,6 +34,8 @@ type Providers struct {
 	Hotlines    domain.HotlineProvider
 	// Outlook feeds /v1/outlook; nil replays the scenario.
 	Outlook domain.OutlookProvider
+	// Days is the daily forecast for days out; nil replays the scenario.
+	Days domain.DailyProvider
 }
 
 // Planner holds static data shared by all requests.
@@ -558,6 +560,20 @@ func (s *Session) SourcesUsed() []string {
 }
 
 // EmergencyContacts returns official emergency helplines from the hotline provider.
+// DayForecast is the weather on the Bangkok day of day at the trip's
+// destination, or nil past the forecast's reach or when it fails.
+func (s *Session) DayForecast(day time.Time) *domain.DayForecast {
+	var prov domain.DailyProvider = scenario.Days{}
+	if s.prov.Days != nil {
+		prov = s.prov.Days
+	}
+	days, err := prov.Days(s.ctx, s.Trip.Destination.Point(), s.Now, s.Lang)
+	if err != nil {
+		return nil
+	}
+	return domain.ForecastFor(days, day)
+}
+
 func (s *Session) EmergencyContacts() []domain.EmergencyContact {
 	if s.prov.Hotlines != nil {
 		return s.prov.Hotlines.EmergencyContacts()

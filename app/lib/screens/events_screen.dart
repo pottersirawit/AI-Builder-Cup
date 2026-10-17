@@ -160,6 +160,11 @@ class _EventsScreenState extends State<EventsScreen> {
                           onPressed: widget.onRefresh,
                           icon: const Icon(Symbols.refresh_rounded),
                         ),
+                        IconButton(
+                          tooltip: l.homeSettings,
+                          onPressed: () => _push(const SettingsScreen()),
+                          icon: const Icon(Symbols.settings_rounded),
+                        ),
                       ],
                     ),
                   ),

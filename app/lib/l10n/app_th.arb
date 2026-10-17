@@ -1258,7 +1258,7 @@
       }
     }
   },
-  "settingsTravelGroup": "การเดินทาง",
+  "settingsTravelGroup": "วิธีเดินทางที่ใช้ประจำ",
   "settingsAutoGroup": "ให้แอปหาทริปให้เอง",
   "settingsCalendarDetail": "เฉพาะนัดที่มีสถานที่",
   "settingsCalendarAccount": "{account} · บัญชีจำลอง",
@@ -1428,5 +1428,37 @@
         "type": "String"
       }
     }
-  }
+  },
+  "activityWhen": "วันไหน",
+  "activityWhere": "ที่ไหน",
+  "activitySearchPlace": "ค้นหาสถานที่",
+  "activityToday": "วันนี้",
+  "activityTomorrow": "พรุ่งนี้",
+  "activityChecklistTitle": "ของที่ควรเตรียม",
+  "activityGeneralNote": "รายการทั่วไปสำหรับกิจกรรมนี้ เลือกที่และวันแล้วจะเช็กอากาศให้",
+  "activityWeatherOn": "อากาศ{day}ที่{place}",
+  "@activityWeatherOn": {
+    "placeholders": {
+      "day": {
+        "type": "String"
+      },
+      "place": {
+        "type": "String"
+      }
+    }
+  },
+  "activityNoForecast": "พยากรณ์รายวันยังไปไม่ถึงวันนั้น ใกล้วันแล้วค่อยเปิดดูอีกครั้ง",
+  "activityNeedsOrigin": "เปิดตำแหน่งหรือบันทึกบ้านก่อน จะได้คำนวณเส้นทางไปที่นั่น",
+  "activityChecked": "{done}/{total} ชิ้น",
+  "@activityChecked": {
+    "placeholders": {
+      "done": {
+        "type": "String"
+      },
+      "total": {
+        "type": "String"
+      }
+    }
+  },
+  "askActivitySuggestion": "เสาร์นี้ไปแคมป์ต้องเตรียมอะไร"
 }

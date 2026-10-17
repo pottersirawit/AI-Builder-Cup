@@ -33,6 +33,12 @@ DateTime bangkokAt(DateTime day, int hour, int minute) {
   ).subtract(_bkkOffset);
 }
 
+/// The Bangkok date of [t], YYYY-MM-DD.
+String isoDay(DateTime t) {
+  final b = toBangkok(t);
+  return '${b.year}-${_two(b.month)}-${_two(b.day)}';
+}
+
 int dayOfMonth(DateTime t) => toBangkok(t).day;
 
 String monthShort(AppLocalizations l, DateTime t) =>

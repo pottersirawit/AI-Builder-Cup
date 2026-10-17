@@ -29,13 +29,18 @@ Future<SavedPlace?> pickPlace(
 );
 
 /// Picks a point without saving it (e.g. reports near a searched place).
-Future<PlaceCandidate?> pickPoint(BuildContext context) =>
-    Navigator.of(context).push<PlaceCandidate>(
-      MaterialPageRoute(
-        builder: (_) =>
-            const PlacePickerScreen(kind: PlaceKind.other, save: false),
-      ),
-    );
+Future<PlaceCandidate?> pickPoint(
+  BuildContext context, {
+  String? initialQuery,
+}) => Navigator.of(context).push<PlaceCandidate>(
+  MaterialPageRoute(
+    builder: (_) => PlacePickerScreen(
+      kind: PlaceKind.other,
+      save: false,
+      initialQuery: initialQuery,
+    ),
+  ),
+);
 
 /// Edits a saved place from Settings: details in the sheet, "ย้ายตำแหน่ง"
 /// through the picker, delete with a snackbar undo.
