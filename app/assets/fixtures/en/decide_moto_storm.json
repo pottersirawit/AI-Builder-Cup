@@ -1,0 +1,151 @@
+{
+  "verdict": "switch_mode",
+  "headline_th": "Take the BTS instead",
+  "summary_th": "Heavy rain and Ratchada is flooded half a wheel deep; motorbikes can't get through. Wait until after 20:00 or take the BTS.",
+  "leave_by": "2026-09-29T20:00:00+07:00",
+  "confidence": 0.88,
+  "rain_timeline": [
+    {
+      "time": "2026-09-29T16:00:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:15:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:30:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T16:45:00+07:00",
+      "mm_per_hr": 0.1
+    },
+    {
+      "time": "2026-09-29T17:00:00+07:00",
+      "mm_per_hr": 0.3
+    },
+    {
+      "time": "2026-09-29T17:15:00+07:00",
+      "mm_per_hr": 1.2
+    },
+    {
+      "time": "2026-09-29T17:30:00+07:00",
+      "mm_per_hr": 2.1
+    },
+    {
+      "time": "2026-09-29T17:45:00+07:00",
+      "mm_per_hr": 5.4
+    },
+    {
+      "time": "2026-09-29T18:00:00+07:00",
+      "mm_per_hr": 12.0
+    },
+    {
+      "time": "2026-09-29T18:15:00+07:00",
+      "mm_per_hr": 16.5
+    },
+    {
+      "time": "2026-09-29T18:30:00+07:00",
+      "mm_per_hr": 11.2
+    },
+    {
+      "time": "2026-09-29T18:45:00+07:00",
+      "mm_per_hr": 6.0
+    },
+    {
+      "time": "2026-09-29T19:00:00+07:00",
+      "mm_per_hr": 4.8
+    },
+    {
+      "time": "2026-09-29T19:15:00+07:00",
+      "mm_per_hr": 1.9
+    },
+    {
+      "time": "2026-09-29T19:30:00+07:00",
+      "mm_per_hr": 1.1
+    },
+    {
+      "time": "2026-09-29T19:45:00+07:00",
+      "mm_per_hr": 0.4
+    },
+    {
+      "time": "2026-09-29T20:00:00+07:00",
+      "mm_per_hr": 0.2
+    },
+    {
+      "time": "2026-09-29T20:15:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T20:30:00+07:00",
+      "mm_per_hr": 0.0
+    },
+    {
+      "time": "2026-09-29T20:45:00+07:00",
+      "mm_per_hr": 0.0
+    }
+  ],
+  "mode_options": [
+    {
+      "mode": "car",
+      "verdict": "wait",
+      "eta_min": 95,
+      "risk": "high",
+      "note_th": "Ratchada water is half a wheel deep; traffic is backing up"
+    },
+    {
+      "mode": "transit",
+      "verdict": "leave_now",
+      "eta_min": 50,
+      "risk": "medium",
+      "note_th": "Trains ignore the rain, but platforms are packed; allow for 2 to 3 trains"
+    },
+    {
+      "mode": "moto",
+      "verdict": "dont_go",
+      "eta_min": 60,
+      "risk": "high",
+      "note_th": "Ratchada is flooded half a wheel deep; motorbikes can't get through"
+    }
+  ],
+  "flood_spots": [
+    {
+      "id": "BKK-FL-012",
+      "name_th": "Ratchada-Lat Phrao Intersection",
+      "lat": 13.8063,
+      "lng": 100.5737,
+      "expected_depth_cm": 25,
+      "risk": "high"
+    },
+    {
+      "id": "BKK-FL-031",
+      "name_th": "Rama IV Rd at Queen Sirikit Centre",
+      "lat": 13.7236,
+      "lng": 100.5592,
+      "expected_depth_cm": 10,
+      "risk": "medium"
+    }
+  ],
+  "reasoning": [
+    {
+      "tool": "get_rain_along_route",
+      "summary_th": "Heavy rain on the route: poor visibility, slippery roads"
+    },
+    {
+      "tool": "get_flood_spots_on_route",
+      "summary_th": "Ratchada-Lat Phrao expects 25 cm of water; motorbikes can't get through"
+    },
+    {
+      "tool": "get_community_reports",
+      "summary_th": "3 users reported half-wheel water at Ratchada"
+    }
+  ],
+  "sources": [
+    "Google Calendar",
+    "Google Weather API",
+    "Google Routes API",
+    "BMA flood spots"
+  ],
+  "generated_by": "gemini"
+}

@@ -2,18 +2,22 @@ package httpapi
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
 	"net/http"
 	"net/url"
 	"os"
+	"sort"
 	"strings"
 	"sync"
 	"time"
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
+	"github.com/pottersirawit/fontokmai/api/internal/extract"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
@@ -30,6 +34,11 @@ type userToken struct {
 	AccessToken  string
 	RefreshToken string
 	Expiry       time.Time
+	Scopes       []string
+	// LastSync is when Calendar and Gmail were last pulled; LastError is what
+	// failed then, if anything.
+	LastSync  time.Time
+	LastError string
 }
 
 var (
@@ -84,45 +93,7 @@ type GoogleTokenResponse struct {
 	RefreshToken string `json:"refresh_token"`
 	Scope        string `json:"scope"`
 	TokenType    string `json:"token_type"`
-}
-
-// ExchangeGoogleAuthCode exchanges authorization code for Google access token.
-func ExchangeGoogleAuthCode(ctx context.Context, code, redirectURI string) (*GoogleTokenResponse, error) {
-	clientID, clientSecret := getOAuthCredentials()
-
-	data := url.Values{}
-	data.Set("code", code)
-	data.Set("client_id", clientID)
-	data.Set("client_secret", clientSecret)
-	data.Set("redirect_uri", redirectURI)
-	data.Set("grant_type", "authorization_code")
-
-	req, err := http.NewRequestWithContext(ctx, "POST", googleTokenURL, strings.NewReader(data.Encode()))
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Content-Type", "application/x-www-form-urlencoded")
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return nil, fmt.Errorf("token exchange request failed: %w", err)
-	}
-	defer resp.Body.Close()
-
-	body, err := io.ReadAll(io.LimitReader(resp.Body, 64<<10))
-	if err != nil {
-		return nil, err
-	}
-
-	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
-		return nil, fmt.Errorf("token exchange error %d: %s", resp.StatusCode, string(body))
-	}
-
-	var tokenResp GoogleTokenResponse
-	if err := json.Unmarshal(body, &tokenResp); err != nil {
-		return nil, fmt.Errorf("unmarshal token response failed: %w", err)
-	}
-	return &tokenResp, nil
+	IDToken      string `json:"id_token"`
 }
 
 type googleCalendarListResponse struct {
@@ -142,10 +113,12 @@ type googleCalendarItem struct {
 		DateTime string `json:"dateTime"`
 		Date     string `json:"date"`
 	} `json:"end"`
+	HangoutLink    string          `json:"hangoutLink"`
+	ConferenceData json.RawMessage `json:"conferenceData"`
 }
 
-// FetchGoogleCalendarEvents queries upcoming events from Google Calendar API.
-func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time.Time) ([]googleCalendarItem, error) {
+// calendarEvents queries upcoming events from Google Calendar API.
+func (g GoogleOAuth) calendarEvents(ctx context.Context, accessToken string, now time.Time) ([]googleCalendarItem, error) {
 	tMin := now.Add(-24 * time.Hour)
 	realNow := time.Now()
 	if realNow.Before(tMin) || realNow.After(now.AddDate(0, 0, 14)) {
@@ -155,7 +128,7 @@ func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time
 	timeMax := tMin.AddDate(0, 1, 0).UTC().Format(time.RFC3339)
 
 	u := fmt.Sprintf("%s?timeMin=%s&timeMax=%s&singleEvents=true&orderBy=startTime&maxResults=25",
-		googleCalendarEventsURL, url.QueryEscape(timeMin), url.QueryEscape(timeMax))
+		g.CalendarURL, url.QueryEscape(timeMin), url.QueryEscape(timeMax))
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
@@ -163,7 +136,7 @@ func FetchGoogleCalendarEvents(ctx context.Context, accessToken string, now time
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := g.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("calendar events fetch failed: %w", err)
 	}
@@ -193,12 +166,50 @@ type gmailMessageItem struct {
 	Subject string
 	Date    string
 	Snippet string
+	// Body is the message's plain text, or empty when it has none.
+	Body string
 }
 
-// FetchGmailTravelMessages queries recent booking / ticket messages from Gmail API.
-func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailMessageItem, error) {
-	q := url.QueryEscape("ticket OR booking OR reservation OR flight OR concert OR hotel OR event")
-	u := fmt.Sprintf("%s?q=%s&maxResults=6", gmailMessagesURL, q)
+// gmailTravelQuery finds bookings and tickets, leaving out the Promotions and
+// Social tabs where the same words mostly sell things.
+const gmailTravelQuery = "(ticket OR booking OR reservation OR flight OR concert OR hotel OR event) -category:promotions -category:social"
+
+// gmailPart is a MIME part of a message fetched with format=full.
+type gmailPart struct {
+	MimeType string `json:"mimeType"`
+	Headers  []struct {
+		Name  string `json:"name"`
+		Value string `json:"value"`
+	} `json:"headers"`
+	Body struct {
+		Data string `json:"data"`
+	} `json:"body"`
+	Parts []gmailPart `json:"parts"`
+}
+
+// plainText is the first text/plain part under p, decoded.
+func (p gmailPart) plainText() string {
+	if p.MimeType == "text/plain" && p.Body.Data != "" {
+		b, err := base64.URLEncoding.DecodeString(p.Body.Data)
+		if err != nil {
+			b, err = base64.RawURLEncoding.DecodeString(p.Body.Data)
+		}
+		if err == nil {
+			return string(b)
+		}
+	}
+	for _, c := range p.Parts {
+		if t := c.plainText(); t != "" {
+			return t
+		}
+	}
+	return ""
+}
+
+// gmailTravelMessages queries recent booking / ticket messages from Gmail API.
+func (g GoogleOAuth) gmailTravelMessages(ctx context.Context, accessToken string) ([]gmailMessageItem, error) {
+	q := url.QueryEscape(gmailTravelQuery)
+	u := fmt.Sprintf("%s?q=%s&maxResults=6", g.GmailURL, q)
 
 	req, err := http.NewRequestWithContext(ctx, "GET", u, nil)
 	if err != nil {
@@ -206,7 +217,7 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 	}
 	req.Header.Set("Authorization", "Bearer "+accessToken)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := g.Client.Do(req)
 	if err != nil {
 		return nil, fmt.Errorf("gmail messages query failed: %w", err)
 	}
@@ -224,12 +235,12 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 
 	var items []gmailMessageItem
 	for _, m := range list.Messages {
-		msgReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s?format=metadata", gmailMessagesURL, m.ID), nil)
+		msgReq, err := http.NewRequestWithContext(ctx, "GET", fmt.Sprintf("%s/%s?format=full", g.GmailURL, m.ID), nil)
 		if err != nil {
 			continue
 		}
 		msgReq.Header.Set("Authorization", "Bearer "+accessToken)
-		msgResp, err := http.DefaultClient.Do(msgReq)
+		msgResp, err := g.Client.Do(msgReq)
 		if err != nil || msgResp.StatusCode != 200 {
 			if msgResp != nil {
 				msgResp.Body.Close()
@@ -238,14 +249,9 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 		}
 
 		var detail struct {
-			ID      string `json:"id"`
-			Snippet string `json:"snippet"`
-			Payload struct {
-				Headers []struct {
-					Name  string `json:"name"`
-					Value string `json:"value"`
-				} `json:"headers"`
-			} `json:"payload"`
+			ID      string    `json:"id"`
+			Snippet string    `json:"snippet"`
+			Payload gmailPart `json:"payload"`
 		}
 		_ = json.NewDecoder(msgResp.Body).Decode(&detail)
 		msgResp.Body.Close()
@@ -266,171 +272,288 @@ func FetchGmailTravelMessages(ctx context.Context, accessToken string) ([]gmailM
 			Subject: subject,
 			Date:    dateStr,
 			Snippet: detail.Snippet,
+			Body:    detail.Payload.plainText(),
 		})
 	}
 
 	return items, nil
 }
 
-// ConvertCalendarEventToTrip turns a Google Calendar entry into a domain.Trip.
+// defaultOrigin is where a synced trip starts when the app sent no home; its
+// name says so.
+var defaultOrigin = domain.Place{NameTH: "สีลม (ยังไม่ได้ตั้งบ้าน)", Lat: 13.7279, Lng: 100.5281}
+
+// gmailNoteTH marks a trip Gemini found in the user's email.
+const gmailNoteTH = "Gemini อ่านจากอีเมลของคุณ"
+
+// homePlaces is the saved places of a user known only by home: none when home
+// is unresolved.
+func homePlaces(home domain.Place) []domain.SavedPlace {
+	if !home.Resolved() {
+		return nil
+	}
+	return []domain.SavedPlace{{ID: "home", Kind: domain.KindHome, LabelTH: "บ้าน", Place: home}}
+}
+
+// onlineTH names the destination of an online meeting.
+const onlineTH = "ออนไลน์"
+
+// connectWindow is how soon after one event ends the next must start for the
+// user to travel straight from the first place to the second.
+const connectWindow = 3 * time.Hour
+
+// homeOrigin is the user's saved home, or defaultOrigin.
+func homeOrigin(savedPlaces []domain.SavedPlace) domain.Place {
+	for _, sp := range savedPlaces {
+		if sp.Kind == domain.KindHome && sp.Resolved() {
+			return sp.Place
+		}
+	}
+	return defaultOrigin
+}
+
+// matchSavedPlace is the first saved place other than home whose name or
+// label appears in text. Home is never matched: "บ้าน" also begins a friend's
+// or a parent's home (บ้านเพื่อน, บ้านแม่).
+func matchSavedPlace(text string, savedPlaces []domain.SavedPlace) (domain.Place, bool) {
+	text = strings.ToLower(text)
+	for _, sp := range savedPlaces {
+		if sp.Kind == domain.KindHome {
+			continue
+		}
+		for _, name := range []string{sp.NameTH, sp.LabelTH} {
+			if name != "" && strings.Contains(text, strings.ToLower(name)) {
+				return sp.Place, true
+			}
+		}
+	}
+	return domain.Place{}, false
+}
+
+var onlineMarkers = []string{"meet.google.com", "zoom.us", "teams.microsoft.com", "zoom", "google meet", "teams"}
+
+// isOnlineMeeting reports whether a Calendar event happens on a video call:
+// it carries a Meet link or conference data, or its location is a URL or
+// names a video-call service.
+func isOnlineMeeting(item googleCalendarItem) bool {
+	if item.HangoutLink != "" || len(item.ConferenceData) > 0 && string(item.ConferenceData) != "null" {
+		return true
+	}
+	loc := strings.ToLower(strings.TrimSpace(item.Location))
+	if strings.HasPrefix(loc, "http://") || strings.HasPrefix(loc, "https://") {
+		return true
+	}
+	for _, m := range onlineMarkers {
+		if strings.Contains(loc, m) {
+			return true
+		}
+	}
+	return false
+}
+
+// ConvertCalendarEventToTrip turns a Google Calendar entry into a domain.Trip
+// from the user's home. It never invents a place or a time: an online meeting
+// is Virtual, an all-day event is AllDay, and a location that matches no saved
+// place and does not geocode leaves the destination unresolved with the
+// location text in LocationTextTH.
 func ConvertCalendarEventToTrip(ctx context.Context, item googleCalendarItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) domain.Trip {
 	title := strings.TrimSpace(item.Summary)
 	if title == "" {
 		title = "นัดหมายในปฏิทิน"
 	}
-
-	destName := strings.TrimSpace(item.Location)
-	if destName == "" {
-		destName = title
+	trip := domain.Trip{
+		ID:      "cal-" + item.ID,
+		TitleTH: title,
+		Source:  "calendar",
+		Origin:  homeOrigin(savedPlaces),
+		Mode:    domain.ModeCar,
 	}
 
-	destPlace := domain.Place{
-		NameTH: destName,
-		Lat:    13.7462,
-		Lng:    100.5348, // Siam default
-	}
-
-	// 1. Try matching with saved places
-	for _, sp := range savedPlaces {
-		if strings.Contains(strings.ToLower(destName), strings.ToLower(sp.NameTH)) ||
-			strings.Contains(strings.ToLower(destName), strings.ToLower(sp.LabelTH)) {
-			destPlace = sp.Place
-			break
-		}
-	}
-
-	// 2. Try geocoding if not matched in saved places
-	if geo != nil && destPlace.Lat == 13.7462 && destPlace.Lng == 100.5348 {
-		searchQuery := item.Location
-		if searchQuery == "" {
-			searchQuery = title
-		}
-		if candidates, err := geo.Search(ctx, searchQuery); err == nil && len(candidates) > 0 {
-			destPlace = domain.Place{
-				NameTH: searchQuery,
-				Lat:    candidates[0].Lat,
-				Lng:    candidates[0].Lng,
-			}
-		}
-	}
-
-	var arriveBy time.Time
 	if item.Start.DateTime != "" {
 		if t, err := time.Parse(time.RFC3339, item.Start.DateTime); err == nil {
-			arriveBy = t
+			trip.ArriveBy = t.In(domain.Bangkok)
 		}
-	} else if item.Start.Date != "" {
-		if t, err := time.Parse("2006-01-02", item.Start.Date); err == nil {
-			// default to 09:00 Bangkok time for all-day events
-			loc, _ := time.LoadLocation("Asia/Bangkok")
-			if loc != nil {
-				arriveBy = time.Date(t.Year(), t.Month(), t.Day(), 9, 0, 0, 0, loc)
-			} else {
-				arriveBy = t.Add(9 * time.Hour)
-			}
+		if t, err := time.Parse(time.RFC3339, item.End.DateTime); err == nil {
+			trip.EndsAt = t.In(domain.Bangkok)
 		}
-	}
-
-	origin := domain.Place{
-		NameTH: "สีลม",
-		Lat:    13.7279,
-		Lng:    100.5281,
-	}
-	for _, sp := range savedPlaces {
-		if sp.ID == "work" {
-			origin = sp.Place
-			break
+	} else if t, err := time.ParseInLocation(time.DateOnly, item.Start.Date, domain.Bangkok); err == nil {
+		// Google's all-day end date is exclusive: the midnight the event ends.
+		trip.AllDay, trip.ArriveBy, trip.EndsAt = true, t, t.AddDate(0, 0, 1)
+		if end, err := time.ParseInLocation(time.DateOnly, item.End.Date, domain.Bangkok); err == nil && end.After(t) {
+			trip.EndsAt = end
 		}
 	}
 
-	return domain.Trip{
-		ID:          "cal-" + item.ID,
-		TitleTH:     title,
-		Source:      "calendar",
-		Origin:      origin,
-		Destination: destPlace,
-		ArriveBy:    arriveBy,
-		Mode:        domain.ModeCar,
+	location := strings.TrimSpace(item.Location)
+	switch {
+	case isOnlineMeeting(item):
+		trip.Virtual = true
+		trip.Destination = domain.Place{NameTH: onlineTH}
+	case trip.AllDay:
+		trip.Destination = domain.Place{NameTH: location}
+		trip.LocationTextTH = location
+	default:
+		query := location
+		if query == "" {
+			query = title
+		}
+		if p, ok := resolveEventPlace(ctx, query, geo, savedPlaces); ok {
+			trip.Destination = p
+		} else {
+			trip.Destination = domain.Place{NameTH: location}
+			trip.LocationTextTH = location
+		}
 	}
+	return trip
 }
 
-// ConvertGmailMessageToTrip turns an extracted travel email into a domain.Trip.
-func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) domain.Trip {
+// resolveEventPlace finds query among the saved places, then by geocoding it.
+func resolveEventPlace(ctx context.Context, query string, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) (domain.Place, bool) {
+	if p, ok := matchSavedPlace(query, savedPlaces); ok {
+		return p, true
+	}
+	if geo == nil {
+		return domain.Place{}, false
+	}
+	candidates, err := geo.Search(ctx, query)
+	if err != nil || len(candidates) == 0 || (candidates[0].Lat == 0 && candidates[0].Lng == 0) {
+		return domain.Place{}, false
+	}
+	return domain.Place{NameTH: query, Lat: candidates[0].Lat, Lng: candidates[0].Lng}, true
+}
+
+// ConvertCalendarEventsToTrips converts items in start order and chains
+// back-to-back events: when the last same-day event the user travelled to
+// (not online or all-day, with a resolved place) ends at most connectWindow
+// before the next one starts, the next trip starts from that event's place
+// instead of home.
+func ConvertCalendarEventsToTrips(ctx context.Context, items []googleCalendarItem, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) []domain.Trip {
+	trips := make([]domain.Trip, 0, len(items))
+	for _, item := range items {
+		trips = append(trips, ConvertCalendarEventToTrip(ctx, item, geo, savedPlaces))
+	}
+	sort.SliceStable(trips, func(i, j int) bool { return trips[i].ArriveBy.Before(trips[j].ArriveBy) })
+
+	var prev *domain.Trip
+	for i := range trips {
+		t := &trips[i]
+		if prev != nil && sameDay(prev.ArriveBy, t.ArriveBy) {
+			ended := prev.EndsAt
+			if ended.IsZero() {
+				ended = prev.ArriveBy
+			}
+			if gap := t.ArriveBy.Sub(ended); gap >= 0 && gap <= connectWindow {
+				t.Origin = prev.Destination
+			}
+		}
+		if !t.Virtual && !t.AllDay && t.Destination.Resolved() {
+			prev = t
+		}
+	}
+	return trips
+}
+
+func sameDay(a, b time.Time) bool {
+	a, b = a.In(domain.Bangkok), b.In(domain.Bangkok)
+	return a.Year() == b.Year() && a.YearDay() == b.YearDay()
+}
+
+// ConvertGmailMessageToTrip turns an email Gemini read into a domain.Trip from
+// the user's home. ok is false unless the reply is a trip with both a start
+// time and a place: an email's own date says nothing about when the event is.
+// A place that matches no saved place and does not geocode is left unresolved.
+func ConvertGmailMessageToTrip(ctx context.Context, item gmailMessageItem, p extract.Payload, geo geocode.Geocoder, savedPlaces []domain.SavedPlace) (trip domain.Trip, ok bool) {
+	place := strings.TrimSpace(p.DestinationText)
+	if !p.IsTrip || p.ArriveBy == nil || place == "" {
+		return domain.Trip{}, false
+	}
 	title := strings.TrimSpace(item.Subject)
+	if t := strings.TrimSpace(p.TitleTH); t != "" {
+		title = t
+	}
 	if title == "" {
 		title = "ตั๋วหรือนัดหมายการเดินทาง"
 	}
-
-	destName := title
-	if item.Snippet != "" {
-		destName = item.Snippet
+	trip = domain.Trip{
+		ID:       "gmail-" + item.ID,
+		TitleTH:  title,
+		Source:   "gmail",
+		Origin:   homeOrigin(savedPlaces),
+		ArriveBy: p.ArriveBy.In(domain.Bangkok),
+		Mode:     domain.ModeCar,
+		NoteTH:   gmailNoteTH,
 	}
-
-	destPlace := domain.Place{
-		NameTH: destName,
-		Lat:    13.9114,
-		Lng:    100.5492, // Default impact/venue
+	if p.Mode != nil {
+		trip.Mode = *p.Mode
 	}
-
-	// Try geocoding if keyword found
-	if geo != nil {
-		for _, kw := range []string{"อิมแพ็ค", "Impact", "Siam", "สยาม", "สนามบิน", "Central", "ไอคอนสยาม"} {
-			if strings.Contains(strings.ToLower(title), strings.ToLower(kw)) || strings.Contains(strings.ToLower(item.Snippet), strings.ToLower(kw)) {
-				if candidates, err := geo.Search(ctx, kw); err == nil && len(candidates) > 0 {
-					destPlace = domain.Place{
-						NameTH: candidates[0].NameTH,
-						Lat:    candidates[0].Lat,
-						Lng:    candidates[0].Lng,
-					}
-					break
-				}
-			}
-		}
+	if dest, found := resolveEventPlace(ctx, place, geo, savedPlaces); found {
+		trip.Destination = dest
+	} else {
+		trip.Destination = domain.Place{NameTH: place}
+		trip.LocationTextTH = place
 	}
-
-	arriveBy := time.Now().Add(24 * time.Hour)
-	if item.Date != "" {
-		if t, err := time.Parse(time.RFC1123Z, item.Date); err == nil {
-			arriveBy = t.Add(24 * time.Hour) // assume event is day after or scheduled
-		}
-	}
-
-	origin := domain.Place{
-		NameTH: "สีลม",
-		Lat:    13.7279,
-		Lng:    100.5281,
-	}
-	for _, sp := range savedPlaces {
-		if sp.ID == "work" {
-			origin = sp.Place
-			break
-		}
-	}
-
-	return domain.Trip{
-		ID:          "gmail-" + item.ID,
-		TitleTH:     title,
-		Source:      "gmail",
-		Origin:      origin,
-		Destination: destPlace,
-		ArriveBy:    arriveBy,
-		Mode:        domain.ModeCar,
-	}
+	return trip, true
 }
 
-// SyncUserWorkspaceData pulls actual events from Google APIs and upserts into UserStore.
-func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken string, now time.Time) error {
-	var savedPlaces []domain.SavedPlace
-	if s.Planner != nil && s.Planner.Places != nil {
+// gmailTrips has Gemini read each message, all at once, and keeps the trips.
+// Without Gemini there are none.
+func (s *Server) gmailTrips(ctx context.Context, items []gmailMessageItem, savedPlaces []domain.SavedPlace, now time.Time) []domain.Trip {
+	if !s.Gemini.Available() {
+		return nil
+	}
+	found := make([]*domain.Trip, len(items))
+	var wg sync.WaitGroup
+	for i, item := range items {
+		wg.Add(1)
+		go func() {
+			defer wg.Done()
+			body := item.Body
+			if strings.TrimSpace(body) == "" {
+				body = item.Snippet
+			}
+			p, err := extract.WithGemini(ctx, s.Gemini, extract.RawMessage{
+				Source:    extract.SourceGmail,
+				SourceRef: item.ID,
+				Title:     item.Subject,
+				Body:      "Sent: " + item.Date + "\n" + body,
+			}, now)
+			if err != nil {
+				slog.Warn("gemini could not read a gmail message", "id", item.ID, "err", err)
+				return
+			}
+			if trip, ok := ConvertGmailMessageToTrip(ctx, item, p, s.Geocoder, savedPlaces); ok {
+				found[i] = &trip
+			}
+		}()
+	}
+	wg.Wait()
+	var trips []domain.Trip
+	for _, t := range found {
+		if t != nil {
+			trips = append(trips, *t)
+		}
+	}
+	return trips
+}
+
+// SyncUserWorkspaceData pulls actual events from Google APIs and upserts into
+// UserStore, planning each from home (the app's saved home, unresolved when it
+// sent none). Only มิว's DemoEmail uses the scenario's saved places. Its error
+// names each service that failed; the other's trips are still stored.
+func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken string, home domain.Place, now time.Time) error {
+	g := s.google()
+	var failed []error
+	savedPlaces := homePlaces(home)
+	if email == DemoEmail && s.Planner != nil {
 		savedPlaces = s.Planner.Places
 	}
 
-	calItems, err := FetchGoogleCalendarEvents(ctx, accessToken, now)
+	calItems, err := g.calendarEvents(ctx, accessToken, now)
 	if err != nil {
 		slog.Warn("fetch google calendar events error", "email", email, "err", err)
+		failed = append(failed, err)
 	} else {
-		for _, item := range calItems {
-			trip := ConvertCalendarEventToTrip(ctx, item, s.Geocoder, savedPlaces)
+		for _, trip := range ConvertCalendarEventsToTrips(ctx, calItems, s.Geocoder, savedPlaces) {
 			if s.UserStore != nil {
 				_ = s.UserStore.UpsertTrip(ctx, users.UserTrip{
 					UID:       email,
@@ -442,12 +565,13 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 		slog.Info("synced google calendar events", "email", email, "count", len(calItems))
 	}
 
-	gmailItems, err := FetchGmailTravelMessages(ctx, accessToken)
+	gmailItems, err := g.gmailTravelMessages(ctx, accessToken)
 	if err != nil {
 		slog.Warn("fetch gmail messages error", "email", email, "err", err)
+		failed = append(failed, err)
 	} else {
-		for _, item := range gmailItems {
-			trip := ConvertGmailMessageToTrip(ctx, item, s.Geocoder, savedPlaces)
+		trips := s.gmailTrips(ctx, gmailItems, savedPlaces, now)
+		for _, trip := range trips {
 			if s.UserStore != nil {
 				_ = s.UserStore.UpsertTrip(ctx, users.UserTrip{
 					UID:       email,
@@ -456,8 +580,8 @@ func (s *Server) SyncUserWorkspaceData(ctx context.Context, email, accessToken s
 				})
 			}
 		}
-		slog.Info("synced gmail messages", "email", email, "count", len(gmailItems))
+		slog.Info("synced gmail messages", "email", email, "count", len(gmailItems), "trips", len(trips))
 	}
 
-	return nil
+	return errors.Join(failed...)
 }

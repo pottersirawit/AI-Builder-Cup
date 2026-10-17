@@ -2,13 +2,16 @@ import 'package:flutter/widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'api.dart';
+import 'google_link.dart';
 import 'location.dart';
 import 'models.dart';
 import 'places.dart';
 
 /// App-wide state: demo clock, offline flag and local-only settings.
 class AppState extends ChangeNotifier {
-  AppState({String? demoClock}) : _demoClock = demoClock;
+  AppState({String? demoClock, Locale? locale})
+    : _demoClock = demoClock,
+      _locale = locale ?? defaultLocale;
 
   String? _demoClock;
 
@@ -28,7 +31,10 @@ class AppState extends ChangeNotifier {
   static const _localeKey = 'language';
   static const supportedLocales = [Locale('th'), Locale('en')];
 
-  Locale _locale = supportedLocales.first;
+  /// The language before the user picks one.
+  static const defaultLocale = Locale('en');
+
+  Locale _locale;
 
   /// The language of the whole app: its screens and the server's answers.
   Locale get locale => _locale;
@@ -115,8 +121,9 @@ class AppState extends ChangeNotifier {
   bool notificationsDenied = false;
 }
 
-/// Exposes [AppState], [PlacesStore], [Locator] and [FonTokMaiApi] to the
-/// widget tree; dependents rebuild when state or places change.
+/// Exposes [AppState], [PlacesStore], [Locator], [FonTokMaiApi] and
+/// [GoogleLink] to the widget tree; dependents rebuild when state or places
+/// change.
 class AppScope extends InheritedNotifier<Listenable> {
   AppScope({
     super.key,
@@ -124,6 +131,7 @@ class AppScope extends InheritedNotifier<Listenable> {
     required this.places,
     required this.api,
     this.locator = const Locator(),
+    this.link,
     required super.child,
   }) : super(notifier: Listenable.merge([state, places]));
 
@@ -131,6 +139,7 @@ class AppScope extends InheritedNotifier<Listenable> {
   final PlacesStore places;
   final FonTokMaiApi api;
   final Locator locator;
+  final GoogleLink? link;
 
   static AppScope _of(BuildContext context) =>
       context.dependOnInheritedWidgetOfExactType<AppScope>()!;
@@ -149,4 +158,5 @@ class AppScope extends InheritedNotifier<Listenable> {
   static PlacesStore readPlaces(BuildContext context) => _read(context).places;
   static FonTokMaiApi apiOf(BuildContext context) => _read(context).api;
   static Locator locatorOf(BuildContext context) => _read(context).locator;
+  static GoogleLink? linkOf(BuildContext context) => _read(context).link;
 }

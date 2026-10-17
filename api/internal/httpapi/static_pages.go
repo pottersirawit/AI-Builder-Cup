@@ -1,12 +1,8 @@
 package httpapi
 
 import (
-	"context"
 	"html"
-	"log/slog"
 	"net/http"
-	"strings"
-	"time"
 )
 
 func (s *Server) homePage(w http.ResponseWriter, r *http.Request) {
@@ -19,52 +15,6 @@ func (s *Server) privacyPolicy(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "text/html; charset=utf-8")
 	w.WriteHeader(http.StatusOK)
 	_, _ = w.Write([]byte(privacyPolicyHTML))
-}
-
-func (s *Server) oauth2Callback(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "text/html; charset=utf-8")
-	w.WriteHeader(http.StatusOK)
-
-	errParam := r.URL.Query().Get("error")
-	if errParam != "" {
-		_, _ = w.Write([]byte(oauthCallbackErrorHTML(errParam)))
-		return
-	}
-
-	code := r.URL.Query().Get("code")
-	email := r.URL.Query().Get("state")
-	if email == "" || !strings.Contains(email, "@") {
-		email = r.URL.Query().Get("email")
-	}
-	if email == "" || !strings.Contains(email, "@") {
-		email = "the32069@gmail.com"
-	}
-
-	if code != "" {
-		go func(authCode, userEmail string) {
-			ctx, cancel := context.WithTimeout(context.Background(), 25*time.Second)
-			defer cancel()
-
-			redirectURI := "https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback"
-			tokenResp, err := ExchangeGoogleAuthCode(ctx, authCode, redirectURI)
-			if err != nil {
-				slog.Warn("google oauth exchange failed", "email", userEmail, "err", err)
-				return
-			}
-
-			tokenStoreMu.Lock()
-			tokenStore[userEmail] = &userToken{
-				AccessToken:  tokenResp.AccessToken,
-				RefreshToken: tokenResp.RefreshToken,
-				Expiry:       time.Now().Add(time.Duration(tokenResp.ExpiresIn) * time.Second),
-			}
-			tokenStoreMu.Unlock()
-
-			_ = s.SyncUserWorkspaceData(ctx, userEmail, tokenResp.AccessToken, time.Now())
-		}(code, email)
-	}
-
-	_, _ = w.Write([]byte(oauthCallbackSuccessHTML(code, email)))
 }
 
 const homePageHTML = `<!DOCTYPE html>
@@ -223,7 +173,7 @@ const homePageHTML = `<!DOCTYPE html>
         <a href="/">Home</a>
         <a href="/privacy">Privacy Policy</a>
         <a href="https://github.com/pottersirawit/AI-Builder-Cup" target="_blank" rel="noopener">GitHub Repository</a>
-        <a href="mailto:the32069@gmail.com">Contact Developer</a>
+        <a href="https://github.com/pottersirawit/AI-Builder-Cup/issues" target="_blank" rel="noopener">Contact Developer</a>
       </p>
     </footer>
   </div>
@@ -379,7 +329,7 @@ const privacyPolicyHTML = `<!DOCTYPE html>
         If you have any questions or inquiries regarding this Privacy Policy or data processing practices, please contact:
       </p>
       <p>
-        <strong>Developer Contact:</strong> <a href="mailto:the32069@gmail.com" style="color: var(--accent);">the32069@gmail.com</a><br>
+        <strong>Developer Contact:</strong> <a href="https://github.com/pottersirawit/AI-Builder-Cup/issues" target="_blank" rel="noopener" style="color: var(--accent);">GitHub Issues</a><br>
         <strong>Project Repository:</strong> <a href="https://github.com/pottersirawit/AI-Builder-Cup" target="_blank" rel="noopener" style="color: var(--accent);">github.com/pottersirawit/AI-Builder-Cup</a>
       </p>
     </section>
@@ -395,206 +345,24 @@ const privacyPolicyHTML = `<!DOCTYPE html>
 </body>
 </html>`
 
-func oauthCallbackSuccessHTML(code, email string) string {
-	return `<!DOCTYPE html>
-<html lang="th">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Google Calendar Connected - Fontokmai (ฝนตกไหม)</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --bg: #dfeeff;
-      --bg2: #eef6ff;
-      --card: #ffffff;
-      --ink: #0b1f3a;
-      --muted: #5b6b82;
-      --line: #d6e4f5;
-      --blue: #1a73e8;
-      --blue2: #4285f4;
-      --violet: #9b72cb;
-      --ok: #1e8e3e;
-      --ok-bg: #e6f4ea;
-      --r: 24px;
-    }
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: 'Chakra Petch', system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: radial-gradient(1200px 600px at 20% -10%, #cfe4ff 0%, #f3f8ff 60%, #f7fafe 100%);
-      color: var(--ink);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-      padding: 24px 16px;
-    }
-    .card {
-      background: var(--card);
-      border-radius: var(--r);
-      border: 1px solid rgba(214, 228, 245, 0.9);
-      max-width: 480px;
-      width: 100%;
-      padding: 36px 30px;
-      text-align: center;
-      box-shadow: 0 16px 40px rgba(20, 60, 120, 0.12);
-    }
-    .logo {
-      display: inline-flex;
-      align-items: center;
-      gap: 10px;
-      font-weight: 700;
-      font-size: 16px;
-      color: var(--ink);
-      margin-bottom: 24px;
-    }
-    .logo i {
-      width: 28px;
-      height: 28px;
-      border-radius: 9px;
-      background: linear-gradient(135deg, var(--blue2), var(--violet));
-      display: inline-block;
-      position: relative;
-    }
-    .logo i::after {
-      content: "";
-      position: absolute;
-      left: 8px;
-      top: 8px;
-      width: 12px;
-      height: 12px;
-      border-radius: 50% 50% 50% 0;
-      background: #fff;
-      transform: rotate(-45deg);
-    }
-    .icon-wrap {
-      width: 68px;
-      height: 68px;
-      border-radius: 50%;
-      background: var(--ok-bg);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      margin: 0 auto 16px;
-      color: var(--ok);
-    }
-    .pill {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 5px 14px;
-      border-radius: 999px;
-      font-size: 13px;
-      font-weight: 600;
-      background: var(--ok-bg);
-      color: var(--ok);
-      margin-bottom: 14px;
-    }
-    h1 {
-      font-size: 1.45rem;
-      font-weight: 700;
-      color: var(--ink);
-      margin-bottom: 4px;
-    }
-    .thai-title {
-      font-size: 1.05rem;
-      color: var(--blue);
-      font-weight: 600;
-      margin-bottom: 14px;
-    }
-    p {
-      color: var(--muted);
-      font-size: 0.95rem;
-      line-height: 1.6;
-      margin-bottom: 20px;
-    }
-    .user-chip {
-      display: inline-flex;
-      align-items: center;
-      gap: 8px;
-      padding: 8px 16px;
-      background: var(--bg2);
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--blue);
-      margin-bottom: 24px;
-    }
-    .btn {
-      appearance: none;
-      border: 0;
-      border-radius: 14px;
-      padding: 14px 20px;
-      font: inherit;
-      font-weight: 600;
-      font-size: 15px;
-      cursor: pointer;
-      background: var(--blue);
-      color: #fff;
-      box-shadow: 0 6px 16px rgba(26, 115, 232, 0.28);
-      transition: all 0.15s ease;
-      display: inline-block;
-      text-decoration: none;
-    }
-    .btn:hover {
-      background: #1557b0;
-      transform: translateY(-1px);
-    }
-    .btn.block {
-      width: 100%;
-    }
-    .note {
-      margin-top: 14px;
-      font-size: 13px;
-      color: var(--muted);
-    }
-  </style>
-</head>
-<body>
-  <div class="card">
-    <div class="logo">
-      <i></i>
-      <span>ฝนตกไหม Fontokmai</span>
-    </div>
-    <div class="icon-wrap">
-      <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-        <polyline points="20 6 9 17 4 12"></polyline>
-      </svg>
-    </div>
-    <div class="pill">✓ เชื่อมต่อสำเร็จ</div>
-    <h1>Google Calendar Connected</h1>
-    <div class="thai-title">เชื่อมต่อ Google Calendar สำเร็จแล้ว</div>
-    <p>
-      ระบบเชื่อมต่อกับบัญชี Google ของคุณเรียบร้อยแล้ว Fontokmai พร้อมช่วยวิเคราะห์ฝนตก เรดาร์ตรวจจับ และน้ำท่วมขังบนเส้นทางการเดินทางตามตารางนัดหมาย เพื่อความปลอดภัยในการเดินทางของคุณ
-    </p>
-    <div class="user-chip">
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor">
-        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z"/>
-      </svg>
-      <span>` + html.EscapeString(email) + `</span>
-    </div>
-    <button class="btn block" onclick="window.close();">กลับสู่แอปพลิเคชัน</button>
-    <div class="note">คุณสามารถปิดหน้าต่างนี้และกลับไปใช้งานแอปได้ทันที</div>
-  </div>
-  <script>
-    if (window.opener) {
-      window.opener.postMessage({ type: 'GOOGLE_OAUTH_SUCCESS', code: '` + html.EscapeString(code) + `' }, '*');
-    }
-  </script>
-</body>
-</html>`
+// oauthError renders why sign-in failed and a link back to the app (back, or
+// this server's home page when the app is unknown).
+func oauthError(w http.ResponseWriter, status int, title, reason, back string) {
+	if back == "" {
+		back = "/"
+	}
+	w.Header().Set("Content-Type", "text/html; charset=utf-8")
+	w.WriteHeader(status)
+	_, _ = w.Write([]byte(oauthErrorHTML(title, reason, back)))
 }
 
-func oauthCallbackErrorHTML(errParam string) string {
+func oauthErrorHTML(title, reason, back string) string {
 	return `<!DOCTYPE html>
 <html lang="th">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Authorization Cancelled - Fontokmai (ฝนตกไหม)</title>
+  <title>` + html.EscapeString(title) + ` - Fontokmai (ฝนตกไหม)</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@300;400;500;600;700&display=swap" rel="stylesheet">
   <style>
@@ -739,13 +507,14 @@ func oauthCallbackErrorHTML(errParam string) string {
         <line x1="12" y1="16" x2="12.01" y2="16"></line>
       </svg>
     </div>
-    <div class="pill">การเชื่อมต่อถูกยกเลิก</div>
-    <h1>Authorization Cancelled</h1>
-    <div class="thai-title">ยังไม่ได้เชื่อมต่อ Google Calendar</div>
+    <div class="pill">ยังไม่ได้เชื่อมต่อ Google</div>
+    <h1>` + html.EscapeString(title) + `</h1>
+    <div class="thai-title">Google Calendar and Gmail are not connected</div>
     <p>
-      การอนุญาตเข้าถึงบริการถูกยกเลิก (` + html.EscapeString(errParam) + `) คุณสามารถกลับไปที่แอปและลองเชื่อมต่อใหม่อีกครั้งได้ตลอดเวลาจากเมนูตั้งค่า
+      ` + html.EscapeString(reason) + `<br>
+      Go back to the app and connect again from Settings. กลับไปที่แอปแล้วเชื่อมต่อใหม่ได้จากเมนูตั้งค่า
     </p>
-    <a href="/" class="btn block">กลับสู่หน้าหลัก</a>
+    <a href="` + html.EscapeString(back) + `" class="btn block">Back to ฝนตกไหม</a>
   </div>
 </body>
 </html>`

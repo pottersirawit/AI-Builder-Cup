@@ -9,10 +9,13 @@ const numeralFamily = 'PetchTabular';
 
 /// Any style with tabular numerals; the cut is the full Thai+Latin font, so
 /// mixed strings such as "ออกก่อน 16:45" stay in one face.
-TextStyle tabular(TextStyle s) =>
-    s.copyWith(fontFamily: numeralFamily, fontFamilyFallback: const [fontFamily]);
+TextStyle tabular(TextStyle s) => s.copyWith(
+  fontFamily: numeralFamily,
+  fontFamilyFallback: const [fontFamily],
+);
 
-TextStyle _t(double size, double height, FontWeight w, [double tracking = 0]) => TextStyle(
+TextStyle _t(double size, double height, FontWeight w, [double tracking = 0]) =>
+    TextStyle(
       fontFamily: fontFamily,
       fontSize: size,
       height: height,
@@ -111,11 +114,53 @@ const floodScheme = ColorScheme(
   scrim: Color(0xFF000000),
 );
 
-/// The app theme. [flood] switches the whole app to flood mode's dark scheme.
-ThemeData buildTheme({bool flood = false}) {
-  final scheme = flood ? floodScheme : lightScheme;
-  final text = fonTextTheme.apply(bodyColor: scheme.onSurface, displayColor: scheme.onSurface);
-  final shape = RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md));
+/// Night crystal: CI blue on deep navy, for glass over the backdrop.
+const nightScheme = ColorScheme(
+  brightness: Brightness.dark,
+  primary: Color(0xFF8AB4FF),
+  onPrimary: Color(0xFF06265C),
+  primaryContainer: Color(0xFF1B3F80),
+  onPrimaryContainer: Color(0xFFD6E3FF),
+  secondary: Color(0xFFB4C6E6),
+  onSecondary: Color(0xFF1D2F4A),
+  secondaryContainer: Color(0xFF263754),
+  onSecondaryContainer: Color(0xFFDCE6F7),
+  tertiary: Color(0xFFFFC34D),
+  onTertiary: Color(0xFF2A1A00),
+  tertiaryContainer: Color(0xFF3A2A06),
+  onTertiaryContainer: Color(0xFFFFDEA6),
+  error: Color(0xFFFFB4AB),
+  onError: Color(0xFF690005),
+  errorContainer: Color(0xFF93000A),
+  onErrorContainer: Color(0xFFFFDAD6),
+  surface: Color(0xFF060A14),
+  onSurface: Color(0xFFF2F5FA),
+  onSurfaceVariant: Color(0xFFB0BCD3),
+  surfaceContainerLowest: Color(0xFF03060D),
+  surfaceContainerLow: Color(0xFF0B1220),
+  surfaceContainer: Color(0xFF111A2C),
+  surfaceContainerHigh: Color(0xFF172238),
+  surfaceContainerHighest: Color(0xFF1E2B45),
+  outline: Color(0xFF6E7D99),
+  outlineVariant: Color(0xFF26324A),
+  inverseSurface: Color(0xFFF2F5FA),
+  onInverseSurface: Color(0xFF111A2C),
+  inversePrimary: Color(0xFF0B57D0),
+  shadow: Color(0xFF000000),
+  scrim: Color(0xFF000000),
+);
+
+/// The app theme: [night] crystal by default; [flood] switches the whole
+/// app to flood mode's amber-on-black scheme.
+ThemeData buildTheme({bool flood = false, bool night = false}) {
+  final scheme = flood ? floodScheme : (night ? nightScheme : lightScheme);
+  final text = fonTextTheme.apply(
+    bodyColor: scheme.onSurface,
+    displayColor: scheme.onSurface,
+  );
+  final shape = RoundedRectangleBorder(
+    borderRadius: BorderRadius.circular(Radii.md),
+  );
   const minSize = Size(Space.target, Space.target);
   return ThemeData(
     useMaterial3: true,
@@ -125,8 +170,15 @@ ThemeData buildTheme({bool flood = false}) {
     scaffoldBackgroundColor: scheme.surface,
     visualDensity: VisualDensity.standard,
     materialTapTargetSize: MaterialTapTargetSize.padded,
-    extensions: [flood ? FonColors.dark : FonColors.light],
-    iconTheme: IconThemeData(color: scheme.onSurface, size: 24, weight: 500, opticalSize: 24),
+    extensions: [
+      flood ? FonColors.dark : (night ? FonColors.night : FonColors.light),
+    ],
+    iconTheme: IconThemeData(
+      color: scheme.onSurface,
+      size: 24,
+      weight: 500,
+      opticalSize: 24,
+    ),
     textSelectionTheme: TextSelectionThemeData(
       cursorColor: scheme.primary,
       selectionColor: scheme.primary.withValues(alpha: .28),
@@ -136,7 +188,10 @@ ThemeData buildTheme({bool flood = false}) {
       style: FilledButton.styleFrom(
         minimumSize: minSize,
         shape: shape,
-        padding: const EdgeInsets.symmetric(horizontal: Space.x5, vertical: Space.x3),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.x5,
+          vertical: Space.x3,
+        ),
         textStyle: text.labelLarge,
       ),
     ),
@@ -145,12 +200,19 @@ ThemeData buildTheme({bool flood = false}) {
         minimumSize: minSize,
         shape: shape,
         side: BorderSide(color: scheme.outline),
-        padding: const EdgeInsets.symmetric(horizontal: Space.x5, vertical: Space.x3),
+        padding: const EdgeInsets.symmetric(
+          horizontal: Space.x5,
+          vertical: Space.x3,
+        ),
         textStyle: text.labelLarge,
       ),
     ),
     textButtonTheme: TextButtonThemeData(
-      style: TextButton.styleFrom(minimumSize: minSize, shape: shape, textStyle: text.labelLarge),
+      style: TextButton.styleFrom(
+        minimumSize: minSize,
+        shape: shape,
+        textStyle: text.labelLarge,
+      ),
     ),
     iconButtonTheme: IconButtonThemeData(
       style: IconButton.styleFrom(minimumSize: minSize),
@@ -159,34 +221,52 @@ ThemeData buildTheme({bool flood = false}) {
       backgroundColor: scheme.surfaceContainerLow,
       indicatorColor: scheme.secondaryContainer,
       height: 72,
-      labelTextStyle: WidgetStateProperty.resolveWith((s) => text.labelMedium!.copyWith(
-            color: s.contains(WidgetState.selected) ? scheme.onSurface : scheme.onSurfaceVariant,
-          )),
-      iconTheme: WidgetStateProperty.resolveWith((s) => IconThemeData(
-            size: 24,
-            fill: s.contains(WidgetState.selected) ? 1 : 0,
-            color: s.contains(WidgetState.selected)
-                ? scheme.onSecondaryContainer
-                : scheme.onSurfaceVariant,
-          )),
+      labelTextStyle: WidgetStateProperty.resolveWith(
+        (s) => text.labelMedium!.copyWith(
+          color: s.contains(WidgetState.selected)
+              ? scheme.onSurface
+              : scheme.onSurfaceVariant,
+        ),
+      ),
+      iconTheme: WidgetStateProperty.resolveWith(
+        (s) => IconThemeData(
+          size: 24,
+          fill: s.contains(WidgetState.selected) ? 1 : 0,
+          color: s.contains(WidgetState.selected)
+              ? scheme.onSecondaryContainer
+              : scheme.onSurfaceVariant,
+        ),
+      ),
     ),
     switchTheme: SwitchThemeData(
-      thumbIcon: WidgetStateProperty.resolveWith((s) => s.contains(WidgetState.selected)
-          ? const Icon(Icons.check, size: 16)
-          : null),
+      thumbIcon: WidgetStateProperty.resolveWith(
+        (s) => s.contains(WidgetState.selected)
+            ? const Icon(Icons.check, size: 16)
+            : null,
+      ),
     ),
-    dividerTheme: DividerThemeData(color: scheme.outlineVariant, thickness: 1, space: 1),
+    dividerTheme: DividerThemeData(
+      color: scheme.outlineVariant,
+      thickness: 1,
+      space: 1,
+    ),
     listTileTheme: ListTileThemeData(
       minVerticalPadding: Space.x3,
       contentPadding: const EdgeInsets.symmetric(horizontal: Space.x4),
       titleTextStyle: text.titleMedium,
-      subtitleTextStyle: text.bodySmall!.copyWith(color: scheme.onSurfaceVariant),
+      subtitleTextStyle: text.bodySmall!.copyWith(
+        color: scheme.onSurfaceVariant,
+      ),
       iconColor: scheme.onSurfaceVariant,
     ),
     snackBarTheme: SnackBarThemeData(
       behavior: SnackBarBehavior.floating,
-      contentTextStyle: text.bodyMedium!.copyWith(color: scheme.onInverseSurface),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.sm)),
+      contentTextStyle: text.bodyMedium!.copyWith(
+        color: scheme.onInverseSurface,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(Radii.sm),
+      ),
     ),
     bottomSheetTheme: BottomSheetThemeData(
       backgroundColor: scheme.surfaceContainerLow,

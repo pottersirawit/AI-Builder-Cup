@@ -103,7 +103,7 @@ PROJECT=$PROJECT REPORT_STORE=firestore api/deploy/cloudrun.sh  # เก็บ�
 
 สคริปต์ทำให้เองแบบรันซ้ำได้: เปิด API ที่ต้องใช้, ให้ service account ของ Cloud Run อ่าน secret ได้, สร้าง Artifact Registry repo (โหมด docker), สร้าง Firestore database และให้สิทธิ์ `roles/datastore.user` (เมื่อ `REPORT_STORE=firestore`)
 
-ตัวแปรที่ปรับได้: `SERVICE` (`fontokmai-api`), `REGION`, `BUILD` (`source`|`docker`), `DEMO_MODE` (`1`), `REPORT_STORE`, `GEMINI_MODEL`, `GEMINI_SECRET` (`GEMINI_API_KEY`), `GOOGLE_MAPS_SECRET` (ชื่อ secret ที่เก็บ Google Maps key ถ้าจะเปิดโหมด live), `RUNTIME_SA`
+ตัวแปรที่ปรับได้: `SERVICE` (`fontokmai-api`), `REGION`, `BUILD` (`source`|`docker`), `DEMO_MODE` (`0`; `1` = เดโมมิว), `REPORT_STORE`, `GEMINI_MODEL`, `GEMINI_SECRET` (`GEMINI_API_KEY`), `GOOGLE_MAPS_SECRET` (ชื่อ secret ที่เก็บ Google Maps key ถ้าจะเปิดโหมด live), `RUNTIME_SA`, `APP_URL` (`https://ai-cup-511208.web.app`), `OAUTH_REDIRECT_URI`
 
 โหมด `source` คัดลอกเฉพาะ `api/`, `data/bkk_flood_risk_points.json`, `data/bkk_landmarks.json` และ Dockerfile ไปไว้ในโฟลเดอร์ชั่วคราวก่อนส่งขึ้น Cloud Build เพื่อไม่ต้องอัปโหลดทั้ง repo (เช่นแอป Flutter)
 

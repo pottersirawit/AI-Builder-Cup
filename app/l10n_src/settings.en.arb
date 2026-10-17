@@ -1,0 +1,21 @@
+{
+  "settingsGoogleTitle": "Connect Google",
+  "settingsGoogleSubtitle": "Calendar and Gmail, one sign-in",
+  "settingsGoogleUseTitle": "What the app reads",
+  "settingsGoogleCalendarUse": "Calendar: events with a time and place, to tell you when to leave.",
+  "settingsGoogleGmailUse": "Gmail: ticket and booking confirmations only.",
+  "settingsGooglePrivacy": "Read-only. Events are kept on our server while you use the app.",
+  "settingsGoogleSignIn": "Sign in with Google",
+  "settingsGoogleWaiting": "Waiting for Google…",
+  "settingsGoogleWaitingHint": "Finish signing in on Google, then come back here.",
+  "settingsGoogleFailed": "Google didn't confirm the sign-in. Try again.",
+  "settingsGoogleConnected": "Connected as {email}",
+  "@settingsGoogleConnected": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsGoogleCancel": "Cancel"
+}

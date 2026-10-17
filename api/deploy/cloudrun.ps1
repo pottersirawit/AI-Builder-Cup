@@ -13,19 +13,26 @@
 .EXAMPLE
   powershell -ExecutionPolicy Bypass -File api\deploy\cloudrun.ps1 -Project my-project
 .EXAMPLE
-  powershell -ExecutionPolicy Bypass -File api\deploy\cloudrun.ps1 -Project my-project -DemoMode 0 -ReportStore firestore
+  powershell -ExecutionPolicy Bypass -File api\deploy\cloudrun.ps1 -Project my-project -DemoMode 1   # scripted มิว demo
+
+.NOTES
+  Runs exactly one always-on instance: Google sign-ins live in its memory, so a
+  second instance or a cold start would lose them.
 #>
 [CmdletBinding()]
 param(
   [Parameter(Mandatory)] [string] $Project,
   [string] $Region = "asia-southeast1",
   [string] $Service = "fontokmai-api",
-  [ValidateSet("0", "1")] [string] $DemoMode = "1",
+  [ValidateSet("0", "1")] [string] $DemoMode = "0",
   [ValidateSet("memory", "firestore")] [string] $ReportStore = "firestore",
   [string] $GeminiModel = "gemini-2.5-flash",
   # Vertex AI location for Gemini; check the model is offered there, or use "global".
   [string] $GeminiLocation = "asia-southeast1",
-  [bool] $Vertex = $true
+  [bool] $Vertex = $true,
+  # Hosting site the Google sign-in returns to, and the OAuth client's redirect URI.
+  [string] $AppUrl = "https://ai-cup-511208.web.app",
+  [string] $OAuthRedirectUri = "https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback"
 )
 
 function Test-Secret([string] $Name) {
@@ -49,10 +56,12 @@ try {
   # ---- env vars and secrets ------------------------------------------------
   $envs = @(
     "DEMO_MODE=$DemoMode", "REPORT_STORE=$ReportStore", "GEMINI_MODEL=$GeminiModel",
+    "GEMINI_FAST_MODEL=gemini-2.5-flash-lite", "GEMINI_CONTEXT_CACHE=1",
     "GOOGLE_CLOUD_PROJECT=$Project", "GOOGLE_CLOUD_LOCATION=$GeminiLocation",
     "TASKS_QUEUE=proactive-checks", "TASKS_LOCATION=$Region",
     "TASKS_INVOKER_SA=fontokmai-invoker@$Project.iam.gserviceaccount.com",
-    "PUBSUB_TOPIC_RAW=raw-messages"
+    "PUBSUB_TOPIC_RAW=raw-messages",
+    "APP_URL=$AppUrl", "OAUTH_REDIRECT_URI=$OAuthRedirectUri"
   ) -join ","
 
   $secretNames = @("GOOGLE_MAPS_API_KEY", "LINE_CHANNEL_SECRET", "LINE_CHANNEL_ACCESS_TOKEN",
@@ -66,7 +75,7 @@ try {
     "run", "deploy", $Service, "--source", $ctx,
     "--region", $Region, "--service-account", $ApiSA,
     "--allow-unauthenticated", "--port", "8080", "--memory", "512Mi", "--cpu", "1",
-    "--min-instances", "0", "--max-instances", "3", "--timeout", "300",
+    "--min-instances", "1", "--max-instances", "1", "--no-cpu-throttling", "--timeout", "300",
     "--set-env-vars", $envs
   )
   if ($mounted.Count -gt 0) { $deployArgs += @("--set-secrets", ($mounted -join ",")) }
@@ -79,5 +88,5 @@ try {
 
 $url = (& gcloud --project $Project run services describe $Service --region $Region --format="value(status.url)").Trim()
 Write-Host "deployed: $url" -ForegroundColor Green
-Write-Host "smoke test: Invoke-RestMethod $url/healthz; Invoke-RestMethod $url/v1/places"
+Write-Host "smoke test: Invoke-RestMethod $url/v1/healthz; Invoke-RestMethod $url/v1/places"
 Write-Host "next: re-run api\deploy\infra.ps1 -Project $Project to wire Pub/Sub push and run.invoker"

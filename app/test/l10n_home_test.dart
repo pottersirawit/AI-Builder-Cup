@@ -1,9 +1,9 @@
-import 'dart:ui';
-
-import 'package:flutter/material.dart' show Text;
+import 'package:flutter/material.dart';
 
 import 'package:flutter_test/flutter_test.dart';
+import 'package:fontokmai/app_state.dart';
 import 'package:fontokmai/l10n/l10n.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'helpers.dart';
 
@@ -29,7 +29,7 @@ void main() {
     expect(langs, ['th', 'en']);
   });
 
-  testWidgets('Home, board and quick asks read in English', (tester) async {
+  testWidgets('Summary and Events read in English', (tester) async {
     final state = await pumpApp(
       tester,
       '2026-09-29T16:10:00+07:00',
@@ -38,48 +38,92 @@ void main() {
     state.locale = const Locale('en');
     await settle(tester);
 
-    expect(find.text('Hi Miw'), findsOneWidget);
-    expect(find.text('Go home now'), findsOneWidget);
-    expect(find.text('Go to Siam now'), findsOneWidget);
-    expect(find.text('Ask more'), findsOneWidget);
-    expect(
-      find.text('Dismiss notification'),
-      findsNothing,
-      reason: 'tooltip, not text',
-    );
-    expect(find.byTooltip('Dismiss notification'), findsOneWidget);
-    expect(find.textContaining('Fon Tok Mai ·'), findsOneWidget);
-    expect(find.text('Travel'), findsOneWidget);
-    expect(find.text('Report flood'), findsOneWidget);
-    expect(find.text('Quick ask'), findsOneWidget);
-    expect(find.textContaining(RegExp(r'· \d+ min')), findsWidgets);
+    expect(find.text('Summary'), findsWidgets);
+    expect(find.text('Leave before'), findsOneWidget);
+    expect(find.text('16:45'), findsOneWidget);
+    expect(find.text('in 2 h 20 min'), findsOneWidget);
+    expect(find.text('2 more today'), findsOneWidget);
+    expect(find.text('Up next'), findsOneWidget);
+    expect(find.text('Before you go'), findsOneWidget);
+    expect(find.text('Weather now'), findsOneWidget);
+    expect(find.text('Go by'), findsOneWidget);
+    expect(find.text('Arrive about'), findsOneWidget);
+    expect(find.text('Events'), findsOneWidget);
 
     // Whatever Thai remains must be server data, never app chrome.
     const chrome = {
-      'ถามเร็ว',
-      'ตั้งค่า',
-      'ถามต่อ',
-      'ทริปถัดไป',
-      'ที่บ้านคืนนี้',
-      'ถึง',
-      'รอวัน',
-      'กลับบ้านตอนนี้',
-      'ไปสยามตอนนี้',
-      'เดินทาง',
-      'บ้าน',
+      'สรุป',
+      'อีเวนต์',
+      'อีเวนต์ถัดไป',
+      'ควรออกก่อน',
+      'ไปด้วย',
+      'ถึงราว',
+      'ฝนระหว่างทาง',
+      'ฝนช่วงนี้',
+      'ต่อจากนี้',
+      'ตอนนี้',
     };
-    final shown = tester
+    Set<String> shown() => tester
         .widgetList<Text>(find.byType(Text))
         .map((t) => t.data ?? '')
         .toSet();
-    expect(shown.intersection(chrome), isEmpty);
-    expect(
-      shown.where((s) => RegExp(r'^(ออก|พรีวิว) |นาที$|^ทางกลับ').hasMatch(s)),
-      isEmpty,
-    );
+    expect(shown().intersection(chrome), isEmpty);
+
+    await tapAndSettle(tester, find.text('Events'));
+    expect(find.text('All days'), findsOneWidget);
+    expect(find.text('Today'), findsWidgets);
+    expect(find.text('Sa 3 Oct'), findsOneWidget);
+    expect(find.text('Leave 16:45 · BTS / MRT'), findsOneWidget);
+    expect(shown().intersection(chrome), isEmpty);
   });
 
-  testWidgets('Ask screen reads in English', (tester) async {
+  testWidgets('offline sample data reads in English with no Thai left', (
+    tester,
+  ) async {
+    final thai = RegExp('[\u0E00-\u0E7F]');
+    Set<String> thaiShown() => {
+      for (final w in tester.widgetList(
+        find.byWidgetPredicate((w) => w is Text || w is RichText),
+      ))
+        w is Text
+            ? (w.data ?? w.textSpan?.toPlainText() ?? '')
+            : (w as RichText).text.toPlainText(),
+    }.where(thai.hasMatch).toSet();
+
+    for (final clock in [
+      '2026-09-29T16:10:00+07:00',
+      '2026-09-29T18:55:00+07:00',
+      '2026-09-29T21:40:00+07:00',
+    ]) {
+      final state = await pumpApp(tester, clock, height: 2400);
+      state.locale = const Locale('en');
+      await settle(tester);
+      expect(thaiShown(), isEmpty, reason: 'Summary at $clock');
+
+      await tapAndSettle(tester, find.text('Events'));
+      expect(thaiShown(), isEmpty, reason: 'Events at $clock');
+    }
+
+    final state = await pumpApp(
+      tester,
+      '2026-09-29T16:10:00+07:00',
+      height: 2400,
+    );
+    state.locale = const Locale('en');
+    await settle(tester);
+    await tapAndSettle(tester, find.text('Summary').last);
+    await openHero(tester);
+    final list = find.byType(Scrollable).hitTestable().first;
+    for (var i = 0; i < 8; i++) {
+      expect(thaiShown(), isEmpty, reason: 'verdict, scrolled $i');
+      await tester.drag(list, const Offset(0, -300));
+      await tester.pump();
+    }
+  });
+
+  testWidgets('Ask sheet and the follow-up screen read in English', (
+    tester,
+  ) async {
     final state = await pumpApp(
       tester,
       '2026-09-29T16:10:00+07:00',
@@ -88,9 +132,15 @@ void main() {
     state.locale = const Locale('en');
     await settle(tester);
 
-    await tapAndSettle(tester, find.text('Ask more'));
-    expect(find.text('Ask more'), findsOneWidget);
-    expect(find.textContaining('Right now I suggest'), findsOneWidget);
+    await tapAndSettle(tester, find.byTooltip('Ask about a trip'));
+    expect(find.text('Where to?'), findsOneWidget);
+    expect(find.text('Go home now'), findsOneWidget);
+    expect(find.text('Go to Siam now'), findsOneWidget);
+    expect(find.text('Rain tomorrow morning?'), findsOneWidget);
+    await tapAndSettle(tester, find.text('Go home now'));
+
+    await reveal(tester, find.text('Ask a follow-up'));
+    await tapAndSettle(tester, find.text('Ask a follow-up'));
     expect(find.text('Should I take the BTS instead?'), findsOneWidget);
     expect(find.text('What if I wait until 8 pm?'), findsOneWidget);
   });
@@ -103,5 +153,17 @@ void main() {
     expect(en.homeModeEta('Car', 1), 'Car · 1 min');
     expect(en.homeModeEta('Car', 5), 'Car · 5 min');
     expect(th.homeModeEta('รถยนต์', 5), 'รถยนต์ · 5 นาที');
+  });
+
+  test('a fresh install speaks English; a saved choice still wins', () async {
+    SharedPreferences.setMockInitialValues({});
+    final fresh = AppState();
+    await fresh.restoreLocale();
+    expect(fresh.locale, const Locale('en'));
+
+    SharedPreferences.setMockInitialValues({'language': 'th'});
+    final returning = AppState();
+    await returning.restoreLocale();
+    expect(returning.locale, const Locale('th'));
   });
 }

@@ -91,6 +91,22 @@ func (s Spot) ShortNameTH() string {
 	return strings.TrimSpace(name[:cut])
 }
 
+// Name is the spot's full name in l, Thai when it has no English one.
+func (s Spot) Name(l domain.Lang) string {
+	if l == domain.LangEN && s.NameEN != "" {
+		return s.NameEN
+	}
+	return s.NameTH
+}
+
+// ShortName is the spot's headline name in l, Thai when it has no English one.
+func (s Spot) ShortName(l domain.Lang) string {
+	if l == domain.LangEN && s.NameEN != "" {
+		return s.ShortNameEN()
+	}
+	return s.ShortNameTH()
+}
+
 // ShortNameEN turns "Ratchadaphisek Rd (Criminal Court - Soi Suea Yai)" into
 // "Ratchadaphisek Rd" for headlines.
 func (s Spot) ShortNameEN() string {

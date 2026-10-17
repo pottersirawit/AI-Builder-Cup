@@ -1,0 +1,21 @@
+{
+  "settingsGoogleTitle": "เชื่อมต่อ Google",
+  "settingsGoogleSubtitle": "ปฏิทินและ Gmail ลงชื่อเข้าใช้ครั้งเดียว",
+  "settingsGoogleUseTitle": "สิ่งที่แอปอ่าน",
+  "settingsGoogleCalendarUse": "ปฏิทิน: นัดที่มีเวลาและสถานที่ เพื่อบอกว่าควรออกกี่โมง",
+  "settingsGoogleGmailUse": "Gmail: เฉพาะอีเมลยืนยันตั๋วและการจอง",
+  "settingsGooglePrivacy": "อ่านอย่างเดียว ไม่แก้ไขหรือลบอะไร นัดของคุณถูกเก็บไว้บนเซิร์ฟเวอร์ของเราระหว่างที่ใช้แอป",
+  "settingsGoogleSignIn": "ลงชื่อเข้าใช้ด้วย Google",
+  "settingsGoogleWaiting": "กำลังรอ Google…",
+  "settingsGoogleWaitingHint": "ลงชื่อเข้าใช้ใน Google ให้เสร็จ แล้วกลับมาที่แอปนี้",
+  "settingsGoogleFailed": "Google ยังไม่ยืนยันการลงชื่อเข้าใช้ ลองอีกครั้ง",
+  "settingsGoogleConnected": "เชื่อมต่อแล้วกับ {email}",
+  "@settingsGoogleConnected": {
+    "placeholders": {
+      "email": {
+        "type": "String"
+      }
+    }
+  },
+  "settingsGoogleCancel": "ยกเลิก"
+}

@@ -114,6 +114,36 @@ PROJECT=<PROJECT> api/deploy/cloudrun.sh
 
 บน Windows ใช้ `api/deploy/infra.ps1` (สร้าง service account และ infra) แล้วตามด้วย `api/deploy/cloudrun.ps1 -Project <PROJECT>` สคริปต์นี้ใช้ Gemini ผ่าน Vertex AI เป็นค่าเริ่มต้น จึงไม่ต้องใช้ `GEMINI_API_KEY`
 
+## Deploy ให้เล่นด้วยบัญชี Google จริง (ทำตามลำดับนี้)
+
+ต้อง deploy API ก่อน Hosting เสมอ: app เวอร์ชันใหม่เรียก `/v1/oauth/start` ซึ่ง API ตัวเก่าบน Cloud Run ไม่มี ถ้า deploy แค่ Hosting ปุ่ม Connect Google จะขึ้นหน้า 404 และ API ตัวเก่ายังตอบอีเวนต์ของ มิว ให้อีเมลจริงด้วย
+
+คู่มือฉบับเต็ม (สถานะ deploy ปัจจุบัน, ค่าบน Cloud Run, rollback, ข้อควรระวัง) อยู่ที่ [docs/DEPLOY.md](docs/DEPLOY.md)
+
+1. เช็กก่อน deploy API
+   - มี secret `GOOGLE_OAUTH_CLIENT_ID` และ `GOOGLE_OAUTH_CLIENT_SECRET` แล้ว: `gcloud secrets list --project ai-cup-511208`
+   - ใน OAuth client (Google Cloud Console > APIs & Services > Credentials) มี `https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback` เป็น Authorized redirect URI
+   - อีเมล Gmail ของคุณอยู่ใน Test users ของ OAuth consent screen (`gmail.readonly` เป็น restricted scope คนนอกรายชื่อจะ login ไม่ได้)
+2. Deploy API (โหมดจริง `DEMO_MODE=0` และ instance เดียวที่เปิดตลอด เป็นค่าเริ่มต้นของสคริปต์อยู่แล้ว)
+
+   ```bash
+   gcloud auth login
+   PROJECT=ai-cup-511208 api/deploy/cloudrun.sh
+   ```
+
+3. เช็กว่า API ตัวใหม่ขึ้นแล้ว
+   - `curl -sI 'https://fontokmai-api-lmr33aj5zq-as.a.run.app/v1/oauth/start?return=https://ai-cup-511208.web.app/&nonce=abcdefgh1234'` ต้องได้ `302` ไปที่ `accounts.google.com` (ถ้าได้ `404` แปลว่ายังเป็นตัวเก่า)
+   - `curl -s 'https://fontokmai-api-lmr33aj5zq-as.a.run.app/v1/trips?email=someone@example.com'` ต้องได้รายการว่าง ไม่ใช่อีเวนต์ของ มิว
+4. Build และ deploy เว็บขึ้น Firebase Hosting (`firebase.json` และ `.firebaserc` อยู่ที่ root แล้ว)
+
+   ```bash
+   npm install -g firebase-tools && firebase login
+   (cd app && flutter build web --release)
+   firebase deploy --only hosting
+   ```
+
+5. เปิด https://ai-cup-511208.web.app แล้วกด Connect Google ใน Settings
+
 ## Build app ไปแจกให้คนอื่นลอง
 
 ```bash

@@ -3,6 +3,7 @@ library;
 
 export 'components/ask_bar.dart';
 export 'components/board.dart';
+export 'components/glass.dart';
 export 'components/marks.dart';
 export 'components/mode_segmented.dart';
 export 'components/notification_banner.dart';

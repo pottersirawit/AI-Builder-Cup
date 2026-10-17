@@ -2,6 +2,7 @@ package scenario
 
 import (
 	"context"
+	"fmt"
 	"testing"
 	"time"
 
@@ -101,6 +102,70 @@ func TestTripsAreAnchoredToTheClockDay(t *testing.T) {
 	}
 }
 
+func TestTripsListTheUpcomingWeek(t *testing.T) {
+	ids := func(now time.Time) []string {
+		var out []string
+		for _, tr := range Trips(now) {
+			out = append(out, tr.ID)
+		}
+		return out
+	}
+	week := []string{"cal-standup", "cal-sync", "cal-lunch", "cal-review", "cal-pitch", "cal-yoga", "gmail-flight", "cal-checkup"}
+	tests := []struct {
+		name string
+		now  time.Time
+		want []string
+	}{
+		{"morning has the whole day", demo(8, 0), append([]string{"cal-dinner", "gmail-concert", "cal-client", "cal-gym"}, week...)},
+		{"a meeting stays 10 minutes past its time", demo(14, 10), append([]string{"cal-dinner", "gmail-concert", "cal-client", "cal-gym"}, week...)},
+		{"the demo clock has dropped the 14:00 meeting", demo(16, 10), append([]string{"cal-dinner", "gmail-concert", "cal-gym"}, week...)},
+		{"late evening keeps only later days", demo(20, 41), append([]string{"cal-dinner", "gmail-concert"}, week...)},
+	}
+	for _, tt := range tests {
+		if got := ids(tt.now); fmt.Sprint(got) != fmt.Sprint(tt.want) {
+			t.Errorf("%s: got %v, want %v", tt.name, got, tt.want)
+		}
+	}
+	for i, tr := range Trips(demo(8, 0))[3:] {
+		if prev := Trips(demo(8, 0))[2+i]; tr.ArriveBy.Before(prev.ArriveBy) {
+			t.Errorf("%s arrives before %s", tr.ID, prev.ID)
+		}
+	}
+}
+
+func TestTripsSayWhenTheyEnd(t *testing.T) {
+	d1 := func(hh, mm int) time.Time { return demo(hh, mm).AddDate(0, 0, 1) }
+	want := map[string]time.Time{
+		"cal-dinner": demo(20, 0), "gmail-concert": time.Date(2026, 10, 3, 22, 0, 0, 0, domain.Bangkok),
+		"cal-client": demo(15, 30), "cal-gym": demo(21, 30),
+		"cal-standup": d1(10, 0), "cal-sync": d1(11, 30), "cal-lunch": d1(12, 45), "cal-review": d1(14, 0),
+		"cal-pitch": demo(11, 0).AddDate(0, 0, 2), "cal-yoga": demo(20, 0).AddDate(0, 0, 2),
+		"gmail-flight": {}, "cal-checkup": demo(10, 0).AddDate(0, 0, 7),
+	}
+	trips := Trips(demo(8, 0))
+	if len(trips) != len(want) {
+		t.Fatalf("got %d trips, want %d", len(trips), len(want))
+	}
+	byID := map[string]domain.Trip{}
+	for _, tr := range trips {
+		byID[tr.ID] = tr
+		if w, ok := want[tr.ID]; !ok || !tr.EndsAt.Equal(w) {
+			t.Errorf("%s ends at %v, want %v", tr.ID, tr.EndsAt, w)
+		}
+	}
+	sync := byID["cal-sync"]
+	if !sync.Virtual || sync.Destination.NameTH != "ออนไลน์" || !sync.ArriveBy.Equal(d1(11, 0)) {
+		t.Errorf("cal-sync = %+v, want a virtual 11:00 meeting", sync)
+	}
+	review, lunch := byID["cal-review"], byID["cal-lunch"]
+	if review.Origin != Siam || review.Destination != Thonglor || review.Mode != domain.ModeTransit {
+		t.Errorf("cal-review = %+v, want Siam to Thonglor by transit", review)
+	}
+	if gap := review.ArriveBy.Sub(lunch.EndsAt); gap != 15*time.Minute {
+		t.Errorf("cal-review starts %v after lunch ends, want 15m", gap)
+	}
+}
+
 func TestTripsRollForwardOnceTheEveningIsOver(t *testing.T) {
 	// Live mode: the dinner is tonight's until well after 18:30, then tomorrow's.
 	oct8 := func(hh, mm int) time.Time { return time.Date(2026, 10, 8, hh, mm, 0, 0, domain.Bangkok) }
@@ -165,7 +230,7 @@ func TestEnglishText(t *testing.T) {
 			t.Errorf("label %q has no English text", p.LabelTH)
 		}
 	}
-	for _, tr := range Trips(time.Date(2026, 9, 29, 16, 10, 0, 0, domain.Bangkok)) {
+	for _, tr := range Trips(time.Date(2026, 9, 29, 8, 0, 0, 0, domain.Bangkok)) {
 		en := LocalizeTrip(tr, domain.LangEN)
 		if domain.HasThai(en.TitleTH) || domain.HasThai(en.Origin.NameTH) || domain.HasThai(en.Destination.NameTH) {
 			t.Errorf("trip %+v has Thai text", en)

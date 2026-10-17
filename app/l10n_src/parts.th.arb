@@ -102,7 +102,7 @@
     }
   },
   "partsNeedsFirst": "ต้องรู้ก่อนตอบ",
-  "partsNeedsWhere": "ยังไม่รู้ว่า{place}อยู่ไหน",
+  "partsNeedsWhere": "ยังไม่รู้ว่า {place} อยู่ไหน",
   "@partsNeedsWhere": {
     "placeholders": {
       "place": {

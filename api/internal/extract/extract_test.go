@@ -243,3 +243,16 @@ func TestExtractWithGemini_InjectionStaysFenced(t *testing.T) {
 		t.Errorf("tag breakout not neutralised: %q", fake.prompt)
 	}
 }
+
+func TestWithGeminiNeverGuesses(t *testing.T) {
+	raw := RawMessage{Source: SourceGmail, SourceRef: "m1", Title: "ตั๋วคอนเสิร์ต", Body: "พรุ่งนี้ 19:00 ที่อิมแพ็ค"}
+	now := bangkokTime(2026, 10, 17, 9, 0)
+	if p, err := WithGemini(context.Background(), nil, raw, now); err == nil {
+		t.Errorf("without Gemini got %+v, want an error", p)
+	}
+	fake := &fakeGenerator{reply: `{"is_trip":true,"title_th":"คอนเสิร์ต","destination_text":"อิมแพ็ค","arrive_by":"2026-10-18T19:00:00+07:00","confidence":0.9,"evidence_th":"19:00"}`}
+	p, err := WithGemini(context.Background(), &agent.Gemini{Gen: fake, Model: "test"}, raw, now)
+	if err != nil || p.SourceRef != "m1" || p.ArriveBy == nil || !p.ArriveBy.Equal(bangkokTime(2026, 10, 18, 19, 0)) {
+		t.Errorf("WithGemini = %+v, %v; want m1 arriving 19:00 on the 18th", p, err)
+	}
+}

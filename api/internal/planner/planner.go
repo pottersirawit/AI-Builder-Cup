@@ -32,6 +32,8 @@ type Providers struct {
 	BMAFlood    domain.RoadFloodProvider
 	BMATidal    domain.TidalProvider
 	Hotlines    domain.HotlineProvider
+	// Outlook feeds /v1/outlook; nil replays the scenario.
+	Outlook domain.OutlookProvider
 }
 
 // Planner holds static data shared by all requests.
@@ -126,7 +128,7 @@ func (p *Planner) TripTo(now time.Time, placeID string) (domain.Trip, error) {
 // upcomingTo is a Calendar or Gmail trip to near there within tripWindow.
 func (p *Planner) upcomingTo(now time.Time, dest domain.LatLng) (domain.Trip, bool) {
 	for _, t := range p.Trips(now) {
-		if geo.HaversineM(t.Destination.Point(), dest) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
+		if t.Plannable() && geo.HaversineM(t.Destination.Point(), dest) <= sameSpotM && t.ArriveBy.Sub(now).Abs() <= tripWindow {
 			return t, true
 		}
 	}
@@ -217,12 +219,18 @@ func (p *Planner) NewSession(ctx context.Context, prov Providers, now time.Time,
 
 // Open starts a decision for the requested trip: the app's coordinates, a
 // known trip ID, or the first upcoming trip.
+// Online meetings, all-day events and trips with an unresolved end are not
+// travel and are refused with ErrBadTrip rather than planned to (0,0).
 func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
 	s, err := p.open(ctx, prov, now, req)
-	if err == nil {
-		s.Trip = scenario.LocalizeTrip(s.Trip, s.Lang)
+	if err != nil {
+		return s, err
 	}
-	return s, err
+	if !s.Trip.Plannable() {
+		return nil, fmt.Errorf("%w: %q is not travel we can plan (online, all-day or no known place)", ErrBadTrip, s.Trip.ID)
+	}
+	s.Trip = scenario.LocalizeTrip(s.Trip, s.Lang)
+	return s, nil
 }
 
 func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
@@ -255,6 +263,12 @@ func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req T
 	}
 	if tripID == "" {
 		s.Trip = trips[0]
+		for _, t := range trips {
+			if t.Plannable() {
+				s.Trip = t
+				break
+			}
+		}
 		return s, nil
 	}
 	for _, t := range trips {
@@ -500,7 +514,7 @@ func (s *Session) SourcesUsed() []string {
 		out = append(out, s.prov.BMATidal.Name())
 	}
 	if s.prov.Hotlines != nil {
-		out = append(out, s.prov.Hotlines.Name())
+		out = append(out, scenario.Text(s.prov.Hotlines.Name(), s.Lang))
 	}
 	return out
 }
@@ -674,7 +688,11 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		summary := s.Lang.Pick("ไม่มีข้อมูลคลองใกล้ปลายทาง", "No canal data near the destination")
 		if len(canals) > 0 {
 			c := canals[0]
-			summary = fmt.Sprintf(s.Lang.Pick("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", "%s at %.1f m, bank at %.1f m (%.0f cm below the bank)"), c.NameTH, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
+			name := c.NameTH
+			if s.Lang == domain.LangEN && c.NameEN != "" {
+				name = c.NameEN
+			}
+			summary = fmt.Sprintf(s.Lang.Pick("%s %.1f ม. ตลิ่ง %.1f ม. (ต่ำกว่าตลิ่ง %.0f ซม.)", "%s at %.1f m, bank at %.1f m (%.0f cm below the bank)"), name, c.LevelM, c.BankM, math.Max(0, (c.BankM-c.LevelM)*100))
 		}
 		return map[string]any{"canals": canals}, summary, nil
 

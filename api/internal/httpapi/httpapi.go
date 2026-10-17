@@ -59,6 +59,8 @@ type Server struct {
 	Internal   InternalAuth
 	IngestOpen bool
 	Limits     Limits
+	// Google is the OAuth flow's configuration; the zero value is production.
+	Google GoogleOAuth
 }
 
 func (s *Server) Handler() http.Handler {
@@ -73,6 +75,8 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("GET /{$}", s.homePage)
 	mux.HandleFunc("GET /privacy", s.privacyPolicy)
 	mux.HandleFunc("GET /oauth2callback", s.oauth2Callback)
+	mux.HandleFunc("GET /v1/oauth/start", s.oauthStart)
+	mux.HandleFunc("GET /v1/oauth/status", s.oauthStatus)
 	mux.HandleFunc("GET /v1/trips", s.withClock(s.trips))
 	mux.HandleFunc("GET /v1/trips/sync", s.withClock(s.syncTrips))
 	mux.HandleFunc("POST /v1/trips/sync", s.withClock(s.syncTrips))
@@ -81,6 +85,7 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
 	mux.HandleFunc("GET /v1/reports", s.withClock(s.listReports))
 	mux.HandleFunc("GET /v1/home-status", s.withClock(s.homeStatus))
+	mux.Handle("GET /v1/outlook", s.Limits.rateLimit("outlook", s.Limits.placesRPM(), s.withClock(s.outlook)))
 	mux.Handle("GET /v1/places/search", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.searchPlaces)))
 	mux.Handle("GET /v1/places/reverse", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.reversePlace)))
 	ingest := s.Limits.limitBody(s.withClock(s.ingest))
@@ -115,76 +120,86 @@ func (s *Server) withClock(h func(http.ResponseWriter, *http.Request, reqCtx)) h
 	}
 }
 
-func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	email := r.URL.Query().Get("email")
-	if email == "" {
-		email = r.URL.Query().Get("uid")
-	}
+// DemoEmail is มิว's address: the only account that sees the scripted trips
+// without an X-Demo-Clock header.
+const DemoEmail = "miw.demo@gmail.com"
 
-	var trips []domain.Trip
+func requestEmail(r *http.Request) string {
+	if email := r.URL.Query().Get("email"); email != "" {
+		return email
+	}
+	return r.URL.Query().Get("uid")
+}
+
+// requestHome is the app's saved home from ?home_lat=&home_lng=&home_name=,
+// unresolved when it sent none.
+func requestHome(r *http.Request) domain.Place {
+	q := r.URL.Query()
+	lat, errLat := strconv.ParseFloat(q.Get("home_lat"), 64)
+	lng, errLng := strconv.ParseFloat(q.Get("home_lng"), 64)
+	if errLat != nil || errLng != nil || lat < -90 || lat > 90 || lng < -180 || lng > 180 {
+		return domain.Place{}
+	}
+	name := strings.TrimSpace(q.Get("home_name"))
+	if name == "" {
+		name = "บ้าน"
+	}
+	return domain.Place{NameTH: name, Lat: lat, Lng: lng}
+}
+
+func hasToken(email string) bool {
+	tokenStoreMu.RLock()
+	defer tokenStoreMu.RUnlock()
+	_, ok := tokenStore[email]
+	return ok
+}
+
+// userTrips returns a real account's stored trips, never มิว's scenario: that
+// is only for demo requests, an empty email or DemoEmail.
+func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Trip {
+	trips := []domain.Trip{}
 	if s.UserStore != nil && email != "" {
-		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil && len(uTrips) > 0 {
+		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil {
 			for _, ut := range uTrips {
 				trips = append(trips, ut.Trip)
 			}
 		}
 	}
-
-	if len(trips) == 0 && s.Planner != nil && s.Planner.Trips != nil {
+	demo := r.Header.Get(clock.Header) != "" || email == "" || email == DemoEmail
+	if len(trips) == 0 && demo && s.Planner != nil && s.Planner.Trips != nil {
 		trips = s.Planner.Trips(rc.now)
 	}
-
 	if rc.lang == domain.LangEN {
-		localized := make([]domain.Trip, len(trips))
 		for i, t := range trips {
-			localized[i] = scenario.LocalizeTrip(t, rc.lang)
+			trips[i] = scenario.LocalizeTrip(t, rc.lang)
 		}
-		trips = localized
 	}
-	writeJSON(w, http.StatusOK, map[string]any{"trips": trips})
+	return trips
+}
+
+func (s *Server) trips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
+	email := requestEmail(r)
+	writeJSON(w, http.StatusOK, map[string]any{
+		"trips":     s.userTrips(r, rc, email),
+		"connected": hasToken(email),
+	})
 }
 
 func (s *Server) syncTrips(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	email := r.URL.Query().Get("email")
-	if email == "" {
-		email = r.URL.Query().Get("uid")
-	}
-	if email == "" {
-		email = "the32069@gmail.com"
+	email := requestEmail(r)
+
+	accessToken, connected := s.accessToken(r.Context(), email)
+	if connected {
+		s.syncAndRecord(r.Context(), email, accessToken, requestHome(r), rc.now)
 	}
 
-	tokenStoreMu.RLock()
-	tok, hasTok := tokenStore[email]
-	tokenStoreMu.RUnlock()
-
-	if hasTok && tok != nil && tok.AccessToken != "" {
-		_ = s.SyncUserWorkspaceData(r.Context(), email, tok.AccessToken, rc.now)
-	}
-
-	var trips []domain.Trip
-	if s.UserStore != nil {
-		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil && len(uTrips) > 0 {
-			for _, ut := range uTrips {
-				trips = append(trips, ut.Trip)
-			}
-		}
-	}
-	if len(trips) == 0 && s.Planner != nil && s.Planner.Trips != nil {
-		trips = s.Planner.Trips(rc.now)
-	}
-
-	if rc.lang == domain.LangEN {
-		localized := make([]domain.Trip, len(trips))
-		for i, t := range trips {
-			localized[i] = scenario.LocalizeTrip(t, rc.lang)
-		}
-		trips = localized
-	}
+	trips := s.userTrips(r, rc, email)
 	writeJSON(w, http.StatusOK, map[string]any{
-		"synced": true,
-		"email":  email,
-		"count":  len(trips),
-		"trips":  trips,
+		"synced":    true,
+		"email":     email,
+		"connected": connected,
+		"count":     len(trips),
+		"trips":     trips,
 	})
 }
 
@@ -229,14 +244,13 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		if email == "" {
 			email = r.URL.Query().Get("email")
 		}
-		if email == "" {
-			email = "the32069@gmail.com"
+		if email != "" {
+			_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+				UID:       email,
+				Trip:      *tripReq.Trip,
+				UpdatedAt: time.Now(),
+			})
 		}
-		_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
-			UID:       email,
-			Trip:      *tripReq.Trip,
-			UpdatedAt: time.Now(),
-		})
 	} else if tripReq.Trip == nil && tripReq.TripID != "" && s.UserStore != nil {
 		if ut, err := s.UserStore.FindTripByID(r.Context(), tripReq.TripID); err == nil {
 			tripReq.Trip = &ut.Trip
@@ -462,6 +476,29 @@ func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	})
 	status.Place = scenario.LocalizePlace(status.Place, rc.lang)
 	writeJSON(w, http.StatusOK, status)
+}
+
+// outlook is the next hours of weather at a point (the demo home by default),
+// for the app's what-to-carry line.
+func (s *Server) outlook(w http.ResponseWriter, r *http.Request, rc reqCtx) {
+	at, given, err := point(r.URL.Query())
+	if err != nil {
+		writeError(w, http.StatusBadRequest, err.Error())
+		return
+	}
+	if !given {
+		at = s.Home.Place.Point()
+	}
+	var prov domain.OutlookProvider = scenario.Outlook{}
+	if rc.prov.Outlook != nil {
+		prov = rc.prov.Outlook
+	}
+	out, err := prov.Outlook(r.Context(), at, rc.now, rc.lang)
+	if err != nil {
+		writeError(w, http.StatusBadGateway, err.Error())
+		return
+	}
+	writeJSON(w, http.StatusOK, out)
 }
 
 func (s *Server) searchPlaces(w http.ResponseWriter, r *http.Request) {

@@ -75,11 +75,22 @@ class Trip {
     required this.arriveBy,
     required this.mode,
     this.locationTextTh,
+    this.endsAt,
+    this.virtual = false,
+    this.allDay = false,
   });
 
   factory Trip.fromJson(Json j) {
     final dest = j['destination'] as Json?;
-    final resolved = dest != null && dest['lat'] != null && dest['lng'] != null;
+    final virtual = j['virtual'] == true;
+    final allDay = j['all_day'] == true;
+    // (0, 0) is how an unplaced trip comes back from the device cache.
+    final resolved =
+        dest != null &&
+        dest['lat'] != null &&
+        dest['lng'] != null &&
+        !(_num(dest['lat']) == 0 && _num(dest['lng']) == 0);
+    final placeless = !resolved && !virtual && !allDay;
     final text =
         j['location_text_th'] as String? ?? j['location_th'] as String?;
     return Trip(
@@ -92,7 +103,10 @@ class Trip {
           : Place(nameTh: text ?? _str(dest?['name_th']), lat: 0, lng: 0),
       arriveBy: DateTime.tryParse(_str(j['arrive_by'])),
       mode: TravelMode.parse(j['mode']),
-      locationTextTh: resolved ? null : (text ?? _str(dest?['name_th'])),
+      locationTextTh: placeless ? (text ?? _str(dest?['name_th'])) : null,
+      endsAt: DateTime.tryParse(_str(j['ends_at'])),
+      virtual: virtual,
+      allDay: allDay,
     );
   }
 
@@ -116,6 +130,18 @@ class Trip {
   final String? locationTextTh;
   bool get unresolved => locationTextTh != null;
 
+  /// When the event ends; Gmail bookings often have none.
+  final DateTime? endsAt;
+
+  /// An online meeting: nothing to travel to.
+  final bool virtual;
+
+  /// An all-day event (a holiday, a trip day): not a departure.
+  final bool allDay;
+
+  /// Whether this event means going somewhere at a time.
+  bool get travels => !virtual && !allDay && arriveBy != null;
+
   Json toJson() => {
     'id': id,
     'title_th': titleTh,
@@ -125,6 +151,9 @@ class Trip {
     if (arriveBy != null) 'arrive_by': arriveBy!.toIso8601String(),
     'mode': mode.wire,
     if (locationTextTh != null) 'location_text_th': locationTextTh,
+    if (endsAt != null) 'ends_at': endsAt!.toIso8601String(),
+    if (virtual) 'virtual': true,
+    if (allDay) 'all_day': true,
   };
 }
 
@@ -355,13 +384,13 @@ class EmergencyContact {
   final String? lineId;
 
   factory EmergencyContact.fromJson(Json j) => EmergencyContact(
-        agencyTh: _str(j['agency_th']),
-        agencyEn: _str(j['agency_en']),
-        number: _str(j['number']),
-        purposeTh: _str(j['purpose_th']),
-        purposeEn: _str(j['purpose_en']),
-        lineId: j['line_id'] as String?,
-      );
+    agencyTh: _str(j['agency_th']),
+    agencyEn: _str(j['agency_en']),
+    number: _str(j['number']),
+    purposeTh: _str(j['purpose_th']),
+    purposeEn: _str(j['purpose_en']),
+    lineId: j['line_id'] as String?,
+  );
 }
 
 /// Body of POST /v1/decide. The main input is [tripId], an ad-hoc
@@ -755,4 +784,83 @@ class NeedsPlace {
   /// home or work when the question named one the user has not saved.
   final PlaceKind? kind;
   final List<PlaceCandidate> candidates;
+}
+
+/// One hour of weather at a place.
+class WeatherHour {
+  const WeatherHour({
+    required this.time,
+    required this.tempC,
+    required this.feelsLikeC,
+    required this.uvIndex,
+    required this.rainProbPct,
+    required this.rainMmPerHr,
+    this.humidityPct = 0,
+    this.windKph = 0,
+    this.condition = '',
+    this.conditionTh = '',
+  });
+
+  factory WeatherHour.fromJson(Json j) => WeatherHour(
+    time: DateTime.parse(_str(j['time'])),
+    tempC: _num(j['temp_c']),
+    feelsLikeC: _num(j['feels_like_c']),
+    uvIndex: _int(j['uv_index']),
+    rainProbPct: _int(j['rain_prob_pct']),
+    rainMmPerHr: _num(j['rain_mm_per_hr']),
+    humidityPct: _int(j['humidity_pct']),
+    windKph: _num(j['wind_kph']),
+    condition: _str(j['condition']),
+    conditionTh: _str(j['condition_th']),
+  );
+
+  final DateTime time;
+  final double tempC;
+  final double feelsLikeC;
+  final int uvIndex;
+  final int rainProbPct;
+  final double rainMmPerHr;
+  final int humidityPct;
+  final double windKph;
+
+  /// Google's weatherCondition.type, e.g. PARTLY_CLOUDY, HEAVY_RAIN.
+  final String condition;
+
+  /// Short description in the request's language.
+  final String conditionTh;
+
+  WeatherHour shifted(Duration by) => WeatherHour(
+    time: time.add(by),
+    tempC: tempC,
+    feelsLikeC: feelsLikeC,
+    uvIndex: uvIndex,
+    rainProbPct: rainProbPct,
+    rainMmPerHr: rainMmPerHr,
+    humidityPct: humidityPct,
+    windKph: windKph,
+    condition: condition,
+    conditionTh: conditionTh,
+  );
+}
+
+/// The next hours of weather where the user is (`GET /v1/outlook`).
+class Outlook {
+  const Outlook({
+    required this.now,
+    required this.hours,
+    this.sunset,
+    this.sources = const [],
+  });
+
+  factory Outlook.fromJson(Json j) => Outlook(
+    now: WeatherHour.fromJson(j['now'] as Json),
+    hours: _list(j['hours']).map(WeatherHour.fromJson).toList(),
+    sunset: DateTime.tryParse(_str(j['sunset'])),
+    sources: (j['sources'] as List? ?? const []).cast<String>(),
+  );
+
+  final WeatherHour now;
+  final List<WeatherHour> hours;
+  final DateTime? sunset;
+  final List<String> sources;
 }

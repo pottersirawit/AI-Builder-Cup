@@ -3,8 +3,11 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/widgets.dart' show Locale;
 import 'package:http/http.dart' as http;
 
+import 'events.dart' show bangkokDay;
+import 'l10n/l10n.dart';
 import 'models.dart';
 import 'places.dart';
 
@@ -16,8 +19,20 @@ class ApiResult<T> {
   final bool isSample;
 }
 
-/// Client for API contract v0 plus the v1 places additions. Every call falls back to
-/// `assets/fixtures/*.json` when the backend fails, so the app always demos.
+/// What the server knows about a Google sign-in.
+class OAuthStatus {
+  const OAuthStatus({required this.email, required this.connected});
+  factory OAuthStatus.fromJson(Json j) => OAuthStatus(
+    email: j['email'] as String? ?? '',
+    connected: j['connected'] as bool? ?? false,
+  );
+  final String email;
+  final bool connected;
+}
+
+/// Client for API contract v0 plus the v1 places additions. Calls fall back to
+/// `assets/fixtures/*.json` when the backend fails, so the app always demos;
+/// a real account's trips, plans and weather never do.
 class FonTokMaiApi {
   FonTokMaiApi({
     required this.baseUrl,
@@ -25,6 +40,7 @@ class FonTokMaiApi {
     AssetBundle? bundle,
     this.demoClock,
     this.language,
+    this.allowSample,
     this.timeout = const Duration(seconds: 45),
   }) : _client = client ?? http.Client(),
        _bundle = bundle ?? rootBundle;
@@ -40,6 +56,12 @@ class FonTokMaiApi {
   /// Returns the app language code (`th` or `en`) the server should answer in.
   final String Function()? language;
 
+  /// Whether a failed plan or forecast may answer with มิว's sample day;
+  /// only her demo profile may. Null allows it.
+  final bool Function()? allowSample;
+
+  bool get _sampleAllowed => allowSample?.call() ?? true;
+
   Map<String, String> get _headers {
     final clock = demoClock?.call();
     final lang = language?.call();
@@ -53,28 +75,69 @@ class FonTokMaiApi {
   Uri _uri(String path, [Map<String, String>? query]) =>
       Uri.parse('$baseUrl$path').replace(queryParameters: query);
 
-  Future<ApiResult<List<Trip>>> trips({String? email}) => _withFallback(
-    () async => Trip.listFromJson(
-      await _get('/v1/trips', email == null ? null : {'email': email}),
-    ),
-    () async => Trip.listFromJson(await _fixture('trips')),
-  );
+  /// The account's trips. With [sample] false a failure throws instead of
+  /// answering with มิว's fixture trips.
+  Future<ApiResult<List<Trip>>> trips({String? email, bool sample = true}) =>
+      _tripsFrom('/v1/trips', email, sample);
 
-  Future<ApiResult<List<Trip>>> syncTrips({String? email}) => _withFallback(
-    () async {
-      final res = await _get(
-        '/v1/trips/sync',
-        email == null ? null : {'email': email},
-      );
-      return Trip.listFromJson(res);
+  /// Pulls Calendar and Gmail again, then the trips; see [trips]. Synced
+  /// trips start from [home]; without it the server starts them downtown.
+  Future<ApiResult<List<Trip>>> syncTrips({
+    String? email,
+    bool sample = true,
+    SavedPlace? home,
+  }) => _tripsFrom('/v1/trips/sync', email, sample, {
+    if (home != null) ...{
+      'home_lat': '${home.lat}',
+      'home_lng': '${home.lng}',
+      'home_name': home.nameTh,
     },
-    () async => Trip.listFromJson(await _fixture('trips')),
-  );
+  });
+
+  Future<ApiResult<List<Trip>>> _tripsFrom(
+    String path,
+    String? email,
+    bool sample, [
+    Map<String, String> extra = const {},
+  ]) async {
+    final query = {if (email != null) 'email': email, ...extra};
+    Future<List<Trip>> live() async =>
+        Trip.listFromJson(await _get(path, query.isEmpty ? null : query));
+    return _withFallback(
+      live,
+      () async => Trip.listFromJson(await _fixture('trips')),
+      sample: sample,
+    );
+  }
+
+  /// Whether the sign-in started with [nonce] has finished, and as whom.
+  Future<OAuthStatus> oauthStatus({required String nonce}) async =>
+      OAuthStatus.fromJson(await _get('/v1/oauth/status', {'nonce': nonce}));
 
   Future<ApiResult<Decision>> decide(DecideRequest req) => _withFallback(
     () async => Decision.fromJson(await _postJson('/v1/decide', req.toJson())),
     () async => Decision.fromJson(await _fixture(sampleDecisionName(req))),
+    sample: _sampleAllowed,
   );
+
+  /// The next 12 hours of weather at [lat],[lng]; without them, the
+  /// server's demo home. The sample day is moved onto today when live.
+  Future<ApiResult<Outlook>> outlook({double? lat, double? lng}) =>
+      _withFallback(
+        () async => Outlook.fromJson(
+          await _get(
+            '/v1/outlook',
+            lat == null || lng == null ? null : {'lat': '$lat', 'lng': '$lng'},
+          ),
+        ),
+        () async => sampleOutlook(
+          Outlook.fromJson(await _fixture('outlook')),
+          demoClock?.call() == null
+              ? DateTime.now()
+              : DateTime.parse(demoClock!.call()!),
+        ),
+        sample: _sampleAllowed,
+      );
 
   /// Flood status at [home]; without it, the server's demo home.
   Future<ApiResult<HomeStatus>> homeStatus({SavedPlace? home}) => _withFallback(
@@ -113,7 +176,12 @@ class FonTokMaiApi {
         () async => PlaceCandidate.fromJson(
           await _get('/v1/places/reverse', {'lat': '$lat', 'lng': '$lng'}),
         ),
-        () async => reverseLocal(await localLandmarks(), lat, lng),
+        () async => reverseLocal(
+          await localLandmarks(),
+          lat,
+          lng,
+          lookupAppLocalizations(Locale(language?.call() ?? 'th')),
+        ),
       );
 
   List<PlaceCandidate>? _landmarks;
@@ -159,13 +227,15 @@ class FonTokMaiApi {
 
   Future<ApiResult<T>> _withFallback<T>(
     Future<T> Function() live,
-    Future<T> Function() sample,
-  ) async {
+    Future<T> Function() fixture, {
+    bool sample = true,
+  }) async {
+    if (!sample) return ApiResult(await live(), isSample: false);
     try {
       return ApiResult(await live(), isSample: false);
     } catch (e) {
       debugPrint('fontokmai: backend unavailable ($e), using sample data');
-      return ApiResult(await sample(), isSample: true);
+      return ApiResult(await fixture(), isSample: true);
     }
   }
 
@@ -194,9 +264,14 @@ class FonTokMaiApi {
     return jsonDecode(utf8.decode(res.bodyBytes)) as Json;
   }
 
-  Future<Json> _fixture(String name) async =>
-      jsonDecode(await _bundle.loadString('assets/fixtures/$name.json'))
-          as Json;
+  /// The bundled sample [name], in English when the app is (written by
+  /// tool/fixtures_en.py). The landmarks have no twin: they serve search.
+  Future<Json> _fixture(String name) async {
+    final dir = language?.call() == 'en' && name != 'places_local'
+        ? 'assets/fixtures/en'
+        : 'assets/fixtures';
+    return jsonDecode(await _bundle.loadString('$dir/$name.json')) as Json;
+  }
 }
 
 List<PlaceCandidate> _landmarkList(Json j) => [
@@ -235,9 +310,16 @@ List<PlaceCandidate> searchLocal(List<PlaceCandidate> all, String q) {
 }
 
 /// The nearest landmark within 1.5 km ("ใกล้…" beyond 150 m, as the
-/// server's own fallback says it), else the bare coordinates.
+/// server's own fallback says it), else the bare coordinates, written in
+/// [l]'s language. The landmarks have no English address, so English gives
+/// the coordinates instead.
 @visibleForTesting
-PlaceCandidate reverseLocal(List<PlaceCandidate> all, double lat, double lng) {
+PlaceCandidate reverseLocal(
+  List<PlaceCandidate> all,
+  double lat,
+  double lng,
+  AppLocalizations l,
+) {
   PlaceCandidate? best;
   var bestD = double.infinity;
   for (final p in all) {
@@ -248,20 +330,23 @@ PlaceCandidate reverseLocal(List<PlaceCandidate> all, double lat, double lng) {
     }
   }
   final inArea = inServiceArea(lat, lng);
+  final coords = '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}';
   if (best == null || bestD > 1500) {
     return PlaceCandidate(
-      nameTh: 'ตำแหน่งที่ปักหมุด',
-      addressTh: '${lat.toStringAsFixed(4)}, ${lng.toStringAsFixed(4)}',
+      nameTh: l.pickerPinnedSpot,
+      addressTh: coords,
       lat: lat,
       lng: lng,
       inServiceArea: inArea,
     );
   }
+  final name = l.isThai ? best.nameTh : best.nameEn ?? best.nameTh;
+  final address = l.isThai ? best.addressTh : coords;
   return PlaceCandidate(
-    nameTh: bestD > 150 ? 'ใกล้${best.nameTh}' : best.nameTh,
+    nameTh: bestD > 150 ? l.pickerNearPlace(name) : name,
     addressTh: bestD > 150
-        ? '${best.addressTh} · ห่างราว ${(bestD / 50).round() * 50} ม.'
-        : best.addressTh,
+        ? l.pickerAboutAway(address, (bestD / 50).round() * 50)
+        : address,
     lat: lat,
     lng: lng,
     inServiceArea: inArea,
@@ -308,4 +393,24 @@ String sampleHomeStatusName(String? demoClock, {double? lat, double? lng}) {
   if (t == null) return 'home_status_watch';
   final hour = t.toUtc().add(const Duration(hours: 7)).hour;
   return hour >= 21 ? 'home_status_danger' : 'home_status_watch';
+}
+
+/// The bundled weather day, re-dated onto [now]'s Bangkok date and cut to
+/// the 12 hours from [now]'s hour.
+@visibleForTesting
+Outlook sampleOutlook(Outlook day, DateTime now) {
+  final first = day.hours.first.time;
+  final shift = bangkokDay(now).difference(bangkokDay(first));
+  final hours = [
+    for (final h in day.hours)
+      if (!h.time.add(shift).add(const Duration(hours: 1)).isBefore(now))
+        h.shifted(shift),
+  ].take(12).toList();
+  final all = hours.isEmpty ? [day.hours.last.shifted(shift)] : hours;
+  return Outlook(
+    now: all.first,
+    hours: all,
+    sunset: day.sunset?.add(shift),
+    sources: day.sources,
+  );
 }

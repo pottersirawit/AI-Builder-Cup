@@ -1,0 +1,447 @@
+{
+  "navSummary": "Summary",
+  "navEvents": "Events",
+  "navAsk": "Ask about a trip",
+  "summaryTitle": "Summary",
+  "summaryNextEvent": "Next event",
+  "summaryIn": "in {duration}",
+  "@summaryIn": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryStarted": "Started",
+  "durationHm": "{h} h {m} min",
+  "@durationHm": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationH": "{h} h",
+  "@durationH": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      }
+    }
+  },
+  "durationM": "{m} min",
+  "@durationM": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationD": "{d} days",
+  "@durationD": {
+    "placeholders": {
+      "d": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryLeaveBefore": "Leave before",
+  "summaryLeaveAt": "Leave at",
+  "summaryLeaveNow": "Leave now",
+  "summaryOverdue": "You should have left at {time}",
+  "@summaryOverdue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryGoNow": "Go now",
+  "summaryAvoid": "Avoid this trip",
+  "summaryBy": "Go by",
+  "summaryArrive": "Arrive about",
+  "summaryRain": "Rain on the way",
+  "summaryRainNone": "no rain",
+  "summaryRainLight": "light rain",
+  "summaryRainModerate": "moderate rain",
+  "summaryRainHeavy": "heavy rain",
+  "summaryLater": "Coming up",
+  "summarySeeAll": "See all",
+  "summaryDecideError": "Couldn't work out when to leave",
+  "summaryRetry": "Try again",
+  "summarySetPlace": "Set place",
+  "summaryUnresolved": "We don't know where this event is yet. Set the place to get a leave time.",
+  "summaryNoEventsTitle": "No upcoming events",
+  "summaryNoEventsBody": "New Google Calendar events show up here. Meanwhile, you can ask about any trip.",
+  "summaryAskInstead": "Ask about a trip",
+  "summaryConnectTitle": "Connect your calendar",
+  "summaryConnectBody": "We'll look at your next event and tell you when to leave and how to go without getting soaked.",
+  "summaryConnectCta": "Connect Google Calendar",
+  "summaryLoadErrorTitle": "Couldn't load events",
+  "summaryLoadErrorBody": "Check your connection and try again.",
+  "summaryHeroSemantics": "Next event {title} at {time}. {leave}. Tap for details.",
+  "@summaryHeroSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "leave": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryFloodTitle": "Flooding near home",
+  "summaryFloodWhatToDo": "What to do",
+  "eventsTitle": "Events",
+  "eventsSource": "From Google Calendar · {account}",
+  "@eventsSource": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsToday": "Today · {date}",
+  "@eventsToday": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsTomorrow": "Tomorrow · {date}",
+  "@eventsTomorrow": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsNoTime": "No time set",
+  "eventsLeaveAt": "Leave {time} · {mode}",
+  "@eventsLeaveAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsAvoid": "Avoid this trip",
+  "eventsRefresh": "Refresh",
+  "eventsCount": "{count} events",
+  "@eventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "askSheetTitle": "Where to?",
+  "askTomorrowMorning": "Rain tomorrow morning?",
+  "summaryLate": "Arrives {duration} after it starts",
+  "@summaryLate": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "wxRainNow": "Raining now",
+  "wxRainStops": "Raining, easing around {time}",
+  "@wxRainStops": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxRainFrom": "Rain from about {time}",
+  "@wxRainFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxDryAhead": "No rain for 12 hours",
+  "wxSunStrong": "Strong sun",
+  "wxHot": "Very hot",
+  "wxFeels": "Feels like",
+  "wxUv": "UV",
+  "wxRainChance": "Rain chance",
+  "wxUvLow": "low",
+  "wxUvModerate": "moderate",
+  "wxUvHigh": "high",
+  "wxUvVeryHigh": "very high",
+  "wxUvExtreme": "extreme",
+  "wxNow": "Now",
+  "carryTitle": "Take with you today",
+  "carryNothing": "Nothing extra needed",
+  "carryNothingBody": "Fine weather for the next 12 hours",
+  "carryRaincoat": "Raincoat",
+  "carryUmbrella": "Umbrella",
+  "carrySunUmbrella": "Sun umbrella",
+  "carrySunscreen": "Sunscreen",
+  "carryWater": "Water",
+  "carryShoes": "Waterproof shoes",
+  "carryWhyRain": "{pct}% rain · {from}–{to}",
+  "@carryWhyRain": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyHeavy": "Heavy rain, beyond an umbrella · {from}–{to}",
+  "@carryWhyHeavy": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyMoto": "Riding through rain · {from}–{to}",
+  "@carryWhyMoto": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyUv": "UV {uv} · {from}–{to}",
+  "@carryWhyUv": {
+    "placeholders": {
+      "uv": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyShade": "Fierce sun, walk in shade · {from}–{to}",
+  "@carryWhyShade": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyHeat": "Feels like {c}°, sip often",
+  "@carryWhyHeat": {
+    "placeholders": {
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyShoes": "Water on the roads · {from}–{to}",
+  "@carryWhyShoes": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsAllDays": "All days",
+  "eventsNoneOn": "No events this day",
+  "calPrev": "Previous month",
+  "calNext": "Next month",
+  "calMonth": "{month, select, 1{January} 2{February} 3{March} 4{April} 5{May} 6{June} 7{July} 8{August} 9{September} 10{October} 11{November} 12{December} other{}} {year}",
+  "@calMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "dayToday": "Today",
+  "dayTomorrow": "Tomorrow",
+  "eventsCalendar": "Calendar",
+  "planTitleToday": "{count} more today",
+  "@planTitleToday": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "planTitleFree": "Nothing else today",
+  "planToday": "Later today",
+  "planTomorrow": "Tomorrow",
+  "planBring": "Bring",
+  "planWeatherNow": "Weather now",
+  "planRainAt": "{pct}% rain",
+  "@planRainAt": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "leaveIn": "Leave in",
+  "leaveDue": "Time to go",
+  "unitMin": "min",
+  "unitHour": "h",
+  "alertsTitle": "Before you go",
+  "alertShort": "You can't make {to} in time",
+  "@alertShort": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertShortBody": "{from} ends {end}; the trip takes about {need} but you only have {gap}",
+  "@alertShortBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      }
+    }
+  },
+  "alertOverlap": "{from} and {to} overlap",
+  "@alertOverlap": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTight": "Tight hop to {to}",
+  "@alertTight": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTightBody": "About {need} on the road with {gap} to spare. Leave {from} on time",
+  "@alertTightBody": {
+    "placeholders": {
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeave": "{pct}% rain as you leave for {to}",
+  "@alertWetLeave": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveBody": "Around {time}. Pick a way that keeps you out of it",
+  "@alertWetLeaveBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveMoto": "Around {time}, riding through rain. Wear a raincoat or switch to the train",
+  "@alertWetLeaveMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturn": "{pct}% rain on the way back from {from}",
+  "@alertWetReturn": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturnBody": "It ends around {time}. Take an umbrella for the ride home",
+  "@alertWetReturnBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlace": "{title} has no place yet",
+  "@alertNeedsPlace": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlaceBody": "{when} · set the place to plan when to leave",
+  "@alertNeedsPlaceBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextTitle": "Up next",
+  "online": "Online · no travel",
+  "allDay": "All day",
+  "stripTitle": "Today at a glance",
+  "stripEvent": "Event",
+  "stripTravel": "Travel",
+  "stripRain": "Rain"
+}

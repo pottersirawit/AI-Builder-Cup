@@ -1,0 +1,29 @@
+{
+  "level": "danger",
+  "headline_th": "Water reaches your door in 40 min",
+  "canal": {
+    "name_th": "Lat Phrao Canal",
+    "level_m": 1.8,
+    "bank_m": 1.8,
+    "rise_cm_2h": 40
+  },
+  "actions": [
+    {
+      "order": 1,
+      "text_th": "Move the car to the Central Ladprao car park, 1.2 km away; the road stays dry for 25 more min"
+    },
+    {
+      "order": 2,
+      "text_th": "Lift plugs and ground-floor things above 50 cm"
+    },
+    {
+      "order": 3,
+      "text_th": "Put sandbags at the door. Pick-up: Chatuchak District Office, open until midnight"
+    }
+  ],
+  "sources": [
+    "ThaiWater (HII) canal levels every 5 min",
+    "Google Weather API",
+    "Reports from 11 users in the soi"
+  ]
+}

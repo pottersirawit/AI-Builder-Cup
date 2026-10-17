@@ -197,5 +197,25 @@
       }
     }
   },
-  "onboardingAppName": "ฝนตกไหม"
+  "onboardingAppName": "ฝนตกไหม",
+  "pickerPinnedSpot": "ตำแหน่งที่ปักหมุด",
+  "pickerNearPlace": "ใกล้{name}",
+  "@pickerNearPlace": {
+    "placeholders": {
+      "name": {
+        "type": "String"
+      }
+    }
+  },
+  "pickerAboutAway": "{address} · ห่างราว {meters} ม.",
+  "@pickerAboutAway": {
+    "placeholders": {
+      "address": {
+        "type": "String"
+      },
+      "meters": {
+        "type": "int"
+      }
+    }
+  }
 }

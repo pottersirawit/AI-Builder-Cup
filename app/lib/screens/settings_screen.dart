@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
-import 'package:url_launcher/url_launcher.dart';
-
 import '../app_state.dart';
 import '../design/design.dart';
+import '../google_link.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
@@ -12,8 +11,6 @@ import '../time_th.dart';
 import 'gallery_screen.dart';
 import 'parts.dart';
 import 'place_picker.dart';
-
-enum OAuthService { calendar, gmail }
 
 /// Settings are local-only; saved places travel only as coordinates inside
 /// each request.
@@ -153,11 +150,7 @@ class SettingsScreen extends StatelessWidget {
                 detail: l.settingsCalendarDetail,
                 account: _accountLabel(l, store, store.calendarAccount),
                 comingSoon: false,
-                onConnect: () => _promptOAuth(
-                  context,
-                  service: OAuthService.calendar,
-                  store: store,
-                ),
+                onConnect: () => promptOAuth(context),
                 onDisconnect: store.disconnectCalendar,
               ),
               ConnectRow(
@@ -167,11 +160,7 @@ class SettingsScreen extends StatelessWidget {
                 detail: l.settingsGmailHint,
                 account: _accountLabel(l, store, store.gmailAccount),
                 comingSoon: false,
-                onConnect: () => _promptOAuth(
-                  context,
-                  service: OAuthService.gmail,
-                  store: store,
-                ),
+                onConnect: () => promptOAuth(context),
                 onDisconnect: store.disconnectGmail,
               ),
               toggle(
@@ -258,246 +247,191 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-String _accountLabel(AppLocalizations l, PlacesStore store, String account) {
+String? _accountLabel(AppLocalizations l, PlacesStore store, String? account) {
+  if (account == null) return null;
   if (store.demoProfile && account.contains('demo')) {
     return l.settingsCalendarAccount(account);
   }
   return '$account · ${l.placesConnected}';
 }
 
-Future<void> _promptOAuth(
-  BuildContext context, {
-  required OAuthService service,
-  required PlacesStore store,
-}) async {
-  final isCalendar = service == OAuthService.calendar;
-  final title = isCalendar ? 'Google Calendar' : 'Gmail';
-  final scope = isCalendar
-      ? 'https://www.googleapis.com/auth/calendar.readonly'
-      : 'https://www.googleapis.com/auth/gmail.readonly';
-
-  final defaultEmail = isCalendar
-      ? (store.calendarAccount.contains('demo')
-          ? 'the32069@gmail.com'
-          : store.calendarAccount)
-      : (store.gmailAccount.contains('demo')
-          ? 'the32069@gmail.com'
-          : store.gmailAccount);
-  final emailController = TextEditingController(text: defaultEmail);
-
-  await showModalBottomSheet<void>(
+/// One sheet connects Google Calendar and Gmail: it says what the app reads,
+/// opens Google, and waits until the server confirms the account. มิว's demo
+/// profile connects without Google.
+Future<void> promptOAuth(BuildContext context) async {
+  final store = AppScope.readPlaces(context);
+  final link = AppScope.linkOf(context);
+  final email = await showModalBottomSheet<String>(
     context: context,
     isScrollControlled: true,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    showDragHandle: true,
+    builder: (_) => _GoogleSheet(store: store, link: link),
+  );
+  if (email == null || !context.mounted) return;
+  ScaffoldMessenger.of(context).showSnackBar(
+    SnackBar(
+      content: Text(context.l10n.settingsGoogleConnected(email)),
+      behavior: SnackBarBehavior.floating,
     ),
-    builder: (ctx) {
-      final scheme = Theme.of(ctx).colorScheme;
-      final textTheme = Theme.of(ctx).textTheme;
-      final isThai = Localizations.localeOf(ctx).languageCode == 'th';
+  );
+}
 
-      return SafeArea(
-        child: Padding(
-          padding: EdgeInsets.only(
-            left: Space.gutter,
-            right: Space.gutter,
-            top: Space.x4,
-            bottom: MediaQuery.of(ctx).viewInsets.bottom + Space.x6,
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+class _GoogleSheet extends StatefulWidget {
+  const _GoogleSheet({required this.store, required this.link});
+  final PlacesStore store;
+  final GoogleLink? link;
+
+  @override
+  State<_GoogleSheet> createState() => _GoogleSheetState();
+}
+
+class _GoogleSheetState extends State<_GoogleSheet> {
+  PlacesStore get store => widget.store;
+  GoogleLink? get link => widget.link;
+
+  // Calendar can already be connected when only Gmail is being reconnected,
+  // so the sheet closes only on a sign-in it started itself.
+  bool _signingIn = false;
+
+  void _signIn() {
+    _signingIn = true;
+    if (store.demoProfile || link == null) {
+      store
+        ..connectCalendar()
+        ..connectGmail();
+    } else {
+      link!.connect();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
+    return ListenableBuilder(
+      listenable: store,
+      builder: (context, _) {
+        final waiting =
+            store.calendar == LinkState.connecting ||
+            store.gmail == LinkState.connecting;
+        final failed =
+            store.calendar == LinkState.error || store.gmail == LinkState.error;
+        final account = store.calendarAccount;
+        if (_signingIn &&
+            store.calendar == LinkState.connected &&
+            store.gmail == LinkState.connected &&
+            account != null) {
+          _signingIn = false;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (context.mounted) Navigator.of(context).maybePop(account);
+          });
+        }
+        Widget use(IconData icon, String text) => Padding(
+          padding: const EdgeInsets.only(bottom: Space.x2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: Container(
-                  width: 40,
-                  height: 4,
-                  margin: const EdgeInsets.only(bottom: Space.x4),
-                  decoration: BoxDecoration(
-                    color: scheme.outlineVariant,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
+              Icon(icon, size: 18, color: scheme.onSurfaceVariant),
+              const SizedBox(width: Space.x2),
+              Expanded(
+                child: Text(
+                  text,
+                  style: t.bodySmall?.copyWith(color: scheme.onSurfaceVariant),
                 ),
               ),
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(Space.x2),
-                    decoration: BoxDecoration(
-                      color: scheme.primary.withValues(alpha: 0.12),
-                      shape: BoxShape.circle,
-                    ),
-                    child: Icon(
-                      isCalendar
-                          ? Symbols.calendar_month_rounded
-                          : Symbols.mail_rounded,
-                      color: scheme.primary,
-                      size: 28,
-                    ),
-                  ),
-                  const SizedBox(width: Space.x3),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          isThai ? 'เชื่อมต่อ $title' : 'Connect $title',
-                          style: textTheme.titleMedium?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                        Text(
-                          isThai
-                              ? 'เพื่อตรวจสอบสภาพอากาศและเส้นทางล่วงหน้า'
-                              : 'Proactive weather & commute intelligence',
-                          style: textTheme.bodySmall?.copyWith(
-                            color: scheme.onSurfaceVariant,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: Space.x4),
-              Container(
-                padding: const EdgeInsets.all(Space.x3),
-                decoration: BoxDecoration(
-                  color: scheme.surfaceContainerHighest.withValues(alpha: 0.5),
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: scheme.outlineVariant),
+            ],
+          ),
+        );
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(
+              Space.gutter,
+              0,
+              Space.gutter,
+              Space.x6,
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                Text(l.settingsGoogleTitle, style: t.titleLarge),
+                const SizedBox(height: Space.x1),
+                Text(
+                  l.settingsGoogleSubtitle,
+                  style: t.bodyMedium?.copyWith(color: scheme.onSurfaceVariant),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        const Icon(
-                          Symbols.verified_user_rounded,
-                          size: 18,
-                          color: Color(0xFF10B981),
-                        ),
-                        const SizedBox(width: Space.x2),
-                        Text(
-                          isThai
-                              ? 'สิทธิ์การใช้งานและความเป็นส่วนตัว'
-                              : 'Privacy & Security Reassurance',
-                          style: textTheme.labelLarge?.copyWith(
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: Space.x2),
-                    Text(
-                      isCalendar
-                          ? (isThai
-                              ? '• ตรวจสอบวัน เวลา และสถานที่นัดหมาย เพื่อคำนวณความเสี่ยงฝนตกและน้ำท่วมล่วงหน้า\n• ปลอดภัยและเป็นส่วนตัว: ดูเฉพาะกำหนดการเดินทาง ไม่มีการแก้ไขหรือลบข้อมูลในปฏิทิน\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
-                              : '• Checks upcoming event times and locations to calculate rain and flood risk before departure\n• Private and secure: Only reads travel schedules, never modifies or deletes your events\n• Processed on your device for route planning, never permanently stored on servers')
-                          : (isThai
-                              ? '• ตรวจสอบอีเมลยืนยันการจองตั๋วหรือนัดหมาย เพื่อแนะนำการเดินทางล่วงหน้าอัตโนมัติ\n• ปลอดภัยและเป็นส่วนตัว: ค้นหาเฉพาะข้อมูลการเดินทาง ไม่อ่านอีเมลส่วนตัวอื่น ๆ\n• ประมวลผลบนเครื่องของคุณเพื่อวางแผนเส้นทาง ไม่เก็บข้อมูลส่วนตัวบนเซิร์ฟเวอร์'
-                              : '• Checks travel or booking confirmations to proactively suggest safe transit routes\n• Private and secure: Only searches travel details, never reads your personal messages\n• Processed on your device for route planning, never permanently stored on servers'),
-                      style: textTheme.bodySmall?.copyWith(
-                        color: scheme.onSurfaceVariant,
-                        height: 1.5,
+                const SizedBox(height: Space.x4),
+                Text(l.settingsGoogleUseTitle, style: t.labelLarge),
+                const SizedBox(height: Space.x2),
+                use(
+                  Symbols.calendar_month_rounded,
+                  l.settingsGoogleCalendarUse,
+                ),
+                use(Symbols.mail_rounded, l.settingsGoogleGmailUse),
+                use(Symbols.verified_user_rounded, l.settingsGooglePrivacy),
+                const SizedBox(height: Space.x4),
+                if (waiting) ...[
+                  Row(
+                    key: const ValueKey('google-waiting'),
+                    children: [
+                      const SizedBox.square(
+                        dimension: 22,
+                        child: CircularProgressIndicator(strokeWidth: 2.5),
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: Space.x4),
-              TextField(
-                controller: emailController,
-                keyboardType: TextInputType.emailAddress,
-                decoration: InputDecoration(
-                  prefixIcon: const Icon(Symbols.account_circle_rounded),
-                  labelText: isThai ? 'บัญชี Google' : 'Google Account',
-                  hintText: 'user@gmail.com',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: Space.x3,
-                    vertical: Space.x2,
-                  ),
-                ),
-              ),
-              const SizedBox(height: Space.x5),
-              FilledButton.icon(
-                icon: const Icon(Symbols.login_rounded),
-                label: Text(
-                  isThai
-                      ? 'ดำเนินการต่อด้วย Google (Sign in)'
-                      : 'Sign in with Google',
-                ),
-                onPressed: () async {
-                  final email = emailController.text.trim();
-                  final selectedEmail = email.isNotEmpty ? email : defaultEmail;
-                  Navigator.of(ctx).pop();
-                  final authUrl = Uri.parse(
-                    'https://accounts.google.com/o/oauth2/v2/auth'
-                    '?client_id=945826169258-2npe55rhvgjl26a8mgfod4s9js5bbgpo.apps.googleusercontent.com'
-                    '&redirect_uri=https://fontokmai-api-lmr33aj5zq-as.a.run.app/oauth2callback'
-                    '&response_type=code'
-                    '&scope=${Uri.encodeComponent(scope)}'
-                    '&state=${Uri.encodeComponent(selectedEmail)}'
-                    '&access_type=offline',
-                  );
-                  try {
-                    await launchUrl(
-                      authUrl,
-                      mode: LaunchMode.externalApplication,
-                    );
-                  } catch (_) {}
-
-                  if (isCalendar) {
-                    await store.connectCalendar(
-                      allowLive: true,
-                      email: selectedEmail,
-                    );
-                  } else {
-                    await store.connectGmail(
-                      email: selectedEmail,
-                    );
-                  }
-
-                  if (context.mounted) {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(
-                        content: Row(
+                      const SizedBox(width: Space.x3),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
-                            const Icon(
-                              Symbols.check_circle_rounded,
-                              color: Colors.white,
-                              size: 20,
-                            ),
-                            const SizedBox(width: Space.x2),
-                            Expanded(
-                              child: Text(
-                                isThai
-                                    ? 'เชื่อมต่อ $title สำหรับ $selectedEmail เรียบร้อยแล้ว'
-                                    : '$title connected for $selectedEmail',
+                            Text(l.settingsGoogleWaiting, style: t.titleSmall),
+                            Text(
+                              l.settingsGoogleWaitingHint,
+                              style: t.bodySmall?.copyWith(
+                                color: scheme.onSurfaceVariant,
                               ),
                             ),
                           ],
                         ),
-                        behavior: SnackBarBehavior.floating,
                       ),
-                    );
-                  }
-                },
-              ),
-              const SizedBox(height: Space.x2),
-              TextButton(
-                onPressed: () => Navigator.of(ctx).pop(),
-                child: Text(isThai ? 'ยกเลิก' : 'Cancel'),
-              ),
-            ],
+                    ],
+                  ),
+                  const SizedBox(height: Space.x3),
+                  TextButton(
+                    onPressed: () {
+                      link?.cancel();
+                      Navigator.of(context).pop();
+                    },
+                    child: Text(l.settingsGoogleCancel),
+                  ),
+                ] else ...[
+                  if (failed)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Space.x3),
+                      child: Text(
+                        l.settingsGoogleFailed,
+                        style: t.bodySmall?.copyWith(color: scheme.error),
+                      ),
+                    ),
+                  FilledButton.icon(
+                    key: const ValueKey('google-sign-in'),
+                    icon: const Icon(Symbols.login_rounded),
+                    label: Text(l.settingsGoogleSignIn),
+                    onPressed: _signIn,
+                  ),
+                  const SizedBox(height: Space.x2),
+                  TextButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: Text(l.settingsGoogleCancel),
+                  ),
+                ],
+              ],
+            ),
           ),
-        ),
-      );
-    },
-  );
+        );
+      },
+    );
+  }
 }
 
 class _Group extends StatelessWidget {

@@ -237,12 +237,12 @@ func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float6
 		}
 		for _, s := range in.Spots {
 			if d := SpotDepthCM(s, in.Rain, t); d > depth {
-				depth, deepest = d, s.ShortNameTH()
+				depth, deepest = d, s.ShortName(in.Lang)
 			}
 		}
 		for _, r := range in.Reports {
 			if d := reportDepthCM(r, in.Reports, t); d > depth {
-				depth, deepest = d, nearestSpotName(in.Spots, r)
+				depth, deepest = d, nearestSpotName(in.Spots, r, in.Lang)
 			}
 		}
 	}
@@ -324,12 +324,12 @@ func reportDepthCM(r domain.Report, all []domain.Report, t time.Time) float64 {
 	return math.Min(float64(r.DepthCMMax)*r.Confidence, soloReportCapCM)
 }
 
-func nearestSpotName(spots []floodspot.Spot, r domain.Report) string {
+func nearestSpotName(spots []floodspot.Spot, r domain.Report, l domain.Lang) string {
 	best, name := math.Inf(1), unnamedReportSpot
 	for _, s := range spots {
 		d := math.Hypot(s.Lat-r.Lat, s.Lng-r.Lng)
 		if d < best {
-			best, name = d, s.ShortNameTH()
+			best, name = d, s.ShortName(l)
 		}
 	}
 	return name
@@ -412,7 +412,7 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 		for t := window.Depart; t.Before(window.Arrive); t = t.Add(step) {
 			d = math.Max(d, SpotDepthCM(s, in.Rain, t))
 		}
-		out = append(out, FloodSpot{ID: s.ID, NameTH: s.NameTH, Lat: s.Lat, Lng: s.Lng, ExpectedDepthCM: int(math.Round(d)), Risk: depthRisk(d)})
+		out = append(out, FloodSpot{ID: s.ID, NameTH: s.Name(in.Lang), Lat: s.Lat, Lng: s.Lng, ExpectedDepthCM: int(math.Round(d)), Risk: depthRisk(d)})
 	}
 	for _, r := range in.Reports {
 		d := 0.0
@@ -430,7 +430,7 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 }
 
 func reportLabel(in Input, r domain.Report) string {
-	near := nearestSpotName(in.Spots, r)
+	near := nearestSpotName(in.Spots, r, in.Lang)
 	if in.Lang == domain.LangEN {
 		if near == unnamedReportSpot {
 			near = "a reported spot"

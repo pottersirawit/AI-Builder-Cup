@@ -1,0 +1,25 @@
+{
+  "level": "watch",
+  "headline_th": "Flood risk tonight: medium",
+  "canal": {
+    "name_th": "Lat Phrao Canal",
+    "level_m": 1.4,
+    "bank_m": 1.8,
+    "rise_cm_2h": 10
+  },
+  "actions": [
+    {
+      "order": 1,
+      "text_th": "If you get home late, park on high ground before 20:00"
+    },
+    {
+      "order": 2,
+      "text_th": "Get ready to lift ground-floor things"
+    }
+  ],
+  "sources": [
+    "ThaiWater (HII)",
+    "Google Weather API",
+    "Reports from 3 users in 20 min"
+  ]
+}

@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
   <!--
     If you are serving your web app in a path other than the root, change the
@@ -18,7 +18,7 @@
 
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
-  <meta name="description" content="ฝนตกไหม — ควรออกตอนนี้ไหม ฝนและน้ำท่วมบนเส้นทางของคุณ">
+  <meta name="description" content="ฝนตกไหม (Fon Tok Mai): when to leave and how to go for your next event, around rain and floods.">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -31,8 +31,26 @@
 
   <title>ฝนตกไหม</title>
   <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#060A14">
+  <style>
+    html,body{margin:0;background:#060A14}
+    #splash{position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:#060A14;transition:opacity 200ms ease-out;z-index:1}
+    #splash img{width:96px;height:96px;border-radius:24px;animation:splash-pulse 1.4s ease-in-out infinite}
+    #splash.done{opacity:0;pointer-events:none}
+    @keyframes splash-pulse{0%,100%{opacity:.55;transform:scale(.96)}50%{opacity:1;transform:scale(1)}}
+    @media (prefers-reduced-motion:reduce){#splash img{animation:none}}
+  </style>
 </head>
 <body>
+  <div id="splash" aria-hidden="true"><img src="icons/Icon-192.png" alt=""></div>
+  <script>
+    window.addEventListener('flutter-first-frame', function () {
+      var splash = document.getElementById('splash');
+      if (!splash) return;
+      splash.classList.add('done');
+      setTimeout(function () { splash.remove(); }, 200);
+    });
+  </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
 </html>

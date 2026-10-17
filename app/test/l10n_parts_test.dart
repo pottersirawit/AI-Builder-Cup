@@ -9,12 +9,30 @@ import 'helpers.dart';
 final _thai = RegExp(r'[ก-๙]');
 
 void main() {
+  test('Thai copy keeps English event and place names apart', () {
+    final l = lookupAppLocalizations(const Locale('th'));
+    const name = 'AI Builder Cup';
+    for (final line in [
+      l.alertShort(name),
+      l.alertOverlap(name, name),
+      l.alertTight(name),
+      l.alertTightBody('20 นาที', '10 นาที', name),
+      l.alertWetLeave('60', name),
+      l.alertWetReturn(name, '60'),
+      l.partsNeedsWhere(name),
+      l.verdictGoTo(name),
+    ]) {
+      expect(line, isNot(matches(RegExp(r'[ก-๙]AI|Cup[ก-๙]'))), reason: line);
+    }
+  });
+
   testWidgets('the departure pass, board and GeneratedBy read in English', (
     tester,
   ) async {
     final state = await pumpApp(tester, '2026-09-29T16:10:00+07:00');
     state.locale = const Locale('en');
     await settle(tester);
+    await openHero(tester);
 
     expect(find.text('Analyzed by AI'), findsOneWidget);
     expect(find.text('AI วิเคราะห์ให้'), findsNothing);
@@ -42,9 +60,7 @@ void main() {
       );
       state.locale = const Locale('en');
       await settle(tester);
-
-      await tester.tap(find.byTooltip('Dismiss notification'));
-      await tester.pump();
+      await openHero(tester);
 
       final band = find.byKey(const ValueKey('rain-band'));
       await reveal(tester, band);
@@ -71,6 +87,8 @@ void main() {
     final state = await pumpApp(tester, '2026-09-29T21:40:00+07:00');
     state.locale = const Locale('en');
     await settle(tester);
+    expect(find.text('Flooding near home'), findsOneWidget);
+    await tapAndSettle(tester, find.text('What to do'));
 
     expect(find.text('Danger'), findsWidgets);
     expect(find.text('Canal level'), findsOneWidget);

@@ -123,23 +123,15 @@ class PlacesStore extends ChangeNotifier {
     _calendarEmail = _prefs.getString(_kCalendarEmail);
     _gmailEmail = _prefs.getString(_kGmailEmail);
 
-    final savedCalState = _prefs.getString(_kCalendarState);
-    if (savedCalState == LinkState.connected.name || (_calendarEmail != null && _calendarEmail!.isNotEmpty)) {
-      _calendar = LinkState.connected;
-    } else if (_demo) {
-      _calendar = LinkState.connected;
-    } else {
-      _calendar = LinkState.notConnected;
-    }
-
-    final savedGmailState = _prefs.getString(_kGmailState);
-    if (savedGmailState == LinkState.connected.name || (_gmailEmail != null && _gmailEmail!.isNotEmpty)) {
-      _gmail = LinkState.connected;
-    } else if (_demo) {
-      _gmail = LinkState.connected;
-    } else {
-      _gmail = LinkState.notConnected;
-    }
+    // A real account is connected only once the server named it; a connect
+    // left half-way (the page reloaded on Google) starts over.
+    LinkState restored(String key, String? email) =>
+        _prefs.getString(key) == LinkState.connected.name &&
+            (_demo || (email != null && email.isNotEmpty))
+        ? LinkState.connected
+        : LinkState.notConnected;
+    _calendar = restored(_kCalendarState, _calendarEmail);
+    _gmail = restored(_kGmailState, _gmailEmail);
 
     final rawTrips = _prefs.getString(_kCachedTrips);
     if (rawTrips != null) {
@@ -187,6 +179,9 @@ class PlacesStore extends ChangeNotifier {
   }
 
   List<Trip> get cachedTrips => List.unmodifiable(_cachedTrips);
+
+  /// The last trips the server returned for the connected account; never
+  /// sample data.
   void setCachedTrips(List<Trip> trips) {
     _cachedTrips = trips;
     _write();
@@ -360,31 +355,23 @@ class PlacesStore extends ChangeNotifier {
 
   LinkState get calendar => _calendar;
 
-  /// Account email associated with the calendar.
-  String get calendarAccount =>
-      _calendarEmail ?? (_demo ? 'miw.demo@gmail.com' : 'the32069@gmail.com');
+  /// The Google account Calendar reads, or null before Google named one.
+  String? get calendarAccount =>
+      _calendarEmail ?? (_demo ? 'miw.demo@gmail.com' : null);
 
-  /// OAuth is stubbed: only the demo profile can connect by default without allowLive.
+  /// The stubbed connect is only for มิว's demo profile; real accounts go
+  /// through Google (see GoogleLink).
   bool get canConnectCalendar => _demo;
 
   Future<void> connectCalendar({
     Duration delay = const Duration(milliseconds: 1200),
-    bool allowLive = false,
-    String? email,
   }) async {
-    if ((!canConnectCalendar && !allowLive) || _calendar == LinkState.connecting) return;
+    if (!canConnectCalendar || _calendar == LinkState.connecting) return;
     _calendar = LinkState.connecting;
-    if (email != null && email.isNotEmpty) {
-      _calendarEmail = email;
-    } else if (_calendarEmail == null && !_demo) {
-      _calendarEmail = 'the32069@gmail.com';
-    }
-    _write();
     notifyListeners();
     await Future<void>.delayed(delay);
     _calendar = LinkState.connected;
     _write();
-    notifyListeners();
   }
 
   void disconnectCalendar() {
@@ -394,31 +381,24 @@ class PlacesStore extends ChangeNotifier {
     _prefs.remove(_kCalendarState);
     _prefs.remove(_kCalendarEmail);
     _write();
-    notifyListeners();
   }
 
   LinkState get gmail => _gmail;
-  String get gmailAccount =>
-      _gmailEmail ?? (_demo ? 'miw.demo@gmail.com' : 'the32069@gmail.com');
-  bool get canConnectGmail => true;
+
+  /// The Google account Gmail reads, or null before Google named one.
+  String? get gmailAccount =>
+      _gmailEmail ?? (_demo ? 'miw.demo@gmail.com' : null);
+  bool get canConnectGmail => _demo;
 
   Future<void> connectGmail({
     Duration delay = const Duration(milliseconds: 1200),
-    String? email,
   }) async {
-    if (_gmail == LinkState.connecting) return;
+    if (!canConnectGmail || _gmail == LinkState.connecting) return;
     _gmail = LinkState.connecting;
-    if (email != null && email.isNotEmpty) {
-      _gmailEmail = email;
-    } else if (_gmailEmail == null && !_demo) {
-      _gmailEmail = 'the32069@gmail.com';
-    }
-    _write();
     notifyListeners();
     await Future<void>.delayed(delay);
     _gmail = LinkState.connected;
     _write();
-    notifyListeners();
   }
 
   void disconnectGmail() {
@@ -428,7 +408,41 @@ class PlacesStore extends ChangeNotifier {
     _prefs.remove(_kGmailState);
     _prefs.remove(_kGmailEmail);
     _write();
-    notifyListeners();
+  }
+
+  /// Google's consent screen is open: Calendar and Gmail wait for it.
+  void beginGoogleConnect() {
+    _calendar = LinkState.connecting;
+    _gmail = LinkState.connecting;
+    _write();
+  }
+
+  /// The server confirmed [email] signed in with Calendar and Gmail.
+  void connectGoogle(String email) {
+    if (_calendarEmail != email) _cachedTrips = [];
+    _calendar = LinkState.connected;
+    _gmail = LinkState.connected;
+    _calendarEmail = email;
+    _gmailEmail = email;
+    _syncDue = true;
+    _write();
+  }
+
+  /// Sign-in did not finish: cancelled, timed out or failed.
+  void failGoogleConnect() {
+    if (_calendar == LinkState.connecting) _calendar = LinkState.error;
+    if (_gmail == LinkState.connecting) _gmail = LinkState.error;
+    _write();
+  }
+
+  bool _syncDue = false;
+
+  /// True once after an account connects: the next load should pull it
+  /// from Google rather than read what the server kept.
+  bool takeSyncDue() {
+    final due = _syncDue;
+    _syncDue = false;
+    return due;
   }
 
   @visibleForTesting

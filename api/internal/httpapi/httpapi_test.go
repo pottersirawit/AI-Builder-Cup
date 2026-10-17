@@ -119,6 +119,12 @@ func TestEndpoints(t *testing.T) {
 				}
 			}
 		}},
+		{"decide a week trip", "POST", "/v1/decide", "2026-09-29T16:10:00+07:00", `{"trip_id":"cal-lunch"}`, 200, func(t *testing.T, out map[string]any) {
+			trip := out["trip"].(map[string]any)
+			if trip["id"] != "cal-lunch" || trip["arrive_by"] != "2026-09-30T12:00:00+07:00" || trip["destination"].(map[string]any)["name_th"] != "สยาม" || out["mode"] != "transit" {
+				t.Fatal(out)
+			}
+		}},
 		{"decide question", "POST", "/v1/decide", "16:10", `{"trip_id":"cal-dinner","question_th":"ถ้ารอถึงสองทุ่มค่อยกลับล่ะ"}`, 200, func(t *testing.T, out map[string]any) {
 			if out["headline_th"] != "ออก 20:00 ได้ แต่เลยนัด 18:30" {
 				t.Fatal(out["headline_th"])
@@ -497,5 +503,67 @@ func TestProactivePipelineEndToEnd(t *testing.T) {
 	msg := memNotifier.Messages[0]
 	if msg.UID != "mew-hero" || msg.HeadlineTH == "" {
 		t.Fatalf("invalid notification message: %+v", msg)
+	}
+}
+
+func TestTripsRealEmailNoStoreReturnsEmpty(t *testing.T) {
+	h := newServerMode(t, false)
+	code, out := do(t, h, "GET", "/v1/trips?email=real.person@example.com", "", nil, "")
+	if code != 200 {
+		t.Fatalf("status %d: %v", code, out)
+	}
+	trips, ok := out["trips"].([]any)
+	if !ok || len(trips) != 0 {
+		t.Fatalf("trips = %v, want []", out["trips"])
+	}
+	if out["connected"] != false {
+		t.Fatalf("connected = %v, want false", out["connected"])
+	}
+}
+
+func TestSyncRealEmailNoTokenReturnsEmptyNotConnected(t *testing.T) {
+	h := newServerMode(t, false)
+	code, out := do(t, h, "GET", "/v1/trips/sync?email=real.person@example.com", "", nil, "")
+	if code != 200 {
+		t.Fatalf("status %d: %v", code, out)
+	}
+	trips, ok := out["trips"].([]any)
+	if !ok || len(trips) != 0 {
+		t.Fatalf("trips = %v, want []", out["trips"])
+	}
+	if out["connected"] != false || out["email"] != "real.person@example.com" {
+		t.Fatalf("connected/email = %v/%v", out["connected"], out["email"])
+	}
+}
+
+func TestTripsConnectedWhenTokenExists(t *testing.T) {
+	h := newServerMode(t, false)
+	email := "linked.person@example.com"
+	tokenStoreMu.Lock()
+	tokenStore[email] = &userToken{}
+	tokenStoreMu.Unlock()
+	t.Cleanup(func() {
+		tokenStoreMu.Lock()
+		delete(tokenStore, email)
+		tokenStoreMu.Unlock()
+	})
+	_, out := do(t, h, "GET", "/v1/trips?email="+email, "", nil, "")
+	if out["connected"] != true || len(out["trips"].([]any)) != 0 {
+		t.Fatalf("got %v, want connected with no trips", out)
+	}
+}
+
+func TestTripsDemoHeaderStillReturnsScenario(t *testing.T) {
+	h := newServerMode(t, false)
+	for _, path := range []string{"/v1/trips?email=real.person@example.com", "/v1/trips/sync?email=real.person@example.com", "/v1/trips?email=" + DemoEmail, "/v1/trips"} {
+		clock := "16:10"
+		if !strings.Contains(path, "real.person") {
+			clock = ""
+		}
+		_, out := do(t, h, "GET", path, clock, nil, "")
+		trips := out["trips"].([]any)
+		if len(trips) == 0 || trips[0].(map[string]any)["id"] != "cal-dinner" {
+			t.Fatalf("%s: trips = %v, want scenario", path, out["trips"])
+		}
 	}
 }

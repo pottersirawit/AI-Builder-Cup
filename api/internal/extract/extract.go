@@ -3,6 +3,7 @@ package extract
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"fmt"
 	"log/slog"
 	"regexp"
@@ -152,6 +153,20 @@ func Extract(ctx context.Context, g *agent.Gemini, raw RawMessage, now time.Time
 	}
 
 	return extractFallback(raw, now)
+}
+
+// WithGemini parses raw with Gemini only. Without a configured client, or when
+// the model fails, it returns an error rather than guessing.
+func WithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now time.Time) (Payload, error) {
+	if !g.Available() {
+		return Payload{}, errors.New("gemini is not configured")
+	}
+	out, err := extractWithGemini(ctx, g, raw, now)
+	if err != nil {
+		return Payload{}, err
+	}
+	out.Source, out.SourceRef = raw.Source, raw.SourceRef
+	return out, nil
 }
 
 func extractWithGemini(ctx context.Context, g *agent.Gemini, raw RawMessage, now time.Time) (Payload, error) {

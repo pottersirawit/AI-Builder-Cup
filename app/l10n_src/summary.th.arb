@@ -1,0 +1,447 @@
+{
+  "navSummary": "สรุป",
+  "navEvents": "อีเวนต์",
+  "navAsk": "ถามเส้นทาง",
+  "summaryTitle": "สรุป",
+  "summaryNextEvent": "อีเวนต์ถัดไป",
+  "summaryIn": "อีก {duration}",
+  "@summaryIn": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryStarted": "เริ่มแล้ว",
+  "durationHm": "{h} ชม. {m} นาที",
+  "@durationHm": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      },
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationH": "{h} ชม.",
+  "@durationH": {
+    "placeholders": {
+      "h": {
+        "type": "String"
+      }
+    }
+  },
+  "durationM": "{m} นาที",
+  "@durationM": {
+    "placeholders": {
+      "m": {
+        "type": "String"
+      }
+    }
+  },
+  "durationD": "{d} วัน",
+  "@durationD": {
+    "placeholders": {
+      "d": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryLeaveBefore": "ควรออกก่อน",
+  "summaryLeaveAt": "ออกได้ตอน",
+  "summaryLeaveNow": "ออกได้เลย",
+  "summaryOverdue": "ควรออกตั้งแต่ {time}",
+  "@summaryOverdue": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryGoNow": "ออกเลย",
+  "summaryAvoid": "เลี่ยงการเดินทาง",
+  "summaryBy": "ไปด้วย",
+  "summaryArrive": "ถึงราว",
+  "summaryRain": "ฝนระหว่างทาง",
+  "summaryRainNone": "ไม่มีฝน",
+  "summaryRainLight": "ฝนเบา",
+  "summaryRainModerate": "ฝนปานกลาง",
+  "summaryRainHeavy": "ฝนหนัก",
+  "summaryLater": "ต่อจากนี้",
+  "summarySeeAll": "ดูทั้งหมด",
+  "summaryDecideError": "ยังคำนวณเวลาออกไม่ได้",
+  "summaryRetry": "ลองใหม่",
+  "summarySetPlace": "ระบุสถานที่",
+  "summaryUnresolved": "ยังไม่รู้ว่าอีเวนต์นี้อยู่ที่ไหน ระบุสถานที่แล้วจะบอกเวลาออกให้",
+  "summaryNoEventsTitle": "ไม่มีอีเวนต์ที่กำลังจะถึง",
+  "summaryNoEventsBody": "อีเวนต์ใหม่ใน Google Calendar จะขึ้นที่นี่เอง ระหว่างนี้ถามเส้นทางเองได้",
+  "summaryAskInstead": "ถามเส้นทางเอง",
+  "summaryConnectTitle": "เชื่อมปฏิทินก่อน",
+  "summaryConnectBody": "ฝนตกไหมจะดูนัดถัดไปของคุณ แล้วบอกว่าควรออกกี่โมง ไปทางไหนไม่เปียก",
+  "summaryConnectCta": "เชื่อม Google Calendar",
+  "summaryLoadErrorTitle": "โหลดอีเวนต์ไม่ได้",
+  "summaryLoadErrorBody": "เช็กอินเทอร์เน็ตแล้วลองใหม่",
+  "summaryHeroSemantics": "อีเวนต์ถัดไป {title} เวลา {time}. {leave}. แตะเพื่อดูรายละเอียด",
+  "@summaryHeroSemantics": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      },
+      "time": {
+        "type": "String"
+      },
+      "leave": {
+        "type": "String"
+      }
+    }
+  },
+  "summaryFloodTitle": "น้ำท่วมใกล้บ้าน",
+  "summaryFloodWhatToDo": "ดูสิ่งที่ต้องทำ",
+  "eventsTitle": "อีเวนต์",
+  "eventsSource": "จาก Google Calendar · {account}",
+  "@eventsSource": {
+    "placeholders": {
+      "account": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsToday": "วันนี้ · {date}",
+  "@eventsToday": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsTomorrow": "พรุ่งนี้ · {date}",
+  "@eventsTomorrow": {
+    "placeholders": {
+      "date": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsNoTime": "ไม่ระบุเวลา",
+  "eventsLeaveAt": "ออก {time} · {mode}",
+  "@eventsLeaveAt": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      },
+      "mode": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsAvoid": "เลี่ยงการเดินทาง",
+  "eventsRefresh": "รีเฟรช",
+  "eventsCount": "{count} อีเวนต์",
+  "@eventsCount": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "askSheetTitle": "อยากไปไหน",
+  "askTomorrowMorning": "พรุ่งนี้เช้าฝนตกไหม",
+  "summaryLate": "ถึงหลังเวลานัด {duration}",
+  "@summaryLate": {
+    "placeholders": {
+      "duration": {
+        "type": "String"
+      }
+    }
+  },
+  "wxRainNow": "ฝนกำลังตก",
+  "wxRainStops": "ฝนกำลังตก ซาราว {time}",
+  "@wxRainStops": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxRainFrom": "ฝนมาราว {time}",
+  "@wxRainFrom": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "wxDryAhead": "ไม่มีฝนอีก 12 ชม.",
+  "wxSunStrong": "แดดแรง",
+  "wxHot": "ร้อนจัด",
+  "wxFeels": "รู้สึกเหมือน",
+  "wxUv": "UV",
+  "wxRainChance": "โอกาสฝน",
+  "wxUvLow": "ต่ำ",
+  "wxUvModerate": "ปานกลาง",
+  "wxUvHigh": "สูง",
+  "wxUvVeryHigh": "สูงมาก",
+  "wxUvExtreme": "อันตราย",
+  "wxNow": "ตอนนี้",
+  "carryTitle": "วันนี้ควรพก",
+  "carryNothing": "ไม่ต้องพกอะไรเพิ่ม",
+  "carryNothingBody": "อากาศดีตลอด 12 ชม.ข้างหน้า",
+  "carryRaincoat": "เสื้อกันฝน",
+  "carryUmbrella": "ร่ม",
+  "carrySunUmbrella": "ร่มกันแดด",
+  "carrySunscreen": "ครีมกันแดด",
+  "carryWater": "น้ำดื่ม",
+  "carryShoes": "รองเท้าลุยน้ำ",
+  "carryWhyRain": "ฝน {pct}% · {from}–{to}",
+  "@carryWhyRain": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyHeavy": "ฝนหนัก ร่มเอาไม่อยู่ · {from}–{to}",
+  "@carryWhyHeavy": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyMoto": "ขี่มอเตอร์ไซค์ฝ่าฝน · {from}–{to}",
+  "@carryWhyMoto": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyUv": "UV {uv} · {from}–{to}",
+  "@carryWhyUv": {
+    "placeholders": {
+      "uv": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyShade": "แดดแรงมาก กางร่มเดิน · {from}–{to}",
+  "@carryWhyShade": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyHeat": "รู้สึกเหมือน {c}° ดื่มบ่อย ๆ",
+  "@carryWhyHeat": {
+    "placeholders": {
+      "c": {
+        "type": "String"
+      }
+    }
+  },
+  "carryWhyShoes": "น้ำขังบนถนน · {from}–{to}",
+  "@carryWhyShoes": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsAllDays": "ทุกวัน",
+  "eventsNoneOn": "ไม่มีอีเวนต์วันนี้",
+  "calPrev": "เดือนก่อน",
+  "calNext": "เดือนถัดไป",
+  "calMonth": "{month, select, 1{มกราคม} 2{กุมภาพันธ์} 3{มีนาคม} 4{เมษายน} 5{พฤษภาคม} 6{มิถุนายน} 7{กรกฎาคม} 8{สิงหาคม} 9{กันยายน} 10{ตุลาคม} 11{พฤศจิกายน} 12{ธันวาคม} other{}} {year}",
+  "@calMonth": {
+    "placeholders": {
+      "month": {
+        "type": "String"
+      },
+      "year": {
+        "type": "String"
+      }
+    }
+  },
+  "dayToday": "วันนี้",
+  "dayTomorrow": "พรุ่งนี้",
+  "eventsCalendar": "ดูปฏิทิน",
+  "planTitleToday": "วันนี้อีก {count} นัด",
+  "@planTitleToday": {
+    "placeholders": {
+      "count": {
+        "type": "String"
+      }
+    }
+  },
+  "planTitleFree": "วันนี้ไม่มีนัดแล้ว",
+  "planToday": "แผนต่อจากนี้",
+  "planTomorrow": "พรุ่งนี้",
+  "planBring": "พกไปด้วย",
+  "planWeatherNow": "อากาศตอนนี้",
+  "planRainAt": "ฝน {pct}%",
+  "@planRainAt": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "leaveIn": "ต้องออกใน",
+  "leaveDue": "ถึงเวลาออก",
+  "unitMin": "นาที",
+  "unitHour": "ชม.",
+  "alertsTitle": "ต้องรู้ก่อนออก",
+  "alertShort": "ไป {to} ไม่ทัน",
+  "@alertShort": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertShortBody": "{from} จบ {end} เดินทางราว {need} แต่มีเวลาแค่ {gap}",
+  "@alertShortBody": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "end": {
+        "type": "String"
+      },
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      }
+    }
+  },
+  "alertOverlap": "{from} กับ {to} เวลาชนกัน",
+  "@alertOverlap": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTight": "เวลาไป {to} เผื่อน้อย",
+  "@alertTight": {
+    "placeholders": {
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertTightBody": "เดินทางราว {need} มีเวลา {gap} ออกจาก {from} ให้ตรงเวลา",
+  "@alertTightBody": {
+    "placeholders": {
+      "need": {
+        "type": "String"
+      },
+      "gap": {
+        "type": "String"
+      },
+      "from": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeave": "ฝน {pct}% ตอนออกไป {to}",
+  "@alertWetLeave": {
+    "placeholders": {
+      "pct": {
+        "type": "String"
+      },
+      "to": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveBody": "ราว {time} เลือกทางที่ไม่ต้องเดินกลางฝน",
+  "@alertWetLeaveBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetLeaveMoto": "ราว {time} ขี่มอเตอร์ไซค์ฝ่าฝน ใส่เสื้อกันฝนหรือเปลี่ยนไปรถไฟฟ้า",
+  "@alertWetLeaveMoto": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturn": "ขากลับจาก {from} ฝน {pct}%",
+  "@alertWetReturn": {
+    "placeholders": {
+      "from": {
+        "type": "String"
+      },
+      "pct": {
+        "type": "String"
+      }
+    }
+  },
+  "alertWetReturnBody": "เลิกราว {time} อย่าลืมพกร่มกลับด้วย",
+  "@alertWetReturnBody": {
+    "placeholders": {
+      "time": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlace": "{title} ยังไม่มีสถานที่",
+  "@alertNeedsPlace": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "alertNeedsPlaceBody": "{when} · ระบุสถานที่เพื่อวางแผนเวลาออก",
+  "@alertNeedsPlaceBody": {
+    "placeholders": {
+      "when": {
+        "type": "String"
+      }
+    }
+  },
+  "upNextTitle": "ถัดไป",
+  "online": "ออนไลน์ · ไม่ต้องเดินทาง",
+  "allDay": "ทั้งวัน",
+  "stripTitle": "ภาพรวมวันนี้",
+  "stripEvent": "นัด",
+  "stripTravel": "เดินทาง",
+  "stripRain": "ฝน"
+}

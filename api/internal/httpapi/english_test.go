@@ -1,9 +1,12 @@
 package httpapi
 
 import (
+	"bytes"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"net/url"
 	"strings"
 	"testing"
 
@@ -95,5 +98,63 @@ func decodeBody(t *testing.T, body string, v any) {
 	t.Helper()
 	if err := json.Unmarshal([]byte(body), v); err != nil {
 		t.Fatalf("not JSON: %s", body)
+	}
+}
+
+// thaiLeaks lists the JSON paths in v whose text has Thai in it.
+func thaiLeaks(path string, v any) []string {
+	var out []string
+	switch v := v.(type) {
+	case string:
+		if domain.HasThai(v) {
+			out = append(out, path+" = "+v)
+		}
+	case []any:
+		for i, e := range v {
+			out = append(out, thaiLeaks(fmt.Sprintf("%s[%d]", path, i), e)...)
+		}
+	case map[string]any:
+		for k, e := range v {
+			out = append(out, thaiLeaks(path+"."+k, e)...)
+		}
+	}
+	return out
+}
+
+func TestEnglishModeHasNoThaiForAnUntitledSyncedEventOrAFloodRoute(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{email: "english.owner@example.com",
+		events: []googleCalendarItem{calItem("untitled", "", "Siam Paragon", "2026-09-29T19:00:00+07:00", "2026-09-29T20:00:00+07:00")}}
+	g.start(t, s)
+	h := s.Handler()
+	state := startState(t, h, "https://fontokmai.example/")
+	if w := get(h, "/oauth2callback?code=c-1&state="+url.QueryEscape(state)); w.Code != http.StatusFound {
+		t.Fatalf("callback = %d: %s", w.Code, w.Body.String())
+	}
+
+	email := url.QueryEscape(g.email)
+	for _, path := range []string{"/v1/trips/sync?email=" + email, "/v1/trips?email=" + email} {
+		_, out := doEN(t, h, "GET", path, "", nil, "")
+		if trips, _ := out["trips"].([]any); len(trips) != 1 {
+			t.Fatalf("%s: trips = %v", path, out["trips"])
+		}
+		for _, leak := range thaiLeaks(path, out) {
+			t.Error(leak)
+		}
+	}
+
+	// The demo dinner at 18:55 crosses user flood reports near a BMA flood spot.
+	for _, req := range []struct{ clock, body string }{
+		{"2026-09-29T16:10:00+07:00", `{"trip_id":"cal-untitled","email":"` + g.email + `"}`},
+		{"2026-09-29T16:10:00+07:00", `{"trip_id":"cal-dinner"}`},
+		{"2026-09-29T18:55:00+07:00", `{"trip_id":"cal-dinner"}`},
+	} {
+		code, out := doEN(t, h, "POST", "/v1/decide", req.clock, bytes.NewBufferString(req.body), "application/json")
+		if code != 200 {
+			t.Fatalf("decide %s: %d %v", req.body, code, out)
+		}
+		for _, leak := range thaiLeaks("decide "+req.body+" @"+req.clock, out) {
+			t.Error(leak)
+		}
 	}
 }

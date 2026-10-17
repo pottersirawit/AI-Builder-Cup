@@ -1,0 +1,15 @@
+{
+  "level": "normal",
+  "headline_th": "Light rain today, nothing to prepare yet",
+  "summary_th": "Home is outside the area the app covers, so there is rain data only",
+  "canal": null,
+  "in_service_area": false,
+  "minutes_to_doorstep": null,
+  "rain_today_mm": 3,
+  "reports_nearby": 0,
+  "flood_spots": [],
+  "actions": [],
+  "sources": [
+    "Google Weather API"
+  ]
+}

@@ -31,6 +31,9 @@ abstract final class Radii {
   static const double sm = 10;
   static const double md = 14;
   static const double lg = 20;
+
+  /// Crystal cards over the sky.
+  static const double xl = 28;
   static const double pill = 999;
 
   /// The pass; its 16 dp padding makes [xs]-cornered contents concentric-ish
@@ -79,17 +82,17 @@ class SkyColors {
   final Color onFieldMuted;
 
   LinearGradient get gradient => LinearGradient(
-        begin: Alignment.topCenter,
-        end: Alignment.bottomCenter,
-        colors: [top, bottom],
-      );
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+    colors: [top, bottom],
+  );
 
   static SkyColors lerp(SkyColors a, SkyColors b, double t) => SkyColors(
-        top: Color.lerp(a.top, b.top, t)!,
-        bottom: Color.lerp(a.bottom, b.bottom, t)!,
-        onField: Color.lerp(a.onField, b.onField, t)!,
-        onFieldMuted: Color.lerp(a.onFieldMuted, b.onFieldMuted, t)!,
-      );
+    top: Color.lerp(a.top, b.top, t)!,
+    bottom: Color.lerp(a.bottom, b.bottom, t)!,
+    onField: Color.lerp(a.onField, b.onField, t)!,
+    onFieldMuted: Color.lerp(a.onFieldMuted, b.onFieldMuted, t)!,
+  );
 }
 
 /// Brand colour roles that Material's ColorScheme has no slot for.
@@ -114,6 +117,7 @@ class FonColors extends ThemeExtension<FonColors> {
     required this.marker,
     required this.sourceInk,
     required this.passShadow,
+    this.glass = false,
   });
 
   final SkyColors clear;
@@ -144,25 +148,29 @@ class FonColors extends ThemeExtension<FonColors> {
   final Color sourceInk;
   final List<BoxShadow> passShadow;
 
+  /// Night crystal: surfaces are translucent glass over [CrystalBackdrop].
+  final bool glass;
+
   SkyColors sky(SkyState s) => switch (s) {
-        SkyState.clear => clear,
-        SkyState.storm => storm,
-        SkyState.flood => flood,
-      };
+    SkyState.clear => clear,
+    SkyState.storm => storm,
+    SkyState.flood => flood,
+  };
 
   Color riskInk(Risk r) => switch (r) {
-        Risk.low => riskLow,
-        Risk.medium => riskMedium,
-        Risk.high => riskHigh,
-      };
+    Risk.low => riskLow,
+    Risk.medium => riskMedium,
+    Risk.high => riskHigh,
+  };
 
   Color riskContainer(Risk r) => switch (r) {
-        Risk.low => riskLowContainer,
-        Risk.medium => riskMediumContainer,
-        Risk.high => riskHighContainer,
-      };
+    Risk.low => riskLowContainer,
+    Risk.medium => riskMediumContainer,
+    Risk.high => riskHighContainer,
+  };
 
-  static FonColors of(BuildContext context) => Theme.of(context).extension<FonColors>()!;
+  static FonColors of(BuildContext context) =>
+      Theme.of(context).extension<FonColors>()!;
 
   static const _clear = SkyColors(
     top: Color(0xFF0B57D0),
@@ -191,7 +199,12 @@ class FonColors extends ThemeExtension<FonColors> {
     paperInk: Color(0xFF0B1F3A),
     paperMuted: Color(0xFF55657D),
     perforation: Color(0xFFC6D3E4),
-    rain: [Color(0xFFDCE7F5), Color(0xFF9CC4FF), Color(0xFF4A8FF5), Color(0xFF1A4FB8)],
+    rain: [
+      Color(0xFFDCE7F5),
+      Color(0xFF9CC4FF),
+      Color(0xFF4A8FF5),
+      Color(0xFF1A4FB8),
+    ],
     riskLow: Color(0xFF137333),
     riskLowContainer: Color(0xFFE3F3E7),
     riskMedium: Color(0xFF9A5200),
@@ -203,7 +216,12 @@ class FonColors extends ThemeExtension<FonColors> {
     sourceInk: Color(0xFF55657D),
     passShadow: [
       BoxShadow(color: Color(0x1F0B1F3A), blurRadius: 2, offset: Offset(0, 1)),
-      BoxShadow(color: Color(0x330B1F3A), blurRadius: 28, spreadRadius: -6, offset: Offset(0, 12)),
+      BoxShadow(
+        color: Color(0x330B1F3A),
+        blurRadius: 28,
+        spreadRadius: -6,
+        offset: Offset(0, 12),
+      ),
     ],
   );
 
@@ -216,7 +234,12 @@ class FonColors extends ThemeExtension<FonColors> {
     paperInk: Color(0xFFF2F5FA),
     paperMuted: Color(0xFFA7B4CB),
     perforation: Color(0xFF2A3A57),
-    rain: [Color(0xFF17233A), Color(0xFF34558A), Color(0xFF5F8FD6), Color(0xFFA9CBFF)],
+    rain: [
+      Color(0xFF17233A),
+      Color(0xFF34558A),
+      Color(0xFF5F8FD6),
+      Color(0xFFA9CBFF),
+    ],
     riskLow: Color(0xFF8FD4A4),
     riskLowContainer: Color(0xFF12301F),
     riskMedium: Color(0xFFFFC34D),
@@ -227,6 +250,50 @@ class FonColors extends ThemeExtension<FonColors> {
     marker: Color(0xFFFFB020),
     sourceInk: Color(0xFFA7B4CB),
     passShadow: [BoxShadow(color: Color(0x14FFFFFF), spreadRadius: 1)],
+  );
+
+  /// The everyday look: deep navy night with glass surfaces.
+  static const night = FonColors(
+    clear: SkyColors(
+      top: Color(0xFF0E2F73),
+      bottom: Color(0xFF081226),
+      onField: Color(0xFFFFFFFF),
+      onFieldMuted: Color(0xFFB9C8E4),
+    ),
+    storm: SkyColors(
+      top: Color(0xFF262D40),
+      bottom: Color(0xFF0B0F18),
+      onField: Color(0xFFFFFFFF),
+      onFieldMuted: Color(0xFFC0C8D8),
+    ),
+    flood: _flood,
+    paper: Color(0xFF111B2E),
+    paperInk: Color(0xFFF2F5FA),
+    paperMuted: Color(0xFFB0BCD3),
+    perforation: Color(0x33FFFFFF),
+    rain: [
+      Color(0x26FFFFFF),
+      Color(0xFF7FB3FF),
+      Color(0xFF4A8FF5),
+      Color(0xFF2E6BFF),
+    ],
+    riskLow: Color(0xFF8FD4A4),
+    riskLowContainer: Color(0xFF123322),
+    riskMedium: Color(0xFFFFC34D),
+    riskMediumContainer: Color(0xFF3A2A06),
+    riskHigh: Color(0xFFFF8A80),
+    riskHighContainer: Color(0xFF3D1513),
+    warning: Color(0xFFFFB020),
+    marker: Color(0xFFFFFFFF),
+    sourceInk: Color(0xFFB0BCD3),
+    passShadow: [
+      BoxShadow(
+        color: Color(0x66000000),
+        blurRadius: 28,
+        offset: Offset(0, 12),
+      ),
+    ],
+    glass: true,
   );
 
   @override
@@ -255,6 +322,7 @@ class FonColors extends ThemeExtension<FonColors> {
       marker: c(marker, other.marker),
       sourceInk: c(sourceInk, other.sourceInk),
       passShadow: BoxShadow.lerpList(passShadow, other.passShadow, t)!,
+      glass: t < .5 ? glass : other.glass,
     );
   }
 }
