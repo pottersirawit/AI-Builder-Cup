@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -66,6 +67,9 @@ func TestConvertCalendarEventToTrip(t *testing.T) {
 		}
 		if trip.Destination.Lat == 0 || trip.Destination.Lng == 0 {
 			t.Errorf("destination not geocoded")
+		}
+		if trip.Origin.NameTH == "สีลม ซอย 3" || trip.Origin.NameTH != "บ้านลาดพร้าว" {
+			t.Errorf("trip Origin = %+v, want saved home place (บ้านลาดพร้าว), not hardcoded work (สีลม ซอย 3)", trip.Origin)
 		}
 	})
 
@@ -155,10 +159,10 @@ func TestOnlineCalendarEventsAreVirtual(t *testing.T) {
 	}
 }
 
-func TestAllDayCalendarEvent(t *testing.T) {
+func TestAllDayCalendarEvent_WithLocationGeocodes(t *testing.T) {
 	item := googleCalendarItem{ID: "evt_allday", Summary: "ประชุมประจำปี", Location: "ไบเทค บางนา"}
 	item.Start.Date, item.End.Date = "2026-10-20", "2026-10-21"
-	geo := &stubGeocoder{}
+	geo := &stubGeocoder{known: map[string]geocode.Place{"ไบเทค บางนา": {Lat: 13.6700, Lng: 100.6100}}}
 	trip := ConvertCalendarEventToTrip(context.Background(), item, geo, scenario.Places)
 	if !trip.AllDay {
 		t.Errorf("all_day = false, want true")
@@ -169,10 +173,55 @@ func TestAllDayCalendarEvent(t *testing.T) {
 	if want := time.Date(2026, 10, 21, 0, 0, 0, 0, domain.Bangkok); !trip.EndsAt.Equal(want) {
 		t.Errorf("ends_at = %v, want %v", trip.EndsAt, want)
 	}
-	if geo.searches != 0 {
-		t.Errorf("geocoded an all-day event")
+	if !trip.Destination.Resolved() || trip.Destination.Lat != 13.6700 || trip.Destination.Lng != 100.6100 {
+		t.Errorf("destination = %+v, want resolved at (13.67, 100.61)", trip.Destination)
+	}
+	if trip.LocationTextTH != "" {
+		t.Errorf("location_text_th = %q, want empty for resolved event", trip.LocationTextTH)
+	}
+	if geo.searches != 1 {
+		t.Errorf("geo.searches = %d, want 1", geo.searches)
 	}
 }
+
+func TestAllDayCalendarEvent_WithUnresolvedLocation(t *testing.T) {
+	item := googleCalendarItem{ID: "evt_unresolved", Summary: "สัมมนานอกสถานที่", Location: "เกาะร้าง"}
+	item.Start.Date, item.End.Date = "2026-10-20", "2026-10-21"
+	geo := &stubGeocoder{}
+	trip := ConvertCalendarEventToTrip(context.Background(), item, geo, scenario.Places)
+	if !trip.AllDay {
+		t.Errorf("all_day = false, want true")
+	}
+	if trip.Destination.Resolved() {
+		t.Errorf("destination should not be resolved: %+v", trip.Destination)
+	}
+	if trip.Destination.NameTH != "เกาะร้าง" {
+		t.Errorf("destination name = %q, want เกาะร้าง", trip.Destination.NameTH)
+	}
+	if trip.LocationTextTH != "เกาะร้าง" {
+		t.Errorf("location_text_th = %q, want เกาะร้าง", trip.LocationTextTH)
+	}
+}
+
+func TestAllDayCalendarEvent_WithoutLocation(t *testing.T) {
+	item := googleCalendarItem{ID: "evt_holiday", Summary: "วันหยุดสงกรานต์", Location: ""}
+	item.Start.Date, item.End.Date = "2026-10-20", "2026-10-21"
+	geo := &stubGeocoder{}
+	trip := ConvertCalendarEventToTrip(context.Background(), item, geo, scenario.Places)
+	if !trip.AllDay {
+		t.Errorf("all_day = false, want true")
+	}
+	if trip.Destination.Resolved() {
+		t.Errorf("destination should not be resolved: %+v", trip.Destination)
+	}
+	if trip.LocationTextTH != "" {
+		t.Errorf("location_text_th = %q, want empty", trip.LocationTextTH)
+	}
+	if geo.searches != 0 {
+		t.Errorf("geocoded an event without location: %d searches", geo.searches)
+	}
+}
+
 
 func TestCalendarEventEndsAt(t *testing.T) {
 	item := calItem("evt_end", "กินข้าวกับเพื่อน", "สยามพารากอน", "2026-10-16T12:30:00+07:00", "2026-10-16T13:45:00+07:00")
@@ -361,6 +410,23 @@ func TestServer_TripsUserStoreAndSync(t *testing.T) {
 
 	if len(res.Trips) != 1 || res.Trips[0].ID != "cal-custom-1" {
 		t.Errorf("got trips %+v, want custom trip cal-custom-1", res.Trips)
+	}
+
+	// 2b. Query /v1/trips with user's saved home address overrides hardcoded Silom origin
+	rHome := httptest.NewRequest("GET", "/v1/trips?email="+testEmail+"&home_name=BTS+%E0%B8%AD%E0%B8%B2%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B9%8C&home_lat=13.7797&home_lng=100.5446", nil)
+	wHome := httptest.NewRecorder()
+	h.ServeHTTP(wHome, rHome)
+	if wHome.Code != http.StatusOK {
+		t.Fatalf("GET /v1/trips with home params returned status %d, want 200", wHome.Code)
+	}
+	var resHome struct {
+		Trips []domain.Trip `json:"trips"`
+	}
+	if err := json.NewDecoder(wHome.Body).Decode(&resHome); err != nil {
+		t.Fatalf("decode trips with home failed: %v", err)
+	}
+	if len(resHome.Trips) != 1 || resHome.Trips[0].Origin.NameTH != "BTS อารีย์" {
+		t.Errorf("got trip origin %+v, want BTS อารีย์", resHome.Trips)
 	}
 
 	// 3. Query /v1/trips/sync?email=real.person@example.com
@@ -816,3 +882,113 @@ func TestSyncReadsGmailWithGeminiOnly(t *testing.T) {
 		}
 	})
 }
+
+func TestSyncReconcilesAndSortsCalendarEvents(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{
+		email: "reconcile.owner@example.com",
+		events: []googleCalendarItem{
+			calItem("evt1", "Event 1 Late", "สยาม", "2026-10-18T20:00:00+07:00", "2026-10-18T21:00:00+07:00"),
+			calItem("evt2", "Event 2 Early", "อโศก", "2026-10-18T10:00:00+07:00", "2026-10-18T11:00:00+07:00"),
+		},
+	}
+	g.start(t, s)
+	storeToken(t, g.email, userToken{AccessToken: "at-1"})
+	h := s.Handler()
+
+	// Initial sync
+	w1 := get(h, "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	var res1 struct {
+		Trips []domain.Trip `json:"trips"`
+	}
+	if err := json.NewDecoder(w1.Body).Decode(&res1); err != nil {
+		t.Fatal(err)
+	}
+	if len(res1.Trips) != 2 {
+		t.Fatalf("first sync trips count = %d, want 2", len(res1.Trips))
+	}
+	// Verify sorted chronologically
+	if res1.Trips[0].ID != "cal-evt2" || res1.Trips[1].ID != "cal-evt1" {
+		t.Errorf("trips not sorted by arrive_by: got [%s, %s], want [cal-evt2, cal-evt1]",
+			res1.Trips[0].ID, res1.Trips[1].ID)
+	}
+
+	// Update events in Google Calendar: evt1 deleted, evt3 added
+	g.events = []googleCalendarItem{
+		calItem("evt2", "Event 2 Early", "อโศก", "2026-10-18T10:00:00+07:00", "2026-10-18T11:00:00+07:00"),
+		calItem("evt3", "Event 3 Mid", "อารีย์", "2026-10-18T15:00:00+07:00", "2026-10-18T16:00:00+07:00"),
+	}
+
+	// Second sync on refresh
+	w2 := get(h, "/v1/trips/sync?email="+url.QueryEscape(g.email))
+	var res2 struct {
+		Trips []domain.Trip `json:"trips"`
+	}
+	if err := json.NewDecoder(w2.Body).Decode(&res2); err != nil {
+		t.Fatal(err)
+	}
+	if len(res2.Trips) != 2 {
+		t.Fatalf("second sync trips count = %d, want 2 (got %v)", len(res2.Trips), res2.Trips)
+	}
+	// Verify evt1 is removed, and evt2 & evt3 are sorted
+	if res2.Trips[0].ID != "cal-evt2" || res2.Trips[1].ID != "cal-evt3" {
+		t.Errorf("reconciled trips order mismatch: got [%s, %s], want [cal-evt2, cal-evt3]",
+			res2.Trips[0].ID, res2.Trips[1].ID)
+	}
+}
+
+func TestSyncChainsBackToBackEventsPreservingPreviousDestination(t *testing.T) {
+	s := newTestServer(t, false)
+	g := &fakeGoogle{
+		email: "chain.owner@example.com",
+		events: []googleCalendarItem{
+			calItem("dentist", "ทำฟันที่สยาม", "สยาม", "2026-10-18T10:00:00+07:00", "2026-10-18T11:30:00+07:00"),
+			calItem("dinner", "กินข้าวเย็นที่อโศก", "อโศก", "2026-10-18T13:00:00+07:00", "2026-10-18T14:30:00+07:00"),
+		},
+	}
+	g.start(t, s)
+	storeToken(t, g.email, userToken{AccessToken: "at-1"})
+	h := s.Handler()
+
+	syncURL := fmt.Sprintf("/v1/trips/sync?email=%s&home_name=%s&home_lat=13.7797&home_lng=100.5446",
+		url.QueryEscape(g.email), url.QueryEscape("บ้านลาดพร้าว"))
+	w := get(h, syncURL)
+	var res struct {
+		Trips []domain.Trip `json:"trips"`
+	}
+	if err := json.NewDecoder(w.Body).Decode(&res); err != nil {
+		t.Fatal(err)
+	}
+	if len(res.Trips) != 2 {
+		t.Fatalf("expected 2 trips, got %d", len(res.Trips))
+	}
+	if res.Trips[0].Origin.NameTH != "บ้านลาดพร้าว" {
+		t.Errorf("trip 0 origin = %q, want บ้านลาดพร้าว", res.Trips[0].Origin.NameTH)
+	}
+	if res.Trips[1].Origin.NameTH != "สยาม" {
+		t.Errorf("trip 1 origin = %q, want สยาม (chained from previous destination)", res.Trips[1].Origin.NameTH)
+	}
+}
+
+func TestGmailPartHTMLFallback(t *testing.T) {
+	htmlBody := `<html><body><h1>AirAsia Booking</h1><p>Flight <b>FD3024</b></p><div>Depart: 14:00</div></body></html>`
+	encoded := base64.URLEncoding.EncodeToString([]byte(htmlBody))
+
+	part := gmailPart{
+		MimeType: "text/html",
+		Body: struct {
+			Data string `json:"data"`
+		}{
+			Data: encoded,
+		},
+	}
+
+	got := part.bodyText()
+	if !strings.Contains(got, "AirAsia Booking") || !strings.Contains(got, "Flight FD3024") || !strings.Contains(got, "Depart: 14:00") {
+		t.Errorf("bodyText() = %q, expected stripped HTML with text content", got)
+	}
+	if strings.Contains(got, "<html>") || strings.Contains(got, "<b>") {
+		t.Errorf("bodyText() contains raw HTML tags: %q", got)
+	}
+}
+

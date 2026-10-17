@@ -6,6 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/api.dart';
 import 'package:fontokmai/app_state.dart';
+import 'package:fontokmai/config.dart';
 import 'package:fontokmai/google_link.dart';
 import 'package:fontokmai/location.dart';
 import 'package:fontokmai/main.dart';
@@ -48,6 +49,7 @@ Future<AppState> pumpApp(
   Uri? appBase,
   Duration Function(http.Request req)? latency,
   bool demoTools = false,
+  DemoLaunch? demoLaunch,
 }) async {
   tester.view.physicalSize = Size(402 * 3, height * 3);
   tester.view.devicePixelRatio = 3;
@@ -89,6 +91,7 @@ Future<AppState> pumpApp(
       api: api,
       locator: locator,
       googleLink: link,
+      launch: demoLaunch,
     ),
   );
   await settle(tester);
@@ -114,6 +117,7 @@ Future<void> settle(WidgetTester tester) async {
 
 /// Scrolls the visible vertical list until [f] is built; lists build lazily.
 Future<void> reveal(WidgetTester tester, Finder f) async {
+  if (f.hitTestable().evaluate().isNotEmpty) return;
   final list = find
       .byWidgetPredicate(
         (w) => w is Scrollable && w.axisDirection == AxisDirection.down,

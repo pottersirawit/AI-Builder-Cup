@@ -160,25 +160,66 @@ func TestRiskFor(t *testing.T) {
 	tests := []struct {
 		mode        domain.Mode
 		rain, depth float64
+		prob        int
 		want        Risk
 	}{
-		{domain.ModeCar, 0, 0, RiskLow},
-		{domain.ModeCar, 5, 4, RiskLow},
-		{domain.ModeCar, 12, 0, RiskMedium},
-		{domain.ModeCar, 0, 5, RiskMedium},
-		{domain.ModeCar, 0, 15, RiskHigh},
-		{domain.ModeMoto, 0.5, 0, RiskLow},
-		{domain.ModeMoto, 2, 0, RiskMedium},
-		{domain.ModeMoto, 0, 2, RiskMedium},
-		{domain.ModeMoto, 12, 0, RiskHigh},
-		{domain.ModeMoto, 0, 10, RiskHigh},
-		{domain.ModeTransit, 50, 40, RiskMedium},
-		{domain.ModeTransit, 5, 40, RiskLow},
+		{domain.ModeCar, 0, 0, 0, RiskLow},
+		{domain.ModeCar, 5, 4, 0, RiskLow},
+		{domain.ModeCar, 0, 0, 70, RiskLow},
+		{domain.ModeCar, 12, 0, 0, RiskMedium},
+		{domain.ModeCar, 0, 5, 0, RiskMedium},
+		{domain.ModeCar, 0, 15, 0, RiskHigh},
+		{domain.ModeMoto, 0.5, 0, 0, RiskLow},
+		{domain.ModeMoto, 0, 0, 20, RiskLow},
+		{domain.ModeMoto, 0, 0, 60, RiskMedium},
+		{domain.ModeMoto, 0, 0, 75, RiskMedium},
+		{domain.ModeMoto, 2, 0, 0, RiskMedium},
+		{domain.ModeMoto, 0, 2, 0, RiskMedium},
+		{domain.ModeMoto, 12, 0, 0, RiskHigh},
+		{domain.ModeMoto, 0, 10, 0, RiskHigh},
+		{domain.ModeTransit, 50, 40, 0, RiskMedium},
+		{domain.ModeTransit, 5, 40, 0, RiskLow},
+		{domain.ModeTransit, 0, 0, 70, RiskLow},
 	}
 	for _, tt := range tests {
-		if got := riskFor(tt.mode, tt.rain, tt.depth, 0); got != tt.want {
-			t.Errorf("%s rain=%v depth=%v: got %s, want %s", tt.mode, tt.rain, tt.depth, got, tt.want)
+		if got := riskFor(tt.mode, tt.rain, tt.depth, 0, tt.prob); got != tt.want {
+			t.Errorf("%s rain=%v depth=%v prob=%v: got %s, want %s", tt.mode, tt.rain, tt.depth, tt.prob, got, tt.want)
 		}
+	}
+}
+
+func TestDecideRainProbability(t *testing.T) {
+	rain := []domain.RainSample{
+		{Time: at(16, 0), MMPerHr: 0, ProbPct: 70},
+		{Time: at(17, 0), MMPerHr: 0, ProbPct: 70},
+		{Time: at(18, 0), MMPerHr: 0, ProbPct: 70},
+	}
+	in := Input{
+		Now:           at(16, 0),
+		DepartAt:      at(16, 0),
+		Mode:          domain.ModeCar,
+		DestinationTH: "ออฟฟิศ",
+		Travel: func(m domain.Mode, _ time.Time) int {
+			return 30
+		},
+		Rain: rain,
+	}
+	res := Decide(in)
+	byMode := map[domain.Mode]ModeOption{}
+	for _, opt := range res.ModeOptions {
+		byMode[opt.Mode] = opt
+	}
+	if byMode[domain.ModeCar].Risk != RiskLow || byMode[domain.ModeCar].RainProbPct != 70 {
+		t.Errorf("car = %+v, want RiskLow and RainProbPct=70", byMode[domain.ModeCar])
+	}
+	if byMode[domain.ModeTransit].Risk != RiskLow || byMode[domain.ModeTransit].RainProbPct != 70 {
+		t.Errorf("transit = %+v, want RiskLow and RainProbPct=70", byMode[domain.ModeTransit])
+	}
+	if byMode[domain.ModeMoto].Risk != RiskMedium || byMode[domain.ModeMoto].RainProbPct != 70 {
+		t.Errorf("moto = %+v, want RiskMedium (elevated by 70%% prob) and RainProbPct=70", byMode[domain.ModeMoto])
+	}
+	if !strings.Contains(byMode[domain.ModeMoto].NoteTH, "เสื้อกันฝน") {
+		t.Errorf("moto note %q should advise rain gear", byMode[domain.ModeMoto].NoteTH)
 	}
 }
 

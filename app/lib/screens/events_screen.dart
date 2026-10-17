@@ -8,7 +8,6 @@ import '../l10n/l10n.dart';
 import '../models.dart';
 import '../time_th.dart';
 import '../trips_repository.dart';
-import 'all_day_sheet.dart';
 import 'ask_sheet.dart';
 import 'event_cards.dart';
 import 'place_picker.dart';
@@ -41,6 +40,7 @@ class _EventsScreenState extends State<EventsScreen> {
     VerdictScreen(
       request: repo.requestFor(t),
       trip: t,
+      previousTrip: previousEventFor(repo.trips, t),
       departAt: planDepartFor(t, AppScope.readState(context).now()),
       mode: plan?.best?.mode,
     ),
@@ -274,9 +274,11 @@ class _EventsScreenState extends State<EventsScreen> {
 
   Widget _ticket(Trip trip, DateTime now) {
     final d = repo.decisionFor(trip.id);
+    final deadline = trip.allDay ? null : trip.arriveBy;
     final plan = d == null
         ? null
-        : planOf(d, planDepartFor(trip, now), now, deadline: trip.arriveBy);
+        : planOf(d, planDepartFor(trip, now), now, deadline: deadline);
+    final canOpen = trip.travels || (trip.allDay && trip.destination.resolved);
     return EventTicket(
       key: ValueKey('event-${trip.id}'),
       trip: trip,
@@ -284,15 +286,10 @@ class _EventsScreenState extends State<EventsScreen> {
       deciding: plan == null && repo.awaitsDecision(trip, now),
       onTap: trip.unresolved
           ? () => _resolve(trip)
-          : trip.travels
+          : canOpen
           ? () => _open(trip, plan)
           : trip.allDay
-          ? () => showAllDaySheet(
-              context,
-              trip: trip,
-              now: now,
-              outlook: repo.outlook,
-            )
+          ? () => _resolve(trip)
           : null,
     );
   }
@@ -399,7 +396,7 @@ class EventTicket extends StatelessWidget {
                         ? Symbols.help_rounded
                         : trip.virtual
                         ? Symbols.videocam_rounded
-                        : trip.allDay && trip.destination.nameTh.isEmpty
+                        : (trip.allDay && !trip.hasDestination)
                         ? Symbols.event_rounded
                         : Symbols.location_on_rounded,
                     size: 16,
@@ -415,8 +412,8 @@ class EventTicket extends StatelessWidget {
                           ? l.summarySetPlace
                           : trip.virtual
                           ? l.online
-                          : trip.allDay && trip.destination.nameTh.isEmpty
-                          ? l.allDayNoLeave
+                          : (trip.allDay && !trip.hasDestination)
+                          ? l.allDay
                           : trip.destination.nameTh,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,

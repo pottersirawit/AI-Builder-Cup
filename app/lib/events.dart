@@ -35,6 +35,29 @@ List<Trip> upcoming(List<Trip> trips, DateTime now) {
 Trip? nextEvent(List<Trip> trips, DateTime now) =>
     upcoming(trips, now).where((t) => t.travels).firstOrNull;
 
+/// The preceding event on the same Bangkok day with a resolved destination
+/// that can serve as the starting point for [current].
+Trip? previousEventFor(List<Trip> trips, Trip current) {
+  if (current.arriveBy == null) return null;
+  final currentDay = bangkokDay(current.arriveBy!);
+  final candidates = trips.where((t) {
+    if (t.id == current.id || t.virtual || t.allDay || !t.destination.resolved) {
+      return false;
+    }
+    if (t.arriveBy == null) return false;
+    if (bangkokDay(t.arriveBy!) != currentDay) return false;
+    return t.arriveBy!.isBefore(current.arriveBy!);
+  }).toList();
+
+  if (candidates.isEmpty) return null;
+  candidates.sort((a, b) {
+    final aEnd = a.endsAt ?? a.arriveBy!;
+    final bEnd = b.endsAt ?? b.arriveBy!;
+    return aEnd.compareTo(bEnd);
+  });
+  return candidates.last;
+}
+
 /// One Bangkok calendar day of events; [day] is null for untimed events.
 typedef DayGroup = ({DateTime? day, List<Trip> trips});
 
@@ -92,6 +115,17 @@ DateTime bangkokDay(DateTime t) {
 /// The departure to ask the agent about for [trip]: now, or the start of
 /// the planning window when the event is further off.
 DateTime planDepartFor(Trip trip, DateTime now) {
+  if (trip.allDay && trip.arriveBy != null) {
+    final today = bangkokDay(now);
+    final eventDay = bangkokDay(trip.arriveBy!);
+    if (eventDay == today || eventDay.isBefore(today)) {
+      return now;
+    }
+    final b = toBangkok(trip.arriveBy!);
+    return DateTime.parse(
+      '${b.year.toString().padLeft(4, '0')}-${b.month.toString().padLeft(2, '0')}-${b.day.toString().padLeft(2, '0')}T08:00:00+07:00',
+    );
+  }
   final start = trip.arriveBy?.subtract(planningWindow);
   return start == null || start.isBefore(now) ? now : start;
 }

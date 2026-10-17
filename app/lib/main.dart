@@ -1,3 +1,4 @@
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
@@ -191,6 +192,7 @@ class _FonTokMaiAppState extends State<FonTokMaiApp>
           debugShowCheckedModeBanner: false,
           theme: widget.state.flood ? _flood : _night,
           themeAnimationDuration: Motion.sky,
+          scrollBehavior: const _AppScrollBehavior(),
           builder: (context, child) => MediaQuery.withClampedTextScaling(
             maxScaleFactor: 2,
             child: child!,
@@ -204,6 +206,18 @@ class _FonTokMaiAppState extends State<FonTokMaiApp>
       ),
     );
   }
+}
+
+class _AppScrollBehavior extends MaterialScrollBehavior {
+  const _AppScrollBehavior();
+
+  @override
+  Set<PointerDeviceKind> get dragDevices => {
+    PointerDeviceKind.touch,
+    PointerDeviceKind.mouse,
+    PointerDeviceKind.trackpad,
+    PointerDeviceKind.stylus,
+  };
 }
 
 /// First launch shows onboarding; after it (or a skip) the tabs.

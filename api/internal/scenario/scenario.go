@@ -92,7 +92,16 @@ func (Weather) Rain(_ context.Context, _ domain.LatLng, from, to time.Time) ([]d
 	start := from.In(domain.Bangkok).Truncate(15 * time.Minute)
 	var out []domain.RainSample
 	for t := start; !t.After(to); t = t.Add(15 * time.Minute) {
-		out = append(out, domain.RainSample{Time: t, MMPerHr: RainAt(t)})
+		mm := RainAt(t)
+		prob := dayProfile[t.Hour()].prob
+		if t.Hour() == 17 && t.Minute() < 30 {
+			prob = 50
+		}
+		out = append(out, domain.RainSample{
+			Time:    t,
+			MMPerHr: mm,
+			ProbPct: prob,
+		})
 	}
 	return out, nil
 }
@@ -122,6 +131,207 @@ func isHeroTrip(from, to domain.LatLng) bool {
 	return geo.HaversineM(from, Silom.Point()) < 1500 && geo.HaversineM(to, Home.Point()) < 1500
 }
 
+type transitStop struct {
+	nameTH string
+	lineTH string
+	idx    int
+	lat    float64
+	lng    float64
+}
+
+func (s transitStop) point() domain.LatLng { return domain.LatLng{Lat: s.lat, Lng: s.lng} }
+
+var bkkTransitStops = []transitStop{
+	// MRT Blue Line
+	{nameTH: "MRT ท่าพระ", lineTH: "MRT สายสีน้ำเงิน", idx: 1, lat: 13.7297, lng: 100.4741},
+	{nameTH: "MRT หัวลำโพง", lineTH: "MRT สายสีน้ำเงิน", idx: 5, lat: 13.7375, lng: 100.5171},
+	{nameTH: "MRT สามย่าน", lineTH: "MRT สายสีน้ำเงิน", idx: 6, lat: 13.7323, lng: 100.5296},
+	{nameTH: "MRT สีลม", lineTH: "MRT สายสีน้ำเงิน", idx: 7, lat: 13.7292, lng: 100.5365},
+	{nameTH: "MRT ลุมพินี", lineTH: "MRT สายสีน้ำเงิน", idx: 8, lat: 13.7256, lng: 100.5456},
+	{nameTH: "MRT คลองเตย", lineTH: "MRT สายสีน้ำเงิน", idx: 9, lat: 13.7224, lng: 100.5539},
+	{nameTH: "MRT ศูนย์การประชุมแห่งชาติสิริกิติ์", lineTH: "MRT สายสีน้ำเงิน", idx: 10, lat: 13.7230, lng: 100.5601},
+	{nameTH: "MRT สุขุมวิท", lineTH: "MRT สายสีน้ำเงิน", idx: 11, lat: 13.7378, lng: 100.5614},
+	{nameTH: "MRT เพชรบุรี", lineTH: "MRT สายสีน้ำเงิน", idx: 12, lat: 13.7489, lng: 100.5634},
+	{nameTH: "MRT พระราม 9", lineTH: "MRT สายสีน้ำเงิน", idx: 13, lat: 13.7578, lng: 100.5655},
+	{nameTH: "MRT ห้วยขวาง", lineTH: "MRT สายสีน้ำเงิน", idx: 15, lat: 13.7786, lng: 100.5735},
+	{nameTH: "MRT สุทธิสาร", lineTH: "MRT สายสีน้ำเงิน", idx: 16, lat: 13.7895, lng: 100.5742},
+	{nameTH: "MRT รัชดาภิเษก", lineTH: "MRT สายสีน้ำเงิน", idx: 17, lat: 13.7997, lng: 100.5739},
+	{nameTH: "MRT ลาดพร้าว", lineTH: "MRT สายสีน้ำเงิน", idx: 18, lat: 13.8062, lng: 100.5737},
+	{nameTH: "MRT พหลโยธิน", lineTH: "MRT สายสีน้ำเงิน", idx: 19, lat: 13.8143, lng: 100.5612},
+	{nameTH: "MRT สวนจตุจักร", lineTH: "MRT สายสีน้ำเงิน", idx: 20, lat: 13.8025, lng: 100.5537},
+	{nameTH: "MRT บางซื่อ", lineTH: "MRT สายสีน้ำเงิน", idx: 21, lat: 13.8039, lng: 100.5398},
+	{nameTH: "MRT เตาปูน", lineTH: "MRT สายสีน้ำเงิน", idx: 22, lat: 13.8062, lng: 100.5303},
+	// BTS Silom Line
+	{nameTH: "BTS บางหว้า", lineTH: "BTS สายสีลม", idx: 1, lat: 13.7205, lng: 100.4578},
+	{nameTH: "BTS กรุงธนบุรี", lineTH: "BTS สายสีลม", idx: 5, lat: 13.7209, lng: 100.5026},
+	{nameTH: "BTS ช่องนนทรี", lineTH: "BTS สายสีลม", idx: 8, lat: 13.7236, lng: 100.5293},
+	{nameTH: "BTS ศาลาแดง", lineTH: "BTS สายสีลม", idx: 9, lat: 13.7285, lng: 100.5343},
+	{nameTH: "BTS ราชดำริ", lineTH: "BTS สายสีลม", idx: 10, lat: 13.7394, lng: 100.5395},
+	{nameTH: "BTS สยาม", lineTH: "BTS สายสีลม", idx: 11, lat: 13.7456, lng: 100.5341},
+	{nameTH: "BTS สนามกีฬาแห่งชาติ", lineTH: "BTS สายสีลม", idx: 12, lat: 13.7465, lng: 100.5291},
+	// BTS Sukhumvit Line
+	{nameTH: "BTS แบริ่ง", lineTH: "BTS สายสุขุมวิท", idx: 1, lat: 13.6612, lng: 100.6019},
+	{nameTH: "BTS บางนา", lineTH: "BTS สายสุขุมวิท", idx: 2, lat: 13.6681, lng: 100.6046},
+	{nameTH: "BTS อ่อนนุช", lineTH: "BTS สายสุขุมวิท", idx: 5, lat: 13.7059, lng: 100.6009},
+	{nameTH: "BTS เอกมัย", lineTH: "BTS สายสุขุมวิท", idx: 7, lat: 13.7190, lng: 100.5847},
+	{nameTH: "BTS ทองหล่อ", lineTH: "BTS สายสุขุมวิท", idx: 8, lat: 13.7243, lng: 100.5853},
+	{nameTH: "BTS พร้อมพงษ์", lineTH: "BTS สายสุขุมวิท", idx: 9, lat: 13.7303, lng: 100.5695},
+	{nameTH: "BTS อโศก", lineTH: "BTS สายสุขุมวิท", idx: 10, lat: 13.7372, lng: 100.5604},
+	{nameTH: "BTS นานา", lineTH: "BTS สายสุขุมวิท", idx: 11, lat: 13.7405, lng: 100.5553},
+	{nameTH: "BTS ชิดลม", lineTH: "BTS สายสุขุมวิท", idx: 13, lat: 13.7441, lng: 100.5431},
+	{nameTH: "BTS สยาม", lineTH: "BTS สายสุขุมวิท", idx: 14, lat: 13.7456, lng: 100.5341},
+	{nameTH: "BTS พญาไท", lineTH: "BTS สายสุขุมวิท", idx: 16, lat: 13.7569, lng: 100.5349},
+	{nameTH: "BTS อนุสาวรีย์ชัยสมรภูมิ", lineTH: "BTS สายสุขุมวิท", idx: 17, lat: 13.7628, lng: 100.5371},
+	{nameTH: "BTS อารีย์", lineTH: "BTS สายสุขุมวิท", idx: 19, lat: 13.7797, lng: 100.5448},
+	{nameTH: "BTS หมอชิต", lineTH: "BTS สายสุขุมวิท", idx: 22, lat: 13.8025, lng: 100.5537},
+	{nameTH: "BTS ห้าแยกลาดพร้าว", lineTH: "BTS สายสุขุมวิท", idx: 23, lat: 13.8166, lng: 100.5615},
+	{nameTH: "BTS มหาวิทยาลัยเกษตรศาสตร์", lineTH: "BTS สายสุขุมวิท", idx: 26, lat: 13.8430, lng: 100.5700},
+	{nameTH: "BTS วัดพระศรีมหาธาตุ", lineTH: "BTS สายสุขุมวิท", idx: 29, lat: 13.8749, lng: 100.5968},
+	// MRT Pink Line
+	{nameTH: "MRT ศูนย์ราชการนนทบุรี", lineTH: "MRT สายสีชมพู", idx: 1, lat: 13.8601, lng: 100.5138},
+	{nameTH: "MRT เมืองทองธานี", lineTH: "MRT สายสีชมพู", idx: 10, lat: 13.9056, lng: 100.5418},
+	{nameTH: "MRT อิมแพ็ค เมืองทองธานี", lineTH: "MRT สายสีชมพู", idx: 11, lat: 13.9119, lng: 100.5480},
+	{nameTH: "MRT วัดพระศรีมหาธาตุ", lineTH: "MRT สายสีชมพู", idx: 16, lat: 13.8749, lng: 100.5968},
+	// MRT Yellow Line
+	{nameTH: "MRT ลาดพร้าว", lineTH: "MRT สายสีเหลือง", idx: 1, lat: 13.8062, lng: 100.5737},
+	{nameTH: "MRT บางกะปิ", lineTH: "MRT สายสีเหลือง", idx: 8, lat: 13.7644, lng: 100.6433},
+	{nameTH: "MRT ศรีเอี่ยม", lineTH: "MRT สายสีเหลือง", idx: 17, lat: 13.6632, lng: 100.6458},
+	// Airport Rail Link
+	{nameTH: "ARL พญาไท", lineTH: "ARL แอร์พอร์ตเรลลิงก์", idx: 1, lat: 13.7569, lng: 100.5349},
+	{nameTH: "ARL มักกะสัน", lineTH: "ARL แอร์พอร์ตเรลลิงก์", idx: 3, lat: 13.7508, lng: 100.5614},
+	{nameTH: "ARL รามคำแหง", lineTH: "ARL แอร์พอร์ตเรลลิงก์", idx: 4, lat: 13.7429, lng: 100.6003},
+	{nameTH: "ARL ลาดกระบัง", lineTH: "ARL แอร์พอร์ตเรลลิงก์", idx: 7, lat: 13.7279, lng: 100.7488},
+}
+
+func absInt(x int) int {
+	if x < 0 {
+		return -x
+	}
+	return x
+}
+
+func maxInt(a, b int) int {
+	if a > b {
+		return a
+	}
+	return b
+}
+
+func nearestStop(pt domain.LatLng, lineFilter string) (transitStop, float64) {
+	var best transitStop
+	bestD := math.Inf(1)
+	for _, s := range bkkTransitStops {
+		if lineFilter != "" && s.lineTH != lineFilter {
+			continue
+		}
+		if d := geo.HaversineM(pt, s.point()); d < bestD {
+			best, bestD = s, d
+		}
+	}
+	return best, bestD
+}
+
+func stopByName(lineTH, nameTH string) (transitStop, bool) {
+	for _, s := range bkkTransitStops {
+		if s.lineTH == lineTH && s.nameTH == nameTH {
+			return s, true
+		}
+	}
+	return transitStop{}, false
+}
+
+// DescribeRoute returns the road corridors or transit stations/legs used to
+// travel between from and to in Bangkok.
+func DescribeRoute(from, to domain.LatLng, mode domain.Mode) (viaTH []string, legs []domain.TransitLeg) {
+	if isHeroTrip(from, to) {
+		if mode == domain.ModeTransit {
+			return []string{"MRT สีลม", "MRT สุขุมวิท", "MRT ลาดพร้าว"}, []domain.TransitLeg{{
+				LineTH:        "MRT สายสีน้ำเงิน",
+				FromStationTH: "MRT สีลม",
+				ToStationTH:   "MRT ลาดพร้าว",
+				StopCount:     11,
+			}}
+		}
+		return []string{"พระราม 4", "อโศก", "รัชดาภิเษก"}, nil
+	}
+	if mode != domain.ModeTransit {
+		switch {
+		case geo.HaversineM(to, Impact.Point()) < 1500:
+			return []string{"ทางพิเศษศรีรัช", "แจ้งวัฒนะ"}, nil
+		case geo.HaversineM(from, Silom.Point()) < 1500 && geo.HaversineM(to, Siam.Point()) < 1500:
+			return []string{"พระราม 4", "ราชดำริ"}, nil
+		case geo.HaversineM(to, Thonglor.Point()) < 1500 || to.Lng > 100.56:
+			return []string{"พระราม 4", "สุขุมวิท"}, nil
+		case to.Lat > 13.78:
+			return []string{"พหลโยธิน", "วิภาวดีรังสิต"}, nil
+		default:
+			return []string{"พระราม 4", "เพชรบุรี"}, nil
+		}
+	}
+
+	orig, dOrig := nearestStop(from, "")
+	dest, dDest := nearestStop(to, "")
+	// Prefer a direct single-line ride when a single line serves both ends within 700 m extra walk.
+	for _, line := range []string{"MRT สายสีน้ำเงิน", "BTS สายสุขุมวิท", "BTS สายสีลม", "MRT สายสีชมพู", "MRT สายสีเหลือง", "ARL แอร์พอร์ตเรลลิงก์"} {
+		oL, doL := nearestStop(from, line)
+		dL, ddL := nearestStop(to, line)
+		if oL.nameTH != "" && dL.nameTH != "" && oL.nameTH != dL.nameTH && (doL+ddL) <= (dOrig+dDest)+700 {
+			orig, dest = oL, dL
+			break
+		}
+	}
+	if orig.lineTH == dest.lineTH {
+		stops := maxInt(1, absInt(orig.idx-dest.idx))
+		return []string{orig.nameTH, dest.nameTH}, []domain.TransitLeg{{
+			LineTH:        orig.lineTH,
+			FromStationTH: orig.nameTH,
+			ToStationTH:   dest.nameTH,
+			StopCount:     stops,
+		}}
+	}
+
+	// Interchange lookup between orig.lineTH and dest.lineTH.
+	type xferPair struct{ stopA, stopB string }
+	interchanges := map[[2]string]xferPair{
+		{"BTS สายสีลม", "BTS สายสุขุมวิท"}:          {"BTS สยาม", "BTS สยาม"},
+		{"BTS สายสุขุมวิท", "BTS สายสีลม"}:          {"BTS สยาม", "BTS สยาม"},
+		{"MRT สายสีน้ำเงิน", "BTS สายสุขุมวิท"}:     {"MRT สุขุมวิท", "BTS อโศก"},
+		{"BTS สายสุขุมวิท", "MRT สายสีน้ำเงิน"}:     {"BTS อโศก", "MRT สุขุมวิท"},
+		{"MRT สายสีน้ำเงิน", "BTS สายสีลม"}:         {"MRT สีลม", "BTS ศาลาแดง"},
+		{"BTS สายสีลม", "MRT สายสีน้ำเงิน"}:         {"BTS ศาลาแดง", "MRT สีลม"},
+		{"BTS สายสุขุมวิท", "MRT สายสีชมพู"}:        {"BTS วัดพระศรีมหาธาตุ", "MRT วัดพระศรีมหาธาตุ"},
+		{"MRT สายสีชมพู", "BTS สายสุขุมวิท"}:        {"MRT วัดพระศรีมหาธาตุ", "BTS วัดพระศรีมหาธาตุ"},
+		{"MRT สายสีน้ำเงิน", "MRT สายสีชมพู"}:       {"MRT สวนจตุจักร", "MRT วัดพระศรีมหาธาตุ"},
+		{"MRT สายสีชมพู", "MRT สายสีน้ำเงิน"}:       {"MRT วัดพระศรีมหาธาตุ", "MRT สวนจตุจักร"},
+		{"MRT สายสีน้ำเงิน", "MRT สายสีเหลือง"}:     {"MRT ลาดพร้าว", "MRT ลาดพร้าว"},
+		{"MRT สายสีเหลือง", "MRT สายสีน้ำเงิน"}:     {"MRT ลาดพร้าว", "MRT ลาดพร้าว"},
+		{"BTS สายสุขุมวิท", "ARL แอร์พอร์ตเรลลิงก์"}: {"BTS พญาไท", "ARL พญาไท"},
+		{"ARL แอร์พอร์ตเรลลิงก์", "BTS สายสุขุมวิท"}: {"ARL พญาไท", "BTS พญาไท"},
+		{"MRT สายสีน้ำเงิน", "ARL แอร์พอร์ตเรลลิงก์"}: {"MRT เพชรบุรี", "ARL มักกะสัน"},
+		{"ARL แอร์พอร์ตเรลลิงก์", "MRT สายสีน้ำเงิน"}: {"ARL มักกะสัน", "MRT เพชรบุรี"},
+	}
+	xp, ok := interchanges[[2]string{orig.lineTH, dest.lineTH}]
+	if !ok {
+		xp = xferPair{stopA: orig.nameTH, stopB: dest.nameTH}
+	}
+	stops1, stops2 := 3, 4
+	if sA, ok := stopByName(orig.lineTH, xp.stopA); ok {
+		stops1 = maxInt(1, absInt(orig.idx-sA.idx))
+	}
+	if sB, ok := stopByName(dest.lineTH, xp.stopB); ok {
+		stops2 = maxInt(1, absInt(dest.idx-sB.idx))
+	}
+	via := []string{orig.nameTH, xp.stopA}
+	if xp.stopB != xp.stopA {
+		via = append(via, xp.stopB)
+	}
+	via = append(via, dest.nameTH)
+	return via, []domain.TransitLeg{
+		{LineTH: orig.lineTH, FromStationTH: orig.nameTH, ToStationTH: xp.stopA, StopCount: stops1},
+		{LineTH: dest.lineTH, FromStationTH: xp.stopB, ToStationTH: dest.nameTH, StopCount: stops2},
+	}
+}
+
 func (r Routes) Route(_ context.Context, from, to domain.LatLng, mode domain.Mode, departAt time.Time) (domain.Route, error) {
 	if !mode.Valid() {
 		return domain.Route{}, fmt.Errorf("unknown mode %q", mode)
@@ -129,14 +339,13 @@ func (r Routes) Route(_ context.Context, from, to domain.LatLng, mode domain.Mod
 	route := domain.Route{Mode: mode, Source: Source}
 	if isHeroTrip(from, to) {
 		route.Polyline = carCorridor
-		route.ViaTH = []string{"พระราม 4", "อโศก", "รัชดาภิเษก"}
 		if mode == domain.ModeTransit {
 			route.Polyline = mrtCorridor
-			route.ViaTH = []string{"MRT สีลม", "MRT สุขุมวิท", "MRT ลาดพร้าว"}
 		}
 	} else {
 		route.Polyline = []domain.LatLng{from, to}
 	}
+	route.ViaTH, route.TransitLegs = DescribeRoute(from, to, mode)
 	route.DurationMin = r.minutes(from, to, mode, departAt)
 	return route, nil
 }

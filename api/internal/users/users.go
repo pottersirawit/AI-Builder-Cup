@@ -26,6 +26,7 @@ type UserStore interface {
 	GetTrip(ctx context.Context, uid, tripID string) (UserTrip, error)
 	FindTripByID(ctx context.Context, tripID string) (UserTrip, error)
 	UpsertTrip(ctx context.Context, ut UserTrip) error
+	DeleteTripsBySource(ctx context.Context, uid, source string) error
 	ListTrips(ctx context.Context, uid string) ([]UserTrip, error)
 	UpdateCachedAdvisory(ctx context.Context, uid, tripID string, verdict decision.Verdict, risk decision.Risk, notifiedAt time.Time) error
 }
@@ -70,6 +71,17 @@ func (m *MemoryUserStore) UpsertTrip(_ context.Context, ut UserTrip) error {
 	defer m.mu.Unlock()
 	ut.UpdatedAt = time.Now()
 	m.trips[key(ut.UID, ut.Trip.ID)] = ut
+	return nil
+}
+
+func (m *MemoryUserStore) DeleteTripsBySource(_ context.Context, uid, source string) error {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	for k, ut := range m.trips {
+		if ut.UID == uid && ut.Trip.Source == source {
+			delete(m.trips, k)
+		}
+	}
 	return nil
 }
 

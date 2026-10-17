@@ -40,9 +40,70 @@ var english = map[string]string{
 	"พระราม 4":                              "Rama IV",
 	"อโศก":                                  "Asok",
 	"รัชดาภิเษก":                            "Ratchadaphisek",
+	"ทางพิเศษศรีรัช":                        "Si Rat Expressway",
+	"แจ้งวัฒนะ":                             "Chaeng Watthana",
+	"ราชดำริ":                               "Ratchadamri",
+	"สุขุมวิท":                              "Sukhumvit",
+	"พหลโยธิน":                              "Phahon Yothin",
+	"วิภาวดีรังสิต":                          "Vibhavadi Rangsit",
+	"เพชรบุรี":                              "Phetchaburi",
+	"MRT สายสีน้ำเงิน":                      "MRT Blue Line",
+	"BTS สายสีลม":                           "BTS Silom Line",
+	"BTS สายสุขุมวิท":                        "BTS Sukhumvit Line",
+	"MRT สายสีชมพู":                         "MRT Pink Line",
+	"MRT สายสีเหลือง":                       "MRT Yellow Line",
+	"ARL แอร์พอร์ตเรลลิงก์":                  "Airport Rail Link",
+	"MRT ท่าพระ":                            "MRT Tha Phra",
+	"MRT หัวลำโพง":                          "MRT Hua Lamphong",
+	"MRT สามย่าน":                           "MRT Sam Yan",
 	"MRT สีลม":                              "MRT Silom",
+	"MRT ลุมพินี":                           "MRT Lumphini",
+	"MRT คลองเตย":                           "MRT Khlong Toei",
+	"MRT ศูนย์การประชุมแห่งชาติสิริกิติ์":         "MRT Queen Sirikit Center",
 	"MRT สุขุมวิท":                          "MRT Sukhumvit",
+	"MRT เพชรบุรี":                          "MRT Phetchaburi",
+	"MRT พระราม 9":                          "MRT Phra Ram 9",
+	"MRT ห้วยขวาง":                          "MRT Huai Khwang",
+	"MRT สุทธิสาร":                          "MRT Sutthisan",
+	"MRT รัชดาภิเษก":                        "MRT Ratchadaphisek",
 	"MRT ลาดพร้าว":                          "MRT Lat Phrao",
+	"MRT พหลโยธิน":                          "MRT Phahon Yothin",
+	"MRT สวนจตุจักร":                        "MRT Chatuchak Park",
+	"MRT บางซื่อ":                           "MRT Bang Sue",
+	"MRT เตาปูน":                            "MRT Tao Poon",
+	"BTS บางหว้า":                           "BTS Bang Wa",
+	"BTS กรุงธนบุรี":                        "BTS Krung Thon Buri",
+	"BTS ช่องนนทรี":                         "BTS Chong Nonsi",
+	"BTS ศาลาแดง":                           "BTS Sala Daeng",
+	"BTS ราชดำริ":                           "BTS Ratchadamri",
+	"BTS สยาม":                              "BTS Siam",
+	"BTS สนามกีฬาแห่งชาติ":                   "BTS National Stadium",
+	"BTS แบริ่ง":                            "BTS Bearing",
+	"BTS บางนา":                             "BTS Bang Na",
+	"BTS อ่อนนุช":                           "BTS On Nut",
+	"BTS เอกมัย":                            "BTS Ekkamai",
+	"BTS ทองหล่อ":                           "BTS Thong Lo",
+	"BTS พร้อมพงษ์":                         "BTS Phrom Phong",
+	"BTS อโศก":                              "BTS Asok",
+	"BTS นานา":                              "BTS Nana",
+	"BTS ชิดลม":                             "BTS Chit Lom",
+	"BTS พญาไท":                             "BTS Phaya Thai",
+	"BTS อนุสาวรีย์ชัยสมรภูมิ":               "BTS Victory Monument",
+	"BTS อารีย์":                            "BTS Ari",
+	"BTS หมอชิต":                            "BTS Mo Chit",
+	"BTS ห้าแยกลาดพร้าว":                    "BTS Ha Yaek Lat Phrao",
+	"BTS มหาวิทยาลัยเกษตรศาสตร์":             "BTS Kasetsart University",
+	"BTS วัดพระศรีมหาธาตุ":                   "BTS Wat Phra Sri Mahathat",
+	"MRT ศูนย์ราชการนนทบุรี":                 "MRT Nonthaburi Civic Center",
+	"MRT เมืองทองธานี":                       "MRT Muang Thong Thani",
+	"MRT อิมแพ็ค เมืองทองธานี":               "MRT IMPACT Muang Thong Thani",
+	"MRT วัดพระศรีมหาธาตุ":                   "MRT Wat Phra Sri Mahathat",
+	"MRT บางกะปิ":                           "MRT Bang Kapi",
+	"MRT ศรีเอี่ยม":                         "MRT Si Iam",
+	"ARL พญาไท":                             "ARL Phaya Thai",
+	"ARL มักกะสัน":                          "ARL Makkasan",
+	"ARL รามคำแหง":                          "ARL Ramkhamhaeng",
+	"ARL ลาดกระบัง":                         "ARL Lat Krabang",
 	"น้ำขังเลนซ้าย รถเก๋งเริ่มชะลอ":         "Water pooling in the left lane; cars are starting to slow down.",
 	"น้ำเกือบครึ่งล้อ ทางเท้าจม":            "Water is almost halfway up a wheel and the pavement is under.",
 	"น้ำเอ่อจากคลองเข้าซอย":                 "Canal water is spilling into the soi.",
@@ -77,4 +138,31 @@ func LocalizeTrip(t domain.Trip, l domain.Lang) domain.Trip {
 	t.TitleTH, t.NoteTH = Text(t.TitleTH, l), Text(t.NoteTH, l)
 	t.Origin, t.Destination = LocalizePlace(t.Origin, l), LocalizePlace(t.Destination, l)
 	return t
+}
+
+// LocalizeRoute translates r's ViaTH and TransitLegs into l.
+func LocalizeRoute(r domain.Route, l domain.Lang) domain.Route {
+	if l != domain.LangEN {
+		return r
+	}
+	if len(r.ViaTH) > 0 {
+		via := make([]string, len(r.ViaTH))
+		for i, v := range r.ViaTH {
+			via[i] = Text(v, l)
+		}
+		r.ViaTH = via
+	}
+	if len(r.TransitLegs) > 0 {
+		legs := make([]domain.TransitLeg, len(r.TransitLegs))
+		for i, leg := range r.TransitLegs {
+			legs[i] = domain.TransitLeg{
+				LineTH:        Text(leg.LineTH, l),
+				FromStationTH: Text(leg.FromStationTH, l),
+				ToStationTH:   Text(leg.ToStationTH, l),
+				StopCount:     leg.StopCount,
+			}
+		}
+		r.TransitLegs = legs
+	}
+	return r
 }

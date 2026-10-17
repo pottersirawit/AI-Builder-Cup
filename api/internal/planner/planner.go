@@ -187,10 +187,12 @@ type Session struct {
 	places []domain.SavedPlace
 	origin *domain.Place
 
-	routes  map[string]domain.Route
-	rain    []domain.RainSample
-	rainSet bool
-	calls   []Call
+	routes    map[string]domain.Route
+	inputs    map[string]decision.Input
+	baselines map[string]decision.Result
+	rain      []domain.RainSample
+	rainSet   bool
+	calls     []Call
 
 	usedWeatherNext bool
 	usedBMAFlood    bool
@@ -234,14 +236,18 @@ func (p *Planner) Open(ctx context.Context, prov Providers, now time.Time, req T
 }
 
 func (p *Planner) open(ctx context.Context, prov Providers, now time.Time, req TripRequest) (*Session, error) {
-	s := &Session{Lang: req.Lang, ctx: ctx, p: p, prov: prov, Now: now, routes: map[string]domain.Route{}, places: req.Places, origin: req.Origin}
+	s := &Session{
+		Lang: req.Lang, ctx: ctx, p: p, prov: prov, Now: now,
+		routes: map[string]domain.Route{}, inputs: map[string]decision.Input{}, baselines: map[string]decision.Result{},
+		places: req.Places, origin: req.Origin,
+	}
 
 	if req.Trip != nil {
 		s.Trip = *req.Trip
-		if s.Trip.Origin.Lat == 0 && s.Trip.Origin.Lng == 0 && req.Origin != nil {
+		if req.Origin != nil && (req.Origin.Lat != 0 || req.Origin.Lng != 0) {
 			s.Trip.Origin = *req.Origin
 		}
-		if s.Trip.Destination.Lat == 0 && s.Trip.Destination.Lng == 0 && req.Destination != nil {
+		if req.Destination != nil && (req.Destination.Lat != 0 || req.Destination.Lng != 0) {
 			s.Trip.Destination = *req.Destination
 		}
 		return s, nil
@@ -322,7 +328,9 @@ func (s *Session) PlanTo(placeID string) error {
 		}
 		t = AppTrip(origin, dest.Place, title)
 	}
-	s.Trip, s.routes, s.rain, s.rainSet = scenario.LocalizeTrip(t, s.Lang), map[string]domain.Route{}, nil, false
+	s.Trip = scenario.LocalizeTrip(t, s.Lang)
+	s.routes, s.inputs, s.baselines = map[string]domain.Route{}, map[string]decision.Input{}, map[string]decision.Result{}
+	s.rain, s.rainSet = nil, false
 	return nil
 }
 
@@ -426,6 +434,12 @@ func (s *Session) reportsNear(road domain.Route) ([]domain.Report, error) {
 
 // Input assembles the deterministic engine input for one departure.
 func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, error) {
+	key := string(mode) + "|" + depart.In(domain.Bangkok).Format(time.RFC3339)
+	if s.inputs != nil {
+		if in, ok := s.inputs[key]; ok {
+			return in, nil
+		}
+	}
 	road, err := s.route(domain.ModeCar, depart)
 	if err != nil {
 		return decision.Input{}, err
@@ -455,10 +469,23 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 			s.usedTidal = true
 		}
 	}
+	routesByMode := map[domain.Mode]domain.Route{}
+	for _, m := range domain.AllModes {
+		r, err := s.route(m, depart)
+		if err != nil {
+			return decision.Input{}, err
+		}
+		routesByMode[m] = scenario.LocalizeRoute(r, s.Lang)
+	}
+	arriveBy := s.Trip.ArriveBy
+	if s.Trip.AllDay {
+		arriveBy = time.Time{}
+	}
 	in := decision.Input{
-		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: s.Trip.ArriveBy, Mode: mode,
+		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: arriveBy, Mode: mode,
 		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
-		Rain: rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,
+		Routes: routesByMode,
+		Rain:   rain, Spots: floodspot.OnRoute(s.p.Spots, road.Polyline), Reports: reps,
 		WindGustKMH: windGustKMH,
 	}
 	from, to := s.Trip.Origin.Point(), s.Trip.Destination.Point()
@@ -467,24 +494,35 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	} else {
 		fixed := map[domain.Mode]int{}
 		for _, m := range domain.AllModes {
-			r, err := s.route(m, depart)
-			if err != nil {
-				return decision.Input{}, err
-			}
-			fixed[m] = r.DurationMin
+			fixed[m] = routesByMode[m].DurationMin
 		}
 		in.Travel = func(m domain.Mode, _ time.Time) int { return fixed[m] }
 	}
+	if s.inputs == nil {
+		s.inputs = map[string]decision.Input{}
+	}
+	s.inputs[key] = in
 	return in, nil
 }
 
 // Baseline runs the deterministic engine without logging tool calls.
 func (s *Session) Baseline(depart time.Time, mode domain.Mode) (decision.Result, error) {
+	key := string(mode) + "|" + depart.In(domain.Bangkok).Format(time.RFC3339)
+	if s.baselines != nil {
+		if res, ok := s.baselines[key]; ok {
+			return res, nil
+		}
+	}
 	in, err := s.Input(depart, mode)
 	if err != nil {
 		return decision.Result{}, err
 	}
-	return decision.Decide(in), nil
+	res := decision.Decide(in)
+	if s.baselines == nil {
+		s.baselines = map[string]decision.Result{}
+	}
+	s.baselines[key] = res
+	return res, nil
 }
 
 // SourcesUsed returns the human-readable names of data sources configured in Providers

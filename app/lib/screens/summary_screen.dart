@@ -106,6 +106,7 @@ class _SummaryScreenState extends State<SummaryScreen> {
     VerdictScreen(
       request: widget.repo.requestFor(trip),
       trip: trip,
+      previousTrip: previousEventFor(widget.repo.trips, trip),
       departAt:
           departAt ?? planDepartFor(trip, AppScope.readState(context).now()),
       mode: mode,
@@ -289,11 +290,14 @@ class _SummaryScreenState extends State<SummaryScreen> {
         child: LargeTitleHeader(
           onSky: true,
           eyebrow: dayDate(l, now),
-          title: !repo.connected || pending
-              ? l.summaryTitle
-              : todayLeft == 0
-              ? l.planTitleFree
-              : l.planTitleToday('$todayLeft'),
+          title: summaryHeaderTitle(
+            l: l,
+            connected: repo.connected,
+            pending: pending,
+            todayLeft: todayLeft,
+            next: next,
+            now: now,
+          ),
           badges: [
             if (store.demoProfile) const DemoBadge(onField: true),
             if (state.usingSample) const SampleBadge(onField: true),
@@ -301,6 +305,11 @@ class _SummaryScreenState extends State<SummaryScreen> {
           actions: [
             if (state.demoTools || state.demoClock != null)
               DemoClockChip(state: state, sky: sky),
+            IconButton(
+              tooltip: l.eventsRefresh,
+              onPressed: widget.onRefresh,
+              icon: const Icon(Symbols.refresh_rounded),
+            ),
             IconButton(
               tooltip: l.homeSettings,
               onPressed: () => _push(const SettingsScreen()),
@@ -405,7 +414,9 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                       weather: outlook,
                                       onTap: t.unresolved
                                           ? () => _resolveTrip(t)
-                                          : t.travels
+                                          : (t.travels ||
+                                                  (t.allDay &&
+                                                      t.destination.resolved))
                                           ? () => _openTrip(
                                               t,
                                               mode: _planFor(
@@ -468,7 +479,12 @@ class _SummaryScreenState extends State<SummaryScreen> {
     final d = widget.repo.decisionFor(t.id);
     return d == null
         ? null
-        : planOf(d, planDepartFor(t, now), now, deadline: t.arriveBy);
+        : planOf(
+            d,
+            planDepartFor(t, now),
+            now,
+            deadline: t.allDay ? null : t.arriveBy,
+          );
   }
 }
 
@@ -674,4 +690,33 @@ Future<void> showFloodSheet(
       );
     },
   );
+}
+
+/// Calculates the context-aware header title based on when the next trip is scheduled.
+String summaryHeaderTitle({
+  required AppLocalizations l,
+  required bool connected,
+  required bool pending,
+  required int todayLeft,
+  required Trip? next,
+  required DateTime now,
+}) {
+  if (!connected || pending) {
+    return l.summaryTitle;
+  }
+  if (next != null && next.arriveBy != null) {
+    final today = bangkokDay(now);
+    final nextDay = bangkokDay(next.arriveBy!);
+    final diffDays = nextDay.difference(today).inDays;
+    if (diffDays == 1) {
+      return todayLeft > 0 ? l.planTitleNextTripTomorrow : l.planTitleTomorrow;
+    }
+    if (diffDays > 1) {
+      return l.planTitleUpcoming;
+    }
+  }
+  if (todayLeft == 0) {
+    return l.planTitleFree;
+  }
+  return l.planTitleToday('$todayLeft');
 }

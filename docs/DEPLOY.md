@@ -8,8 +8,8 @@
 |---|---|---|
 | เว็บ (Flutter web) | https://ai-cup-511208.web.app | Firebase Hosting โปรเจกต์ `ai-cup-511208` |
 | API (Go) | https://fontokmai-api-lmr33aj5zq-as.a.run.app | Cloud Run service `fontokmai-api` region `asia-southeast1` (URL แบบใหม่ `https://fontokmai-api-945826169258.asia-southeast1.run.app` คือ service เดียวกัน) |
-| Revision ปัจจุบัน | `fontokmai-api-00020-2zb` | deploy จาก commit `3577980` |
-| Revision ก่อนหน้า | `fontokmai-api-00019-v9c` | ตัวเก่า โหมดเดโม (ใช้ rollback ได้) |
+| Revision ปัจจุบัน | `fontokmai-api-00026-chh` | deploy จาก commit `b8e2ec4` |
+| Revision ก่อนหน้า | `fontokmai-api-00025-qnf` | ตัวเก่า (ใช้ rollback ได้) |
 
 ค่าที่ตั้งไว้บน Cloud Run (อย่าลบ)
 

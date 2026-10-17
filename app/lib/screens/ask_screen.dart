@@ -132,6 +132,8 @@ class _AskScreenState extends State<AskScreen> {
         () => _messages.add(
           d.needsPlace != null
               ? _Message.needs(q, d.needsPlace!)
+              : d.refused
+              ? _Message.ai(d.summaryTh, null)
               : _Message.ai(d.summaryTh, d),
         ),
       );
@@ -159,6 +161,7 @@ class _AskScreenState extends State<AskScreen> {
     final state = AppScope.stateOf(context);
     final sky = state.flood ? SkyState.flood : SkyState.clear;
     final scheme = Theme.of(context).colorScheme;
+    final t = Theme.of(context).textTheme;
     return Scaffold(
       body: Column(
         children: [
@@ -255,6 +258,16 @@ class _AskScreenState extends State<AskScreen> {
                   enabled: !_thinking,
                   hint: context.l10n.askInputHint,
                 ),
+                const SizedBox(height: Space.x2),
+                Center(
+                  child: Text(
+                    context.l10n.askDisclaimer,
+                    textAlign: TextAlign.center,
+                    style: t.labelSmall?.copyWith(
+                      color: scheme.onSurfaceVariant.withValues(alpha: 0.8),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -345,6 +358,11 @@ class _Bubble extends StatelessWidget {
                     ConfidenceMeter(value: d.confidence),
                     const SizedBox(height: Space.x3),
                     GeneratedBy(d.generatedBy),
+                    const SizedBox(height: Space.x2),
+                    Text(
+                      context.l10n.askDisclaimer,
+                      style: t.labelSmall?.copyWith(color: c.paperMuted),
+                    ),
                   ],
                 ),
               ),

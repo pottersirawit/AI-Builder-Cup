@@ -83,6 +83,7 @@
   "askTitle": "Ask more",
   "askInputHint": "Type a question, e.g. “What about the motorbike?”",
   "askRetry": "Ask again",
+  "askDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.",
   "partsQuestion": "Question: “{question}”",
   "@partsQuestion": {
     "placeholders": {
@@ -964,6 +965,10 @@
       }
     }
   },
+  "planTitleOneToday": "1 trip today",
+  "planTitleTomorrow": "Tomorrow's plan",
+  "planTitleNextTripTomorrow": "Next trip tomorrow",
+  "planTitleUpcoming": "Upcoming trip",
   "planTitleFree": "Nothing else today",
   "planToday": "Later today",
   "planTomorrow": "Tomorrow",
@@ -1161,6 +1166,20 @@
       }
     }
   },
+  "verdictModeStatusWithProb": "{eta} min · {status} ({prob}%)",
+  "@verdictModeStatusWithProb": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      },
+      "prob": {
+        "type": "int"
+      }
+    }
+  },
   "verdictFloodSpotsTitle": "Flood spots on your route",
   "verdictNoFloodSpots": "No standing water on this route",
   "verdictNoFloodSpotsMsg": "This route avoids the city's known flood-prone spots.",
@@ -1275,5 +1294,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "verdictAccuracyDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling."
 }

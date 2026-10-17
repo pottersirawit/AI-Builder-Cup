@@ -44,7 +44,7 @@ class GoogleLink {
   String? _nonce;
 
   /// The server URL that starts sign-in and comes back to this app.
-  Uri startUrl(String nonce) {
+  Uri startUrl(String nonce, {String? service}) {
     final web = appBase.scheme == 'http' || appBase.scheme == 'https';
     final back = web
         ? Uri(
@@ -54,34 +54,50 @@ class GoogleLink {
             path: appBase.path.isEmpty ? '/' : appBase.path,
           ).toString()
         : _webApp;
+    final params = {'return': back, 'nonce': nonce};
+    if (service != null && service.isNotEmpty) {
+      params['service'] = service;
+    }
     return Uri.parse(
       '${api.baseUrl}/v1/oauth/start',
-    ).replace(queryParameters: {'return': back, 'nonce': nonce});
+    ).replace(queryParameters: params);
   }
 
   /// Opens Google and waits up to [patience] for the server to confirm.
-  Future<void> connect() async {
-    if (places.calendar == LinkState.connecting && _nonce != null) return;
+  Future<void> connect({String? service}) async {
+    if (service == 'calendar' &&
+        places.calendar == LinkState.connecting &&
+        _nonce != null)
+      return;
+    if (service == 'gmail' &&
+        places.gmail == LinkState.connecting &&
+        _nonce != null)
+      return;
+    if (service == null &&
+        places.calendar == LinkState.connecting &&
+        _nonce != null)
+      return;
+
     final nonce = _newNonce();
     _nonce = nonce;
-    places.beginGoogleConnect();
+    places.beginGoogleConnect(service: service);
     var opened = false;
     try {
-      opened = await _launch(startUrl(nonce));
+      opened = await _launch(startUrl(nonce, service: service));
     } catch (e) {
       debugPrint('fontokmai: could not open Google sign-in ($e)');
     }
     if (!opened) {
-      _giveUp(nonce);
+      _giveUp(nonce, service: service);
       return;
     }
     final deadline = DateTime.now().add(patience);
     while (_nonce == nonce) {
       await Future<void>.delayed(every);
       if (_nonce != nonce) return;
-      if (await check()) return;
+      if (await check(service: service)) return;
       if (!DateTime.now().isBefore(deadline)) {
-        _giveUp(nonce);
+        _giveUp(nonce, service: service);
         return;
       }
     }
@@ -89,14 +105,14 @@ class GoogleLink {
 
   /// Asks the server once whether the pending sign-in finished; true when
   /// it did and the account is now connected.
-  Future<bool> check() async {
+  Future<bool> check({String? service}) async {
     final nonce = _nonce;
     if (nonce == null) return false;
     try {
       final s = await api.oauthStatus(nonce: nonce);
       if (_nonce != nonce || !s.connected || s.email.isEmpty) return false;
       _nonce = null;
-      places.connectGoogle(s.email);
+      places.connectGoogle(s.email, service: service, scopes: s.scopes);
       return true;
     } catch (_) {
       return false;
@@ -104,9 +120,9 @@ class GoogleLink {
   }
 
   /// Stops waiting; the rows show the connect button again.
-  void cancel() {
+  void cancel({String? service}) {
     final nonce = _nonce;
-    if (nonce != null) _giveUp(nonce);
+    if (nonce != null) _giveUp(nonce, service: service);
   }
 
   /// Connects the account the server put in `?connected=` and removes it
@@ -114,21 +130,32 @@ class GoogleLink {
   bool acceptReturn() {
     final email = appBase.queryParameters['connected'];
     if (email == null || email.isEmpty) return false;
+    final service = appBase.queryParameters['service'];
     _nonce = null;
-    places.connectGoogle(email);
-    final rest = {...appBase.queryParameters}..remove('connected');
+    places.connectGoogle(email, service: service);
+    final rest = {...appBase.queryParameters}
+      ..remove('connected')
+      ..remove('service');
     final clean = Uri.parse(appBase.toString().split('?').first).replace(
       queryParameters: rest.isEmpty ? null : rest,
       fragment: appBase.hasFragment ? appBase.fragment : null,
     );
     _replaceUrl(clean);
+    api
+        .oauthStatus(email: email)
+        .then((s) {
+          if (s.connected && s.scopes.isNotEmpty) {
+            places.connectGoogle(email, service: service, scopes: s.scopes);
+          }
+        })
+        .catchError((_) {});
     return true;
   }
 
-  void _giveUp(String nonce) {
+  void _giveUp(String nonce, {String? service}) {
     if (_nonce != nonce) return;
     _nonce = null;
-    places.failGoogleConnect();
+    places.failGoogleConnect(service: service);
   }
 
   static String _newNonce() {

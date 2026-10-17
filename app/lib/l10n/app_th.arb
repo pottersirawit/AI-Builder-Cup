@@ -83,6 +83,7 @@
   "askTitle": "ถามต่อ",
   "askInputHint": "พิมพ์คำถาม เช่น ถ้าไปมอเตอร์ไซค์ล่ะ",
   "askRetry": "ถามใหม่",
+  "askDisclaimer": "ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง",
   "partsQuestion": "คำถาม: “{question}”",
   "@partsQuestion": {
     "placeholders": {
@@ -964,6 +965,10 @@
       }
     }
   },
+  "planTitleOneToday": "นัดหมายวันนี้",
+  "planTitleTomorrow": "นัดหมายพรุ่งนี้",
+  "planTitleNextTripTomorrow": "เดินทางพรุ่งนี้",
+  "planTitleUpcoming": "นัดหมายถัดไป",
   "planTitleFree": "วันนี้ไม่มีนัดแล้ว",
   "planToday": "แผนต่อจากนี้",
   "planTomorrow": "พรุ่งนี้",
@@ -1161,6 +1166,20 @@
       }
     }
   },
+  "verdictModeStatusWithProb": "{eta} น. · {status} ({prob}%)",
+  "@verdictModeStatusWithProb": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      },
+      "prob": {
+        "type": "int"
+      }
+    }
+  },
   "verdictFloodSpotsTitle": "จุดน้ำท่วมบนเส้นทาง",
   "verdictNoFloodSpots": "ไม่มีจุดน้ำขังบนเส้นทางนี้",
   "verdictNoFloodSpotsMsg": "เส้นทางนี้ไม่ผ่านจุดเสี่ยงน้ำท่วมของ กทม.",
@@ -1275,5 +1294,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "verdictAccuracyDisclaimer": "ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง"
 }

@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:fontokmai/screens/verdict_screen.dart';
 
 import 'helpers.dart';
 
@@ -44,7 +43,7 @@ Future<void> _pump(WidgetTester tester) async => pumpApp(
 );
 
 void main() {
-  testWidgets('all-day tickets say their days and open a detail sheet', (
+  testWidgets('all-day tickets say their days and ask for a place to go', (
     tester,
   ) async {
     await _pump(tester);
@@ -55,29 +54,20 @@ void main() {
       findsOneWidget,
       reason: 'a multi-day trip shows its range',
     );
-    expect(find.text('ไม่มีเวลาออก'), findsOneWidget, reason: 'no place');
-    expect(find.text('โรงแรมสุโขทัย'), findsOneWidget);
 
-    await tapAndSettle(tester, find.byKey(const ValueKey('event-cal-cm')));
+    await tapAndSettle(tester, find.byKey(const ValueKey('event-cal-wed')));
+    expect(find.text('ไม่พบ “โรงแรมสุโขทัย”'), findsOneWidget);
+  });
+
+  testWidgets('the summary opens the detail sheet for an all-day event', (
+    tester,
+  ) async {
+    await _pump(tester);
+    await tapAndSettle(tester, find.byKey(const ValueKey('next-cal-cm')));
     expect(
       find.text('กิจกรรมทั้งวันไม่มีเวลานัด จึงไม่มีเวลาออกให้'),
       findsOneWidget,
     );
     expect(find.textContaining('ถามทางไป'), findsNothing, reason: 'no place');
-    Navigator.of(tester.element(find.byType(BottomSheet))).pop();
-    await settle(tester);
-
-    await tapAndSettle(tester, find.byKey(const ValueKey('event-cal-wed')));
-    await tapAndSettle(tester, find.text('ถามทางไปโรงแรมสุโขทัย'));
-    final verdict = tester.widget<VerdictScreen>(find.byType(VerdictScreen));
-    expect(verdict.request.questionTh, 'ไปโรงแรมสุโขทัยตอนนี้');
-  });
-
-  testWidgets('the summary opens the same sheet for an all-day event', (
-    tester,
-  ) async {
-    await _pump(tester);
-    await tapAndSettle(tester, find.text('งานแต่งพี่บี').first);
-    expect(find.text('ถามทางไปโรงแรมสุโขทัย'), findsOneWidget);
   });
 }

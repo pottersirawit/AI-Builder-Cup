@@ -245,3 +245,32 @@ func TestEnglishText(t *testing.T) {
 		t.Error("Thai and unknown text must pass through unchanged")
 	}
 }
+
+func TestRoutesPopulateViaAndTransitLegs(t *testing.T) {
+	r := Routes{}
+	heroTransit, err := r.Route(context.Background(), Silom.Point(), Home.Point(), domain.ModeTransit, demo(16, 10))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(heroTransit.TransitLegs) == 0 {
+		t.Fatalf("expected TransitLegs on hero transit route, got %+v", heroTransit)
+	}
+	leg := heroTransit.TransitLegs[0]
+	if leg.LineTH != "MRT สายสีน้ำเงิน" || leg.FromStationTH != "MRT สีลม" || leg.ToStationTH != "MRT ลาดพร้าว" {
+		t.Fatalf("hero transit leg = %+v", leg)
+	}
+
+	// Non-hero trip (Silom -> Siam) must also populate road ViaTH and transit legs.
+	siamCar, err := r.Route(context.Background(), Silom.Point(), Siam.Point(), domain.ModeCar, demo(16, 10))
+	if err != nil || len(siamCar.ViaTH) == 0 {
+		t.Fatalf("expected non-empty ViaTH for Silom->Siam car route, got %+v (%v)", siamCar, err)
+	}
+	siamTransit, err := r.Route(context.Background(), Silom.Point(), Siam.Point(), domain.ModeTransit, demo(16, 10))
+	if err != nil || len(siamTransit.TransitLegs) == 0 {
+		t.Fatalf("expected TransitLegs for Silom->Siam transit route, got %+v (%v)", siamTransit, err)
+	}
+	if siamTransit.TransitLegs[0].LineTH == "" || siamTransit.TransitLegs[0].FromStationTH == "" || siamTransit.TransitLegs[0].ToStationTH == "" {
+		t.Fatalf("incomplete Silom->Siam transit leg: %+v", siamTransit.TransitLegs[0])
+	}
+}
+

@@ -299,6 +299,10 @@
       }
     }
   },
+  "planTitleOneToday": "1 trip today",
+  "planTitleTomorrow": "Tomorrow's plan",
+  "planTitleNextTripTomorrow": "Next trip tomorrow",
+  "planTitleUpcoming": "Upcoming trip",
   "planTitleFree": "Nothing else today",
   "planToday": "Later today",
   "planTomorrow": "Tomorrow",

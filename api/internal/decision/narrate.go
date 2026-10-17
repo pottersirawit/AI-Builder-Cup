@@ -237,6 +237,8 @@ func hazardTH(e Eval) string {
 		return fmt.Sprintf("น้ำรอระบายที่%s", e.DeepestTH)
 	case e.MaxRainMM >= rainLight:
 		return "ฝนกลางทาง ถนนลื่น"
+	case e.Mode == domain.ModeMoto && e.MaxProbPct >= motoRainProbThresholdPct:
+		return fmt.Sprintf("โอกาสฝนตก %d%% ควรเตรียมเสื้อกันฝน", e.MaxProbPct)
 	}
 	if e.Mode == domain.ModeMoto && e.WindGustKMH >= motoWindGustCautionKMH {
 		return fmt.Sprintf("ลมกระโชก %.0f กม./ชม.", e.WindGustKMH)

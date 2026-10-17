@@ -62,6 +62,25 @@ class Place {
   final double lat;
   final double lng;
 
+  bool get resolved => !(lat == 0 && lng == 0);
+
+  bool get isPlaceholder =>
+      !resolved ||
+      nameTh.contains('ยังไม่ได้ตั้งบ้าน') ||
+      nameTh.contains('สีลม');
+
+  @override
+  bool operator ==(Object other) =>
+      identical(this, other) ||
+      other is Place &&
+          runtimeType == other.runtimeType &&
+          nameTh == other.nameTh &&
+          lat == other.lat &&
+          lng == other.lng;
+
+  @override
+  int get hashCode => Object.hash(nameTh, lat, lng);
+
   Json toJson() => {'name_th': nameTh, 'lat': lat, 'lng': lng};
 }
 
@@ -80,6 +99,32 @@ class Trip {
     this.allDay = false,
   });
 
+  Trip copyWith({
+    String? id,
+    String? titleTh,
+    String? source,
+    Place? origin,
+    Place? destination,
+    DateTime? arriveBy,
+    TravelMode? mode,
+    String? locationTextTh,
+    DateTime? endsAt,
+    bool? virtual,
+    bool? allDay,
+  }) => Trip(
+    id: id ?? this.id,
+    titleTh: titleTh ?? this.titleTh,
+    source: source ?? this.source,
+    origin: origin ?? this.origin,
+    destination: destination ?? this.destination,
+    arriveBy: arriveBy ?? this.arriveBy,
+    mode: mode ?? this.mode,
+    locationTextTh: locationTextTh ?? this.locationTextTh,
+    endsAt: endsAt ?? this.endsAt,
+    virtual: virtual ?? this.virtual,
+    allDay: allDay ?? this.allDay,
+  );
+
   factory Trip.fromJson(Json j) {
     final dest = j['destination'] as Json?;
     final virtual = j['virtual'] == true;
@@ -90,9 +135,13 @@ class Trip {
         dest['lat'] != null &&
         dest['lng'] != null &&
         !(_num(dest['lat']) == 0 && _num(dest['lng']) == 0);
-    final placeless = !resolved && !virtual && !allDay;
     final text =
         j['location_text_th'] as String? ?? j['location_th'] as String?;
+    final destName = _str(dest?['name_th']).trim();
+    final hasLocationText =
+        (text != null && text.trim().isNotEmpty) || destName.isNotEmpty;
+    final placeless = !resolved && !virtual && (!allDay || hasLocationText);
+    final unplacedText = text ?? (destName.isNotEmpty ? destName : null);
     return Trip(
       id: _str(j['id']),
       titleTh: _str(j['title_th']),
@@ -100,10 +149,10 @@ class Trip {
       origin: Place.fromJson(j['origin'] as Json? ?? const {}),
       destination: resolved
           ? Place.fromJson(dest)
-          : Place(nameTh: text ?? _str(dest?['name_th']), lat: 0, lng: 0),
+          : Place(nameTh: unplacedText ?? '', lat: 0, lng: 0),
       arriveBy: DateTime.tryParse(_str(j['arrive_by'])),
       mode: TravelMode.parse(j['mode']),
-      locationTextTh: placeless ? (text ?? _str(dest?['name_th'])) : null,
+      locationTextTh: placeless ? unplacedText : null,
       endsAt: DateTime.tryParse(_str(j['ends_at'])),
       virtual: virtual,
       allDay: allDay,
@@ -142,6 +191,10 @@ class Trip {
   /// Whether this event means going somewhere at a time.
   bool get travels => !virtual && !allDay && arriveBy != null;
 
+  /// Whether a destination place or label was specified.
+  bool get hasDestination =>
+      destination.nameTh.isNotEmpty || destination.resolved;
+
   Json toJson() => {
     'id': id,
     'title_th': titleTh,
@@ -158,11 +211,36 @@ class Trip {
 }
 
 class RainPoint {
-  const RainPoint(this.time, this.mmPerHr);
-  factory RainPoint.fromJson(Json j) =>
-      RainPoint(DateTime.parse(_str(j['time'])), _num(j['mm_per_hr']));
+  const RainPoint(this.time, this.mmPerHr, [this.probPct = 0]);
+  factory RainPoint.fromJson(Json j) => RainPoint(
+        DateTime.parse(_str(j['time'])),
+        _num(j['mm_per_hr']),
+        (j['prob_pct'] as num?)?.toInt() ?? 0,
+      );
   final DateTime time;
   final double mmPerHr;
+  final int probPct;
+}
+
+class TransitLeg {
+  const TransitLeg({
+    required this.lineTh,
+    required this.fromStationTh,
+    required this.toStationTh,
+    this.stopCount = 0,
+  });
+
+  factory TransitLeg.fromJson(Json j) => TransitLeg(
+    lineTh: _str(j['line_th']),
+    fromStationTh: _str(j['from_station_th']),
+    toStationTh: _str(j['to_station_th']),
+    stopCount: _int(j['stop_count']),
+  );
+
+  final String lineTh;
+  final String fromStationTh;
+  final String toStationTh;
+  final int stopCount;
 }
 
 class ModeOption {
@@ -172,6 +250,9 @@ class ModeOption {
     required this.etaMin,
     required this.risk,
     required this.noteTh,
+    this.rainProbPct = 0,
+    this.viaTh = const [],
+    this.transitLegs = const [],
   });
   factory ModeOption.fromJson(Json j) => ModeOption(
     mode: TravelMode.parse(j['mode']),
@@ -179,12 +260,18 @@ class ModeOption {
     etaMin: _int(j['eta_min']),
     risk: Risk.parse(j['risk']),
     noteTh: _str(j['note_th']),
+    rainProbPct: (j['rain_prob_pct'] as num?)?.toInt() ?? 0,
+    viaTh: _strList(j['via_th']),
+    transitLegs: _list(j['transit_legs']).map(TransitLeg.fromJson).toList(),
   );
   final TravelMode mode;
   final Verdict verdict;
   final int etaMin;
   final Risk risk;
+  final int rainProbPct;
   final String noteTh;
+  final List<String> viaTh;
+  final List<TransitLeg> transitLegs;
 }
 
 class FloodSpot {
@@ -280,6 +367,7 @@ class Decision {
     this.needsPlace,
     this.explanation,
     this.emergencyContacts = const [],
+    this.refused = false,
   });
 
   factory Decision.fromJson(Json j) {
@@ -316,6 +404,7 @@ class Decision {
       emergencyContacts: (j['emergency_contacts'] as List? ?? const [])
           .map((c) => EmergencyContact.fromJson(c as Json))
           .toList(),
+      refused: j['refused'] == true,
     );
   }
 
@@ -335,6 +424,7 @@ class Decision {
     generatedBy: '',
     needsPlace: n,
     explanation: null,
+    refused: false,
   );
 
   final Verdict verdict;
@@ -364,6 +454,9 @@ class Decision {
 
   /// Official emergency hotlines during severe flood and weather hazards.
   final List<EmergencyContact> emergencyContacts;
+
+  /// True when the question was rejected by guardrails (unrelated to travel/trip).
+  final bool refused;
 }
 
 class EmergencyContact {
@@ -422,18 +515,20 @@ class DecideRequest {
   final String? email;
 
   DecideRequest copyWith({
+    String? tripId,
     String? departAt,
     TravelMode? mode,
+    Place? origin,
     Place? destination,
     List<SavedPlace>? places,
     Trip? trip,
     String? email,
   }) => DecideRequest(
-    tripId: tripId,
+    tripId: tripId ?? this.tripId,
     departAt: departAt ?? this.departAt,
     mode: mode ?? this.mode,
     questionTh: questionTh,
-    origin: origin,
+    origin: origin ?? this.origin,
     destination: destination ?? this.destination,
     places: places ?? this.places,
     trip: trip ?? this.trip,

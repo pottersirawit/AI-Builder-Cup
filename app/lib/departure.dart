@@ -51,6 +51,17 @@ double peakRain(List<RainPoint> points, DateTime from, DateTime to) {
   return peak;
 }
 
+/// Highest rain probability in the samples overlapping [from]..[to].
+int peakRainProb(List<RainPoint> samples, DateTime from, DateTime to) {
+  var peak = 0;
+  for (final s in samples) {
+    if (s.time.isAfter(to)) break;
+    if (s.time.isBefore(from)) continue;
+    if (s.probPct > peak) peak = s.probPct;
+  }
+  return peak;
+}
+
 /// One way to make the trip if you leave at [departAt].
 class Departure {
   const Departure({
@@ -61,6 +72,9 @@ class Departure {
     required this.departAt,
     required this.noteTh,
     required this.isPreview,
+    this.rainProbPct = 0,
+    this.viaTh = const [],
+    this.transitLegs = const [],
   });
 
   final TravelMode mode;
@@ -72,6 +86,10 @@ class Departure {
 
   /// True when computed on the device during a drag, before the agent answers.
   final bool isPreview;
+  final int rainProbPct;
+
+  final List<String> viaTh;
+  final List<TransitLeg> transitLegs;
 
   DateTime get arriveAt => departAt.add(Duration(minutes: etaMin));
 }
@@ -102,6 +120,7 @@ Departure _preview(
       : o.etaMin;
   final calmArrive = departAt.add(Duration(minutes: calmEta));
   final peak = peakRain(rain, departAt, calmArrive);
+  final peakProb = peakRainProb(rain, departAt, calmArrive);
   // Rain that starts within the hour after arriving: beaten, or nearly.
   final soon = peakRain(
     rain,
@@ -118,6 +137,9 @@ Departure _preview(
     departAt: departAt,
     noteTh: note,
     isPreview: true,
+    rainProbPct: peakProb > 0 ? peakProb : o.rainProbPct,
+    viaTh: o.viaTh,
+    transitLegs: o.transitLegs,
   );
 
   switch (o.mode) {
@@ -144,9 +166,19 @@ Departure _preview(
         return make(Verdict.dontGo, Risk.high, l.boardNoteMotoHeavy);
       }
       // Riders get caught by rain that starts soon after they arrive too.
-      return peak >= lightRain || soon >= lightRain
-          ? make(Verdict.leaveNow, Risk.medium, l.boardNoteMotoTight)
-          : make(Verdict.leaveNow, Risk.low, l.boardNoteDry);
+      if (peak >= lightRain || soon >= lightRain) {
+        return make(Verdict.leaveNow, Risk.medium, l.boardNoteMotoTight);
+      }
+      if (peakProb >= 60) {
+        return make(
+          Verdict.leaveNow,
+          Risk.medium,
+          l.isThai
+              ? 'โอกาสฝนตก $peakProb% ควรเตรียมเสื้อกันฝน'
+              : '$peakProb% chance of rain — pack rain gear',
+        );
+      }
+      return make(Verdict.leaveNow, Risk.low, l.boardNoteDry);
   }
 }
 
@@ -161,6 +193,9 @@ List<Departure> serverOptions(Decision d, DateTime departAt) => [
       departAt: departAt,
       noteTh: o.noteTh,
       isPreview: false,
+      rainProbPct: o.rainProbPct,
+      viaTh: o.viaTh,
+      transitLegs: o.transitLegs,
     ),
 ];
 

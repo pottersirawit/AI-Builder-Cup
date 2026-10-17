@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/material.dart';
 import 'package:material_symbols_icons/symbols.dart';
 
@@ -30,13 +31,19 @@ class Shell extends StatefulWidget {
   State<Shell> createState() => _ShellState();
 }
 
-class _ShellState extends State<Shell> {
+class _ShellState extends State<Shell> with WidgetsBindingObserver {
   late ShellTab _tab = widget.initialTab;
   TripsRepository? _repo;
   String? _loadedFor;
   String? _accountFor;
 
   TripsRepository get repo => _repo!;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addObserver(this);
+  }
 
   @override
   void didChangeDependencies() {
@@ -61,8 +68,24 @@ class _ShellState extends State<Shell> {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _repo?.dispose();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed && mounted) {
+      final store = AppScope.readPlaces(context);
+      final repo = _repo;
+      if (store.calendar == LinkState.connected && repo != null) {
+        final last = repo.lastSyncTime;
+        if (last == null ||
+            clock.now().difference(last) > const Duration(seconds: 5)) {
+          _refresh(sync: true);
+        }
+      }
+    }
   }
 
   Future<void> _refresh({bool sync = false}) async {
