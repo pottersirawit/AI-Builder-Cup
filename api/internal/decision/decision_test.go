@@ -390,6 +390,25 @@ func TestMotoMediumRiskWaitsOutTheShowerFirst(t *testing.T) {
 	}
 }
 
+func TestWaitReasonNamesWaterOnlyWhenThereIsSome(t *testing.T) {
+	for _, tt := range []struct {
+		lang         domain.Lang
+		water, eases string
+	}{{domain.LangTH, "น้ำท่วมขัง", "ฝนซาลง"}, {domain.LangEN, "standing water", "rain to ease"}} {
+		in := dryInput(tt.lang, time.Time{})
+		in.Mode, in.Rain = domain.ModeMoto, []domain.RainSample{{Time: at(8, 0), MMPerHr: 2}}
+		res := Decide(in)
+		if r := res.Explanation.ReasonWhyTH; res.Verdict != Wait || strings.Contains(r, tt.water) || !strings.Contains(r, tt.eases) {
+			t.Errorf("%s rain only: got %s, reason should wait for the rain without water: %q", tt.lang, res.Verdict, r)
+		}
+		drain := heroInput(t, at(19, 30), at(19, 30), domain.ModeCar)
+		drain.Lang = tt.lang
+		if r := Decide(drain).Explanation.ReasonWhyTH; !strings.Contains(r, tt.water) {
+			t.Errorf("%s 19:30 drain: reason should name the standing water: %q", tt.lang, r)
+		}
+	}
+}
+
 func TestTransitUmbrellaOnlyWhenItRains(t *testing.T) {
 	for _, tt := range []struct {
 		lang     domain.Lang

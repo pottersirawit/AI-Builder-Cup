@@ -110,7 +110,9 @@ func buildExplanation(in Input, res Result) Explanation {
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำเปลี่ยนไปใช้รถไฟฟ้าแทนการใช้%s เนื่องจากมีฝนกลางทางราว %.0f มม./ชม. ถนนลื่น รถไฟฟ้าใช้เวลาราว %d นาที", in.Mode.NameTH(), e.MaxRainMM, tr.Minutes)
 		}
 	case Wait:
-		if res.WaitUntil != nil {
+		if res.WaitUntil != nil && e.MaxDepthCM < 1 {
+			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้รอจนถึง %s เพื่อให้ฝนซาลงก่อนออกเดินทางด้วย%s", hhmm(*res.WaitUntil), in.Mode.NameTH())
+		} else if res.WaitUntil != nil {
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้รอจนถึง %s เพื่อให้น้ำท่วมขังที่%s ระบายลงคลองและฝนซาลงก่อนออกเดินทางด้วย%s", hhmm(*res.WaitUntil), e.DeepestTH, in.Mode.NameTH())
 		} else {
 			exp.ReasonWhyTH = fmt.Sprintf("แนะนำให้ชะลอการเดินทางด้วย%s ไว้ก่อน เพื่อรอให้ระดับน้ำท่วมขังบนเส้นทางระบาย", in.Mode.NameTH())

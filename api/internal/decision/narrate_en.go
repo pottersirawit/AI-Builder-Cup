@@ -112,7 +112,9 @@ func buildExplanationEN(in Input, res Result) Explanation {
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest taking BTS / MRT instead of the %s because of rain on the way (about %.0f mm/h) and slick roads. The train takes about %d min.", mode, e.MaxRainMM, tr.Minutes)
 		}
 	case Wait:
-		if res.WaitUntil != nil {
+		if res.WaitUntil != nil && e.MaxDepthCM < 1 {
+			exp.ReasonWhyTH = fmt.Sprintf("We suggest waiting until %s for the rain to ease before you travel by %s.", hhmm(*res.WaitUntil), mode)
+		} else if res.WaitUntil != nil {
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest waiting until %s so the standing water%s can drain and the rain can ease before you travel by %s.", hhmm(*res.WaitUntil), whereEN(e.DeepestTH), mode)
 		} else {
 			exp.ReasonWhyTH = fmt.Sprintf("We suggest holding off on travelling by %s until the standing water on the route has drained.", mode)
