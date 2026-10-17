@@ -163,13 +163,42 @@ func TestUngroundedNumbers(t *testing.T) {
 }
 
 func TestContradicts(t *testing.T) {
-	for text, want := range map[string]bool{
-		"ออกได้เลย": true, "You can leave now": true, "Leave now!": true,
-		"รอก่อน": false, "Leave by 16:45": false, "ไปรถไฟฟ้าดีกว่า": false,
-	} {
-		if Contradicts(text) != want {
-			t.Errorf("Contradicts(%q) = %v", text, !want)
+	tests := []struct {
+		text    string
+		verdict decision.Verdict
+		want    bool
+	}{
+		{"ออกได้เลย", decision.Wait, true},
+		{"You can leave now", decision.Wait, true},
+		{"Leave now!", decision.DontGo, true},
+		{"รอก่อน", decision.Wait, false},
+		{"Leave by 16:45", decision.Wait, false},
+		{"ไปรถไฟฟ้าดีกว่า", decision.SwitchMode, false},
+		{"ออกได้เลย", decision.LeaveNow, false},
+		{"Don't leave now, the road is flooded.", decision.Wait, false},
+		{"Do not go now by car.", decision.SwitchMode, false},
+		{"Never leave now in this rain.", decision.DontGo, false},
+		{"อย่าไปได้เลย น้ำท่วม", decision.Wait, false},
+		{"ยังไม่ออกได้เลย", decision.Wait, false},
+		{"Don't worry, leave now.", decision.Wait, true},
+		{"Ratchadaphisek floods. Leave now by BTS / MRT instead of driving.", decision.SwitchMode, false},
+		{"ถนนรัชดาน้ำท่วม นั่งรถไฟฟ้าไปได้เลย", decision.SwitchMode, false},
+		{"Leave now by BTS / MRT instead of driving.", decision.Wait, true},
+		{"You can leave now by car. The train is slower.", decision.SwitchMode, true},
+		{"รถยนต์ออกได้เลย ไม่มีปัญหา", decision.SwitchMode, true},
+	}
+	for _, tt := range tests {
+		if got := Contradicts(tt.text, tt.verdict); got != tt.want {
+			t.Errorf("Contradicts(%q, %s) = %v, want %v", tt.text, tt.verdict, got, tt.want)
 		}
+	}
+}
+
+func TestSwitchModeTextNamingTheTrainIsKept(t *testing.T) {
+	out := `{"verdict":"switch_mode","headline_th":"Take BTS / MRT instead","summary_th":"Ratchadaphisek floods. Leave now by BTS / MRT instead of driving.","explanation":{"reason_why_th":"The train avoids the flooded road.","factors_th":["Flooding on the road"]}}`
+	resp := decideWith(t, domain.LangEN, at(16, 10), Request{DepartAt: "18:00", Mode: "car"}, out)
+	if resp.Verdict != decision.SwitchMode || resp.SummaryTH != "Ratchadaphisek floods. Leave now by BTS / MRT instead of driving." {
+		t.Fatalf("Gemini's switch_mode text should be kept, got %s %q", resp.Verdict, resp.SummaryTH)
 	}
 }
 
