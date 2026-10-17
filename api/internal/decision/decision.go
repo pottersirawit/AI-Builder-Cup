@@ -347,9 +347,24 @@ func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *
 			return SwitchMode, nil
 		}
 	}
+	// Already late, a wait that arrives even later is no answer; the train is,
+	// when it is no riskier and gets there sooner.
+	clearsTooLate := false
 	for t := in.DepartAt.Truncate(15 * time.Minute).Add(15 * time.Minute); !t.After(in.DepartAt.Add(3 * time.Hour)); t = t.Add(15 * time.Minute) {
-		if EvaluateMode(in, m, t).Risk == RiskLow {
-			return Wait, &t
+		later := EvaluateMode(in, m, t)
+		if later.Risk != RiskLow {
+			continue
+		}
+		if e.Late() && later.Arrive.After(e.Arrive) {
+			clearsTooLate = true
+			continue
+		}
+		return Wait, &t
+	}
+	if clearsTooLate && m != domain.ModeTransit {
+		tr := evals[domain.ModeTransit]
+		if tr.Risk.rank() <= e.Risk.rank() && tr.Arrive.Before(e.Arrive) {
+			return SwitchMode, nil
 		}
 	}
 	return DontGo, nil

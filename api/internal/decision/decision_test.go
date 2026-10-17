@@ -334,6 +334,18 @@ func TestDryDayWithoutDeadlineHasNoLeaveBy(t *testing.T) {
 	}
 }
 
+func TestAlreadyLateNeverWaitsToArriveLater(t *testing.T) {
+	// 18:52 with dinner at 19:00: the car is already 92 min late and waiting
+	// for the water to drain would arrive 21:00, later than driving now
+	// (20:32). The train arrives 19:47 at the same medium risk.
+	in := heroInput(t, at(18, 52), at(18, 52), domain.ModeCar)
+	in.ArriveBy = at(19, 0)
+	res := Decide(in)
+	if res.Verdict != SwitchMode {
+		t.Fatalf("verdict = %s wait_until=%v, want switch_mode to the train arriving 19:47", res.Verdict, res.WaitUntil)
+	}
+}
+
 func TestTransitUmbrellaOnlyWhenItRains(t *testing.T) {
 	for _, tt := range []struct {
 		lang     domain.Lang
