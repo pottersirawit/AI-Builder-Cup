@@ -82,4 +82,68 @@ void main() {
     expect(hhmm(snapDeparture(bkk('15:00'), start, end)), '16:10');
     expect(hhmm(snapDeparture(bkk('22:00'), start, end)), '20:45');
   });
+
+  test('peakRainProb reads the maximum probability in the window', () {
+    final rain = [
+      RainPoint(bkk('16:00'), 0, 20),
+      RainPoint(bkk('16:15'), 0, 70),
+      RainPoint(bkk('16:30'), 0, 40),
+    ];
+    expect(peakRainProb(rain, bkk('16:00'), bkk('16:10')), 20);
+    expect(peakRainProb(rain, bkk('16:00'), bkk('16:30')), 70);
+  });
+
+  test('preview with high rain probability (>=60%) elevates motorcycle to medium risk with rain gear advice', () {
+    final rain = [
+      RainPoint(bkk('16:00'), 0, 75),
+      RainPoint(bkk('16:15'), 0, 75),
+      RainPoint(bkk('16:30'), 0, 75),
+    ];
+    final d = Decision(
+      verdict: Verdict.leaveNow,
+      leaveBy: bkk('17:00'),
+      headlineTh: 'ออกได้เลย',
+      summaryTh: 'ไม่มีฝน',
+      confidence: 0.9,
+      rainTimeline: rain,
+      floodSpots: const [],
+      reasoning: const [],
+      sources: const [],
+      generatedBy: 'deterministic',
+      modeOptions: [
+        const ModeOption(
+          mode: TravelMode.car,
+          verdict: Verdict.leaveNow,
+          etaMin: 50,
+          risk: Risk.low,
+          noteTh: 'ไม่เจอฝน',
+          rainProbPct: 75,
+        ),
+        const ModeOption(
+          mode: TravelMode.transit,
+          verdict: Verdict.leaveNow,
+          etaMin: 45,
+          risk: Risk.low,
+          noteTh: 'ขบวนไม่กระทบ',
+          rainProbPct: 75,
+        ),
+        const ModeOption(
+          mode: TravelMode.moto,
+          verdict: Verdict.leaveNow,
+          etaMin: 25,
+          risk: Risk.medium,
+          noteTh: 'โอกาสฝนตก 75% ควรเตรียมเสื้อกันฝน',
+          rainProbPct: 75,
+        ),
+      ],
+    );
+    final options = previewOptions(d, bkk('16:00'));
+    final car = options.firstWhere((o) => o.mode == TravelMode.car);
+    final moto = options.firstWhere((o) => o.mode == TravelMode.moto);
+    expect(car.risk, Risk.low);
+    expect(car.rainProbPct, 75);
+    expect(moto.risk, Risk.medium);
+    expect(moto.rainProbPct, 75);
+    expect(moto.noteTh, contains('เสื้อกันฝน'));
+  });
 }

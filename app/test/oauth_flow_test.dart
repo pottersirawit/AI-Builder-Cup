@@ -47,6 +47,42 @@ void main() {
       });
     });
 
+    test('startUrl includes service parameter when specified', () async {
+      final store = await emptyStore();
+      final link = GoogleLink(
+        api: statusApi(() => false, []),
+        places: store,
+        appBase: Uri.parse('https://ai-cup-511208.web.app/'),
+      );
+      final urlCal = link.startUrl('nonce123', service: 'calendar');
+      expect(urlCal.queryParameters['service'], 'calendar');
+
+      final urlGmail = link.startUrl('nonce123', service: 'gmail');
+      expect(urlGmail.queryParameters['service'], 'gmail');
+    });
+
+    test('connects only calendar when service=calendar is requested', () async {
+      final store = await emptyStore();
+      final log = <Uri>[];
+      var polls = 0;
+      Uri? launched;
+      final link = GoogleLink(
+        api: statusApi(() => ++polls >= 2, log),
+        places: store,
+        appBase: Uri.parse('https://ai-cup-511208.web.app/'),
+        launch: (u) async {
+          launched = u;
+          return true;
+        },
+        every: const Duration(milliseconds: 5),
+      );
+
+      await link.connect(service: 'calendar');
+      expect(launched?.queryParameters['service'], 'calendar');
+      expect(store.calendar, LinkState.connected);
+      expect(store.gmail, LinkState.notConnected);
+    });
+
     test('connected only after the server says status=connected', () async {
       final store = await emptyStore();
       final log = <Uri>[];

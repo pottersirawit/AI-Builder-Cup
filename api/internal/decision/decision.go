@@ -46,6 +46,7 @@ const (
 	carStallDepthCM          = 15.0 // sedan clearance
 	motoStallDepthCM         = 10.0
 	motoWindGustThresholdKMH = 45.0 // gusts > 45 km/h make two-wheelers dangerous
+	motoRainProbThresholdPct = 60   // PoP >= 60% prompts rain gear advisory
 )
 
 // Water drains from a flood spot linearly over drainWindow after the rain that
@@ -70,7 +71,8 @@ type Input struct {
 	Mode     domain.Mode
 
 	DestinationTH string
-	RoadViaTH     []string // named roads on the car route, first one is where rain is reported
+	RoadViaTH     []string                    // named roads on the car route, first one is where rain is reported
+	Routes        map[domain.Mode]domain.Route // calculated route details per mode
 
 	Rain        []domain.RainSample
 	Spots       []floodspot.Spot // flood spots on the road route
@@ -87,6 +89,7 @@ type Eval struct {
 	Minutes     int
 	MaxRainMM   float64
 	MaxDepthCM  float64
+	MaxProbPct  int
 	WindGustKMH float64
 	DeepestTH   string // short name of the deepest flood spot or report
 	Risk        Risk
@@ -97,11 +100,14 @@ func (e Eval) Late() bool { return e.LateMinutes > 0 }
 func (e Eval) OK() bool   { return e.Risk == RiskLow && !e.Late() }
 
 type ModeOption struct {
-	Mode    domain.Mode `json:"mode"`
-	Verdict Verdict     `json:"verdict"`
-	EtaMin  int         `json:"eta_min"`
-	Risk    Risk        `json:"risk"`
-	NoteTH  string      `json:"note_th"`
+	Mode        domain.Mode         `json:"mode"`
+	Verdict     Verdict             `json:"verdict"`
+	EtaMin      int                 `json:"eta_min"`
+	Risk        Risk                `json:"risk"`
+	RainProbPct int                 `json:"rain_prob_pct"`
+	NoteTH      string              `json:"note_th"`
+	ViaTH       []string            `json:"via_th,omitempty"`
+	TransitLegs []domain.TransitLeg `json:"transit_legs,omitempty"`
 }
 
 type FloodSpot struct {
@@ -147,10 +153,18 @@ func Decide(in Input) Result {
 	}
 	for _, m := range domain.AllModes {
 		v, _ := verdictFor(in, m, res.Evals)
-		res.ModeOptions = append(res.ModeOptions, ModeOption{
+		opt := ModeOption{
 			Mode: m, Verdict: v, EtaMin: res.Evals[m].Minutes, Risk: res.Evals[m].Risk,
-			NoteTH: modeNote(in, res.Evals[m]),
-		})
+			RainProbPct: res.Evals[m].MaxProbPct,
+			NoteTH:      modeNote(in, res.Evals[m]),
+		}
+		if rt, ok := in.Routes[m]; ok {
+			opt.ViaTH = rt.ViaTH
+			opt.TransitLegs = rt.TransitLegs
+		} else if m != domain.ModeTransit && len(in.RoadViaTH) > 0 {
+			opt.ViaTH = in.RoadViaTH
+		}
+		res.ModeOptions = append(res.ModeOptions, opt)
 	}
 	res.Verdict, res.WaitUntil = verdictFor(in, in.Mode, res.Evals)
 	res.LeaveBy = LeaveBy(in, in.Mode)
@@ -170,7 +184,7 @@ func Decide(in Input) Result {
 // the worst rain and water met on the way, judged by the mode's clearance.
 func EvaluateMode(in Input, mode domain.Mode, depart time.Time) Eval {
 	base := in.Travel(mode, depart)
-	rain, depth, _ := hazards(in, mode, depart, depart.Add(minutes(base)))
+	rain, depth, _, _ := hazards(in, mode, depart, depart.Add(minutes(base)))
 	delay := 0
 	switch mode {
 	case domain.ModeCar:
@@ -194,15 +208,15 @@ func EvaluateMode(in Input, mode domain.Mode, depart time.Time) Eval {
 	}
 	total := base + delay
 	e := Eval{Mode: mode, Depart: depart, Minutes: total, Arrive: depart.Add(minutes(total)), WindGustKMH: in.WindGustKMH}
-	e.MaxRainMM, e.MaxDepthCM, e.DeepestTH = hazards(in, mode, depart, e.Arrive)
-	e.Risk = riskFor(mode, e.MaxRainMM, e.MaxDepthCM, in.WindGustKMH)
+	e.MaxRainMM, e.MaxDepthCM, e.MaxProbPct, e.DeepestTH = hazards(in, mode, depart, e.Arrive)
+	e.Risk = riskFor(mode, e.MaxRainMM, e.MaxDepthCM, in.WindGustKMH, e.MaxProbPct)
 	if !in.ArriveBy.IsZero() && e.Arrive.After(in.ArriveBy) {
 		e.LateMinutes = int(math.Ceil(e.Arrive.Sub(in.ArriveBy).Minutes()))
 	}
 	return e
 }
 
-func riskFor(mode domain.Mode, rain, depth, windGustKMH float64) Risk {
+func riskFor(mode domain.Mode, rain, depth, windGustKMH float64, probPct int) Risk {
 	switch mode {
 	case domain.ModeCar:
 		if depth >= carStallDepthCM {
@@ -215,7 +229,7 @@ func riskFor(mode domain.Mode, rain, depth, windGustKMH float64) Risk {
 		if depth >= motoStallDepthCM || rain >= rainModerate || windGustKMH >= motoWindGustThresholdKMH {
 			return RiskHigh
 		}
-		if depth >= 1 || rain >= rainLight || windGustKMH >= 30.0 {
+		if depth >= 1 || rain >= rainLight || windGustKMH >= 30.0 || probPct >= motoRainProbThresholdPct {
 			return RiskMedium
 		}
 	case domain.ModeTransit:
@@ -227,11 +241,12 @@ func riskFor(mode domain.Mode, rain, depth, windGustKMH float64) Risk {
 	return RiskLow
 }
 
-// hazards returns the worst rain and street water met between from and to.
+// hazards returns the worst rain, rain probability, and street water met between from and to.
 // Transit ignores street water.
-func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float64, deepest string) {
+func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float64, prob int, deepest string) {
 	for t := from; t.Before(to); t = t.Add(step) {
 		rain = math.Max(rain, RainAt(in.Rain, t))
+		prob = max(prob, RainProbAt(in.Rain, t))
 		if mode == domain.ModeTransit {
 			continue
 		}
@@ -246,7 +261,23 @@ func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float6
 			}
 		}
 	}
-	return rain, depth, deepest
+	return rain, depth, prob, deepest
+}
+
+// RainProbAt is the rain probability (percent) of the latest sample at or before t.
+func RainProbAt(samples []domain.RainSample, t time.Time) int {
+	v, found := 0, false
+	var last time.Time
+	for _, s := range samples {
+		if s.Time.After(t) {
+			break
+		}
+		v, last, found = s.ProbPct, s.Time, true
+	}
+	if !found || (len(samples) > 0 && last.Equal(samples[len(samples)-1].Time) && t.Sub(last) >= time.Hour) {
+		return 0
+	}
+	return v
 }
 
 // RainAt is the intensity of the latest sample at or before t. Samples hold
@@ -395,7 +426,7 @@ func timeline(in Input) []domain.RainSample {
 	out := []domain.RainSample{}
 	for _, s := range in.Rain {
 		if !s.Time.Before(from) && !s.Time.After(to) {
-			out = append(out, domain.RainSample{Time: s.Time, MMPerHr: math.Round(s.MMPerHr*10) / 10})
+			out = append(out, domain.RainSample{Time: s.Time, MMPerHr: math.Round(s.MMPerHr*10) / 10, ProbPct: s.ProbPct})
 		}
 	}
 	return out

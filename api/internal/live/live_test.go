@@ -97,3 +97,24 @@ func TestFallbacksReplayTheScenario(t *testing.T) {
 		t.Fatalf("canal fallback: %v %+v", err, canals)
 	}
 }
+
+func TestGoogleRoutesParsesTransitLegs(t *testing.T) {
+	srv := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Write([]byte(`{"routes":[{"duration":"1800s","polyline":{"encodedPolyline":"_p~iF~ps|U_ulLnnqC"},"legs":[{"steps":[
+			{"transitDetails":{"stopCount":9,"stopDetails":{"departureStop":{"name":"MRT สีลม"},"arrivalStop":{"name":"MRT ลาดพร้าว"}},"transitLine":{"name":"MRT สายสีน้ำเงิน","nameShort":"BL"}}}
+		]}]}]}`))
+	}))
+	defer srv.Close()
+	got, err := GoogleRoutes{APIKey: "k", BaseURL: srv.URL}.Route(context.Background(), scenario.Silom.Point(), scenario.Home.Point(), domain.ModeTransit, time.Now())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(got.TransitLegs) != 1 {
+		t.Fatalf("expected 1 transit leg, got %+v", got.TransitLegs)
+	}
+	leg := got.TransitLegs[0]
+	if leg.LineTH != "MRT สายสีน้ำเงิน" || leg.FromStationTH != "MRT สีลม" || leg.ToStationTH != "MRT ลาดพร้าว" || leg.StopCount != 9 {
+		t.Fatalf("got leg %+v", leg)
+	}
+}
+

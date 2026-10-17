@@ -320,6 +320,12 @@ abstract class AppLocalizations {
   /// **'ถามใหม่'**
   String get askRetry;
 
+  /// No description provided for @askDisclaimer.
+  ///
+  /// In th, this message translates to:
+  /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
+  String get askDisclaimer;
+
   /// No description provided for @partsQuestion.
   ///
   /// In th, this message translates to:
@@ -2390,6 +2396,30 @@ abstract class AppLocalizations {
   /// **'วันนี้อีก {count} นัด'**
   String planTitleToday(String count);
 
+  /// No description provided for @planTitleOneToday.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายวันนี้'**
+  String get planTitleOneToday;
+
+  /// No description provided for @planTitleTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายพรุ่งนี้'**
+  String get planTitleTomorrow;
+
+  /// No description provided for @planTitleNextTripTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'เดินทางพรุ่งนี้'**
+  String get planTitleNextTripTomorrow;
+
+  /// No description provided for @planTitleUpcoming.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายถัดไป'**
+  String get planTitleUpcoming;
+
   /// No description provided for @planTitleFree.
   ///
   /// In th, this message translates to:
@@ -2629,6 +2659,12 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'{eta} น. · {status}'**
   String verdictModeStatus(int eta, String status);
+
+  /// No description provided for @verdictModeStatusWithProb.
+  ///
+  /// In th, this message translates to:
+  /// **'{eta} น. · {status} ({prob}%)'**
+  String verdictModeStatusWithProb(int eta, String status, int prob);
 
   /// No description provided for @verdictFloodSpotsTitle.
   ///
@@ -3061,6 +3097,12 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'คัดลอกเบอร์ {number} ({purpose}) แล้ว'**
   String verdictHotlineCopied(String number, String purpose);
+
+  /// No description provided for @verdictAccuracyDisclaimer.
+  ///
+  /// In th, this message translates to:
+  /// **'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง'**
+  String get verdictAccuracyDisclaimer;
 }
 
 class _AppLocalizationsDelegate

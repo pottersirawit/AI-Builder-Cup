@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:clock/clock.dart';
 import 'package:flutter/foundation.dart';
 
 import 'api.dart';
@@ -46,6 +47,12 @@ class TripsRepository extends ChangeNotifier {
 
   Object? _error;
   Object? get error => _error;
+
+  DateTime? _lastSyncTime;
+  DateTime? get lastSyncTime => _lastSyncTime;
+
+  @visibleForTesting
+  set lastSyncTimeForTest(DateTime? t) => _lastSyncTime = t;
 
   final Map<String, Decision> _decisions = {};
   final Set<String> _deciding = {};
@@ -126,7 +133,11 @@ class TripsRepository extends ChangeNotifier {
                     sample: demo,
                     home: demo ? null : savedHome,
                   )
-                : _api.trips(email: account, sample: demo));
+                : _api.trips(
+                    email: account,
+                    sample: demo,
+                    home: demo ? null : savedHome,
+                  ));
     } catch (e) {
       tripsError = e;
     }
@@ -145,11 +156,25 @@ class TripsRepository extends ChangeNotifier {
       _state.homeLevel = homeR?.data.level ?? HomeLevel.normal;
       _home = homeR?.data;
     }
-    final fresh = tripsR?.data ?? const <Trip>[];
-    if (fresh.isNotEmpty && !tripsR!.isSample) _places.setCachedTrips(fresh);
-    _trips = fresh.isNotEmpty
+    var fresh = tripsR?.data ?? const <Trip>[];
+    if (fresh.isNotEmpty && !demo) {
+      fresh = _chainTrips(fresh);
+      if (savedHome != null) {
+        fresh = [for (final t in fresh) _withHomeOrigin(t, savedHome)];
+      }
+    }
+    if (tripsR != null && !tripsR.isSample) {
+      if (sync) _lastSyncTime = clock.now();
+      _places.setCachedTrips(fresh);
+    }
+    final rawCached = _places.cachedTrips;
+    final chainedCached = demo ? rawCached : _chainTrips(rawCached);
+    final cached = savedHome == null || demo
+        ? chainedCached
+        : [for (final t in chainedCached) _withHomeOrigin(t, savedHome)];
+    _trips = tripsR != null && !tripsR.isSample
         ? fresh
-        : (connected ? _places.cachedTrips : const []);
+        : (fresh.isNotEmpty ? fresh : (connected ? cached : const []));
     _outlook = outlookR?.data ?? _outlook;
     _decisions.removeWhere((id, _) => !_trips.any((t) => t.id == id));
     _error = tripsError;
@@ -200,6 +225,35 @@ class TripsRepository extends ChangeNotifier {
 
   void _notify() {
     if (!_disposed) notifyListeners();
+  }
+
+  List<Trip> _chainTrips(List<Trip> list) {
+    final out = <Trip>[];
+    for (final t in list) {
+      if (t.origin.isPlaceholder) {
+        final prev = previousEventFor(out, t);
+        if (prev != null && prev.destination.resolved) {
+          out.add(t.copyWith(origin: prev.destination));
+          continue;
+        }
+      }
+      out.add(t);
+    }
+    return out;
+  }
+
+  Trip _withHomeOrigin(Trip t, SavedPlace home) {
+    if ((t.source == 'calendar' || t.source == 'gmail') &&
+        t.origin.isPlaceholder &&
+        (t.destination.lat != home.lat || t.destination.lng != home.lng)) {
+      final homeOrigin = Place(
+        nameTh: home.nameTh.isNotEmpty ? home.nameTh : home.labelTh,
+        lat: home.lat,
+        lng: home.lng,
+      );
+      return t.copyWith(origin: homeOrigin);
+    }
+    return t;
   }
 
   @override

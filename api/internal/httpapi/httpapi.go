@@ -9,6 +9,7 @@ import (
 	"log/slog"
 	"net/http"
 	"net/url"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -147,6 +148,42 @@ func requestHome(r *http.Request) domain.Place {
 	return domain.Place{NameTH: name, Lat: lat, Lng: lng}
 }
 
+// isDefaultOrPlaceholderOrigin reports whether p is an unconfigured or default placeholder origin.
+func isDefaultOrPlaceholderOrigin(p domain.Place) bool {
+	if p.Lat == 0 && p.Lng == 0 {
+		return true
+	}
+	if strings.Contains(p.NameTH, "ยังไม่ได้ตั้งบ้าน") {
+		return true
+	}
+	if p.NameTH == defaultOrigin.NameTH || (p.Lat == defaultOrigin.Lat && p.Lng == defaultOrigin.Lng) {
+		return true
+	}
+	if p.NameTH == "สีลม" && p.Lat == 13.7279 && p.Lng == 100.5281 {
+		return true
+	}
+	return false
+}
+
+// applyHomeOrigin overrides a trip's origin with the user's saved home place
+// when the trip starts from a placeholder/unconfigured origin, unless the
+// trip's destination is already that home place.
+func applyHomeOrigin(t domain.Trip, home domain.Place) domain.Trip {
+	if home.Lat == 0 && home.Lng == 0 {
+		return t
+	}
+	dLat := t.Destination.Lat - home.Lat
+	dLng := t.Destination.Lng - home.Lng
+	if dLat*dLat+dLng*dLng < 0.00001 {
+		return t
+	}
+	if !isDefaultOrPlaceholderOrigin(t.Origin) {
+		return t
+	}
+	t.Origin = home
+	return t
+}
+
 func hasToken(email string) bool {
 	tokenStoreMu.RLock()
 	defer tokenStoreMu.RUnlock()
@@ -158,11 +195,31 @@ func hasToken(email string) bool {
 // is only for demo requests, an empty email or DemoEmail.
 func (s *Server) userTrips(r *http.Request, rc reqCtx, email string) []domain.Trip {
 	trips := []domain.Trip{}
+	homePlace := requestHome(r)
+	hasHome := homePlace.Lat != 0 || homePlace.Lng != 0
 	if s.UserStore != nil && email != "" {
 		if uTrips, err := s.UserStore.ListTrips(r.Context(), email); err == nil {
 			for _, ut := range uTrips {
-				trips = append(trips, ut.Trip)
+				t := ut.Trip
+				if hasHome {
+					t = applyHomeOrigin(t, homePlace)
+					if t.Origin != ut.Trip.Origin {
+						ut.Trip = t
+						_ = s.UserStore.UpsertTrip(r.Context(), ut)
+					}
+				}
+				trips = append(trips, t)
 			}
+			trips = DeduplicateTrips(trips)
+			sort.SliceStable(trips, func(i, j int) bool {
+				if trips[i].ArriveBy.IsZero() {
+					return false
+				}
+				if trips[j].ArriveBy.IsZero() {
+					return true
+				}
+				return trips[i].ArriveBy.Before(trips[j].ArriveBy)
+			})
 		}
 	}
 	demo := r.Header.Get(clock.Header) != "" || email == "" || email == DemoEmail
@@ -239,21 +296,30 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 		writeError(w, http.StatusBadRequest, err.Error())
 		return
 	}
-	if tripReq.Trip != nil && s.UserStore != nil {
-		email := req.Email
-		if email == "" {
-			email = r.URL.Query().Get("email")
+	if tripReq.Trip != nil {
+		if tripReq.Origin != nil && (tripReq.Origin.Lat != 0 || tripReq.Origin.Lng != 0) {
+			tripReq.Trip.Origin = *tripReq.Origin
 		}
-		if email != "" {
-			_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
-				UID:       email,
-				Trip:      *tripReq.Trip,
-				UpdatedAt: time.Now(),
-			})
+		if s.UserStore != nil {
+			email := req.Email
+			if email == "" {
+				email = r.URL.Query().Get("email")
+			}
+			if email != "" {
+				_ = s.UserStore.UpsertTrip(r.Context(), users.UserTrip{
+					UID:       email,
+					Trip:      *tripReq.Trip,
+					UpdatedAt: time.Now(),
+				})
+			}
 		}
 	} else if tripReq.Trip == nil && tripReq.TripID != "" && s.UserStore != nil {
 		if ut, err := s.UserStore.FindTripByID(r.Context(), tripReq.TripID); err == nil {
-			tripReq.Trip = &ut.Trip
+			t := ut.Trip
+			if tripReq.Origin != nil && (tripReq.Origin.Lat != 0 || tripReq.Origin.Lng != 0) {
+				t.Origin = *tripReq.Origin
+			}
+			tripReq.Trip = &t
 		}
 	}
 	sess, err := s.Planner.Open(r.Context(), rc.prov, rc.now, tripReq)

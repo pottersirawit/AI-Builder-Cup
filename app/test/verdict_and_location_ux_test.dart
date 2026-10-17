@@ -2,11 +2,14 @@ import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 
+import 'package:flutter/widgets.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fontokmai/l10n/app_localizations_en.dart';
 import 'package:fontokmai/l10n/app_localizations_th.dart';
 import 'package:fontokmai/design/design.dart';
 import 'package:fontokmai/location.dart';
+import 'package:fontokmai/models.dart';
+import 'package:material_symbols_icons/symbols.dart';
 
 import 'helpers.dart';
 
@@ -90,6 +93,89 @@ void main() {
           findsNothing,
           reason: 'BMA drainage data has no public API',
         );
+      },
+    );
+
+    testWidgets(
+      'renders calculated route section with corridors, transit line, and get-on/get-off stations',
+      (tester) async {
+        await openVerdict(tester, height: 2400);
+        await tapAndSettle(tester, find.text('รถยนต์'));
+
+        expect(find.text('เส้นทางที่ใช้คำนวณ'), findsOneWidget);
+        expect(
+          tester.getTopLeft(find.text('เทียบวิธีเดินทาง')).dy,
+          lessThan(tester.getTopLeft(find.text('เส้นทางที่ใช้คำนวณ')).dy),
+        );
+        expect(
+          tester.getTopLeft(find.text('เส้นทางที่ใช้คำนวณ')).dy,
+          lessThan(tester.getTopLeft(find.text('จุดน้ำท่วมบนเส้นทาง')).dy),
+        );
+        expect(find.text('พระราม 4'), findsWidgets);
+        expect(find.text('อโศก'), findsWidgets);
+        expect(find.text('รัชดาภิเษก'), findsWidgets);
+        expect(find.text('MRT สายสีน้ำเงิน'), findsOneWidget);
+        expect(find.textContaining('MRT สีลม'), findsWidgets);
+        expect(find.textContaining('MRT ลาดพร้าว'), findsWidgets);
+      },
+    );
+
+    testWidgets(
+      'synced calendar trip replaces hardcoded Silom Soi 3 origin with saved home address',
+      (tester) async {
+        final store = await emptyStore();
+        store.save(
+          const SavedPlace(
+            id: 'home',
+            kind: PlaceKind.home,
+            labelTh: 'บ้าน',
+            nameTh: 'BTS อารีย์',
+            lat: 13.7797,
+            lng: 100.5446,
+          ),
+        );
+        store.calendarForTest = LinkState.connected;
+        final log = <String>[];
+
+        await pumpApp(
+          tester,
+          '2026-09-29T16:10:00+07:00',
+          places: store,
+          decideLog: log,
+          respond: (req) {
+            if (req.url.path == '/v1/trips') {
+              return jsonResponse({
+                'trips': [
+                  {
+                    'id': 'cal-flight',
+                    'title_th': 'Flight to Tokyo (XJ 606)',
+                    'source': 'calendar',
+                    'origin': {
+                      'name_th': 'สีลม ซอย 3',
+                      'lat': 13.7263,
+                      'lng': 100.5293,
+                    },
+                    'destination': {
+                      'name_th': 'Bangkok DMK',
+                      'lat': 13.9126,
+                      'lng': 100.6067,
+                    },
+                    'arrive_by': '2026-09-29T18:30:00+07:00',
+                    'mode': 'car',
+                  },
+                ],
+              });
+            }
+            return null;
+          },
+        );
+
+        await tapAndSettle(tester, find.byKey(const ValueKey('hero-cal-flight')));
+        expect(find.text('BTS อารีย์ → Bangkok DMK'), findsWidgets);
+        expect(find.textContaining('สีลม ซอย 3'), findsNothing);
+        expect(log, isNotEmpty);
+        final sent = jsonDecode(log.last) as Map<String, dynamic>;
+        expect((sent['origin'] as Map)['name_th'], 'BTS อารีย์');
       },
     );
   });

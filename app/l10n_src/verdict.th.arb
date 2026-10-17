@@ -33,6 +33,20 @@
       }
     }
   },
+  "verdictModeStatusWithProb": "{eta} น. · {status} ({prob}%)",
+  "@verdictModeStatusWithProb": {
+    "placeholders": {
+      "eta": {
+        "type": "int"
+      },
+      "status": {
+        "type": "String"
+      },
+      "prob": {
+        "type": "int"
+      }
+    }
+  },
   "verdictFloodSpotsTitle": "จุดน้ำท่วมบนเส้นทาง",
   "verdictNoFloodSpots": "ไม่มีจุดน้ำขังบนเส้นทางนี้",
   "verdictNoFloodSpotsMsg": "เส้นทางนี้ไม่ผ่านจุดเสี่ยงน้ำท่วมของ กทม.",
@@ -169,5 +183,6 @@
         "type": "String"
       }
     }
-  }
+  },
+  "verdictAccuracyDisclaimer": "ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง"
 }

@@ -10,14 +10,42 @@ import (
 	"math/rand/v2"
 	"os"
 	"strings"
+	"sync"
 	"time"
 
 	"google.golang.org/genai"
 )
 
+// DefaultFastModel is the right-sized lightweight model for structured NLU and extraction tasks.
+const DefaultFastModel = "gemini-2.5-flash-lite"
+
 // Generator is the slice of the genai client the agent uses; tests fake it.
 type Generator interface {
 	GenerateContent(ctx context.Context, model string, contents []*genai.Content, config *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error)
+}
+
+// ContextCacher manages explicit Gemini CachedContent resources; *genai.Caches satisfies it.
+type ContextCacher interface {
+	Create(ctx context.Context, model string, config *genai.CreateCachedContentConfig) (*genai.CachedContent, error)
+}
+
+type cachedContextEntry struct {
+	name    string
+	expires time.Time
+	failed  bool
+}
+
+type cachedResponseEntry struct {
+	value   any
+	expires time.Time
+}
+
+const maxResponseCacheEntries = 512
+
+type geminiState struct {
+	mu             sync.Mutex
+	contextCaches  map[string]cachedContextEntry
+	responseCaches map[string]cachedResponseEntry
 }
 
 // Gemini bundles a generator with the model name. A nil *Gemini means "no
@@ -25,9 +53,73 @@ type Generator interface {
 type Gemini struct {
 	Gen   Generator
 	Model string
+	// FastModel is the lighter model used by GenerateFast (e.g. gemini-2.5-flash-lite)
+	// before falling back to Model and Fallbacks.
+	FastModel string
 	// Fallbacks are tried in order by Generate when Model is not available to
 	// this project (from the rest of a comma-separated GEMINI_MODEL).
 	Fallbacks []string
+	// Cacher optionally creates explicit Gemini context caches for SystemInstruction + Tools.
+	Cacher ContextCacher
+
+	stateMu sync.Mutex
+	state   *geminiState
+}
+
+func (g *Gemini) ensureState() *geminiState {
+	g.stateMu.Lock()
+	defer g.stateMu.Unlock()
+	if g.state == nil {
+		g.state = &geminiState{
+			contextCaches:  make(map[string]cachedContextEntry),
+			responseCaches: make(map[string]cachedResponseEntry),
+		}
+	}
+	return g.state
+}
+
+// GetCached retrieves an in-memory cached value scoped to this Gemini client if not expired.
+func (g *Gemini) GetCached(key string) (any, bool) {
+	if !g.Available() {
+		return nil, false
+	}
+	st := g.ensureState()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	entry, ok := st.responseCaches[key]
+	if !ok {
+		return nil, false
+	}
+	if !entry.expires.IsZero() && time.Now().After(entry.expires) {
+		delete(st.responseCaches, key)
+		return nil, false
+	}
+	return entry.value, true
+}
+
+// SetCached stores a value in the Gemini client's bounded in-memory TTL cache.
+func (g *Gemini) SetCached(key string, value any, ttl time.Duration) {
+	if !g.Available() || ttl <= 0 {
+		return
+	}
+	st := g.ensureState()
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	now := time.Now()
+	if len(st.responseCaches) >= maxResponseCacheEntries {
+		for k, v := range st.responseCaches {
+			if !v.expires.IsZero() && now.After(v.expires) {
+				delete(st.responseCaches, k)
+			}
+		}
+		if len(st.responseCaches) >= maxResponseCacheEntries {
+			for k := range st.responseCaches {
+				delete(st.responseCaches, k)
+				break
+			}
+		}
+	}
+	st.responseCaches[key] = cachedResponseEntry{value: value, expires: now.Add(ttl)}
 }
 
 // NewGeminiFromEnv uses GEMINI_API_KEY (Gemini API) or GOOGLE_CLOUD_PROJECT
@@ -35,6 +127,10 @@ type Gemini struct {
 // is set or the client cannot be built.
 func NewGeminiFromEnv(ctx context.Context) *Gemini {
 	models := ParseModels(os.Getenv("GEMINI_MODEL"))
+	fastModel := strings.TrimSpace(os.Getenv("GEMINI_FAST_MODEL"))
+	if fastModel == "" {
+		fastModel = DefaultFastModel
+	}
 	var cfg *genai.ClientConfig
 	switch {
 	case os.Getenv("GEMINI_API_KEY") != "":
@@ -53,7 +149,17 @@ func NewGeminiFromEnv(ctx context.Context) *Gemini {
 		slog.Warn("gemini unavailable, using fallback", "err", err)
 		return nil
 	}
-	return &Gemini{Gen: &RetryGenerator{Gen: client.Models}, Model: models[0], Fallbacks: models[1:]}
+	var cacher ContextCacher
+	if os.Getenv("GEMINI_CONTEXT_CACHE") == "1" && client.Caches != nil {
+		cacher = client.Caches
+	}
+	return &Gemini{
+		Gen:       &RetryGenerator{Gen: client.Models},
+		Model:     models[0],
+		FastModel: fastModel,
+		Fallbacks: models[1:],
+		Cacher:    cacher,
+	}
 }
 
 // ParseModels splits a comma-separated GEMINI_MODEL list; an empty one is the default model.
@@ -75,10 +181,27 @@ func ParseModels(list string) []string {
 // returns the model that answered.
 func (g *Gemini) Generate(ctx context.Context, contents []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, string, error) {
 	models := append([]string{g.Model}, g.Fallbacks...)
+	return g.generateWithModels(ctx, models, contents, cfg)
+}
+
+// GenerateFast tries FastModel first (when configured) for lightweight extraction
+// and NLU tasks, falling back to Model and Fallbacks if FastModel is unavailable.
+func (g *Gemini) GenerateFast(ctx context.Context, contents []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, string, error) {
+	var models []string
+	if g.FastModel != "" && g.FastModel != g.Model {
+		models = append(models, g.FastModel)
+	}
+	models = append(models, g.Model)
+	models = append(models, g.Fallbacks...)
+	return g.generateWithModels(ctx, models, contents, cfg)
+}
+
+func (g *Gemini) generateWithModels(ctx context.Context, models []string, contents []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, string, error) {
 	var err error
 	for i, m := range models {
+		wireCfg := g.prepareConfig(ctx, m, cfg)
 		var resp *genai.GenerateContentResponse
-		resp, err = g.Gen.GenerateContent(ctx, m, contents, cfg)
+		resp, err = g.Gen.GenerateContent(ctx, m, contents, wireCfg)
 		if err == nil {
 			if i > 0 {
 				slog.Warn("gemini model fallback", "tried", models[:i], "using", m)
@@ -93,9 +216,76 @@ func (g *Gemini) Generate(ctx context.Context, contents []*genai.Content, cfg *g
 	return nil, "", err
 }
 
+func (g *Gemini) prepareConfig(ctx context.Context, model string, cfg *genai.GenerateContentConfig) *genai.GenerateContentConfig {
+	var out genai.GenerateContentConfig
+	if cfg != nil {
+		out = *cfg
+	}
+	if out.ThinkingConfig == nil {
+		zero := int32(0)
+		out.ThinkingConfig = &genai.ThinkingConfig{ThinkingBudget: &zero}
+	}
+	if g.Cacher != nil && out.CachedContent == "" && out.SystemInstruction != nil && out.ToolConfig == nil {
+		if name := g.resolveCachedContent(ctx, model, &out); name != "" {
+			out.CachedContent = name
+			out.SystemInstruction = nil
+			out.Tools = nil
+		}
+	}
+	return &out
+}
+
+func (g *Gemini) resolveCachedContent(ctx context.Context, model string, cfg *genai.GenerateContentConfig) string {
+	var sb strings.Builder
+	sb.WriteString(model)
+	sb.WriteByte('|')
+	for _, p := range cfg.SystemInstruction.Parts {
+		sb.WriteString(p.Text)
+	}
+	for _, t := range cfg.Tools {
+		for _, fd := range t.FunctionDeclarations {
+			sb.WriteByte('|')
+			sb.WriteString(fd.Name)
+		}
+	}
+	key := sb.String()
+	now := time.Now()
+
+	st := g.ensureState()
+	st.mu.Lock()
+	entry, ok := st.contextCaches[key]
+	if ok {
+		if entry.failed {
+			st.mu.Unlock()
+			return ""
+		}
+		if entry.name != "" && (entry.expires.IsZero() || now.Before(entry.expires)) {
+			st.mu.Unlock()
+			return entry.name
+		}
+	}
+	st.mu.Unlock()
+
+	cc, err := g.Cacher.Create(ctx, model, &genai.CreateCachedContentConfig{
+		SystemInstruction: cfg.SystemInstruction,
+		Tools:             cfg.Tools,
+		TTL:               30 * time.Minute,
+	})
+	st.mu.Lock()
+	defer st.mu.Unlock()
+	if err != nil || cc == nil || cc.Name == "" {
+		st.contextCaches[key] = cachedContextEntry{failed: true}
+		return ""
+	}
+	st.contextCaches[key] = cachedContextEntry{name: cc.Name, expires: cc.ExpireTime}
+	return cc.Name
+}
+
 // only returns g narrowed to the one model, so a multi-turn loop stays on the
 // model that answered its first turn.
-func (g *Gemini) only(model string) *Gemini { return &Gemini{Gen: g.Gen, Model: model} }
+func (g *Gemini) only(model string) *Gemini {
+	return &Gemini{Gen: g.Gen, Model: model, FastModel: g.FastModel, Cacher: g.Cacher, state: g.ensureState()}
+}
 
 // RetryGenerator retries transient errors (429, 503, 504) of Gen with
 // jittered exponential backoff.

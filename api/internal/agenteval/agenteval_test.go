@@ -232,3 +232,41 @@ func TestJudgeFailureDoesNotFailTheCase(t *testing.T) {
 		t.Fatalf("a broken judge reply is reported, not scored: passed=%v judge=%+v err=%q checks=%+v", r.Passed(), r.Judge, r.JudgeErr, r.Checks)
 	}
 }
+
+type judgeRecordingGen struct {
+	models  []string
+	configs []*genai.GenerateContentConfig
+}
+
+func (j *judgeRecordingGen) GenerateContent(_ context.Context, model string, _ []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+	j.models = append(j.models, model)
+	j.configs = append(j.configs, cfg)
+	if model == "missing-primary" {
+		return nil, errors.New("404 NOT_FOUND")
+	}
+	return &genai.GenerateContentResponse{
+		Candidates: []*genai.Candidate{{Content: &genai.Content{Role: genai.RoleModel, Parts: []*genai.Part{{Text: `{"score":5,"note_th":"ดีมาก"}`}}}}},
+	}, nil
+}
+
+func TestJudgeUsesGenerateWithThinkingDisabledAndFallbacks(t *testing.T) {
+	resp, core := coreAt16(t)
+	rec := &judgeRecordingGen{}
+	g := &agent.Gemini{Gen: rec, Model: "missing-primary", Fallbacks: []string{"gemini-2.5-flash-lite"}}
+	score, err := Judge(context.Background(), g, resp, core)
+	if err != nil {
+		t.Fatalf("Judge failed: %v", err)
+	}
+	if score.Score != 5 {
+		t.Fatalf("score = %+v, want 5", score)
+	}
+	if !slices.Equal(rec.models, []string{"missing-primary", "gemini-2.5-flash-lite"}) {
+		t.Fatalf("models = %v, want fallback to gemini-2.5-flash-lite", rec.models)
+	}
+	for i, cfg := range rec.configs {
+		if cfg == nil || cfg.ThinkingConfig == nil || cfg.ThinkingConfig.ThinkingBudget == nil || *cfg.ThinkingConfig.ThinkingBudget != 0 {
+			t.Fatalf("call %d missing ThinkingBudget=0: %+v", i, cfg)
+		}
+	}
+}
+

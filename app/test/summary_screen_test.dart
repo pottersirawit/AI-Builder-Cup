@@ -5,8 +5,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:http/http.dart' as http;
 import 'package:fontokmai/design/design.dart';
+import 'package:fontokmai/l10n/l10n.dart';
+import 'package:fontokmai/models.dart';
 import 'package:fontokmai/screens/event_cards.dart';
 import 'package:fontokmai/screens/plan_cards.dart';
+import 'package:fontokmai/screens/summary_screen.dart';
 import 'package:fontokmai/screens/weather_cards.dart';
 
 import 'helpers.dart';
@@ -462,4 +465,373 @@ void main() {
     expect(leave, findsOneWidget);
     expect(tester.getSize(ticket).height, pending);
   });
+
+  testWidgets('summary screen header has a refresh button that calls sync', (
+    tester,
+  ) async {
+    var syncCalled = 0;
+    await pumpApp(
+      tester,
+      '2026-09-29T13:10:00+07:00',
+      respond: (req) {
+        if (req.url.path == '/v1/trips/sync') {
+          syncCalled++;
+          return jsonResponse({'trips': []});
+        }
+        return null;
+      },
+    );
+
+    final refreshBtn = find.byTooltip('รีเฟรช');
+    expect(refreshBtn, findsOneWidget);
+    await tapAndSettle(tester, refreshBtn);
+    expect(syncCalled, greaterThanOrEqualTo(1));
+  });
+
+  testWidgets('shell triggers sync on resume when calendar is connected', (
+    tester,
+  ) async {
+    var syncCount = 0;
+    await pumpApp(
+      tester,
+      '2026-09-30T08:00:00+07:00',
+      places: (await emptyStore())..connectGoogle('owner.real@gmail.com'),
+      respond: (req) {
+        if (req.url.path == '/v1/trips/sync') {
+          syncCount++;
+          return jsonResponse({'trips': []});
+        }
+        return null;
+      },
+    );
+
+    final before = syncCount;
+    await tester.pump(const Duration(seconds: 6));
+    tester.binding.handleAppLifecycleStateChanged(AppLifecycleState.resumed);
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 100));
+    expect(syncCount, greaterThan(before));
+  });
+
+  testWidgets('all-day events with resolved venue can be opened into VerdictScreen', (
+    tester,
+  ) async {
+    final allDayTrip = {
+      'id': 'cal-allday-bitec',
+      'title_th': 'งานสถาปนิก 2026',
+      'source': 'calendar',
+      'origin': {'name_th': 'บ้าน', 'lat': 13.72, 'lng': 100.52},
+      'destination': {'name_th': 'ไบเทค บางนา', 'lat': 13.67, 'lng': 100.61},
+      'arrive_by': '2026-09-30T00:00:00+07:00',
+      'ends_at': '2026-10-01T00:00:00+07:00',
+      'mode': 'car',
+      'all_day': true,
+    };
+    final allDayHoliday = {
+      'id': 'cal-holiday',
+      'title_th': 'วันหยุดประจำปี',
+      'source': 'calendar',
+      'origin': {'name_th': 'บ้าน', 'lat': 13.72, 'lng': 100.52},
+      'destination': {'name_th': '', 'lat': 0, 'lng': 0},
+      'arrive_by': '2026-09-30T00:00:00+07:00',
+      'ends_at': '2026-10-01T00:00:00+07:00',
+      'mode': 'car',
+      'all_day': true,
+    };
+
+    await pumpApp(
+      tester,
+      '2026-09-30T08:00:00+07:00',
+      respond: (req) {
+        if (req.url.path == '/v1/trips' || req.url.path == '/v1/trips/sync') {
+          return jsonResponse({'trips': [allDayTrip, allDayHoliday]});
+        }
+        return null;
+      },
+    );
+
+    await tapAndSettle(tester, find.text('อีเวนต์'));
+    expect(find.text('งานสถาปนิก 2026'), findsOneWidget);
+    expect(find.text('ไบเทค บางนา'), findsOneWidget);
+    expect(find.text('วันหยุดประจำปี'), findsOneWidget);
+
+    // Tap on the all-day event with location: opens verdict screen
+    await tapAndSettle(tester, find.byKey(const ValueKey('event-cal-allday-bitec')));
+    expect(find.text('งานสถาปนิก 2026'), findsWidgets);
+  });
+
+  testWidgets('days with multiple events base next event on previous event location and allow switching origin', (
+    tester,
+  ) async {
+    final dentistTrip = {
+      'id': 'cal-dentist',
+      'title_th': 'ทำฟัน',
+      'source': 'calendar',
+      'origin': {'name_th': 'บ้าน', 'lat': 13.72, 'lng': 100.52},
+      'destination': {'name_th': 'โรงพยาบาลธนบุรี', 'lat': 13.75, 'lng': 100.48},
+      'arrive_by': '2026-09-30T10:00:00+07:00',
+      'ends_at': '2026-09-30T11:30:00+07:00',
+      'mode': 'car',
+    };
+    final dinnerTrip = {
+      'id': 'cal-dinner',
+      'title_th': 'ดินเนอร์',
+      'source': 'calendar',
+      'origin': {'name_th': 'สีลม', 'lat': 13.7279, 'lng': 100.5281},
+      'destination': {'name_th': 'ร้านอาหารสยาม', 'lat': 13.74, 'lng': 100.53},
+      'arrive_by': '2026-09-30T18:00:00+07:00',
+      'ends_at': '2026-09-30T20:00:00+07:00',
+      'mode': 'car',
+    };
+
+    final decideRequests = <Map<String, dynamic>>[];
+
+    await pumpApp(
+      tester,
+      '2026-09-30T08:00:00+07:00',
+      respond: (req) {
+        if (req.url.path == '/v1/trips' || req.url.path == '/v1/trips/sync') {
+          return jsonResponse({'trips': [dentistTrip, dinnerTrip]});
+        }
+        if (req.url.path == '/v1/decide') {
+          final body = jsonDecode(req.body) as Map<String, dynamic>;
+          decideRequests.add(body);
+          final origin = body['origin'] as Map<String, dynamic>?;
+          final originName = origin?['name_th'] ?? 'ต้นทาง';
+          return jsonResponse({
+            'verdict': 'leave_now',
+            'headline_th': 'ออกได้เลย',
+            'summary_th': 'จาก $originName ไป ร้านอาหารสยาม',
+            'trip': {
+              'id': body['trip_id'] ?? 'cal-dinner',
+              'title_th': 'ดินเนอร์',
+              'source': 'calendar',
+              'origin': origin ?? {'name_th': 'โรงพยาบาลธนบุรี', 'lat': 13.75, 'lng': 100.48},
+              'destination': {'name_th': 'ร้านอาหารสยาม', 'lat': 13.74, 'lng': 100.53},
+              'mode': 'car',
+            },
+            'mode_options': [
+              {
+                'mode': 'car',
+                'verdict': 'leave_now',
+                'risk': 'low',
+                'eta_min': 25,
+                'via_th': [originName, 'ถนนพระราม 1', 'ร้านอาหารสยาม'],
+              }
+            ],
+            'reasoning': [],
+            'flood_spots': [],
+            'rain_timeline': [],
+            'confidence': 0.9,
+          });
+        }
+        return null;
+      },
+    );
+
+    // Go to Events tab
+    await tapAndSettle(tester, find.text('อีเวนต์'));
+    expect(find.text('ทำฟัน'), findsOneWidget);
+    expect(find.text('ดินเนอร์'), findsOneWidget);
+
+    // Tap on dinner event
+    await tapAndSettle(tester, find.byKey(const ValueKey('event-cal-dinner')));
+
+    // VerdictScreen should show route starting from โรงพยาบาลธนบุรี (Dentist event)
+    expect(find.textContaining('โรงพยาบาลธนบุรี → ร้านอาหารสยาม'), findsWidgets);
+    expect(find.text('เปลี่ยนจุดเริ่มต้น'), findsWidgets);
+
+    // Tap "เปลี่ยนจุดเริ่มต้น" to open the Origin Picker bottom sheet
+    await tapAndSettle(tester, find.text('เปลี่ยนจุดเริ่มต้น').first);
+
+    // Bottom sheet is displayed with options
+    expect(find.text('เลือกจุดเริ่มต้นการเดินทาง'), findsOneWidget);
+    expect(find.text('งานก่อนหน้า · ทำฟัน'), findsOneWidget);
+    expect(find.text('บ้าน'), findsWidgets);
+
+    // Switch starting point to "บ้าน" (Home)
+    await tapAndSettle(tester, find.text('บ้าน').first);
+
+    // Should recalculate with home origin
+    expect(find.textContaining('บ้าน → ร้านอาหารสยาม'), findsWidgets);
+  });
+
+  test('summaryHeaderTitle produces context-aware titles based on next event day', () {
+    final lEn = lookupAppLocalizations(const Locale('en'));
+    final lTh = lookupAppLocalizations(const Locale('th'));
+    final now = DateTime.parse('2026-10-17T15:00:00+07:00');
+    final todayTrip = Trip(
+      id: 'today-trip',
+      titleTh: 'นัดวันนี้',
+      source: 'calendar',
+      mode: TravelMode.car,
+      origin: const Place(nameTh: 'บ้าน', lat: 13.8, lng: 100.5),
+      destination: const Place(nameTh: 'ที่ทำงาน', lat: 13.7, lng: 100.5),
+      arriveBy: DateTime.parse('2026-10-17T18:00:00+07:00'),
+    );
+    final tomorrowTrip = Trip(
+      id: 'tomorrow-trip',
+      titleTh: 'นัดพรุ่งนี้',
+      source: 'calendar',
+      mode: TravelMode.car,
+      origin: const Place(nameTh: 'บ้าน', lat: 13.8, lng: 100.5),
+      destination: const Place(nameTh: 'บางนา', lat: 13.6, lng: 100.6),
+      arriveBy: DateTime.parse('2026-10-18T13:30:00+07:00'),
+    );
+    final futureTrip = Trip(
+      id: 'future-trip',
+      titleTh: 'นัดสัปดาห์หน้า',
+      source: 'calendar',
+      mode: TravelMode.car,
+      origin: const Place(nameTh: 'บ้าน', lat: 13.8, lng: 100.5),
+      destination: const Place(nameTh: 'สยาม', lat: 13.7, lng: 100.5),
+      arriveBy: DateTime.parse('2026-10-21T10:00:00+07:00'),
+    );
+
+    // Case 1: Next event is tomorrow and no events left today
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      "Tomorrow's plan",
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      'นัดหมายพรุ่งนี้',
+    );
+
+    // Case 2: Next travel event is tomorrow, but there is 1 non-travel/online event today
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      'Next trip tomorrow',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: tomorrowTrip,
+        now: now,
+      ),
+      'เดินทางพรุ่งนี้',
+    );
+
+    // Case 3: Next event is 2+ days away
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: futureTrip,
+        now: now,
+      ),
+      'Upcoming trip',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: futureTrip,
+        now: now,
+      ),
+      'นัดหมายถัดไป',
+    );
+
+    // Case 4: Next event is today (1 left)
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: todayTrip,
+        now: now,
+      ),
+      '1 more today',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 1,
+        next: todayTrip,
+        now: now,
+      ),
+      'วันนี้อีก 1 นัด',
+    );
+
+    // Case 5: Next event is today (2+ left)
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 2,
+        next: todayTrip,
+        now: now,
+      ),
+      '2 more today',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 2,
+        next: todayTrip,
+        now: now,
+      ),
+      'วันนี้อีก 2 นัด',
+    );
+
+    // Case 6: No events left today and no next event
+    expect(
+      summaryHeaderTitle(
+        l: lEn,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: null,
+        now: now,
+      ),
+      'Nothing else today',
+    );
+    expect(
+      summaryHeaderTitle(
+        l: lTh,
+        connected: true,
+        pending: false,
+        todayLeft: 0,
+        next: null,
+        now: now,
+      ),
+      'วันนี้ไม่มีนัดแล้ว',
+    );
+  });
 }
+
+

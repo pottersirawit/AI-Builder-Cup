@@ -12,12 +12,16 @@ import (
 )
 
 type fakeGenerator struct {
-	reply  string
-	err    error
-	prompt string
+	reply   string
+	err     error
+	prompt  string
+	models  []string
+	configs []*genai.GenerateContentConfig
 }
 
-func (f *fakeGenerator) GenerateContent(_ context.Context, _ string, contents []*genai.Content, _ *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+func (f *fakeGenerator) GenerateContent(_ context.Context, model string, contents []*genai.Content, cfg *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
+	f.models = append(f.models, model)
+	f.configs = append(f.configs, cfg)
 	if len(contents) > 0 && len(contents[0].Parts) > 0 {
 		f.prompt = contents[0].Parts[0].Text
 	}
@@ -163,6 +167,141 @@ func TestExtract_GmailNewsletter_NotATrip(t *testing.T) {
 	}
 }
 
+func TestExtract_GmailPrompt_EnforcesClearDestinationAndTime(t *testing.T) {
+	fake := &fakeGenerator{reply: `{"is_trip": false, "title_th": "", "destination_text": "", "confidence": 0.9, "evidence_th": ""}`}
+	client := &agent.Gemini{Gen: fake, Model: "test"}
+	raw := RawMessage{Source: SourceGmail, Title: "Meeting", Body: "Meet at Silom 10:00"}
+	_, _ = Extract(context.Background(), client, raw, bangkokTime(2026, 10, 11, 10, 0))
+
+	if len(fake.configs) == 0 || fake.configs[0].SystemInstruction == nil {
+		t.Fatalf("expected SystemInstruction to be passed to Gemini config")
+	}
+	sysPrompt := fake.configs[0].SystemInstruction.Parts[0].Text
+
+	// Verify required instructions in the prompt
+	checks := []string{
+		"โฆษณา",
+		"โปรโมชั่น",
+		"ปลายทาง",
+		"เวลา",
+	}
+	for _, check := range checks {
+		if !strings.Contains(sysPrompt, check) {
+			t.Errorf("expected gmailPrompt to contain %q", check)
+		}
+	}
+}
+
+func TestExtract_GmailAdWithoutDestinationOrTime_EnforcesFalseEvenIfModelClaimsTrue(t *testing.T) {
+	now := bangkokTime(2026, 10, 11, 10, 0)
+	// Model mistakenly returned is_trip = true for an advertisement with empty destination or null time
+	geminiJSON := `{
+		"is_trip": true,
+		"title_th": "โปรโมชั่น GrabFood ลด 50%",
+		"origin_text": "",
+		"destination_text": "",
+		"arrive_by": null,
+		"depart_at": null,
+		"mode": null,
+		"confidence": 0.85,
+		"evidence_th": "โค้ดลดราคาค่าอาหาร"
+	}`
+
+	fake := &fakeGenerator{reply: geminiJSON}
+	client := &agent.Gemini{Gen: fake, Model: "test"}
+
+	raw := RawMessage{
+		Source:    SourceGmail,
+		SourceRef: "ad-grab-123",
+		Title:     "GrabFood โค้ดส่วนลด 50% ทุกมื้อ",
+		Body:      "สั่งอาหารลดสูงสุด 50% ใช้ได้ทันทีวันนี้",
+	}
+
+	payload, err := Extract(context.Background(), client, raw, now)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Must be enforced to false because clear destination + time are missing
+	if payload.IsTrip {
+		t.Errorf("expected IsTrip = false when destination or time is missing, but got true")
+	}
+}
+
+func TestExtract_GmailActualMeetingWithClearDestinationAndTime(t *testing.T) {
+	now := bangkokTime(2026, 10, 11, 10, 0)
+	geminiJSON := `{
+		"is_trip": true,
+		"title_th": "นัดประชุมโปรเจกต์กับลูกค้า",
+		"origin_text": "ออฟฟิศ",
+		"destination_text": "อาคารเอ็มไพร์ทาวเวอร์ สาทร",
+		"arrive_by": "2026-10-12T14:00:00+07:00",
+		"depart_at": null,
+		"mode": "car",
+		"confidence": 0.95,
+		"evidence_th": "นัดหมายพบปะที่อาคารเอ็มไพร์ทาวเวอร์ สาทร วันที่ 12 ต.ค. เวลา 14:00"
+	}`
+
+	fake := &fakeGenerator{reply: geminiJSON}
+	client := &agent.Gemini{Gen: fake, Model: "test"}
+
+	raw := RawMessage{
+		Source:    SourceGmail,
+		SourceRef: "meeting-777",
+		Title:     "นัดหมายประชุม: โปรเจกต์ใหม่ ณ เอ็มไพร์ทาวเวอร์",
+		Body:      "เรียนคุณมิว ขอยืนยันนัดประชุมที่อาคารเอ็มไพร์ทาวเวอร์ สาทร วันที่ 12 ตุลาคม เวลา 14:00 น.",
+	}
+
+	payload, err := Extract(context.Background(), client, raw, now)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	if !payload.IsTrip {
+		t.Errorf("expected IsTrip = true for actual meeting with destination and time")
+	}
+	if payload.DestinationText != "อาคารเอ็มไพร์ทาวเวอร์ สาทร" {
+		t.Errorf("expected destination = 'อาคารเอ็มไพร์ทาวเวอร์ สาทร', got %q", payload.DestinationText)
+	}
+	if payload.ArriveBy == nil || payload.ArriveBy.Format("15:04") != "14:00" {
+		t.Errorf("expected ArriveBy 14:00, got %v", payload.ArriveBy)
+	}
+}
+
+func TestExtract_Fallback_RejectsAdsWithoutDestinationAndTime(t *testing.T) {
+	now := bangkokTime(2026, 10, 11, 10, 0)
+
+	// 1. Advertisement should be rejected by fallback
+	adMsg := RawMessage{
+		Source:    SourceGmail,
+		SourceRef: "ad-fallback-1",
+		Title:     "โปรโมชั่นลดกระหน่ำ Flash Sale 80%",
+		Body:      "ช้อปคุ้มวันนี้ ลดราคาสูงสุด 80% สำหรับสมาชิกเท่านั้น",
+	}
+	payloadAd, err := Extract(context.Background(), nil, adMsg, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if payloadAd.IsTrip {
+		t.Errorf("expected fallback to reject advertisement, got is_trip = true")
+	}
+
+	// 2. Real meeting with destination and time is accepted
+	meetingMsg := RawMessage{
+		Source:    SourceGmail,
+		SourceRef: "meeting-fallback-2",
+		Title:     "นัดหมายสัมภาษณ์งาน ไปสยาม",
+		Body:      "นัดหมายไปสยาม ตอนหกโมงเย็น",
+	}
+	payloadMeeting, err := Extract(context.Background(), nil, meetingMsg, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !payloadMeeting.IsTrip {
+		t.Errorf("expected fallback to accept meeting with destination and time")
+	}
+}
+
 func TestExtract_Fallback_WithoutGemini(t *testing.T) {
 	now := bangkokTime(2026, 10, 11, 14, 0)
 
@@ -254,5 +393,43 @@ func TestWithGeminiNeverGuesses(t *testing.T) {
 	p, err := WithGemini(context.Background(), &agent.Gemini{Gen: fake, Model: "test"}, raw, now)
 	if err != nil || p.SourceRef != "m1" || p.ArriveBy == nil || !p.ArriveBy.Equal(bangkokTime(2026, 10, 18, 19, 0)) {
 		t.Errorf("WithGemini = %+v, %v; want m1 arriving 19:00 on the 18th", p, err)
+	}
+}
+
+func TestExtract_UsesFastModelAndCachesPayload(t *testing.T) {
+	now := bangkokTime(2026, 10, 11, 14, 0)
+	geminiJSON := `{
+		"is_trip": true,
+		"title_th": "กินข้าวเย็น",
+		"origin_text": "สีลม",
+		"destination_text": "สยาม",
+		"arrive_by": "2026-10-11T18:30:00+07:00",
+		"depart_at": null,
+		"mode": "transit",
+		"confidence": 0.95,
+		"evidence_th": "นัดที่สยาม 18:30"
+	}`
+	fake := &fakeGenerator{reply: geminiJSON}
+	client := &agent.Gemini{Gen: fake, Model: "gemini-2.5-flash", FastModel: "gemini-2.5-flash-lite"}
+
+	raw1 := RawMessage{Source: SourceCalendar, SourceRef: "evt-1", Title: "กินข้าวเย็น", Body: "เจอกันสยาม 18:30"}
+	raw2 := RawMessage{Source: SourceCalendar, SourceRef: "evt-2", Title: "กินข้าวเย็น", Body: "เจอกันสยาม 18:30"}
+
+	p1, err := Extract(context.Background(), client, raw1, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	p2, err := Extract(context.Background(), client, raw2, now)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(fake.models) != 1 || fake.models[0] != "gemini-2.5-flash-lite" {
+		t.Fatalf("expected 1 call to gemini-2.5-flash-lite, got %v", fake.models)
+	}
+	if fake.configs[0].ThinkingConfig == nil || fake.configs[0].ThinkingConfig.ThinkingBudget == nil || *fake.configs[0].ThinkingConfig.ThinkingBudget != 0 {
+		t.Fatalf("expected ThinkingBudget=0 on extract call, got %+v", fake.configs[0].ThinkingConfig)
+	}
+	if p1.SourceRef != "evt-1" || p2.SourceRef != "evt-2" || p2.DestinationText != "สยาม" {
+		t.Fatalf("cached payload did not preserve SourceRef or fields: p1=%+v p2=%+v", p1, p2)
 	}
 }

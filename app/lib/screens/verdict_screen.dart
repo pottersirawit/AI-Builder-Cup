@@ -4,11 +4,13 @@ import 'package:material_symbols_icons/symbols.dart';
 
 import '../app_state.dart';
 import '../design/design.dart';
+import '../events.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
 import '../trip_controller.dart';
 import 'ask_screen.dart';
+import 'origin_picker.dart';
 import 'parts.dart';
 import 'place_picker.dart';
 
@@ -18,6 +20,7 @@ class VerdictScreen extends StatefulWidget {
     super.key,
     required this.request,
     this.trip,
+    this.previousTrip,
     this.departAt,
     this.mode,
   });
@@ -25,6 +28,7 @@ class VerdictScreen extends StatefulWidget {
   /// A trip id, an origin/destination pair, or a Thai question.
   final DecideRequest request;
   final Trip? trip;
+  final Trip? previousTrip;
   final DateTime? departAt;
   final TravelMode? mode;
 
@@ -36,10 +40,25 @@ class _VerdictScreenState extends State<VerdictScreen> {
   late final TripController _c = TripController(
     api: AppScope.apiOf(context),
     state: AppScope.readState(context),
-    request: widget.request,
+    request: _initialRequest,
     departAt: widget.departAt,
     mode: widget.mode,
   )..addListener(_changed);
+
+  DecideRequest get _initialRequest {
+    final prev = widget.previousTrip;
+    final trip = widget.trip;
+    if (prev != null &&
+        prev.destination.resolved &&
+        trip != null &&
+        (widget.request.origin == null || widget.request.origin!.isPlaceholder)) {
+      return widget.request.copyWith(
+        origin: prev.destination,
+        trip: trip.copyWith(origin: prev.destination),
+      );
+    }
+    return widget.request;
+  }
 
   @override
   void initState() {
@@ -48,6 +67,25 @@ class _VerdictScreenState extends State<VerdictScreen> {
   }
 
   void _changed() => setState(() {});
+
+  Future<void> _openOriginPicker() async {
+    final state = AppScope.readState(context);
+    final store = AppScope.readPlaces(context);
+    final prev = widget.previousTrip ??
+        (widget.trip != null
+            ? previousEventFor(store.cachedTrips, widget.trip!)
+            : null);
+    await showOriginPickerSheet(
+      context: context,
+      currentOrigin: _c.origin,
+      previousTrip: prev,
+      home: store.home,
+      work: store.work,
+      others: store.others,
+      currentLocation: state.currentLocation,
+      onSelected: (place) => _c.setOrigin(place),
+    );
+  }
 
   Future<void> _savePlace(Place dest) async {
     final messenger = ScaffoldMessenger.of(context);
@@ -79,7 +117,8 @@ class _VerdictScreenState extends State<VerdictScreen> {
     final l = context.l10n;
     final state = AppScope.stateOf(context);
     final d = _c.decision;
-    final trip = widget.trip ?? d?.trip;
+    final rawTrip = widget.trip ?? d?.trip;
+    final trip = rawTrip?.copyWith(origin: _c.origin);
     final store = AppScope.placesOf(context);
     final dest = trip?.destination;
     final unsaved =
@@ -108,12 +147,42 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ],
           )
+        : d?.refused == true
+        ? Pass(
+            sections: [
+              PassSection(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      d!.headlineTh,
+                      style: tabular(
+                        t.headlineMedium!,
+                      ).copyWith(color: c.paperInk),
+                    ),
+                    const SizedBox(height: Space.x3),
+                    Text(
+                      d.summaryTh,
+                      style: t.bodyLarge!.copyWith(color: c.paperInk),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          )
         : TripPass(
             controller: _c,
             now: state.now(),
             trip: trip,
             question: widget.request.questionTh,
             actions: [
+              if (trip != null)
+                ActionChip(
+                  avatar:
+                      const Icon(Symbols.edit_location_alt_rounded, size: 18),
+                  label: Text(l.isThai ? 'เปลี่ยนจุดเริ่มต้น' : 'Change start'),
+                  onPressed: _openOriginPicker,
+                ),
               if (unsaved && store.canAddOther)
                 ActionChip(
                   avatar: const Icon(Symbols.bookmark_add_rounded, size: 18),
@@ -146,6 +215,10 @@ class _VerdictScreenState extends State<VerdictScreen> {
                       subtitle: trip == null
                           ? l.verdictReadingQuestion
                           : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
+                      onSubtitleTap: trip != null ? _openOriginPicker : null,
+                      subtitleTapLabel: l.isThai
+                          ? 'เปลี่ยนจุดเริ่มต้น'
+                          : 'Change starting point',
                       actions: [
                         if (state.usingSample)
                           const Padding(
@@ -176,7 +249,7 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ),
           ),
-          if (d != null) ...[
+          if (d != null && !d.refused) ...[
             if (d.explanation case final e? when !e.isEmpty)
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),
@@ -194,10 +267,16 @@ class _VerdictScreenState extends State<VerdictScreen> {
                         for (final o in board)
                           o.mode: ModeStatus(
                             risk: o.risk,
-                            text: l.verdictModeStatus(
-                              o.etaMin,
-                              boardStatusText(l, o.verdict, o.risk),
-                            ),
+                            text: o.rainProbPct > 0
+                                ? l.verdictModeStatusWithProb(
+                                    o.etaMin,
+                                    boardStatusText(l, o.verdict, o.risk),
+                                    o.rainProbPct,
+                                  )
+                                : l.verdictModeStatus(
+                                    o.etaMin,
+                                    boardStatusText(l, o.verdict, o.risk),
+                                  ),
                           ),
                       },
                     ),
@@ -207,6 +286,14 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     ],
                   ],
                 ),
+              ),
+            ),
+            SliverToBoxAdapter(
+              child: _CalculatedRouteSection(
+                decision: d,
+                trip: trip,
+                selectedMode: _c.mode,
+                onChangeOrigin: trip != null ? _openOriginPicker : null,
               ),
             ),
             SliverToBoxAdapter(
@@ -322,6 +409,11 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     ),
                     const SizedBox(height: Space.x4),
                     GeneratedBy(d.generatedBy),
+                    const SizedBox(height: Space.x2),
+                    Text(
+                      l.verdictAccuracyDisclaimer,
+                      style: t.labelSmall?.copyWith(color: scheme.onSurfaceVariant),
+                    ),
                   ],
                 ),
               ),
@@ -572,4 +664,294 @@ IconData _sourceIcon(String s) {
   }
   return Symbols.database_rounded;
 }
+
+/// Renders the route calculated for the selected travel mode, plus explicit
+/// transit line and boarding/alighting stations for BTS/MRT.
+class _CalculatedRouteSection extends StatelessWidget {
+  const _CalculatedRouteSection({
+    required this.decision,
+    required this.trip,
+    required this.selectedMode,
+    this.onChangeOrigin,
+  });
+
+  final Decision decision;
+  final Trip? trip;
+  final TravelMode selectedMode;
+  final VoidCallback? onChangeOrigin;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+
+    final selectedOption = decision.modeOptions
+        .where((o) => o.mode == selectedMode)
+        .firstOrNull;
+    final transitOption = decision.modeOptions
+        .where((o) => o.mode == TravelMode.transit)
+        .firstOrNull;
+    final routeStep = decision.reasoning
+        .where((r) => r.tool == 'get_route')
+        .firstOrNull;
+
+    final via = selectedOption?.viaTh ?? const <String>[];
+    final transitLegs = transitOption?.transitLegs ?? const <TransitLeg>[];
+
+    final originName = trip?.origin.nameTh ?? '';
+    final destName = trip?.destination.nameTh ?? '';
+
+    final nodes = <({String label, bool endpoint})>[
+      if (originName.isNotEmpty) (label: originName, endpoint: true),
+      for (final stop in via)
+        if (stop != originName && stop != destName)
+          (label: stop, endpoint: false),
+      if (destName.isNotEmpty && destName != originName)
+        (label: destName, endpoint: true),
+    ];
+
+    return Section(
+      title: l.isThai ? 'เส้นทางที่ใช้คำนวณ' : 'Calculated route',
+      trailing: Icon(
+        selectedMode.icon,
+        size: 20,
+        color: scheme.primary,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (selectedOption != null) ...[
+            Row(
+              children: [
+                Icon(
+                   Symbols.route_rounded,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+                const SizedBox(width: Space.x2),
+                Expanded(
+                  child: Text(
+                    '${selectedMode.label(l)} · ${l.partsTakesMin(selectedOption.etaMin)}',
+                    style: tabular(t.labelLarge!).copyWith(
+                      color: scheme.onSurfaceVariant,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: Space.x3),
+          ],
+          if (nodes.isNotEmpty)
+            Wrap(
+              spacing: Space.x2,
+              runSpacing: Space.x2,
+              crossAxisAlignment: WrapCrossAlignment.center,
+              children: [
+                for (var i = 0; i < nodes.length; i++) ...[
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: Space.x3,
+                      vertical: Space.x1 + 2,
+                    ),
+                    decoration: BoxDecoration(
+                      color: nodes[i].endpoint
+                          ? scheme.primaryContainer
+                          : scheme.surfaceContainerHighest,
+                      borderRadius: BorderRadius.circular(Radii.pill),
+                    ),
+                    child: Text(
+                      nodes[i].label,
+                      style: t.labelLarge!.copyWith(
+                        color: nodes[i].endpoint
+                            ? scheme.onPrimaryContainer
+                            : scheme.onSurface,
+                      ),
+                    ),
+                  ),
+                  if (i < nodes.length - 1)
+                    Icon(
+                      Symbols.arrow_forward_rounded,
+                      size: 16,
+                      color: scheme.onSurfaceVariant,
+                    ),
+                ],
+              ],
+            )
+          else if (routeStep != null)
+            Text(routeStep.summaryTh, style: t.bodyMedium),
+          if (onChangeOrigin != null) ...[
+            const SizedBox(height: Space.x3),
+            OutlinedButton.icon(
+              icon: const Icon(Symbols.edit_location_alt_rounded, size: 18),
+              label: Text(
+                l.isThai ? 'เปลี่ยนจุดเริ่มต้น' : 'Change starting point',
+              ),
+              onPressed: onChangeOrigin,
+            ),
+          ],
+          if (transitLegs.isNotEmpty) ...[
+            const SizedBox(height: Space.x4),
+            if (selectedMode != TravelMode.transit) ...[
+              Row(
+                children: [
+                  Icon(
+                    Symbols.train_rounded,
+                    size: 18,
+                    color: scheme.primary,
+                  ),
+                  const SizedBox(width: Space.x2),
+                  Expanded(
+                    child: Text(
+                      l.isThai
+                          ? 'เส้นทางรถไฟฟ้า (สายและสถานีขึ้น-ลง)'
+                          : 'Transit route (line & stations)',
+                      style: t.titleSmall,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Space.x2),
+            ],
+            for (var i = 0; i < transitLegs.length; i++) ...[
+              _TransitLegTile(
+                leg: transitLegs[i],
+                index: i,
+                isThai: l.isThai,
+              ),
+              if (i < transitLegs.length - 1) const SizedBox(height: Space.x2),
+            ],
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _TransitLegTile extends StatelessWidget {
+  const _TransitLegTile({
+    required this.leg,
+    required this.index,
+    required this.isThai,
+  });
+
+  final TransitLeg leg;
+  final int index;
+  final bool isThai;
+
+  @override
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    final boardLabel = index == 0
+        ? (isThai ? 'ขึ้นที่สถานี' : 'Get on at')
+        : (isThai ? 'เปลี่ยนสายที่สถานี' : 'Transfer at');
+    final alightLabel = isThai ? 'ลงที่สถานี' : 'Get off at';
+
+    return Container(
+      padding: const EdgeInsets.all(Space.x3),
+      decoration: BoxDecoration(
+        color: scheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(Radii.md),
+        border: Border.all(color: scheme.outlineVariant),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Wrap(
+            spacing: Space.x2,
+            runSpacing: Space.x1,
+            crossAxisAlignment: WrapCrossAlignment.center,
+            children: [
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.x2,
+                  vertical: Space.x1,
+                ),
+                decoration: BoxDecoration(
+                  color: scheme.secondaryContainer,
+                  borderRadius: BorderRadius.circular(Radii.xs),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(
+                      Symbols.train_rounded,
+                      size: 16,
+                      color: scheme.onSecondaryContainer,
+                    ),
+                    const SizedBox(width: Space.x1),
+                    Flexible(
+                      child: Text(
+                        leg.lineTh,
+                        style: t.labelLarge!.copyWith(
+                          color: scheme.onSecondaryContainer,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (leg.stopCount > 0)
+                Text(
+                  isThai ? '${leg.stopCount} สถานี' : '${leg.stopCount} stops',
+                  style: tabular(t.labelMedium!).copyWith(
+                    color: scheme.onSurfaceVariant,
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: Space.x2),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      boardLabel,
+                      style: t.labelSmall!.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(leg.fromStationTh, style: t.titleSmall),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: Space.x2,
+                  vertical: Space.x2,
+                ),
+                child: Icon(
+                  Symbols.arrow_forward_rounded,
+                  size: 18,
+                  color: scheme.onSurfaceVariant,
+                ),
+              ),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      alightLabel,
+                      style: t.labelSmall!.copyWith(
+                        color: scheme.onSurfaceVariant,
+                      ),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(leg.toStationTh, style: t.titleSmall),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 

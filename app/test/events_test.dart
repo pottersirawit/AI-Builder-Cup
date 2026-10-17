@@ -17,6 +17,7 @@ Trip _trip(
   String? arriveBy, {
   String source = 'calendar',
   bool resolved = true,
+  bool allDay = false,
 }) => Trip(
   id: id,
   titleTh: id,
@@ -28,6 +29,7 @@ Trip _trip(
   arriveBy: arriveBy == null ? null : DateTime.parse(arriveBy),
   mode: TravelMode.car,
   locationTextTh: resolved ? null : 'ตึกใหม่',
+  allDay: allDay,
 );
 
 void main() {
@@ -114,6 +116,16 @@ void main() {
       final t = _trip('tomorrow', '2026-10-18T09:00:00+07:00');
       expect(isoBangkok(planDepartFor(t, now)), '2026-10-18T06:00:00+07:00');
     });
+
+    test('plans an all-day event today from now', () {
+      final t = _trip('today-allday', '2026-10-17T00:00:00+07:00', allDay: true);
+      expect(planDepartFor(t, now), now);
+    });
+
+    test('plans an all-day event on a future day from morning 08:00', () {
+      final t = _trip('future-allday', '2026-10-19T00:00:00+07:00', allDay: true);
+      expect(isoBangkok(planDepartFor(t, now)), '2026-10-19T08:00:00+07:00');
+    });
   });
 
   group('leavePlan', () {
@@ -175,4 +187,75 @@ void main() {
       expect(hhmm(p.time!), '08:40', reason: '09:30 - 40 min - 10 min');
     });
   });
+
+  group('previousEventFor', () {
+    test('finds the preceding same-day event with resolved destination', () {
+      final dentist = _trip(
+        'dentist',
+        '2026-10-17T10:00:00+07:00',
+        resolved: true,
+      );
+      final dinner = _trip(
+        'dinner',
+        '2026-10-17T18:00:00+07:00',
+        resolved: true,
+      );
+      final otherDay = _trip(
+        'otherDay',
+        '2026-10-18T08:00:00+07:00',
+        resolved: true,
+      );
+      final list = [dentist, dinner, otherDay];
+      expect(previousEventFor(list, dinner)?.id, 'dentist');
+      expect(previousEventFor(list, dentist), isNull);
+    });
+
+    test('ignores virtual, allDay, and unresolved preceding events', () {
+      final virtualEvent = Trip(
+        id: 'meet',
+        titleTh: 'Online meeting',
+        source: 'calendar',
+        origin: const Place(nameTh: 'Home', lat: 13.72, lng: 100.53),
+        destination: const Place(nameTh: 'Zoom', lat: 0, lng: 0),
+        arriveBy: DateTime.parse('2026-10-17T09:00:00+07:00'),
+        mode: TravelMode.car,
+        virtual: true,
+      );
+      final unplaced = _trip(
+        'unplaced',
+        '2026-10-17T09:30:00+07:00',
+        resolved: false,
+      );
+      final allDayEvent = Trip(
+        id: 'holiday',
+        titleTh: 'Holiday',
+        source: 'calendar',
+        origin: const Place(nameTh: 'Home', lat: 13.72, lng: 100.53),
+        destination: const Place(nameTh: 'Beach', lat: 12.5, lng: 100.0),
+        arriveBy: DateTime.parse('2026-10-17T08:00:00+07:00'),
+        mode: TravelMode.car,
+        allDay: true,
+      );
+      final dentist = _trip(
+        'dentist',
+        '2026-10-17T11:00:00+07:00',
+        resolved: true,
+      );
+      final dinner = _trip(
+        'dinner',
+        '2026-10-17T18:00:00+07:00',
+        resolved: true,
+      );
+      final list = [virtualEvent, unplaced, allDayEvent, dentist, dinner];
+      expect(previousEventFor(list, dinner)?.id, 'dentist');
+    });
+
+    test('picks the closest preceding event when there are multiple', () {
+      final e1 = _trip('e1', '2026-10-17T09:00:00+07:00');
+      final e2 = _trip('e2', '2026-10-17T13:00:00+07:00');
+      final e3 = _trip('e3', '2026-10-17T17:00:00+07:00');
+      expect(previousEventFor([e1, e2, e3], e3)?.id, 'e2');
+    });
+  });
 }
+

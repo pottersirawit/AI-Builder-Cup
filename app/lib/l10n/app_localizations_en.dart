@@ -144,6 +144,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get askRetry => 'Ask again';
 
   @override
+  String get askDisclaimer =>
+      'AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.';
+
+  @override
   String partsQuestion(String question) {
     return 'Question: “$question”';
   }
@@ -1395,6 +1399,18 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get planTitleOneToday => '1 trip today';
+
+  @override
+  String get planTitleTomorrow => 'Tomorrow\'s plan';
+
+  @override
+  String get planTitleNextTripTomorrow => 'Next trip tomorrow';
+
+  @override
+  String get planTitleUpcoming => 'Upcoming trip';
+
+  @override
   String get planTitleFree => 'Nothing else today';
 
   @override
@@ -1545,6 +1561,11 @@ class AppLocalizationsEn extends AppLocalizations {
   @override
   String verdictModeStatus(int eta, String status) {
     return '$eta min · $status';
+  }
+
+  @override
+  String verdictModeStatusWithProb(int eta, String status, int prob) {
+    return '$eta min · $status ($prob%)';
   }
 
   @override
@@ -1790,4 +1811,8 @@ class AppLocalizationsEn extends AppLocalizations {
   String verdictHotlineCopied(String number, String purpose) {
     return 'Copied $number ($purpose) to clipboard';
   }
+
+  @override
+  String get verdictAccuracyDisclaimer =>
+      'AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling.';
 }

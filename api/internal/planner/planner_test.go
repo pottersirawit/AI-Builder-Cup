@@ -445,15 +445,116 @@ func TestOpenRefusesTripsWithNoTravel(t *testing.T) {
 	p := newPlanner(t)
 	ctx := context.Background()
 	unresolved := domain.Trip{ID: "cal-x", TitleTH: "ไม่รู้ที่", Origin: scenario.Home, Destination: domain.Place{NameTH: "ร้านลับ"}, ArriveBy: at(18, 0), Mode: domain.ModeCar}
-	allDay := domain.Trip{ID: "cal-y", TitleTH: "สัมมนา", Origin: scenario.Home, Destination: scenario.Siam, ArriveBy: at(0, 0), AllDay: true, Mode: domain.ModeCar}
+	allDayNoDest := domain.Trip{ID: "cal-y", TitleTH: "สัมมนา", Origin: scenario.Home, Destination: domain.Place{NameTH: "สัมมนา"}, ArriveBy: at(0, 0), AllDay: true, Mode: domain.ModeCar}
 	for name, req := range map[string]TripRequest{
-		"virtual trip id": {TripID: "cal-sync"},
-		"unresolved trip": {Trip: &unresolved},
-		"all-day trip":    {Trip: &allDay},
+		"virtual trip id":            {TripID: "cal-sync"},
+		"unresolved trip":            {Trip: &unresolved},
+		"all-day trip without place": {Trip: &allDayNoDest},
 	} {
 		if _, err := p.Open(ctx, scenarioProviders(), at(16, 10), req); !errors.Is(err, ErrBadTrip) {
 			t.Errorf("%s: err = %v, want ErrBadTrip", name, err)
 		}
+	}
+}
+
+func TestOpenAndBaselineAllDayTripWithLocation(t *testing.T) {
+	p := newPlanner(t)
+	allDay := domain.Trip{
+		ID:          "cal-allday",
+		TitleTH:     "งานสัมมนา",
+		Origin:      scenario.Home,
+		Destination: scenario.Siam,
+		ArriveBy:    at(0, 0),
+		AllDay:      true,
+		Mode:        domain.ModeCar,
+	}
+	s, err := p.Open(context.Background(), scenarioProviders(), at(9, 0), TripRequest{Trip: &allDay})
+	if err != nil {
+		t.Fatalf("Open failed: %v", err)
+	}
+	res, err := s.Baseline(at(9, 0), domain.ModeCar)
+	if err != nil {
+		t.Fatalf("Baseline failed: %v", err)
+	}
+	if res.Evals[domain.ModeCar].LateMinutes > 0 {
+		t.Errorf("all-day trip should not have LateMinutes > 0, got %d", res.Evals[domain.ModeCar].LateMinutes)
+	}
+}
+
+
+type countingWeatherNext struct {
+	calls int
+	gust  float64
+	temp  float64
+}
+
+func (c *countingWeatherNext) Name() string { return "CountingWeatherNext" }
+func (c *countingWeatherNext) PeakConditionsAlongRoute(_ []domain.LatLng) (float64, float64, error) {
+	c.calls++
+	return c.gust, c.temp, nil
+}
+
+func TestSessionMemoizesInputAndBaselineAcrossToolCalls(t *testing.T) {
+	p := newPlanner(t)
+	prov := scenarioProviders()
+	wn := &countingWeatherNext{gust: 30.0, temp: 31.0}
+	prov.WeatherNext = wn
+
+	s, err := p.NewSession(context.Background(), prov, at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Baseline(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Call("get_flood_spots_on_route", map[string]any{"mode": "car", "depart_at": "16:10"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Call("evaluate_departure", map[string]any{"mode": "car", "depart_at": "16:10"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Input(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	if wn.calls != 1 {
+		t.Fatalf("expected WeatherNext provider to be queried once for memoized (mode, depart), got %d calls", wn.calls)
+	}
+
+	// Switching trip via PlanTo must clear memoized inputs/baselines.
+	if err := s.PlanTo("siam"); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := s.Baseline(at(16, 10), domain.ModeCar); err != nil {
+		t.Fatal(err)
+	}
+	if wn.calls != 2 {
+		t.Fatalf("expected PlanTo to invalidate memoized session caches, got %d calls", wn.calls)
+	}
+}
+
+func TestBaselineModeOptionsIncludeCalculatedRoutesAndTransitLegs(t *testing.T) {
+	p := newPlanner(t)
+	s, err := p.NewSession(context.Background(), scenarioProviders(), at(16, 10), "cal-dinner")
+	if err != nil {
+		t.Fatal(err)
+	}
+	res, err := s.Baseline(at(16, 10), domain.ModeCar)
+	if err != nil {
+		t.Fatal(err)
+	}
+	byMode := map[domain.Mode]decision.ModeOption{}
+	for _, o := range res.ModeOptions {
+		byMode[o.Mode] = o
+	}
+	if len(byMode[domain.ModeCar].ViaTH) == 0 || byMode[domain.ModeCar].ViaTH[0] != "พระราม 4" {
+		t.Fatalf("car ModeOption missing ViaTH: %+v", byMode[domain.ModeCar])
+	}
+	trOpt := byMode[domain.ModeTransit]
+	if len(trOpt.TransitLegs) == 0 {
+		t.Fatalf("transit ModeOption missing TransitLegs: %+v", trOpt)
+	}
+	if trOpt.TransitLegs[0].LineTH != "MRT สายสีน้ำเงิน" || trOpt.TransitLegs[0].FromStationTH != "MRT สีลม" || trOpt.TransitLegs[0].ToStationTH != "MRT ลาดพร้าว" {
+		t.Fatalf("unexpected transit leg: %+v", trOpt.TransitLegs[0])
 	}
 }
 

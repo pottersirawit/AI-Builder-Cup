@@ -76,5 +76,6 @@
   "askFailed": "Couldn’t answer because the server isn’t reachable. Check your connection and ask again.",
   "askTitle": "Ask more",
   "askInputHint": "Type a question, e.g. “What about the motorbike?”",
-  "askRetry": "Ask again"
+  "askRetry": "Ask again",
+  "askDisclaimer": "AI analysis and forecasts might not be 100% accurate. Always check actual conditions before traveling."
 }

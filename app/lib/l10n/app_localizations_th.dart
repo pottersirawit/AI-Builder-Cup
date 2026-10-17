@@ -133,6 +133,10 @@ class AppLocalizationsTh extends AppLocalizations {
   String get askRetry => 'ถามใหม่';
 
   @override
+  String get askDisclaimer =>
+      'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
+
+  @override
   String partsQuestion(String question) {
     return 'คำถาม: “$question”';
   }
@@ -1376,6 +1380,18 @@ class AppLocalizationsTh extends AppLocalizations {
   }
 
   @override
+  String get planTitleOneToday => 'นัดหมายวันนี้';
+
+  @override
+  String get planTitleTomorrow => 'นัดหมายพรุ่งนี้';
+
+  @override
+  String get planTitleNextTripTomorrow => 'เดินทางพรุ่งนี้';
+
+  @override
+  String get planTitleUpcoming => 'นัดหมายถัดไป';
+
+  @override
   String get planTitleFree => 'วันนี้ไม่มีนัดแล้ว';
 
   @override
@@ -1526,6 +1542,11 @@ class AppLocalizationsTh extends AppLocalizations {
   @override
   String verdictModeStatus(int eta, String status) {
     return '$eta น. · $status';
+  }
+
+  @override
+  String verdictModeStatusWithProb(int eta, String status, int prob) {
+    return '$eta น. · $status ($prob%)';
   }
 
   @override
@@ -1766,4 +1787,8 @@ class AppLocalizationsTh extends AppLocalizations {
   String verdictHotlineCopied(String number, String purpose) {
     return 'คัดลอกเบอร์ $number ($purpose) แล้ว';
   }
+
+  @override
+  String get verdictAccuracyDisclaimer =>
+      'ข้อมูลและการประเมินจาก AI อาจมีความคลาดเคลื่อนหรือไม่ถูกต้อง 100% โปรดตรวจสอบสภาพอากาศและเส้นทางจริงก่อนออกเดินทาง';
 }
