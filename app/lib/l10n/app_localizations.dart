@@ -164,6 +164,12 @@ abstract class AppLocalizations {
   /// **'ขบวนไม่สนฝน แต่ชานชาลาแน่น เผื่อเวลา'**
   String get boardNoteTransitCrowded;
 
+  /// No description provided for @boardNoteTransitWalk.
+  ///
+  /// In th, this message translates to:
+  /// **'ฝนตกช่วงเดินไปสถานี'**
+  String get boardNoteTransitWalk;
+
   /// No description provided for @boardNoteDry.
   ///
   /// In th, this message translates to:
@@ -179,7 +185,7 @@ abstract class AppLocalizations {
   /// No description provided for @boardNoteCarDrizzle.
   ///
   /// In th, this message translates to:
-  /// **'เจอฝนปรอยช่วงท้าย ขับช้าลง'**
+  /// **'เจอฝนระหว่างทาง ขับช้าลง'**
   String get boardNoteCarDrizzle;
 
   /// No description provided for @boardNoteBeatRain.

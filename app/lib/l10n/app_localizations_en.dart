@@ -43,6 +43,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Trains run in the rain, but platforms get crowded. Leave extra time.';
 
   @override
+  String get boardNoteTransitWalk => 'Rain on the walk to the station';
+
+  @override
   String get boardNoteDry => 'No rain on the way';
 
   @override
@@ -50,7 +53,7 @@ class AppLocalizationsEn extends AppLocalizations {
       'Heavy rain, slow drainage, traffic building up';
 
   @override
-  String get boardNoteCarDrizzle => 'Light rain near the end. Drive slower.';
+  String get boardNoteCarDrizzle => 'Rain on the way. Drive slower.';
 
   @override
   String get boardNoteBeatRain => 'You get there before the rain';

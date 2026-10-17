@@ -42,13 +42,16 @@ class AppLocalizationsTh extends AppLocalizations {
   String get boardNoteTransitCrowded => 'ขบวนไม่สนฝน แต่ชานชาลาแน่น เผื่อเวลา';
 
   @override
+  String get boardNoteTransitWalk => 'ฝนตกช่วงเดินไปสถานี';
+
+  @override
   String get boardNoteDry => 'ไม่โดนฝนระหว่างทาง';
 
   @override
   String get boardNoteCarHeavy => 'ฝนหนัก น้ำรอระบาย รถติดสะสม';
 
   @override
-  String get boardNoteCarDrizzle => 'เจอฝนปรอยช่วงท้าย ขับช้าลง';
+  String get boardNoteCarDrizzle => 'เจอฝนระหว่างทาง ขับช้าลง';
 
   @override
   String get boardNoteBeatRain => 'ถึงก่อนฝน';

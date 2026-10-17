@@ -44,6 +44,21 @@ void main() {
     expect(car.etaMin, greaterThan(50));
   });
 
+  test('the notes say what the rain is, not what it might have been', () {
+    String note(String hhmm, TravelMode m) =>
+        previewOptions(calm, bkk(hhmm)).firstWhere((o) => o.mode == m).noteTh;
+    expect(
+      note('17:00', TravelMode.transit),
+      'ฝนตกช่วงเดินไปสถานี',
+      reason: '5.4 mm/h on the way is not "no rain"',
+    );
+    expect(note('20:15', TravelMode.car), 'ไม่โดนฝนระหว่างทาง',
+        reason: 'the storm is over: nothing to beat');
+    expect(note('20:15', TravelMode.moto), 'ไม่โดนฝนระหว่างทาง');
+    expect(note('16:15', TravelMode.car), 'ถึงก่อนฝน',
+        reason: 'rain starts within the hour after arriving');
+  });
+
   test('ranking puts the open, low-risk, earliest arrival first', () {
     final ranked = rankOptions(previewOptions(calm, bkk('17:45')));
     expect(ranked.first.mode, TravelMode.transit);

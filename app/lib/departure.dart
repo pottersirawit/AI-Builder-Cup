@@ -102,6 +102,13 @@ Departure _preview(
       : o.etaMin;
   final calmArrive = departAt.add(Duration(minutes: calmEta));
   final peak = peakRain(rain, departAt, calmArrive);
+  // Rain that starts within the hour after arriving: beaten, or nearly.
+  final soon = peakRain(
+    rain,
+    departAt,
+    calmArrive.add(const Duration(hours: 1)),
+  );
+  final dryNote = soon >= lightRain ? l.boardNoteBeatRain : l.boardNoteDry;
 
   Departure make(Verdict v, Risk r, String note, [int? eta]) => Departure(
     mode: o.mode,
@@ -117,6 +124,8 @@ Departure _preview(
     case TravelMode.transit:
       return peak >= heavyRain
           ? make(Verdict.leaveNow, Risk.medium, l.boardNoteTransitCrowded)
+          : peak >= lightRain
+          ? make(Verdict.leaveNow, Risk.low, l.boardNoteTransitWalk)
           : make(Verdict.leaveNow, Risk.low, l.boardNoteDry);
     case TravelMode.car:
       if (peak >= heavyRain) {
@@ -129,20 +138,15 @@ Departure _preview(
       }
       return peak >= lightRain
           ? make(Verdict.leaveNow, Risk.medium, l.boardNoteCarDrizzle)
-          : make(Verdict.leaveNow, Risk.low, l.boardNoteBeatRain);
+          : make(Verdict.leaveNow, Risk.low, dryNote);
     case TravelMode.moto:
       if (peak >= moderateRain) {
         return make(Verdict.dontGo, Risk.high, l.boardNoteMotoHeavy);
       }
       // Riders get caught by rain that starts soon after they arrive too.
-      final soon = peakRain(
-        rain,
-        departAt,
-        calmArrive.add(const Duration(hours: 1)),
-      );
       return peak >= lightRain || soon >= lightRain
           ? make(Verdict.leaveNow, Risk.medium, l.boardNoteMotoTight)
-          : make(Verdict.leaveNow, Risk.low, l.boardNoteBeatRain);
+          : make(Verdict.leaveNow, Risk.low, l.boardNoteDry);
   }
 }
 
