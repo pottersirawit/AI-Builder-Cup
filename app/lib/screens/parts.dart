@@ -4,6 +4,7 @@ import 'package:material_symbols_icons/symbols.dart';
 import '../app_state.dart';
 import '../config.dart';
 import '../design/design.dart';
+import '../events.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../time_th.dart';
@@ -202,7 +203,9 @@ class TripPass extends StatelessWidget {
                       style: t.labelMedium!.copyWith(color: c.paperMuted),
                     ),
                   ),
-                  if (!departIsNow)
+                  if (!departIsNow &&
+                      (trip?.arriveBy == null ||
+                          bangkokDay(trip!.arriveBy!) == bangkokDay(now)))
                     TextButton(
                       onPressed: controller.resetDeparture,
                       style: TextButton.styleFrom(

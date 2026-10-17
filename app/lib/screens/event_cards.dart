@@ -694,10 +694,10 @@ class EventRow extends StatelessWidget {
           Text(
             p.kind == LeaveKind.avoid || best == null
                 ? l.eventsAvoid
+                : (p.time == null || p.kind == LeaveKind.overdue)
+                ? '${l.summaryLeaveNow} · ${best.mode.label(l)}'
                 : l.eventsLeaveAt(
-                    p.time == null || p.kind == LeaveKind.overdue
-                        ? l.summaryLeaveNow
-                        : hhmm(p.time!),
+                    hhmm(p.time!),
                     best.mode.label(l),
                   ),
             maxLines: 1,

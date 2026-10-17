@@ -260,6 +260,34 @@ void main() {
         expect(hhmm(p.time!), '08:40', reason: '09:30 - 40 min - 10 min');
       },
     );
+
+    test(
+      'an event tomorrow with no leave-by never returns LeaveKind.now',
+      () {
+        final j =
+            jsonDecode(
+                  File('assets/fixtures/decide_car.json').readAsStringSync(),
+                )
+                as Map<String, dynamic>;
+        j.remove('leave_by');
+        final d = Decision.fromJson(j);
+        final now = DateTime.parse('2026-10-17T22:20:00+07:00');
+        final eventTomorrow = DateTime.parse('2026-10-18T13:30:00+07:00');
+        final planned = DateTime.parse('2026-10-18T10:30:00+07:00');
+        final p = leavePlan(
+          d,
+          rankOptions(serverOptions(d, planned)),
+          now,
+          deadline: eventTomorrow,
+        );
+        expect(p.kind, LeaveKind.before);
+        expect(
+          isoBangkok(p.time!),
+          '2026-10-18T12:40:00+07:00',
+          reason: '13:30 - 40 min by BTS - 10 min slack',
+        );
+      },
+    );
   });
 
   group('all-day events', () {

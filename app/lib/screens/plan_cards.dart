@@ -209,8 +209,10 @@ class UpNextCard extends StatelessWidget {
           Text(
             p.kind == LeaveKind.avoid
                 ? l.eventsAvoid
+                : leave == null
+                ? '${l.summaryLeaveNow} · ${p.best!.mode.shortLabel(l)}'
                 : l.eventsLeaveAt(
-                    leave == null ? l.summaryLeaveNow : hhmm(leave),
+                    hhmm(leave),
                     p.best!.mode.shortLabel(l),
                   ),
             style: tabular(t.labelMedium!),
