@@ -164,7 +164,7 @@ class UpNextCard extends StatelessWidget {
     final today = bangkokDay(now);
     final day = bangkokDay(at);
     final when = trip.allDay
-        ? l.allDay
+        ? allDayLabel(l, trip)
         : day == today
         ? hhmm(at)
         : '${dayChipLabel(l, day, today)} · ${hhmm(at)}';

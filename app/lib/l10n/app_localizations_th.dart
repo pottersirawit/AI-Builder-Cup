@@ -1491,6 +1491,17 @@ class AppLocalizationsTh extends AppLocalizations {
   String get allDay => 'ทั้งวัน';
 
   @override
+  String get allDayNoLeave => 'ไม่มีเวลาออก';
+
+  @override
+  String get allDayNote => 'กิจกรรมทั้งวันไม่มีเวลานัด จึงไม่มีเวลาออกให้';
+
+  @override
+  String allDayAskRoute(Object place) {
+    return 'ถามทางไป$place';
+  }
+
+  @override
   String get stripTitle => 'ภาพรวมวันนี้';
 
   @override

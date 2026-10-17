@@ -11,6 +11,7 @@ import '../location.dart';
 import '../models.dart';
 import '../trip_controller.dart';
 import '../trips_repository.dart';
+import 'all_day_sheet.dart';
 import 'ask_sheet.dart';
 import 'event_cards.dart';
 import 'parts.dart';
@@ -257,9 +258,10 @@ class _SummaryScreenState extends State<SummaryScreen> {
         .take(_upNextLimit)
         .toList();
     // Online and all-day events still fill the day.
-    final todayLeft = upcoming(repo.trips, now)
-        .where((t) => t.arriveBy != null && bangkokDay(t.arriveBy!) == today)
-        .length;
+    final todayLeft = upcoming(
+      repo.trips,
+      now,
+    ).where((t) => onDay(t, today)).length;
     final pending = repo.trips.isEmpty && (repo.loading || repo.error != null);
     final skeleton = repo.connected && repo.loading && repo.trips.isEmpty;
     final alerts = planAlerts(
@@ -406,6 +408,13 @@ class _SummaryScreenState extends State<SummaryScreen> {
                                                 t,
                                                 now,
                                               )?.best?.mode,
+                                            )
+                                          : t.allDay
+                                          ? () => showAllDaySheet(
+                                              context,
+                                              trip: t,
+                                              now: now,
+                                              outlook: outlook,
                                             )
                                           : widget.onSeeAll,
                                     ),

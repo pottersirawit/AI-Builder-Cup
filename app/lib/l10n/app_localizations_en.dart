@@ -1510,6 +1510,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String get allDay => 'All day';
 
   @override
+  String get allDayNoLeave => 'No leave time';
+
+  @override
+  String get allDayNote =>
+      'All-day events have no start time, so there is no leave time.';
+
+  @override
+  String allDayAskRoute(Object place) {
+    return 'Ask the way to $place';
+  }
+
+  @override
   String get stripTitle => 'Today at a glance';
 
   @override

@@ -20,9 +20,13 @@ List<Trip> upcoming(List<Trip> trips, DateTime now) {
   bool ahead(Trip t) => t.allDay
       ? (t.endsAt ?? t.arriveBy!.add(const Duration(days: 1))).isAfter(now)
       : t.arriveBy!.isAfter(cutoff);
+  // A multi-day event already under way sorts from today's midnight.
+  final midnight = _midnight(now);
+  DateTime key(Trip t) =>
+      t.allDay && t.arriveBy!.isBefore(midnight) ? midnight : t.arriveBy!;
   final timed =
       trips.where((t) => _isEvent(t) && t.arriveBy != null && ahead(t)).toList()
-        ..sort((a, b) => a.arriveBy!.compareTo(b.arriveBy!));
+        ..sort((a, b) => key(a).compareTo(key(b)));
   return [...timed, ...trips.where((t) => _isEvent(t) && t.arriveBy == null)];
 }
 
@@ -35,10 +39,15 @@ Trip? nextEvent(List<Trip> trips, DateTime now) =>
 typedef DayGroup = ({DateTime? day, List<Trip> trips});
 
 /// Splits already-sorted [trips] into Bangkok days, keeping their order.
-List<DayGroup> groupByDay(List<Trip> trips) {
+/// With [now], an all-day event under way files under today.
+List<DayGroup> groupByDay(List<Trip> trips, {DateTime? now}) {
   final groups = <DayGroup>[];
   for (final t in trips) {
-    final day = t.arriveBy == null ? null : bangkokDay(t.arriveBy!);
+    final day = t.arriveBy == null
+        ? null
+        : now == null
+        ? bangkokDay(t.arriveBy!)
+        : eventDay(t, now);
     if (groups.isNotEmpty && groups.last.day == day) {
       groups.last.trips.add(t);
     } else {
@@ -47,6 +56,32 @@ List<DayGroup> groupByDay(List<Trip> trips) {
   }
   return groups;
 }
+
+/// The Bangkok day [t] is listed under: its start, or today for an all-day
+/// event that began earlier and is still on.
+DateTime eventDay(Trip t, DateTime now) {
+  final start = bangkokDay(t.arriveBy!);
+  final today = bangkokDay(now);
+  return t.allDay && start.isBefore(today) && onDay(t, today) ? today : start;
+}
+
+/// Every Bangkok day [t] covers: one for a timed event, each day up to the
+/// exclusive end for an all-day one.
+List<DateTime> daysOf(Trip t) {
+  final start = bangkokDay(t.arriveBy!);
+  final end = t.allDay && t.endsAt != null ? bangkokDay(t.endsAt!) : null;
+  if (end == null || !end.isAfter(start)) return [start];
+  return [
+    for (var d = start; d.isBefore(end); d = d.add(const Duration(days: 1))) d,
+  ];
+}
+
+/// Whether [t] falls on the Bangkok [day].
+bool onDay(Trip t, DateTime day) =>
+    t.arriveBy != null && daysOf(t).contains(day);
+
+DateTime _midnight(DateTime now) =>
+    bangkokDay(now).subtract(const Duration(hours: 7));
 
 /// The Bangkok date of [t] as a UTC midnight, for comparing days.
 DateTime bangkokDay(DateTime t) {

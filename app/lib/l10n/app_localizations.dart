@@ -2564,6 +2564,24 @@ abstract class AppLocalizations {
   /// **'ทั้งวัน'**
   String get allDay;
 
+  /// No description provided for @allDayNoLeave.
+  ///
+  /// In th, this message translates to:
+  /// **'ไม่มีเวลาออก'**
+  String get allDayNoLeave;
+
+  /// No description provided for @allDayNote.
+  ///
+  /// In th, this message translates to:
+  /// **'กิจกรรมทั้งวันไม่มีเวลานัด จึงไม่มีเวลาออกให้'**
+  String get allDayNote;
+
+  /// No description provided for @allDayAskRoute.
+  ///
+  /// In th, this message translates to:
+  /// **'ถามทางไป{place}'**
+  String allDayAskRoute(Object place);
+
   /// No description provided for @stripTitle.
   ///
   /// In th, this message translates to:

@@ -8,6 +8,7 @@ import '../l10n/l10n.dart';
 import '../models.dart';
 import '../time_th.dart';
 import '../trips_repository.dart';
+import 'all_day_sheet.dart';
 import 'ask_sheet.dart';
 import 'event_cards.dart';
 import 'place_picker.dart';
@@ -85,7 +86,9 @@ class _EventsScreenState extends State<EventsScreen> {
         final month = DateTime.utc(today.year, today.month);
         final eventDays = {
           for (final e in events)
-            if (e.arriveBy != null) bangkokDay(e.arriveBy!),
+            if (e.arriveBy != null)
+              for (final d in daysOf(e))
+                if (!d.isBefore(today)) d,
         };
         final following = DateTime.utc(month.year, month.month + 1);
         // A second month when events run into it, as a wall calendar would.
@@ -100,12 +103,7 @@ class _EventsScreenState extends State<EventsScreen> {
         ];
         final shown = _day == null
             ? events
-            : events
-                  .where(
-                    (e) =>
-                        e.arriveBy != null && bangkokDay(e.arriveBy!) == _day,
-                  )
-                  .toList();
+            : events.where((e) => onDay(e, _day!)).toList();
 
         final Widget? placeholder;
         if (!repo.connected) {
@@ -182,7 +180,7 @@ class _EventsScreenState extends State<EventsScreen> {
                   SliverToBoxAdapter(
                     child: _DayFilter(
                       days: [
-                        for (final g in groupByDay(events))
+                        for (final g in groupByDay(events, now: now))
                           if (g.day != null) g.day!,
                       ],
                       today: today,
@@ -199,7 +197,7 @@ class _EventsScreenState extends State<EventsScreen> {
                         ),
                       ),
                     ),
-                  for (final g in groupByDay(shown)) ...[
+                  for (final g in groupByDay(shown, now: now)) ...[
                     SliverToBoxAdapter(
                       child: DayHeader(
                         day: g.day,
@@ -288,6 +286,13 @@ class _EventsScreenState extends State<EventsScreen> {
           ? () => _resolve(trip)
           : trip.travels
           ? () => _open(trip, plan)
+          : trip.allDay
+          ? () => showAllDaySheet(
+              context,
+              trip: trip,
+              now: now,
+              outlook: repo.outlook,
+            )
           : null,
     );
   }
@@ -343,15 +348,19 @@ class EventTicket extends StatelessWidget {
                           color: scheme.onSurfaceVariant,
                         ),
                         const SizedBox(width: Space.x1),
-                        Text(
-                          at == null
-                              ? l.eventsNoTime
-                              : trip.allDay
-                              ? l.allDay
-                              : hhmm(at),
-                          style: tabular(
-                            t.labelMedium!,
-                          ).copyWith(color: scheme.onSurfaceVariant),
+                        Flexible(
+                          child: Text(
+                            at == null
+                                ? l.eventsNoTime
+                                : trip.allDay
+                                ? allDayLabel(l, trip)
+                                : hhmm(at),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: tabular(
+                              t.labelMedium!,
+                            ).copyWith(color: scheme.onSurfaceVariant),
+                          ),
                         ),
                       ],
                     ),
@@ -364,11 +373,12 @@ class EventTicket extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(
-                Symbols.chevron_right_rounded,
-                size: 20,
-                color: scheme.onSurfaceVariant,
-              ),
+              if (onTap != null)
+                Icon(
+                  Symbols.chevron_right_rounded,
+                  size: 20,
+                  color: scheme.onSurfaceVariant,
+                ),
             ],
           ),
         ),
@@ -389,6 +399,8 @@ class EventTicket extends StatelessWidget {
                         ? Symbols.help_rounded
                         : trip.virtual
                         ? Symbols.videocam_rounded
+                        : trip.allDay && trip.destination.nameTh.isEmpty
+                        ? Symbols.event_rounded
                         : Symbols.location_on_rounded,
                     size: 16,
                     fill: 1,
@@ -403,6 +415,8 @@ class EventTicket extends StatelessWidget {
                           ? l.summarySetPlace
                           : trip.virtual
                           ? l.online
+                          : trip.allDay && trip.destination.nameTh.isEmpty
+                          ? l.allDayNoLeave
                           : trip.destination.nameTh,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
