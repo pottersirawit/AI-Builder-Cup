@@ -223,6 +223,13 @@ void main() {
     expect(find.text('AI วิเคราะห์ให้'), findsWidgets);
   });
 
+  testWidgets('settings opens from the events tab too', (tester) async {
+    await pumpApp(tester, '2026-09-29T16:10:00+07:00', height: 1600);
+    await tapAndSettle(tester, find.text('อีเวนต์'));
+    await tapAndSettle(tester, find.byTooltip('ตั้งค่า'));
+    expect(find.text('วิธีเดินทางที่ใช้ประจำ'), findsOneWidget);
+  });
+
   testWidgets('the events tab lists everything coming up by day', (
     tester,
   ) async {

@@ -103,6 +103,15 @@ func (f *BMARoadFloodFetcher) fetchAll() ([]domain.RoadFloodSensor, error) {
 		if raw.Latitude == 0 && raw.Longitude == 0 {
 			continue
 		}
+		updatedAt := now
+		if raw.SiteTimestampTH != "" {
+			for _, layout := range []string{"2006-01-02 15:04:05", "2006-01-02T15:04:05", "02/01/2006 15:04:05", "02/01/2006 15:04"} {
+				if t, err := time.ParseInLocation(layout, raw.SiteTimestampTH, domain.Bangkok); err == nil {
+					updatedAt = t
+					break
+				}
+			}
+		}
 		sensors = append(sensors, domain.RoadFloodSensor{
 			Code:      raw.FloodCode,
 			NameTH:    raw.FloodShortName,
@@ -110,7 +119,7 @@ func (f *BMARoadFloodFetcher) fetchAll() ([]domain.RoadFloodSensor, error) {
 			Lat:       raw.Latitude,
 			Lng:       raw.Longitude,
 			DepthCM:   raw.FloodDepthCM,
-			UpdatedAt: now,
+			UpdatedAt: updatedAt,
 		})
 	}
 

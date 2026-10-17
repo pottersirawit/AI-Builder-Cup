@@ -5,11 +5,15 @@ import '../design/design.dart';
 import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
+import '../time_th.dart';
+import 'activity_cards.dart';
 import 'parts.dart';
+import 'verdict_screen.dart';
 
 List<String> suggestedQuestions(AppLocalizations l) => [
   l.askSuggestion1,
   l.askSuggestion2,
+  l.askActivitySuggestion,
 ];
 
 class _Message {
@@ -17,26 +21,38 @@ class _Message {
     : mine = true,
       decision = null,
       needs = null,
+      activity = null,
       failed = false;
   const _Message.ai(this.text, [this.decision])
     : mine = false,
       needs = null,
+      activity = null,
       failed = false;
   const _Message.failed(this.text)
     : mine = false,
       decision = null,
       needs = null,
+      activity = null,
       failed = true;
 
   /// The answer is a question back: where is [text]'s place?
   const _Message.needs(this.text, NeedsPlace this.needs)
     : mine = false,
       decision = null,
+      activity = null,
+      failed = false;
+
+  /// A day out with no place yet: what to bring, then where and when.
+  const _Message.activity(this.text, ActivityPlan this.activity)
+    : mine = false,
+      decision = null,
+      needs = null,
       failed = false;
   final bool mine;
   final String text;
   final Decision? decision;
   final NeedsPlace? needs;
+  final ActivityPlan? activity;
   final bool failed;
 }
 
@@ -64,6 +80,42 @@ class _AskScreenState extends State<AskScreen> {
   final _scroll = ScrollController();
   bool _thinking = false;
   String? _lastQuestion;
+
+  /// The day out the last answer asked "where?" about; the next message is
+  /// read as its place or day.
+  Activity? _pending;
+
+  /// Plans the day out at [destination] on [day] on the trip page.
+  void _planActivity(
+    String question,
+    ActivityPlan plan,
+    Place destination,
+    DateTime day,
+  ) {
+    final origin = activityOrigin(context);
+    if (origin == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.activityNeedsOrigin)));
+      return;
+    }
+    final now = AppScope.readState(context).now();
+    final morning = bangkokAt(day, 7, 0);
+    Navigator.of(context).push(
+      MaterialPageRoute<void>(
+        builder: (_) => VerdictScreen(
+          request: DecideRequest(
+            questionTh: question,
+            origin: origin,
+            destination: destination,
+            places: AppScope.readPlaces(context).places,
+            activity: plan.activity.withDay(isoDay(day)),
+          ),
+          departAt: morning.isAfter(now) ? morning : now,
+        ),
+      ),
+    );
+  }
 
   @override
   void dispose() {
@@ -124,19 +176,27 @@ class _AskScreenState extends State<AskScreen> {
                 ? widget.trip!.destination
                 : null,
             places: places ?? store.places,
+            activity: _pending,
           ),
         ),
       );
       if (!mounted) return;
-      setState(
-        () => _messages.add(
-          d.needsPlace != null
+      setState(() {
+        if (d.asksWhere) {
+          _pending = d.activity!.activity;
+        } else if (d.needsPlace == null) {
+          _pending = null;
+        }
+        _messages.add(
+          d.asksWhere
+              ? _Message.activity(q, d.activity!)
+              : d.needsPlace != null
               ? _Message.needs(q, d.needsPlace!)
               : d.refused
               ? _Message.ai(d.summaryTh, null)
               : _Message.ai(d.summaryTh, d),
-        ),
-      );
+        );
+      });
     } catch (_) {
       if (!mounted) return;
       setState(() => _messages.add(_Message.failed(context.l10n.askFailed)));
@@ -196,7 +256,17 @@ class _AskScreenState extends State<AskScreen> {
               ),
               children: [
                 for (final m in _messages)
-                  if (m.needs != null)
+                  if (m.activity != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Space.x3),
+                      child: ActivityAskPass(
+                        plan: m.activity!,
+                        now: state.now(),
+                        onPlan: (dest, day) =>
+                            _planActivity(m.text, m.activity!, dest, day),
+                      ),
+                    )
+                  else if (m.needs != null)
                     Padding(
                       padding: const EdgeInsets.only(bottom: Space.x3),
                       child: NeedsPlacePass(
@@ -348,6 +418,16 @@ class _Bubble extends StatelessWidget {
                       message.text,
                       style: t.bodyMedium!.copyWith(color: c.paperInk),
                     ),
+                    for (final note in d.activity?.weatherNotesTh ?? const [])
+                      Padding(
+                        padding: const EdgeInsets.only(top: Space.x2),
+                        child: Text(
+                          '• $note',
+                          style: tabular(
+                            t.bodyMedium!,
+                          ).copyWith(color: c.paperInk),
+                        ),
+                      ),
                   ],
                 ),
               ),

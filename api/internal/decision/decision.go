@@ -103,9 +103,12 @@ type Input struct {
 	Routes        map[domain.Mode]domain.Route // calculated route details per mode
 
 	Rain        []domain.RainSample
-	Spots       []floodspot.Spot // flood spots on the road route
-	Reports     []domain.Report  // community reports near the road route
-	WindGustKMH float64          // peak wind gust on route (e.g. from WeatherNext 3)
+	Spots       []floodspot.Spot         // flood spots on the road route
+	Reports     []domain.Report          // community reports near the road route
+	RoadSensors []domain.RoadFloodSensor // live BMA road flood sensors near the route
+	Tidal       *domain.TidalReading     // BMA KlongMap tidal backwater status
+	WindGustKMH float64                  // peak wind gust on route (from WeatherNext 3)
+	TempC       float64                  // peak temperature on route (from WeatherNext 3)
 	Travel      TravelFunc
 }
 
@@ -279,8 +282,13 @@ func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float6
 			continue
 		}
 		for _, s := range in.Spots {
-			if d := SpotDepthCM(s, in.Rain, t); d > depth {
+			if d := SpotDepthCMWithTide(s, in.Rain, t, in.Tidal); d > depth {
 				depth, deepest = d, s.ShortName(in.Lang)
+			}
+		}
+		for _, rs := range in.RoadSensors {
+			if d := sensorDepthCM(rs, t); d > depth {
+				depth, deepest = d, sensorName(rs, in.Lang)
 			}
 		}
 		for _, r := range in.Reports {
@@ -338,6 +346,48 @@ func SpotDepthCM(s floodspot.Spot, samples []domain.RainSample, t time.Time) flo
 		depth = math.Max(depth, floodspot.InstantDepthCM(s, r.MMPerHr)*left)
 	}
 	return depth
+}
+
+// SpotDepthCMWithTide accounts for Chao Phraya tidal backwater slowing canal
+// gravity drainage when active street flooding (>= carSlowDepthCM) is present.
+func SpotDepthCMWithTide(s floodspot.Spot, samples []domain.RainSample, t time.Time, tidal *domain.TidalReading) float64 {
+	depth := SpotDepthCM(s, samples, t)
+	if depth >= carSlowDepthCM && tidal != nil {
+		switch tidal.SurgeRisk {
+		case "high":
+			depth = math.Min(float64(s.MaxDepthCM), depth*1.10)
+		case "medium":
+			depth = math.Min(float64(s.MaxDepthCM), depth*1.05)
+		}
+	}
+	return depth
+}
+
+// sensorDepthCM returns the street water depth reported by a live BMA road
+// sensor at t, draining linearly over drainWindow from its reading timestamp.
+func sensorDepthCM(s domain.RoadFloodSensor, t time.Time) float64 {
+	if s.DepthCM <= 0 {
+		return 0
+	}
+	if s.UpdatedAt.IsZero() {
+		return s.DepthCM
+	}
+	age := t.Sub(s.UpdatedAt)
+	if age < 0 || age >= drainWindow {
+		return 0
+	}
+	left := 1 - float64(age)/float64(drainWindow)
+	return s.DepthCM * left
+}
+
+func sensorName(s domain.RoadFloodSensor, l domain.Lang) string {
+	if l == domain.LangEN && s.NameEN != "" {
+		return s.NameEN
+	}
+	if s.NameTH != "" {
+		return s.NameTH
+	}
+	return s.Code
 }
 
 // Report weighting: a lone photo is cheap to fake, so a report only counts at
@@ -503,12 +553,41 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 		window = evals[domain.ModeCar]
 	}
 	var out []FloodSpot
+	matchedSensor := map[int]bool{}
 	for _, s := range in.Spots {
 		d := 0.0
 		for t := window.Depart; t.Before(window.Arrive); t = t.Add(step) {
-			d = math.Max(d, SpotDepthCM(s, in.Rain, t))
+			d = math.Max(d, SpotDepthCMWithTide(s, in.Rain, t, in.Tidal))
+		}
+		for idx, rs := range in.RoadSensors {
+			if geo.HaversineM(domain.LatLng{Lat: s.Lat, Lng: s.Lng}, rs.Point()) <= 300 {
+				matchedSensor[idx] = true
+				for t := window.Depart; t.Before(window.Arrive); t = t.Add(step) {
+					d = math.Max(d, sensorDepthCM(rs, t))
+				}
+			}
 		}
 		out = append(out, FloodSpot{ID: s.ID, NameTH: s.Name(in.Lang), Lat: s.Lat, Lng: s.Lng, ExpectedDepthCM: int(math.Round(d)), Risk: depthRisk(d)})
+	}
+	for idx, rs := range in.RoadSensors {
+		if matchedSensor[idx] {
+			continue
+		}
+		d := 0.0
+		for t := window.Depart; t.Before(window.Arrive); t = t.Add(step) {
+			d = math.Max(d, sensorDepthCM(rs, t))
+		}
+		if d < 1 {
+			continue
+		}
+		out = append(out, FloodSpot{
+			ID:              "sensor-" + rs.Code,
+			NameTH:          sensorName(rs, in.Lang),
+			Lat:             rs.Lat,
+			Lng:             rs.Lng,
+			ExpectedDepthCM: int(math.Round(d)),
+			Risk:            depthRisk(d),
+		})
 	}
 	for _, r := range in.Reports {
 		d := 0.0

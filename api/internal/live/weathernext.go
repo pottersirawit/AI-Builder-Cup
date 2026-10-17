@@ -66,7 +66,7 @@ func NewBigQueryWeatherNextFetcher(ctx context.Context, projectID string) (*BigQ
 		Client:    client,
 		ProjectID: projectID,
 		DatasetID: "weathernext_3",
-		TableID:   "weathernext_3_0_0_0p05deg",
+		TableID:   "weathernext_3_0_0_0p1deg",
 	}, nil
 }
 
@@ -77,9 +77,11 @@ func (b *BigQueryWeatherNextFetcher) FetchBangkokGrid(ctx context.Context) ([]Gr
 			ST_Y(geography) as lat,
 			ST_X(geography) as lng,
 			forecast[OFFSET(0)].time as valid_time,
-			forecast[OFFSET(0)].station_head_temperature_2m_mean as temp_kelvin
+			forecast[OFFSET(0)].temperature_2m_mean as temp_kelvin,
+			forecast[OFFSET(0)].wind_speed_10m_p90 as wind_10m_p90_ms,
+			forecast[OFFSET(0)].total_precipitation_1hr_mean as precip_1hr_m
 		FROM `+"`%s.%s.%s`"+`
-		WHERE init_time >= TIMESTAMP_SUB(CURRENT_TIMESTAMP(), INTERVAL 48 HOUR)
+		WHERE init_time >= TIMESTAMP_SUB(TIMESTAMP_TRUNC(CURRENT_TIMESTAMP(), HOUR), INTERVAL 24 HOUR)
 		  AND ST_DWITHIN(geography, ST_GEOGPOINT(100.5018, 13.7563), 50000)
 		ORDER BY init_time DESC
 		LIMIT 100
@@ -96,10 +98,12 @@ func (b *BigQueryWeatherNextFetcher) FetchBangkokGrid(ctx context.Context) ([]Gr
 	var results []GridPoint
 	for {
 		var row struct {
-			Lat        float64   `bigquery:"lat"`
-			Lng        float64   `bigquery:"lng"`
-			ValidTime  time.Time `bigquery:"valid_time"`
-			TempKelvin float64   `bigquery:"temp_kelvin"`
+			Lat          float64   `bigquery:"lat"`
+			Lng          float64   `bigquery:"lng"`
+			ValidTime    time.Time `bigquery:"valid_time"`
+			TempKelvin   float64   `bigquery:"temp_kelvin"`
+			Wind10mP90MS float64   `bigquery:"wind_10m_p90_ms"`
+			Precip1hrM   float64   `bigquery:"precip_1hr_m"`
 		}
 		err := it.Next(&row)
 		if errors.Is(err, iterator.Done) {
@@ -113,7 +117,8 @@ func (b *BigQueryWeatherNextFetcher) FetchBangkokGrid(ctx context.Context) ([]Gr
 			Lat:         row.Lat,
 			Lng:         row.Lng,
 			TempC:       row.TempKelvin - 273.15,
-			WindGustKMH: 25.0, // baseline surface telemetry
+			WindGustKMH: row.Wind10mP90MS * 3.6, // m/s to km/h
+			RainMM:      row.Precip1hrM * 1000.0, // m to mm
 			ValidTime:   row.ValidTime,
 		})
 	}
@@ -203,6 +208,15 @@ func (c *WeatherNextCache) NearestPoint(p domain.LatLng) (GridPoint, error) {
 func (c *WeatherNextCache) PeakConditionsAlongRoute(polyline []domain.LatLng) (maxGust float64, maxTemp float64, err error) {
 	if len(polyline) == 0 {
 		return 0, 0, nil
+	}
+
+	c.mu.RLock()
+	needRefresh := (len(c.cached) == 0 || time.Since(c.cachedAt) > c.TTL) && c.Fetcher != nil
+	c.mu.RUnlock()
+	if needRefresh {
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		_ = c.Refresh(ctx, false)
+		cancel()
 	}
 
 	c.mu.RLock()

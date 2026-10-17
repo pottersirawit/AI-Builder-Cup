@@ -383,11 +383,33 @@ class FloodSpot {
 }
 
 class ReasoningStep {
-  const ReasoningStep(this.tool, this.summaryTh);
-  factory ReasoningStep.fromJson(Json j) =>
-      ReasoningStep(_str(j['tool']), _str(j['summary_th']));
+  const ReasoningStep(this.tool, this.summaryTh, [this.category = '']);
+  factory ReasoningStep.fromJson(Json j) => ReasoningStep(
+    _str(j['tool']),
+    _str(j['summary_th']),
+    _str(j['category']),
+  );
   final String tool;
   final String summaryTh;
+  final String category;
+
+  String get effectiveCategory {
+    if (category.isNotEmpty) return category;
+    return switch (tool) {
+      'parse_question' || 'synthesize_decision' => 'ai',
+      'get_trip' ||
+      'get_route' ||
+      'get_rain_along_route' ||
+      'get_canal_levels' => 'data',
+      'get_community_reports' => 'data_ai',
+      'get_flood_spots_on_route' => 'data_rule',
+      'evaluate_departure' ||
+      'deterministic_baseline' ||
+      'synthesize_decision_fallback' => 'rule',
+      final t when t.startsWith('guardrail') => 'rule',
+      _ => 'data',
+    };
+  }
 }
 
 class DecisionExplanation {
@@ -439,14 +461,17 @@ class Decision {
     this.explanation,
     this.emergencyContacts = const [],
     this.refused = false,
+    this.activity,
   });
 
   factory Decision.fromJson(Json j) {
     final rawSources = (j['sources'] as List? ?? const []).cast<String>();
     final trip = j['trip'] == null ? null : Trip.fromJson(j['trip'] as Json);
+    final originName = (trip?.origin.nameTh ?? '').toLowerCase();
     final hasGpsOrigin =
         trip?.origin.nameTh.contains('ตำแหน่ง') == true ||
-        (trip != null && trip.source == 'app');
+        originName.contains('current location') ||
+        originName.contains('gps');
     final sources = [
       if (hasGpsOrigin &&
           !rawSources.any((s) => s.contains('GPS') || s.contains('ตำแหน่ง')))
@@ -476,6 +501,9 @@ class Decision {
           .map((c) => EmergencyContact.fromJson(c as Json))
           .toList(),
       refused: j['refused'] == true,
+      activity: j['activity'] == null
+          ? null
+          : ActivityPlan.fromJson(j['activity'] as Json),
     );
   }
 
@@ -528,6 +556,141 @@ class Decision {
 
   /// True when the question was rejected by guardrails (unrelated to travel/trip).
   final bool refused;
+
+  /// What to prepare for the day out the question is about. Without a
+  /// verdict ([asksWhere]) it is the whole answer: a checklist and "where?".
+  final ActivityPlan? activity;
+
+  bool get asksWhere => activity?.asksWhere == true;
+
+  /// An answer with nothing to show: no verdict text, no ways to travel and
+  /// no question back. Never drawn as an empty pass.
+  bool get unreadable =>
+      !refused &&
+      !asksWhere &&
+      needsPlace == null &&
+      headlineTh.isEmpty &&
+      modeOptions.isEmpty;
+}
+
+/// A day out the user is preparing for ("ไปปีนผา"), sent back with the next
+/// question so a "where?" answer stays about it.
+class Activity {
+  const Activity({required this.kind, this.nameTh = '', this.day});
+
+  factory Activity.fromJson(Json j) => Activity(
+    kind: _str(j['kind']),
+    nameTh: _str(j['name_th']),
+    day: j['day'] == null || _str(j['day']).isEmpty ? null : _str(j['day']),
+  );
+
+  /// climbing, camping, hiking, beach, cycling, running or other.
+  final String kind;
+  final String nameTh;
+
+  /// Bangkok date, YYYY-MM-DD.
+  final String? day;
+
+  Activity withDay(String? day) => Activity(kind: kind, nameTh: nameTh, day: day);
+
+  Json toJson() => {
+    'kind': kind,
+    if (nameTh.isNotEmpty) 'name_th': nameTh,
+    if (day != null) 'day': day,
+  };
+}
+
+class ChecklistItem {
+  const ChecklistItem({required this.itemTh, this.whyTh = ''});
+  factory ChecklistItem.fromJson(Json j) =>
+      ChecklistItem(itemTh: _str(j['item_th']), whyTh: _str(j['why_th']));
+  final String itemTh;
+  final String whyTh;
+}
+
+/// One day's weather at a place, for days past the hourly outlook.
+class DayForecast {
+  const DayForecast({
+    required this.day,
+    required this.maxC,
+    required this.minC,
+    required this.feelsMaxC,
+    required this.feelsMinC,
+    required this.rainProbPct,
+    this.thunderProbPct = 0,
+    this.uvIndex = 0,
+    this.condition = '',
+    this.conditionTh = '',
+  });
+
+  factory DayForecast.fromJson(Json j) => DayForecast(
+    day: DateTime.parse(_str(j['day'])),
+    maxC: _num(j['max_c']),
+    minC: _num(j['min_c']),
+    feelsMaxC: _num(j['feels_max_c']),
+    feelsMinC: _num(j['feels_min_c']),
+    rainProbPct: _int(j['rain_prob_pct']),
+    thunderProbPct: _int(j['thunder_prob_pct']),
+    uvIndex: _int(j['uv_index']),
+    condition: _str(j['condition']),
+    conditionTh: _str(j['condition_th']),
+  );
+
+  final DateTime day;
+  final double maxC;
+  final double minC;
+  final double feelsMaxC;
+  final double feelsMinC;
+  final int rainProbPct;
+  final int thunderProbPct;
+  final int uvIndex;
+  final String condition;
+  final String conditionTh;
+}
+
+/// What to prepare for an activity: a checklist, the day's weather notes at
+/// its place, and, before the place is known, the question back.
+class ActivityPlan {
+  const ActivityPlan({
+    required this.activity,
+    required this.headlineTh,
+    required this.checklist,
+    this.weatherNotesTh = const [],
+    this.forecast,
+    this.placeTh = '',
+    this.askTh = '',
+    this.suggestionsTh = const [],
+    this.generatedBy = '',
+  });
+
+  factory ActivityPlan.fromJson(Json j) => ActivityPlan(
+    activity: Activity.fromJson(j),
+    headlineTh: _str(j['headline_th']),
+    checklist: _list(j['checklist']).map(ChecklistItem.fromJson).toList(),
+    weatherNotesTh: (j['weather_notes_th'] as List? ?? const [])
+        .cast<String>(),
+    forecast: j['forecast'] == null
+        ? null
+        : DayForecast.fromJson(j['forecast'] as Json),
+    placeTh: _str(j['place_th']),
+    askTh: _str(j['ask_th']),
+    suggestionsTh: (j['suggestions_th'] as List? ?? const []).cast<String>(),
+    generatedBy: _str(j['generated_by']),
+  );
+
+  final Activity activity;
+  final String headlineTh;
+  final List<ChecklistItem> checklist;
+  final List<String> weatherNotesTh;
+  final DayForecast? forecast;
+  final String placeTh;
+  final String askTh;
+
+  /// Search words for places known for the activity.
+  final List<String> suggestionsTh;
+  final String generatedBy;
+
+  bool get asksWhere => askTh.isNotEmpty;
 }
 
 class EmergencyContact {
@@ -572,6 +735,7 @@ class DecideRequest {
     this.places = const [],
     this.trip,
     this.email,
+    this.activity,
   });
   final String? tripId;
 
@@ -585,6 +749,9 @@ class DecideRequest {
   final Trip? trip;
   final String? email;
 
+  /// The day out an earlier answer asked "where?" about.
+  final Activity? activity;
+
   DecideRequest copyWith({
     String? tripId,
     String? departAt,
@@ -594,6 +761,7 @@ class DecideRequest {
     List<SavedPlace>? places,
     Trip? trip,
     String? email,
+    Activity? activity,
   }) => DecideRequest(
     tripId: tripId ?? this.tripId,
     departAt: departAt ?? this.departAt,
@@ -604,6 +772,7 @@ class DecideRequest {
     places: places ?? this.places,
     trip: trip ?? this.trip,
     email: email ?? this.email,
+    activity: activity ?? this.activity,
   );
 
   Json toJson() => {
@@ -616,6 +785,7 @@ class DecideRequest {
     if (places.isNotEmpty) 'places': [for (final p in places) p.toWire()],
     if (trip != null) 'trip': trip!.toJson(),
     if (email != null) 'email': email,
+    if (activity != null) 'activity': activity!.toJson(),
   };
 }
 

@@ -60,6 +60,7 @@ class _AskSheet extends StatelessWidget {
       for (final p in store.others)
         (placeIcon(p.icon), l.homeQuestionToNow(p.labelFor(l))),
       (Symbols.wb_twilight_rounded, l.askTomorrowMorning),
+      (Symbols.camping_rounded, l.askActivitySuggestion),
     ];
     return Padding(
       padding: EdgeInsets.fromLTRB(

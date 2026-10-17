@@ -137,6 +137,40 @@ func (g *Grounding) AddFacts(texts ...string) {
 	}
 }
 
+// AddToolCalls grounds HH:MM times and travel durations that were explicitly
+// returned by tool calls during the session.
+func (g *Grounding) AddToolCalls(s *planner.Session) {
+	if g.known == nil {
+		g.known = map[string]bool{}
+	}
+	for _, c := range s.Calls() {
+		for _, m := range clockTime.FindAllStringSubmatch(c.SummaryTH, -1) {
+			g.known[matchHHMM(m)] = true
+		}
+		if c.Tool == "evaluate_departure" || c.Tool == "get_route" {
+			mode := s.Trip.Mode
+			if m, ok := c.Args["mode"].(string); ok && domain.Mode(m).Valid() {
+				mode = domain.Mode(m)
+			}
+			depart := s.Now
+			if v, ok := c.Args["depart_at"].(string); ok && v != "" {
+				if t, err := planner.ParseTime(v, s.Now); err == nil {
+					depart = t
+				}
+			}
+			if in, err := s.Input(depart, mode); err == nil {
+				ev := decision.EvaluateMode(in, mode, depart)
+				g.known[hhmm(ev.Depart)] = true
+				g.known[hhmm(ev.Arrive)] = true
+				g.addNum("min", float64(ev.Minutes), float64(ev.LateMinutes))
+				if lb := decision.LeaveBy(in, mode); lb != nil {
+					g.known[hhmm(*lb)] = true
+				}
+			}
+		}
+	}
+}
+
 var (
 	thaiToArabic = strings.NewReplacer("๐", "0", "๑", "1", "๒", "2", "๓", "3", "๔", "4", "๕", "5", "๖", "6", "๗", "7", "๘", "8", "๙", "9")
 	spaces       = regexp.MustCompile(`\s+`)

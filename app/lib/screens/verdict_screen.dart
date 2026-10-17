@@ -10,6 +10,7 @@ import '../l10n/l10n.dart';
 import '../models.dart';
 import '../places.dart';
 import '../trip_controller.dart';
+import 'activity_cards.dart';
 import 'ask_screen.dart';
 import 'origin_picker.dart';
 import 'parts.dart';
@@ -109,6 +110,22 @@ class _VerdictScreenState extends State<VerdictScreen> {
     );
   }
 
+  void _planActivity(ActivityPlan plan, Place destination, DateTime day) {
+    final origin = activityOrigin(context);
+    if (origin == null) {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(context.l10n.activityNeedsOrigin)));
+      return;
+    }
+    _c.planActivity(
+      activity: plan.activity,
+      origin: origin,
+      destination: destination,
+      day: day,
+    );
+  }
+
   Future<void> _savePlace(Place dest) async {
     final messenger = ScaffoldMessenger.of(context);
     final l = context.l10n;
@@ -154,9 +171,16 @@ class _VerdictScreenState extends State<VerdictScreen> {
     final c = FonColors.of(context);
 
     final needs = _c.needsPlace;
-    final Widget pass = needs != null
+    final ask = _c.askActivity;
+    final Widget pass = ask != null
+        ? ActivityAskPass(
+            plan: ask,
+            now: state.now(),
+            onPlan: (dest, day) => _planActivity(ask, dest, day),
+          )
+        : needs != null
         ? NeedsPlacePass(needs: needs, onResolved: _c.resolvePlace)
-        : _c.error != null && d == null
+        : (_c.error != null && d == null) || d?.unreadable == true
         ? Pass(
             sections: [
               PassSection(
@@ -230,13 +254,17 @@ class _VerdictScreenState extends State<VerdictScreen> {
                     FieldHeader(
                       state: sky,
                       back: true,
-                      title: trip == null
+                      title: ask != null
+                          ? ask.headlineTh
+                          : trip == null
                           ? l.verdictQuestionTitle
                           : trip.source == 'routine' ||
                                 trip.titleTh == 'กลับบ้าน'
                           ? trip.titleTh
                           : l.verdictGoTo(trip.destination.nameTh),
-                      subtitle: trip == null
+                      subtitle: ask != null
+                          ? widget.request.questionTh ?? ''
+                          : trip == null
                           ? l.verdictReadingQuestion
                           : '${trip.origin.nameTh} → ${trip.destination.nameTh}',
                       onSubtitleTap: trip != null ? _openOriginPicker : null,
@@ -273,12 +301,14 @@ class _VerdictScreenState extends State<VerdictScreen> {
               ),
             ),
           ),
-          if (d != null && !d.refused) ...[
+          if (d != null && !d.refused && !d.unreadable) ...[
             if (d.explanation case final e? when !e.isEmpty)
               SliverToBoxAdapter(
                 child: _WhySection(explanation: e, decision: d),
               ),
-            if (_outlook case final o?)
+            if (d.activity case final a?)
+              SliverToBoxAdapter(child: ActivitySection(plan: a))
+            else if (_outlook case final o?)
               SliverToBoxAdapter(
                 child: _GearSection(
                   outlook: o,
@@ -371,15 +401,19 @@ class _VerdictScreenState extends State<VerdictScreen> {
             SliverToBoxAdapter(
               child: Section(
                 title: l.verdictTraceTitle,
-                trailing: const GeminiMark(size: 22),
+                trailing: GeminiMark(
+                  size: 22,
+                  fallback: d.generatedBy == 'fallback',
+                ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    for (var i = 0; i < d.reasoning.length; i++)
+                    for (final (i, step)
+                        in _traceStepsWithSynthesis(d, l).indexed)
                       _TraceStep(
-                        step: d.reasoning[i],
+                        step: step,
                         index: i + 1,
-                        last: i == d.reasoning.length - 1,
+                        last: i == _traceStepsWithSynthesis(d, l).length - 1,
                       ),
                     const SizedBox(height: Space.x4),
                     ConfidenceMeter(
@@ -712,7 +746,36 @@ class _WhySectionState extends State<_WhySection> {
   }
 }
 
-/// One tool call in the agent's trace: a numbered rail, a plain-words step title, summary.
+List<ReasoningStep> _traceStepsWithSynthesis(Decision d, AppLocalizations l) {
+  if (d.reasoning.isEmpty) return const [];
+  final alreadyHasSynthesis = d.reasoning.any(
+    (s) => s.tool.startsWith('synthesize_decision'),
+  );
+  if (alreadyHasSynthesis) return d.reasoning;
+
+  final guardrailFired = d.reasoning.any(
+    (s) => s.tool.startsWith('guardrail'),
+  );
+  final isAi = d.generatedBy == 'gemini' && !guardrailFired && !d.refused;
+  final synthesisStep = isAi
+      ? ReasoningStep(
+          'synthesize_decision',
+          l.isThai
+              ? 'สรุปคำแนะนำสุดท้าย (${d.headlineTh}) และเรียบเรียงคำอธิบายด้วย Gemini โดยผ่านการตรวจสอบความถูกต้องกับข้อมูลจริง'
+              : 'Synthesized the final recommendation (${d.headlineTh}) and explanation with Gemini, verified against grounded tool data',
+          'ai',
+        )
+      : ReasoningStep(
+          'synthesize_decision_fallback',
+          l.isThai
+              ? 'สรุปคำแนะนำสุดท้าย (${d.headlineTh}) และคำอธิบายจากแบบจำลองความเสี่ยงโดยตรง'
+              : 'Generated the final recommendation (${d.headlineTh}) and explanation directly from the deterministic risk model',
+          'rule',
+        );
+  return [...d.reasoning, synthesisStep];
+}
+
+/// One tool call in the agent's trace: a numbered rail, a plain-words step title, classification badge, and summary.
 class _TraceStep extends StatelessWidget {
   const _TraceStep({
     required this.step,
@@ -737,7 +800,35 @@ class _TraceStep extends StatelessWidget {
       'get_canal_levels' => l.verdictToolCanals,
       'get_community_reports' => l.verdictToolReports,
       'evaluate_departure' => l.verdictToolEvaluate,
+      'deterministic_baseline' =>
+        l.isThai ? 'คำนวณความเสี่ยงด้วยแบบจำลอง' : 'Run deterministic risk model',
+      'synthesize_decision' || 'synthesize_decision_fallback' =>
+        l.isThai ? 'สรุปคำแนะนำสุดท้าย' : 'Synthesize final recommendation',
+      final tool when tool.startsWith('guardrail') =>
+        l.isThai ? 'ตรวจสอบความถูกต้องของคำตอบ' : 'Verify grounding guardrails',
       _ => null,
+    };
+    final (badgeLabel, badgeIcon) = switch (step.effectiveCategory) {
+      'ai' => (
+        l.isThai ? 'วิเคราะห์ด้วย AI' : 'Inferred by AI',
+        Symbols.auto_awesome_rounded,
+      ),
+      'data_ai' => (
+        l.isThai ? 'ข้อมูลจริง + AI' : 'Data + AI',
+        Symbols.photo_camera_rounded,
+      ),
+      'rule' => (
+        l.isThai ? 'กฎการคำนวณ' : 'Rule-based',
+        Symbols.calculate_rounded,
+      ),
+      'data_rule' => (
+        l.isThai ? 'ข้อมูลจริง + กฎคำนวณ' : 'Data + Rule-based',
+        Symbols.analytics_rounded,
+      ),
+      _ => (
+        l.isThai ? 'ข้อมูลจริง' : 'Data-based',
+        Symbols.database_rounded,
+      ),
     };
     return IntrinsicHeight(
       child: Row(
@@ -780,12 +871,46 @@ class _TraceStep extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  if (title != null)
-                    Text(
-                      title,
-                      style: t.labelLarge!.copyWith(color: scheme.primary),
-                    ),
-                  const SizedBox(height: 2),
+                  Wrap(
+                    spacing: Space.x2,
+                    runSpacing: Space.x1,
+                    crossAxisAlignment: WrapCrossAlignment.center,
+                    children: [
+                      if (title != null)
+                        Text(
+                          title,
+                          style: t.labelLarge!.copyWith(color: scheme.primary),
+                        ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: Space.x2,
+                          vertical: 2,
+                        ),
+                        decoration: BoxDecoration(
+                          color: scheme.surfaceContainerHighest,
+                          borderRadius: BorderRadius.circular(Radii.pill),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              badgeIcon,
+                              size: 12,
+                              color: scheme.onSurfaceVariant,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              badgeLabel,
+                              style: t.labelSmall!.copyWith(
+                                color: scheme.onSurfaceVariant,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
                   Text(step.summaryTh, style: t.bodyMedium),
                 ],
               ),
@@ -801,6 +926,12 @@ IconData _sourceIcon(String s) {
   if (s.contains('GPS') || s.contains('ตำแหน่ง')) {
     return Symbols.my_location_rounded;
   }
+  if (s.contains('Calendar')) {
+    return Symbols.calendar_month_rounded;
+  }
+  if (s.contains('Gmail')) {
+    return Symbols.mail_rounded;
+  }
   if (s.contains('Road Flood') ||
       s.contains('Sensor') ||
       s.contains('เซ็นเซอร์')) {
@@ -809,8 +940,17 @@ IconData _sourceIcon(String s) {
   if (s.contains('WeatherNext') || s.contains('Wind')) {
     return Symbols.air_rounded;
   }
-  if (s.contains('Tidal') || s.contains('Canal') || s.contains('คลอง')) {
+  if (s.contains('Weather API')) {
+    return Symbols.rainy_rounded;
+  }
+  if (s.contains('Routes API')) {
+    return Symbols.route_rounded;
+  }
+  if (s.contains('Tidal') || s.contains('Canal') || s.contains('คลอง') || s.contains('ThaiWater')) {
     return Symbols.waves_rounded;
+  }
+  if (s.contains('Vision') || s.contains('รายงานน้ำท่วม') || s.contains('Community flood')) {
+    return Symbols.photo_camera_rounded;
   }
   if (s.contains('สายด่วน') || s.contains('Hotline') || s.contains('1784')) {
     return Symbols.phone_in_talk_rounded;

@@ -149,7 +149,35 @@ func buildExplanationEN(in Input, res Result) Explanation {
 	}
 
 	if e.WindGustKMH >= motoWindGustCautionKMH {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind: gusts up to %.0f km/h (motorbike caution threshold is %.0f km/h)", e.WindGustKMH, motoWindGustThresholdKMH))
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind (WeatherNext 3): gusts up to %.0f km/h (motorbike caution threshold is %.0f km/h)", e.WindGustKMH, motoWindGustThresholdKMH))
+	} else if e.WindGustKMH >= 1 && in.TempC >= 1 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("WeatherNext 3 grid: peak wind %.0f km/h, temp %.1f °C along route", e.WindGustKMH, in.TempC))
+	} else if e.WindGustKMH >= 1 {
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Wind (WeatherNext 3): peak %.0f km/h along route", e.WindGustKMH))
+	}
+
+	if len(in.RoadSensors) > 0 {
+		maxSensor := 0.0
+		for _, rs := range in.RoadSensors {
+			for t := e.Depart; t.Before(e.Arrive); t = t.Add(step) {
+				if d := sensorDepthCM(rs, t); d > maxSensor {
+					maxSensor = d
+				}
+			}
+		}
+		if maxSensor >= 1 {
+			exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("BMA road flood sensors: %d sensor(s) along route (max water %.0f cm)", len(in.RoadSensors), maxSensor))
+		} else {
+			exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("BMA road flood sensors: %d sensor(s) checked along route, currently dry", len(in.RoadSensors)))
+		}
+	}
+
+	if in.Tidal != nil && in.Tidal.HighTideM > 0 {
+		surgeEN := in.Tidal.SurgeRisk
+		if surgeEN == "" {
+			surgeEN = "low"
+		}
+		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("BMA canal & tidal map: high tide %.2f m MSL (%s backwater risk for canal drainage)", in.Tidal.HighTideM, surgeEN))
 	}
 
 	if !in.ArriveBy.IsZero() {

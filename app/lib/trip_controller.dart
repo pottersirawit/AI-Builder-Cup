@@ -39,6 +39,12 @@ class TripController extends ChangeNotifier {
   /// The question names a place the app cannot find; ask the user instead.
   NeedsPlace? get needsPlace => _needsPlace;
 
+  ActivityPlan? _askActivity;
+
+  /// The question is about a day out with no place yet: what to bring, and
+  /// "where and when?" before there is a trip to decide.
+  ActivityPlan? get askActivity => _askActivity;
+
   DateTime _departAt;
   DateTime get departAt => _departAt;
 
@@ -184,7 +190,12 @@ class TripController extends ChangeNotifier {
       if (r.data.needsPlace != null) {
         _needsPlace = r.data.needsPlace;
         _decision = null;
+      } else if (r.data.asksWhere) {
+        _askActivity = r.data.activity;
+        _needsPlace = null;
+        _decision = null;
       } else {
+        _askActivity = null;
         _needsPlace = null;
         _decision = r.data;
         _followUp(r.data.trip);
@@ -289,7 +300,32 @@ class TripController extends ChangeNotifier {
       places: _request.places,
       trip: _request.trip,
       email: _request.email,
+      activity: _request.activity ?? _decision?.activity?.activity,
     );
+  }
+
+  /// The user said where and when the day out is: decide the trip there,
+  /// leaving at seven that morning, or now when it is today.
+  Future<void> planActivity({
+    required Activity activity,
+    required Place origin,
+    required Place destination,
+    required DateTime day,
+  }) {
+    final now = _state.now();
+    final morning = bangkokAt(day, 7, 0);
+    _request = DecideRequest(
+      questionTh: _request.questionTh,
+      origin: origin,
+      destination: destination,
+      places: _request.places,
+      email: _request.email,
+      activity: activity.withDay(isoDay(day)),
+    );
+    _departAt = morning.isAfter(now) ? morning : now;
+    _askActivity = null;
+    _decision = null;
+    return load();
   }
 
   /// The user answered "where?": run the same question again, resolving

@@ -2927,7 +2927,7 @@ abstract class AppLocalizations {
   /// No description provided for @settingsTravelGroup.
   ///
   /// In th, this message translates to:
-  /// **'การเดินทาง'**
+  /// **'วิธีเดินทางที่ใช้ประจำ'**
   String get settingsTravelGroup;
 
   /// No description provided for @settingsAutoGroup.
@@ -3199,6 +3199,78 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'หรือรอออก {leave} ฝนซาแล้ว ถึง {arrive}'**
   String partsAltWait(String leave, String arrive);
+
+  /// No description provided for @activityWhen.
+  ///
+  /// In th, this message translates to:
+  /// **'วันไหน'**
+  String get activityWhen;
+
+  /// No description provided for @activityWhere.
+  ///
+  /// In th, this message translates to:
+  /// **'ที่ไหน'**
+  String get activityWhere;
+
+  /// No description provided for @activitySearchPlace.
+  ///
+  /// In th, this message translates to:
+  /// **'ค้นหาสถานที่'**
+  String get activitySearchPlace;
+
+  /// No description provided for @activityToday.
+  ///
+  /// In th, this message translates to:
+  /// **'วันนี้'**
+  String get activityToday;
+
+  /// No description provided for @activityTomorrow.
+  ///
+  /// In th, this message translates to:
+  /// **'พรุ่งนี้'**
+  String get activityTomorrow;
+
+  /// No description provided for @activityChecklistTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ของที่ควรเตรียม'**
+  String get activityChecklistTitle;
+
+  /// No description provided for @activityGeneralNote.
+  ///
+  /// In th, this message translates to:
+  /// **'รายการทั่วไปสำหรับกิจกรรมนี้ เลือกที่และวันแล้วจะเช็กอากาศให้'**
+  String get activityGeneralNote;
+
+  /// No description provided for @activityWeatherOn.
+  ///
+  /// In th, this message translates to:
+  /// **'อากาศ{day}ที่{place}'**
+  String activityWeatherOn(String day, String place);
+
+  /// No description provided for @activityNoForecast.
+  ///
+  /// In th, this message translates to:
+  /// **'พยากรณ์รายวันยังไปไม่ถึงวันนั้น ใกล้วันแล้วค่อยเปิดดูอีกครั้ง'**
+  String get activityNoForecast;
+
+  /// No description provided for @activityNeedsOrigin.
+  ///
+  /// In th, this message translates to:
+  /// **'เปิดตำแหน่งหรือบันทึกบ้านก่อน จะได้คำนวณเส้นทางไปที่นั่น'**
+  String get activityNeedsOrigin;
+
+  /// No description provided for @activityChecked.
+  ///
+  /// In th, this message translates to:
+  /// **'{done}/{total} ชิ้น'**
+  String activityChecked(String done, String total);
+
+  /// No description provided for @askActivitySuggestion.
+  ///
+  /// In th, this message translates to:
+  /// **'เสาร์นี้ไปแคมป์ต้องเตรียมอะไร'**
+  String get askActivitySuggestion;
 
   /// No description provided for @notificationsTitle.
   ///

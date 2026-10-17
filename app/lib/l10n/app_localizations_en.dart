@@ -1726,7 +1726,7 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
-  String get settingsTravelGroup => 'Travel';
+  String get settingsTravelGroup => 'Preferred Travel Method';
 
   @override
   String get settingsAutoGroup => 'Let the app find trips';
@@ -1895,6 +1895,50 @@ class AppLocalizationsEn extends AppLocalizations {
   String partsAltWait(String leave, String arrive) {
     return 'Or wait until $leave for the rain to ease, arrive $arrive';
   }
+
+  @override
+  String get activityWhen => 'When';
+
+  @override
+  String get activityWhere => 'Where';
+
+  @override
+  String get activitySearchPlace => 'Search for a place';
+
+  @override
+  String get activityToday => 'Today';
+
+  @override
+  String get activityTomorrow => 'Tomorrow';
+
+  @override
+  String get activityChecklistTitle => 'What to bring';
+
+  @override
+  String get activityGeneralNote =>
+      'A general list for this activity. Pick a place and day to check the weather.';
+
+  @override
+  String activityWeatherOn(String day, String place) {
+    return 'Weather on $day at $place';
+  }
+
+  @override
+  String get activityNoForecast =>
+      'The daily forecast doesn\'t reach that day yet. Check back closer to the day.';
+
+  @override
+  String get activityNeedsOrigin =>
+      'Turn on location or save your home first so the route can be planned.';
+
+  @override
+  String activityChecked(String done, String total) {
+    return '$done/$total packed';
+  }
+
+  @override
+  String get askActivitySuggestion =>
+      'Going camping this Saturday, what should I bring?';
 
   @override
   String get notificationsTitle => 'Notifications';
