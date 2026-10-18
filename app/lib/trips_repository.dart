@@ -33,6 +33,12 @@ class TripsRepository extends ChangeNotifier {
   List<Trip> get trips =>
       _trips.where((t) => !_places.isTripDismissed(t.id)).toList();
 
+  /// Events the user hid that are still upcoming.
+  List<Trip> dismissedTrips(DateTime now) => upcoming(
+    _trips.where((t) => _places.isTripDismissed(t.id)).toList(),
+    now,
+  );
+
   void dismissTrip(String tripId) {
     _places.dismissTrip(tripId);
     _notify();
@@ -40,6 +46,11 @@ class TripsRepository extends ChangeNotifier {
 
   void restoreTrip(String tripId) {
     _places.restoreTrip(tripId);
+    _notify();
+  }
+
+  void restoreAllTrips() {
+    _places.restoreAllTrips();
     _notify();
   }
 

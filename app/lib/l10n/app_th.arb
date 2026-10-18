@@ -1464,5 +1464,26 @@
   "notificationsTitle": "การแจ้งเตือน",
   "notificationsEmptyTitle": "ยังไม่มีการแจ้งเตือน",
   "notificationsEmptyBody": "เมื่อมีความเสี่ยงเรื่องฝน น้ำท่วม หรือเวลาออกเดินทาง ระบบจะแจ้งเตือนที่นี่",
-  "notificationsMarkAllRead": "อ่านทั้งหมด"
+  "notificationsMarkAllRead": "อ่านทั้งหมด",
+  "eventsDismissConfirmTitle": "ซ่อนนัดหมายนี้ไหม?",
+  "eventsDismissConfirmBody": "ซ่อน “{title}” ออกจากรายการนัดหมาย คุณสามารถกู้คืนได้ทุกเมื่อในแท็บอีเวนต์",
+  "@eventsDismissConfirmBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsDismissConfirmAction": "ซ่อนนัดหมาย",
+  "eventsDismissedBanner": "ซ่อนนัดหมายไว้ {count} รายการ · กดเพื่อกู้คืน",
+  "@eventsDismissedBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventsDismissedSheetTitle": "นัดหมายที่ซ่อนไว้",
+  "eventsRestoreOne": "แสดงอีกครั้ง",
+  "eventsRestoreAll": "คืนค่าทั้งหมด"
 }

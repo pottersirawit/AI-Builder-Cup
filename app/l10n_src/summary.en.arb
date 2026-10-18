@@ -461,5 +461,26 @@
   "notificationsTitle": "Notifications",
   "notificationsEmptyTitle": "No notifications yet",
   "notificationsEmptyBody": "Rain, flood, and trip alerts will show up here",
-  "notificationsMarkAllRead": "Mark all read"
+  "notificationsMarkAllRead": "Mark all read",
+  "eventsDismissConfirmTitle": "Hide this event?",
+  "eventsDismissConfirmBody": "Hide “{title}” from your events. You can restore it anytime from the Events tab.",
+  "@eventsDismissConfirmBody": {
+    "placeholders": {
+      "title": {
+        "type": "String"
+      }
+    }
+  },
+  "eventsDismissConfirmAction": "Hide event",
+  "eventsDismissedBanner": "{count} hidden events · tap to restore",
+  "@eventsDismissedBanner": {
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "eventsDismissedSheetTitle": "Hidden events",
+  "eventsRestoreOne": "Restore",
+  "eventsRestoreAll": "Restore all"
 }

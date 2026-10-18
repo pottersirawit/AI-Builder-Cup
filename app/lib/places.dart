@@ -254,6 +254,13 @@ class PlacesStore extends ChangeNotifier {
     }
   }
 
+  void restoreAllTrips() {
+    if (_dismissedTripIds.isNotEmpty) {
+      _dismissedTripIds.clear();
+      _write();
+    }
+  }
+
   PlaceCandidate? get manualLocation => _manualLocation;
 
   void setManualLocation(PlaceCandidate? c) {

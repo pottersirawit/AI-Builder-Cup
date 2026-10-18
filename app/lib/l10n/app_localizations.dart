@@ -3295,6 +3295,48 @@ abstract class AppLocalizations {
   /// In th, this message translates to:
   /// **'อ่านทั้งหมด'**
   String get notificationsMarkAllRead;
+
+  /// No description provided for @eventsDismissConfirmTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'ซ่อนนัดหมายนี้ไหม?'**
+  String get eventsDismissConfirmTitle;
+
+  /// No description provided for @eventsDismissConfirmBody.
+  ///
+  /// In th, this message translates to:
+  /// **'ซ่อน “{title}” ออกจากรายการนัดหมาย คุณสามารถกู้คืนได้ทุกเมื่อในแท็บอีเวนต์'**
+  String eventsDismissConfirmBody(String title);
+
+  /// No description provided for @eventsDismissConfirmAction.
+  ///
+  /// In th, this message translates to:
+  /// **'ซ่อนนัดหมาย'**
+  String get eventsDismissConfirmAction;
+
+  /// No description provided for @eventsDismissedBanner.
+  ///
+  /// In th, this message translates to:
+  /// **'ซ่อนนัดหมายไว้ {count} รายการ · กดเพื่อกู้คืน'**
+  String eventsDismissedBanner(int count);
+
+  /// No description provided for @eventsDismissedSheetTitle.
+  ///
+  /// In th, this message translates to:
+  /// **'นัดหมายที่ซ่อนไว้'**
+  String get eventsDismissedSheetTitle;
+
+  /// No description provided for @eventsRestoreOne.
+  ///
+  /// In th, this message translates to:
+  /// **'แสดงอีกครั้ง'**
+  String get eventsRestoreOne;
+
+  /// No description provided for @eventsRestoreAll.
+  ///
+  /// In th, this message translates to:
+  /// **'คืนค่าทั้งหมด'**
+  String get eventsRestoreAll;
 }
 
 class _AppLocalizationsDelegate
