@@ -9,14 +9,228 @@ import '../models.dart';
 import '../time_th.dart';
 import '../trips_repository.dart';
 
-/// Hides [trip] from the user's events.
-void dismissTripWithUndo(
+/// Asks for confirmation before hiding [trip] from the user's events.
+Future<void> dismissTripWithUndo(
   BuildContext context,
   TripsRepository repo,
   Trip trip,
-) {
-  repo.dismissTrip(trip.id);
+) async {
+  final l = context.l10n;
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: Text(l.eventsDismissConfirmTitle),
+      content: Text(l.eventsDismissConfirmBody(trip.titleTh)),
+      actions: [
+        TextButton(
+          key: const ValueKey('cancel-dismiss-trip'),
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: Text(
+            MaterialLocalizations.of(dialogContext).cancelButtonLabel,
+          ),
+        ),
+        FilledButton(
+          key: const ValueKey('confirm-dismiss-trip'),
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: Text(l.eventsDismissConfirmAction),
+        ),
+      ],
+    ),
+  );
+  if (confirmed == true) {
+    repo.dismissTrip(trip.id);
+  }
 }
+
+/// Compact pill banner shown when the user has hidden one or more upcoming
+/// events, allowing them to open the restore sheet.
+class DismissedEventsBanner extends StatelessWidget {
+  const DismissedEventsBanner({
+    super.key,
+    this.bannerKey = const ValueKey('dismissed-events-banner'),
+    required this.count,
+    required this.onTap,
+  });
+
+  final Key bannerKey;
+  final int count;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final l = context.l10n;
+    final t = Theme.of(context).textTheme;
+    final scheme = Theme.of(context).colorScheme;
+    return GlassSurface(
+      key: bannerKey,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(Radii.xl),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(
+            horizontal: Space.x4,
+            vertical: Space.x3,
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Symbols.visibility_off_rounded,
+                size: 18,
+                color: scheme.onSurfaceVariant,
+              ),
+              const SizedBox(width: Space.x2),
+              Expanded(
+                child: Text(
+                  l.eventsDismissedBanner(count),
+                  style: t.labelLarge!.copyWith(color: scheme.onSurface),
+                ),
+              ),
+              Icon(
+                Symbols.restore_rounded,
+                size: 18,
+                color: scheme.primary,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// Bottom sheet listing all hidden upcoming events so the user can restore
+/// them individually or all at once without clearing local storage.
+Future<void> showDismissedEventsSheet(
+  BuildContext context, {
+  required TripsRepository repo,
+  required DateTime now,
+}) => showModalBottomSheet<void>(
+  context: context,
+  isScrollControlled: true,
+  showDragHandle: true,
+  useSafeArea: true,
+  builder: (sheetContext) => ListenableBuilder(
+    listenable: repo,
+    builder: (sheetContext, _) {
+      final l = sheetContext.l10n;
+      final t = Theme.of(sheetContext).textTheme;
+      final scheme = Theme.of(sheetContext).colorScheme;
+      final dismissed = repo.dismissedTrips(now);
+
+      return SafeArea(
+        key: const ValueKey('dismissed-events-sheet'),
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(
+            Space.gutter,
+            0,
+            Space.gutter,
+            Space.x6,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      l.eventsDismissedSheetTitle,
+                      style: t.titleLarge,
+                    ),
+                  ),
+                  if (dismissed.isNotEmpty)
+                    TextButton.icon(
+                      key: const ValueKey('restore-all-trips'),
+                      onPressed: () {
+                        repo.restoreAllTrips();
+                        Navigator.of(sheetContext).pop();
+                      },
+                      icon: const Icon(Symbols.restore_rounded, size: 18),
+                      label: Text(l.eventsRestoreAll),
+                    ),
+                ],
+              ),
+              const SizedBox(height: Space.x3),
+              ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.sizeOf(sheetContext).height * 0.55,
+                ),
+                child: ListView.separated(
+                  shrinkWrap: true,
+                  itemCount: dismissed.length,
+                  separatorBuilder: (_, _) => const SizedBox(height: Space.x2),
+                  itemBuilder: (context, i) {
+                    final trip = dismissed[i];
+                    final when = trip.allDay
+                        ? allDayLabel(l, trip, dated: true)
+                        : (trip.arriveBy == null
+                              ? ''
+                              : '${dayDate(l, trip.arriveBy!)} · ${hhmm(trip.arriveBy!)}');
+                    final place = trip.destination.nameTh.isNotEmpty
+                        ? trip.destination.nameTh
+                        : (trip.locationTextTh ?? '');
+                    return GlassSurface(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: Space.x4,
+                        vertical: Space.x3,
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                if (when.isNotEmpty)
+                                  Text(
+                                    when,
+                                    style: tabular(t.labelMedium!).copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                  ),
+                                Text(
+                                  trip.titleTh,
+                                  style: t.titleSmall,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                                if (place.isNotEmpty)
+                                  Text(
+                                    place,
+                                    style: t.bodySmall!.copyWith(
+                                      color: scheme.onSurfaceVariant,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(width: Space.x2),
+                          FilledButton.tonalIcon(
+                            key: ValueKey('restore-trip-${trip.id}'),
+                            onPressed: () {
+                              repo.restoreTrip(trip.id);
+                              if (repo.dismissedTrips(now).isEmpty &&
+                                  sheetContext.mounted) {
+                                Navigator.of(sheetContext).pop();
+                              }
+                            },
+                            icon: const Icon(Symbols.restore_rounded, size: 16),
+                            label: Text(l.eventsRestoreOne),
+                          ),
+                        ],
+                      ),
+                    );
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    },
+  ),
+);
 
 /// "อีก 2 ชม. 20 นาที": time until an event starts.
 String untilText(AppLocalizations l, Duration d) =>

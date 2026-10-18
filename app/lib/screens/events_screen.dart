@@ -73,6 +73,7 @@ class _EventsScreenState extends State<EventsScreen> {
         final now = state.now();
         final today = bangkokDay(now);
         final events = upcoming(repo.trips, now);
+        final dismissed = repo.dismissedTrips(now);
         final month = DateTime.utc(today.year, today.month);
         final eventDays = {
           for (final e in events)
@@ -169,6 +170,19 @@ class _EventsScreenState extends State<EventsScreen> {
                     ),
                   ),
                 ),
+                if (dismissed.isNotEmpty) ...[
+                  _pad(
+                    DismissedEventsBanner(
+                      count: dismissed.length,
+                      onTap: () => showDismissedEventsSheet(
+                        context,
+                        repo: repo,
+                        now: now,
+                      ),
+                    ),
+                  ),
+                  const SliverToBoxAdapter(child: SizedBox(height: Space.x3)),
+                ],
                 if (placeholder != null)
                   _pad(placeholder)
                 else ...[

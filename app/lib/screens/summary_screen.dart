@@ -538,6 +538,28 @@ class _SummaryScreenState extends State<SummaryScreen> {
                           ),
                         ),
                       ),
+                    if (repo.dismissedTrips(now).isNotEmpty)
+                      SliverToBoxAdapter(
+                        child: Padding(
+                          padding: const EdgeInsets.fromLTRB(
+                            Space.gutter,
+                            Space.x3,
+                            Space.gutter,
+                            0,
+                          ),
+                          child: DismissedEventsBanner(
+                            bannerKey: const ValueKey(
+                              'summary-dismissed-events-banner',
+                            ),
+                            count: repo.dismissedTrips(now).length,
+                            onTap: () => showDismissedEventsSheet(
+                              context,
+                              repo: repo,
+                              now: now,
+                            ),
+                          ),
+                        ),
+                      ),
                     if (todayTrips.isNotEmpty)
                       SliverToBoxAdapter(
                         child: _Block(

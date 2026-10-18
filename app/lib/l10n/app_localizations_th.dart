@@ -1929,4 +1929,29 @@ class AppLocalizationsTh extends AppLocalizations {
 
   @override
   String get notificationsMarkAllRead => 'อ่านทั้งหมด';
+
+  @override
+  String get eventsDismissConfirmTitle => 'ซ่อนนัดหมายนี้ไหม?';
+
+  @override
+  String eventsDismissConfirmBody(String title) {
+    return 'ซ่อน “$title” ออกจากรายการนัดหมาย คุณสามารถกู้คืนได้ทุกเมื่อในแท็บอีเวนต์';
+  }
+
+  @override
+  String get eventsDismissConfirmAction => 'ซ่อนนัดหมาย';
+
+  @override
+  String eventsDismissedBanner(int count) {
+    return 'ซ่อนนัดหมายไว้ $count รายการ · กดเพื่อกู้คืน';
+  }
+
+  @override
+  String get eventsDismissedSheetTitle => 'นัดหมายที่ซ่อนไว้';
+
+  @override
+  String get eventsRestoreOne => 'แสดงอีกครั้ง';
+
+  @override
+  String get eventsRestoreAll => 'คืนค่าทั้งหมด';
 }

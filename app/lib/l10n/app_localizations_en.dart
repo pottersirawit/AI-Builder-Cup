@@ -1952,4 +1952,29 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get notificationsMarkAllRead => 'Mark all read';
+
+  @override
+  String get eventsDismissConfirmTitle => 'Hide this event?';
+
+  @override
+  String eventsDismissConfirmBody(String title) {
+    return 'Hide “$title” from your events. You can restore it anytime from the Events tab.';
+  }
+
+  @override
+  String get eventsDismissConfirmAction => 'Hide event';
+
+  @override
+  String eventsDismissedBanner(int count) {
+    return '$count hidden events · tap to restore';
+  }
+
+  @override
+  String get eventsDismissedSheetTitle => 'Hidden events';
+
+  @override
+  String get eventsRestoreOne => 'Restore';
+
+  @override
+  String get eventsRestoreAll => 'Restore all';
 }
