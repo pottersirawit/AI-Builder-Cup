@@ -286,11 +286,6 @@ func sentenceAround(text string, loc []int, sentenceEnd *regexp.Regexp) string {
 // report times and the arrival when leaving at the engine's wait-until.
 func ToolTimes(s *planner.Session, depart time.Time, mode domain.Mode, core decision.Result) []time.Time {
 	var out []time.Time
-	if in, err := s.Input(depart, mode); err == nil {
-		for _, r := range in.Reports {
-			out = append(out, r.CreatedAt)
-		}
-	}
 	if core.WaitUntil != nil {
 		if later, err := s.Baseline(*core.WaitUntil, mode); err == nil {
 			out = append(out, later.Evals[mode].Arrive)

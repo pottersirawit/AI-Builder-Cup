@@ -193,29 +193,6 @@ void main() {
       expect(d.sources, contains('12345'));
     });
 
-    test('FloodReport.fromJson parses malformed passable without error', () {
-      final j = {
-        'id': 'rpt-1',
-        'depth_cm_min': 10,
-        'depth_cm_max': 25,
-        'confidence': 0.85,
-        'description_th': 'น้ำท่วมขัง',
-        'passable': {
-          'car': 'slow',
-          'transit': 123,
-          'moto': false,
-        },
-        'notified_users': 5,
-        'corroborating_reports': 2,
-        'generated_by': 'gemini',
-      };
-
-      expect(() => FloodReport.fromJson(j), returnsNormally);
-      final r = FloodReport.fromJson(j);
-      expect(r.passable[TravelMode.car], 'slow');
-      expect(r.passable[TravelMode.transit], '123');
-      expect(r.passable[TravelMode.moto], 'false');
-    });
 
     test('SavedPlace.fromJson parses malformed days and non-string fields safely', () {
       final j = {

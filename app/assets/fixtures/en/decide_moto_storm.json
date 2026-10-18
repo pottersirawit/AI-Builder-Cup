@@ -135,10 +135,6 @@
     {
       "tool": "get_flood_spots_on_route",
       "summary_th": "Ratchada-Lat Phrao expects 25 cm of water; motorbikes can't get through"
-    },
-    {
-      "tool": "get_community_reports",
-      "summary_th": "3 users reported half-wheel water at Ratchada"
     }
   ],
   "sources": [

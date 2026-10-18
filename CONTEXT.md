@@ -32,6 +32,6 @@ This document defines the ubiquitous domain language for the Bangkok Weather Res
 ## 3. Architecture & Seams
 
 - **Core API (`api/`)**: High-performance Go service deployed on Cloud Run handling HTTP API endpoints, Gemini 2.5 Flash agent reasoning (`agent/`), mathematical risk assessment (`decision/`), geocoding (`geocode/`), and telemetry aggregation (`live/`).
-- **Mobile Experience (`app/`)**: Cross-platform Flutter client implementing Contract v1 (departure boards, interactive hourly scrubber, flood camera reporting, demo clock).
+- **Mobile Experience (`app/`)**: Cross-platform Flutter client implementing Contract v1 (departure boards, interactive hourly scrubber, demo clock).
 - **AI Agent Seam**: Gemini 2.5 Flash operates via function-calling tools (`get_trip`, `get_route`, `get_rain_along_route`, `get_flood_spots_on_route`, `evaluate_departure`) with mathematical guardrails ensuring numerical veracity.
 - **GIS / Weather Cache**: BigQuery WeatherNext 3 (`ai-cup-511208:weathernext_3`) cached at 6-hour model run intervals for sub-millisecond local spatial interpolation.

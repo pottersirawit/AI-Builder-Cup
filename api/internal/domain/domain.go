@@ -191,28 +191,7 @@ type CanalReading struct {
 	Source    string  `json:"source"`
 }
 
-// Passable is the per-mode verdict of a flood photo: yes, slow or no.
-type Passable struct {
-	Car     string `json:"car"`
-	Transit string `json:"transit"`
-	Moto    string `json:"moto"`
-}
 
-// Report is a community flood photo report, assessed by Gemini vision.
-type Report struct {
-	ID            string    `json:"id"`
-	Lat           float64   `json:"lat"`
-	Lng           float64   `json:"lng"`
-	CreatedAt     time.Time `json:"created_at"`
-	DepthCMMin    int       `json:"depth_cm_min"`
-	DepthCMMax    int       `json:"depth_cm_max"`
-	Confidence    float64   `json:"confidence"`
-	DescriptionTH string    `json:"description_th"`
-	Passable      Passable  `json:"passable"`
-	GeneratedBy   string    `json:"generated_by,omitempty"`
-}
-
-func (r Report) Point() LatLng { return LatLng{r.Lat, r.Lng} }
 
 // MockUser is a commuter whose usual route we know, used for report fan-out.
 type MockUser struct {
@@ -243,12 +222,7 @@ type CanalProvider interface {
 	Name() string
 }
 
-// ReportStore keeps community flood reports.
-type ReportStore interface {
-	Add(ctx context.Context, r Report) (Report, error)
-	// Near returns reports within radiusM of center created in [since, until].
-	Near(ctx context.Context, center LatLng, radiusM float64, since, until time.Time) ([]Report, error)
-}
+
 
 // TravelTimer is an optional RouteProvider capability: cheap duration lookups
 // for many candidate departures, used to search for the latest safe departure.

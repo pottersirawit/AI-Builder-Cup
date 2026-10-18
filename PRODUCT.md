@@ -24,7 +24,7 @@ Answer one question before the user thinks to ask it: "ควรออกเด�
 
 ## Positioning
 
-"แชทตอบคำถาม — ฝนตกไหมตอบก่อนที่คุณจะถาม." General chat answers when asked and at city level; this app is proactive (Calendar-triggered), route- and time-specific, vehicle-aware (sedan / BTS-MRT / motorbike verdicts differ), and fed by community flood photos assessed by Gemini vision and fanned out to people on the same route.
+"แชทตอบคำถาม — ฝนตกไหมตอบก่อนที่คุณจะถาม." General chat answers when asked and at city level; this app is proactive (Calendar-triggered), route- and time-specific, and vehicle-aware (sedan / BTS-MRT / motorbike verdicts differ).
 
 ## Operating Context
 
@@ -34,7 +34,6 @@ Glanced at on a phone at a desk at 16:10, on a sidewalk, or at home at night dur
 
 - Trip entry: plain-Thai ask bar (works with nothing connected), Calendar, Gmail e-tickets, learned routine (future).
 - Verdict per trip and per mode: leave now / wait until / switch mode / don't go, leave-by time, rain timeline on route, flood spots on route, confidence, sources, reasoning trace.
-- Community flood reports: photo → Gemini vision depth estimate → notify users whose route passes within ~300 m.
 - Flood mode for home: canal level (ThaiWater), ordered action checklist, neighbours alerted.
 - Bangkok only. Thai UI only for now (English name undecided).
 - Data constraints: BMA drainage data has no public API; Google Flood Hub API is waitlisted; WeatherNext data access is unconfirmed. A demo clock replays the scripted 2026-09-29 storm so the demo is reproducible.

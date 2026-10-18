@@ -50,7 +50,6 @@ type Input struct {
 	Rain []domain.RainSample
 	// Spots is the whole BMA dataset; those within SpotRadiusM are used.
 	Spots         []floodspot.Spot
-	NearbyReports int // neighbour reports in the last hour
 	CanalSource   string
 	WeatherSource string
 }
@@ -89,7 +88,6 @@ type Status struct {
 	Canal             *Canal       `json:"canal"` // nil when no station is within CanalRadiusM
 	MinutesToDoorstep *int         `json:"minutes_to_doorstep"`
 	RainTodayMM       float64      `json:"rain_today_mm"`
-	ReportsNearby     int          `json:"reports_nearby"`
 	FloodSpots        []Spot       `json:"flood_spots"`
 	Actions           []Action     `json:"actions"`
 	Sources           []string     `json:"sources"`
@@ -106,12 +104,13 @@ func Evaluate(in Input) Status {
 		Place:         in.Home.Place,
 		InServiceArea: geo.InServiceArea(home),
 		RainTodayMM:   math.Round(rainTotalMM(in.Rain, in.Now)),
-		ReportsNearby: in.NearbyReports,
 		FloodSpots:    nearbySpots(in.Spots, home, peak, in.Lang),
 	}
 	canal := nearestCanal(in.Canals, home)
 	if canal != nil {
-		st.Sources = append(st.Sources, in.CanalSource)
+		if in.CanalSource != "" {
+			st.Sources = append(st.Sources, in.CanalSource)
+		}
 		evaluateCanal(&st, in, *canal)
 	} else {
 		evaluateRain(&st, in, peak)
@@ -121,11 +120,6 @@ func Evaluate(in Input) Status {
 	}
 	if len(st.FloodSpots) > 0 {
 		st.Sources = append(st.Sources, "BMA flood spots")
-	}
-	st.Sources = append(st.Sources, in.Lang.Pick("รายงานผู้ใช้", "Community reports"))
-	if in.NearbyReports > 0 && st.Level != Normal {
-		st.SummaryTH += in.Lang.Pick(fmt.Sprintf(" รายงานผู้ใช้ %d คนแถวบ้านในชั่วโมงที่ผ่านมา", in.NearbyReports),
-			fmt.Sprintf(" %d %s near home in the last hour.", in.NearbyReports, plural(in.NearbyReports, "report", "reports")))
 	}
 	return st
 }
@@ -215,9 +209,9 @@ func evaluateRain(st *Status, in Input, peak float64) {
 		deepest = max(deepest, s.ExpectedDepthCM)
 	}
 	switch {
-	case deepest >= 20 || in.NearbyReports >= 3:
+	case deepest >= 20:
 		st.Level = Danger
-	case deepest > 0 || peak >= 20 || st.RainTodayMM >= 40 || in.NearbyReports >= 1:
+	case deepest > 0 || peak >= 20 || st.RainTodayMM >= 40:
 		st.Level = Watch
 	default:
 		st.Level = Normal

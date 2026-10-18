@@ -6,7 +6,6 @@ import (
 	"unicode/utf8"
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
-	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
 func noThai(t *testing.T, what, s string) {
@@ -20,7 +19,6 @@ func noThai(t *testing.T, what, s string) {
 }
 
 func TestEnglishNarrationPerVerdict(t *testing.T) {
-	ratchadaReport := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84}
 	var rain []domain.RainSample
 	for h := 12; h < 23; h++ {
 		rain = append(rain, domain.RainSample{Time: at(h, 0), MMPerHr: 12})
@@ -29,8 +27,8 @@ func TestEnglishNarrationPerVerdict(t *testing.T) {
 		Now: at(16, 0), DepartAt: at(16, 0), ArriveBy: at(16, 30), Mode: domain.ModeCar, DestinationTH: "ที่ทำงาน",
 		Rain: rain, Travel: func(domain.Mode, time.Time) int { return 60 },
 	}
-	hero := func(now, depart time.Time, mode domain.Mode, reps ...domain.Report) Input {
-		return heroInput(t, now, depart, mode, reps...)
+	hero := func(now, depart time.Time, mode domain.Mode) Input {
+		return heroInput(t, now, depart, mode)
 	}
 	tests := []struct {
 		name         string
@@ -45,8 +43,8 @@ func TestEnglishNarrationPerVerdict(t *testing.T) {
 			[]string{"150 min past 18:30"}},
 		{"switch_mode on a motorbike", hero(at(16, 10), at(17, 15), domain.ModeMoto), SwitchMode, "Take BTS / MRT instead",
 			[]string{"by motorbike", "BTS / MRT stays clear of the water"}},
-		{"switch_mode for a flood report", hero(at(18, 52), at(18, 52), domain.ModeCar, withRatchadaSeeds(ratchadaReport)...), SwitchMode, "Take BTS / MRT instead",
-			[]string{"flooding of about"}},
+		{"switch_mode on a car during storm", hero(at(18, 0), at(18, 0), domain.ModeCar), SwitchMode, "Take BTS / MRT instead",
+			[]string{"BTS / MRT stays clear of the water"}},
 		{"wait", hero(at(19, 30), at(19, 30), domain.ModeCar), Wait, "Wait until 20:00", []string{"Leaving at 20:00"}},
 		{"dont_go", dontGo, DontGo, "Don't leave yet", []string{"Every option is still risky"}},
 	}
@@ -86,23 +84,6 @@ func TestEnglishNarrationPerVerdict(t *testing.T) {
 	}
 }
 
-func TestEnglishReportLabel(t *testing.T) {
-	in := heroInput(t, at(18, 52), at(18, 52), domain.ModeCar,
-		domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84})
-	in.Lang = domain.LangEN
-	found := false
-	for _, s := range Decide(in).FloodSpots {
-		if len(s.ID) > 7 && s.ID[:7] == "report-" {
-			found = true
-			if !contains(s.NameTH, "User report 18:52 near ") {
-				t.Errorf("report label = %q", s.NameTH)
-			}
-		}
-	}
-	if !found {
-		t.Fatal("no report flood spot")
-	}
-}
 
 func TestModeNameFor(t *testing.T) {
 	for _, m := range domain.AllModes {

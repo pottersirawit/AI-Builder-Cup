@@ -236,11 +236,6 @@ func TestEnglishText(t *testing.T) {
 			t.Errorf("trip %+v has Thai text", en)
 		}
 	}
-	for _, r := range append(SeedReports(), HeroAssessment()) {
-		if domain.HasThai(LocalizeReport(r, domain.LangEN).DescriptionTH) {
-			t.Errorf("description %q has no English text", r.DescriptionTH)
-		}
-	}
 	if Text("บ้าน", domain.LangTH) != "บ้าน" || Text("ที่ใครไม่รู้", domain.LangEN) != "ที่ใครไม่รู้" {
 		t.Error("Thai and unknown text must pass through unchanged")
 	}

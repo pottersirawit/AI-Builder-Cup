@@ -13,7 +13,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/notify"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
@@ -39,7 +38,6 @@ func setupScheduler(t *testing.T) (*InlineScheduler, *notify.MemoryNotifier, *us
 		Weather: scenario.Weather{},
 		Routes:  scenario.Routes{},
 		Canals:  scenario.Canals{},
-		Reports: reports.NewMemoryStore(scenario.SeedReports()...),
 	}
 
 	userStore := users.NewMemoryUserStore()

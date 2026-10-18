@@ -27,7 +27,6 @@ REGION="${REGION:-asia-southeast1}"
 BUILD="${BUILD:-source}"
 REPO="${REPO:-fontokmai}"
 DEMO_MODE="${DEMO_MODE:-0}"
-REPORT_STORE="${REPORT_STORE:-}"
 GEMINI_MODEL="${GEMINI_MODEL:-}"
 GEMINI_SECRET="${GEMINI_SECRET:-GEMINI_API_KEY}"
 APP_URL="${APP_URL:-https://ai-cup-511208.web.app}"
@@ -37,7 +36,6 @@ ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/../.." && pwd)"
 gc() { gcloud --project "$PROJECT" "$@"; }
 
 apis=(run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com secretmanager.googleapis.com)
-[[ "$REPORT_STORE" == firestore ]] && apis+=(firestore.googleapis.com)
 [[ -n "${GOOGLE_MAPS_SECRET:-}" ]] && apis+=(weather.googleapis.com routes.googleapis.com places.googleapis.com geocoding-backend.googleapis.com)
 gc services enable "${apis[@]}"
 
@@ -46,12 +44,6 @@ PROJECT_NUMBER="$(gc projects describe "$PROJECT" --format='value(projectNumber)
 DEPLOYED_SA="$(gc run services describe "$SERVICE" --region "$REGION" \
   --format='value(spec.template.spec.serviceAccountName)' 2>/dev/null || true)"
 RUNTIME_SA="${RUNTIME_SA:-${DEPLOYED_SA:-$PROJECT_NUMBER-compute@developer.gserviceaccount.com}}"
-if [[ "$REPORT_STORE" == firestore ]]; then
-  gc firestore databases describe --database='(default)' >/dev/null 2>&1 ||
-    gc firestore databases create --database='(default)' --location "$REGION"
-  gc projects add-iam-policy-binding "$PROJECT" --member "serviceAccount:$RUNTIME_SA" \
-    --role roles/datastore.user --condition=None >/dev/null
-fi
 
 secrets=""
 if gc secrets describe "$GEMINI_SECRET" >/dev/null 2>&1; then
@@ -71,7 +63,6 @@ for name in GOOGLE_OAUTH_CLIENT_ID GOOGLE_OAUTH_CLIENT_SECRET; do
 done
 envs="DEMO_MODE=$DEMO_MODE,GOOGLE_CLOUD_PROJECT=$PROJECT"
 envs+=",APP_URL=$APP_URL,OAUTH_REDIRECT_URI=$OAUTH_REDIRECT_URI"
-[[ -n "$REPORT_STORE" ]] && envs+=",REPORT_STORE=$REPORT_STORE"
 [[ -n "$GEMINI_MODEL" ]] && envs+=",GEMINI_MODEL=$GEMINI_MODEL"
 
 common=(--region "$REGION" --allow-unauthenticated --port 8080 --memory 512Mi --cpu 1

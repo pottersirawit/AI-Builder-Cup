@@ -516,7 +516,7 @@ func TestRunAgentDisablesToolsOnlyOnFinalTurn(t *testing.T) {
 		call("evaluate_departure", map[string]any{"mode": "car"}),
 	))
 	for i := 1; i < maxAgentTurns-1; i++ {
-		replies = append(replies, reply(call("get_community_reports", nil)))
+		replies = append(replies, reply(call("get_canal_levels", nil)))
 	}
 	replies = append(replies, reply(&genai.Part{Text: final}))
 

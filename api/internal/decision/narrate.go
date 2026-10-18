@@ -197,10 +197,6 @@ func buildExplanation(in Input, res Result) Explanation {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("เวลาเดินทาง: ประมาณ %d นาที ถึงปลายทางราว %s", e.Minutes, hhmm(e.Arrive)))
 	}
 
-	// Community reports factor
-	if n := usableReports(in.Reports); n > 0 {
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("รายงานชุมชน: มีการแจ้งเตือนน้ำท่วมจริงในพื้นที่ %d จุด", n))
-	}
 
 	// 3. Avoid spots
 	for _, s := range res.FloodSpots {

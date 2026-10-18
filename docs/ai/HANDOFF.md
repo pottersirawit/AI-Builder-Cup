@@ -31,7 +31,6 @@
 |---|---|---|---|
 | Agent ตัดสินใจเดินทาง | `api/internal/agent/decide.go`: `systemPrompt`, `runAgent`, `applyAgent` | temperature 0.2, function calling, ตอบ JSON ผ่าน prompt (ไม่ได้ใช้ schema) | `decision` core + ข้อความ template ใน `decision/narrate.go` |
 | แปลคำถามภาษาไทย | `api/internal/agent/question.go`: `ParseQuestion` | temperature 0, `ResponseSchema` | regex `ParseQuestionTH` + keyword `MatchPlace` / `DestinationPhrase` |
-| ประเมินรูปน้ำท่วม | `api/internal/vision/vision.go`: `prompt`, `schema`, `Assess` | temperature 0, `ResponseSchema`, ตรวจค่าใน `validate` | ค่าคงที่จากฉาก demo (ดูข้อควรระวัง) |
 | โหมดน้ำท่วมที่บ้าน | `api/internal/homestatus` | ยังไม่ใช้ Gemini | rules ล้วน |
 | สร้าง client | `api/internal/agent/gemini.go`: `NewGeminiFromEnv`, interface `Generator` | — | — |
 
@@ -46,7 +45,6 @@
 | `get_rain_along_route` | ฝนรายช่วงบนเส้นทาง 5 ชั่วโมงข้างหน้า | Google Weather API (fallback เป็นค่าใน scenario) |
 | `get_flood_spots_on_route` | จุดน้ำท่วมซ้ำซากบนเส้นทาง พร้อมความลึกที่คาด | `data/bkk_flood_risk_points.json` |
 | `get_canal_levels` | ระดับคลองเทียบตลิ่ง | ThaiWater (HII) ใช้ข้อมูลจริงได้แล้ว |
-| `get_community_reports` | รายงานรูปน้ำท่วมจากผู้ใช้ใกล้เส้นทาง | memory หรือ Firestore |
 | `evaluate_departure` | ความเสี่ยงแบบคำนวณแน่นอนของเวลาออกและวิธีเดินทางที่ระบุ | `decision` core |
 
 ถ้าเพิ่ม tool ใหม่ ให้เพิ่มใน `planner.Tools` ที่เดียว ทั้ง agent และ trace ใน app จะเห็นเอง app แสดงชื่อ tool และ `summary_th` ในส่วน "Gemini คิดแบบนี้"

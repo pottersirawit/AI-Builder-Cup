@@ -18,7 +18,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geo"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
@@ -27,7 +26,6 @@ type Providers struct {
 	Weather     domain.WeatherProvider
 	Routes      domain.RouteProvider
 	Canals      domain.CanalProvider
-	Reports     domain.ReportStore
 	WeatherNext domain.WeatherNextProvider
 	BMAFlood    domain.RoadFloodProvider
 	BMATidal    domain.TidalProvider
@@ -185,8 +183,6 @@ func ToolCategory(tool string) string {
 		return "rule"
 	case "get_flood_spots_on_route":
 		return "data_rule"
-	case "get_community_reports":
-		return "data_ai"
 	case "get_trip", "get_route", "get_rain_along_route", "get_canal_levels":
 		return "data"
 	default:
@@ -223,7 +219,6 @@ type Session struct {
 	usedRoutes      bool
 	usedCanals      bool
 	usedSpots       bool
-	usedReports     bool
 	usedWeatherNext bool
 	usedBMAFlood    bool
 	usedTidal       bool
@@ -361,7 +356,7 @@ func (s *Session) PlanTo(placeID string) error {
 	s.Trip = scenario.LocalizeTrip(t, s.Lang)
 	s.routes, s.inputs, s.baselines = map[string]domain.Route{}, map[string]decision.Input{}, map[string]decision.Result{}
 	s.rain, s.rainSet = nil, false
-	s.inputCalled, s.usedWeather, s.usedRoutes, s.usedCanals, s.usedSpots, s.usedReports, s.usedWeatherNext, s.usedBMAFlood, s.usedTidal = false, false, false, false, false, false, false, false, false
+	s.inputCalled, s.usedWeather, s.usedRoutes, s.usedCanals, s.usedSpots, s.usedWeatherNext, s.usedBMAFlood, s.usedTidal = false, false, false, false, false, false, false, false
 	return nil
 }
 
@@ -446,33 +441,6 @@ func (s *Session) rainSeries(road domain.Route) ([]domain.RainSample, error) {
 	return r, nil
 }
 
-func (s *Session) reportsNear(road domain.Route) ([]domain.Report, error) {
-	if len(road.Polyline) == 0 {
-		return nil, nil
-	}
-	center, radius := road.Polyline[len(road.Polyline)/2], 0.0
-	for _, p := range road.Polyline {
-		radius = math.Max(radius, geo.HaversineM(center, p))
-	}
-	all, err := s.prov.Reports.Near(s.ctx, center, radius+reports.NotifyRadiusM, s.Now.Add(-time.Hour), s.Now)
-	if err != nil {
-		return nil, err
-	}
-	var out []domain.Report
-	for _, r := range all {
-		if geo.DistanceToPolylineM(r.Point(), road.Polyline) <= reports.NotifyRadiusM {
-			out = append(out, r)
-		}
-	}
-	for _, r := range out {
-		if decision.UsableReport(r) {
-			s.usedReports = true
-			break
-		}
-	}
-	return out, nil
-}
-
 // Input assembles the deterministic engine input for one departure.
 func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, error) {
 	s.inputCalled = true
@@ -490,10 +458,6 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	if err != nil {
 		return decision.Input{}, err
 	}
-	reps, err := s.reportsNear(road)
-	if err != nil {
-		return decision.Input{}, err
-	}
 	var windGustKMH, tempC float64
 	if s.prov.WeatherNext != nil && len(road.Polyline) > 0 {
 		if g, t, err := s.prov.WeatherNext.PeakConditionsAlongRoute(road.Polyline); err == nil {
@@ -504,7 +468,7 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 	}
 	var roadSensors []domain.RoadFloodSensor
 	if s.prov.BMAFlood != nil && len(road.Polyline) > 0 {
-		if sensors, err := s.prov.BMAFlood.SensorsNearRoute(road.Polyline, reports.NotifyRadiusM); err == nil {
+		if sensors, err := s.prov.BMAFlood.SensorsNearRoute(road.Polyline, geo.CommuterNotifyRadiusM); err == nil {
 			roadSensors = sensors
 			s.usedBMAFlood = true
 		}
@@ -534,7 +498,7 @@ func (s *Session) Input(depart time.Time, mode domain.Mode) (decision.Input, err
 		Lang: s.Lang, Now: s.Now, DepartAt: depart, ArriveBy: arriveBy, Mode: mode,
 		DestinationTH: s.Trip.Destination.NameTH, RoadViaTH: s.localVia(road.ViaTH),
 		Routes: routesByMode,
-		Rain:   rain, Spots: spotsOnRoute, Reports: reps,
+		Rain:   rain, Spots: spotsOnRoute,
 		RoadSensors: roadSensors, Tidal: tidalReading,
 		WindGustKMH: windGustKMH, TempC: tempC,
 	}
@@ -615,9 +579,6 @@ func (s *Session) SourcesUsed() []string {
 	if s.usedTidal && s.prov.BMATidal != nil {
 		out = append(out, s.prov.BMATidal.Name())
 	}
-	if s.usedReports {
-		out = append(out, s.Lang.Pick("รายงานน้ำท่วมจากผู้ใช้ (Gemini Vision)", "Community flood reports (Gemini Vision)"))
-	}
 	if s.prov.Hotlines != nil {
 		out = append(out, scenario.Text(s.prov.Hotlines.Name(), s.Lang))
 	}
@@ -677,7 +638,6 @@ var Tools = []Tool{
 	{Name: "get_flood_spots_on_route", Description: "จุดน้ำท่วมซ้ำซาก กทม. ที่เส้นทางผ่าน พร้อมความลึกที่คาดว่าจะเจอเมื่อออกตามเวลาที่ระบุ",
 		Params: map[string]Param{"mode": pMode, "depart_at": pDepart}},
 	{Name: "get_canal_levels", Description: "ระดับน้ำในคลองใกล้ปลายทางจาก ThaiWater (HII) เทียบกับตลิ่ง"},
-	{Name: "get_community_reports", Description: "รายงานน้ำท่วมจากผู้ใช้ (ภาพ + Gemini vision) ใกล้เส้นทางในชั่วโมงที่ผ่านมา"},
 	{Name: "evaluate_departure", Description: "ให้เครื่องคำนวณความเสี่ยงแบบกำหนดแน่นอน (ฝน x จุดน้ำท่วม x ความสูงใต้ท้องรถ) ของการออกเวลาหนึ่งด้วยวิธีหนึ่ง คืนเวลาถึง ความเสี่ยง และสายเกินนัดกี่นาที",
 		Params: map[string]Param{"mode": pMode, "depart_at": pDepart}, Required: []string{"mode"}},
 }
@@ -827,22 +787,6 @@ func (s *Session) dispatch(name string, args map[string]any) (map[string]any, st
 		}
 		return out, summary, nil
 
-	case "get_community_reports":
-		road, err := s.route(domain.ModeCar, s.Now)
-		if err != nil {
-			return nil, "", err
-		}
-		reps, err := s.reportsNear(road)
-		if err != nil {
-			return nil, "", err
-		}
-		s.usedReports = true
-		summary := s.Lang.Pick("ยังไม่มีรายงานน้ำท่วมจากผู้ใช้บนเส้นทางในชั่วโมงที่ผ่านมา", "No flood reports from users on the route in the past hour")
-		if len(reps) > 0 {
-			last := reps[len(reps)-1]
-			summary = fmt.Sprintf(s.Lang.Pick("รายงานจากผู้ใช้ %d รายการบนเส้นทาง ล่าสุด %s น้ำ %d-%d ซม.", "%d user reports on the route, latest at %s with water %d-%d cm"), len(reps), hhmm(last.CreatedAt), last.DepthCMMin, last.DepthCMMax)
-		}
-		return map[string]any{"reports": reps}, summary, nil
 
 	case "evaluate_departure":
 		in, err := s.Input(depart, mode)

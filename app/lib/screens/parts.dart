@@ -583,10 +583,8 @@ class HomeStatusPass extends StatelessWidget {
                 l.partsRainToday,
                 l.partsMm(status.rainTodayMm!.round()),
               ),
-              if (status.inServiceArea) ...[
+              if (status.inServiceArea)
                 PassSegment(l.partsFloodSpots, '${status.floodSpots.length}'),
-                PassSegment(l.partsReports, '${status.reportsNearby ?? 0}'),
-              ],
             ]),
           ),
         if (canal != null)

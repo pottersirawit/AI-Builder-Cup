@@ -141,10 +141,6 @@
       "summary_th": "Ratchada-Lat Phrao is past its rain threshold: about 25 cm of water expected, above a sedan's 15 cm clearance"
     },
     {
-      "tool": "get_community_reports",
-      "summary_th": "3 users reported half-wheel water at Ratchada in 20 min"
-    },
-    {
       "tool": "get_route",
       "summary_th": "Routes API expects heavy traffic, 95 min"
     }

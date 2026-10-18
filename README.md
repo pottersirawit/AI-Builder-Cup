@@ -18,7 +18,6 @@ Built for the AI Builder Cup 2026.
 - **Departure verdicts per trip and per travel mode.** Leave now, wait until a given time, switch mode, or do not travel. Sedan, motorcycle, and BTS/MRT verdicts differ because each has a different flood clearance.
 - **Calendar- and Gmail-triggered planning.** After the user connects a Google account, upcoming events and e-tickets are geocoded and evaluated automatically. The app also works with nothing connected through a plain-Thai ask bar.
 - **Agentic reasoning with numerical guardrails.** Gemini 2.5 Flash on Vertex AI uses function-calling tools (`get_trip`, `get_route`, `get_rain_along_route`, `get_flood_spots_on_route`, `evaluate_departure`). Deterministic risk assessment in Go keeps every number the agent reports verifiable.
-- **Community flood reports.** A user photographs a flooded street, Gemini vision estimates the water depth, and users whose route passes within roughly 300 m are notified.
 - **Home flood mode.** Canal levels from ThaiWater, an ordered action checklist, and neighbour alerts for flood-prone homes.
 - **Transparent sources.** Every card shows where its data came from and how confident the system is.
 
@@ -42,11 +41,10 @@ Browser / Android / iOS
         |
         v
   Go API on Cloud Run (api/)
-        |-- Gemini 2.5 Flash on Vertex AI (agent, vision)
+        |-- Gemini 2.5 Flash on Vertex AI (agent)
         |-- Google Weather, Routes, and Maps APIs
         |-- WeatherNext 3 via BigQuery, ThaiWater telemetry
-        |-- Google Calendar and Gmail (per-user OAuth)
-        `-- Firestore (community flood reports)
+        `-- Google Calendar and Gmail (per-user OAuth)
 ```
 
 The web build is served from Firebase Hosting and calls the Cloud Run API directly. Google sign-in runs through `/v1/oauth/start` on the API, which redirects back to the app once the account is connected.
@@ -56,10 +54,10 @@ The web build is served from Firebase Hosting and calls the Cloud Run API direct
 ```
 .
 ├── app/            Flutter client for Android, iOS, and web
-├── api/            Go API: Gemini agent, decision engine, live data, OAuth, reports
+├── api/            Go API: Gemini agent, decision engine, live data, OAuth
 │   ├── cmd/server      HTTP server entry point
 │   ├── cmd/scorecard   Offline evaluation of agent answers
-│   ├── internal/       agent, decision, floodspot, geocode, live, planner, vision, ...
+│   ├── internal/       agent, decision, floodspot, geocode, live, planner, ...
 │   └── deploy/         Cloud Run deployment scripts (bash and PowerShell)
 ├── data/           BMA flood-prone spot dataset
 ├── gateway/        Phase 1: Go LINE gateway and push dispatcher
@@ -118,7 +116,7 @@ Tap the clock chip in the top-left corner of the app, pass `--dart-define=DEMO_C
 | Time | Scene |
 |---|---|
 | 16:10 | Calendar-triggered alert: leave before 16:45 |
-| 18:52 | Flood photo report assessed by Gemini vision |
+| 18:52 | Peak storm commute advisory |
 | 21:40 | Home flood mode |
 | live | Real time and live data |
 

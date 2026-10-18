@@ -25,7 +25,6 @@ param(
   [string] $Region = "asia-southeast1",
   [string] $Service = "fontokmai-api",
   [ValidateSet("0", "1")] [string] $DemoMode = "0",
-  [ValidateSet("memory", "firestore")] [string] $ReportStore = "firestore",
   [string] $GeminiModel = "gemini-2.5-flash",
   [string] $GeminiFastModel = "gemini-2.5-flash-lite",
   [string] $GeminiContextCache = "1",
@@ -57,7 +56,7 @@ try {
 
   # ---- env vars and secrets ------------------------------------------------
   $envs = @(
-    "DEMO_MODE=$DemoMode", "REPORT_STORE=$ReportStore", "GEMINI_MODEL=$GeminiModel",
+    "DEMO_MODE=$DemoMode", "GEMINI_MODEL=$GeminiModel",
     "GEMINI_FAST_MODEL=$GeminiFastModel", "GEMINI_CONTEXT_CACHE=$GeminiContextCache",
     "GOOGLE_CLOUD_PROJECT=$Project", "GOOGLE_CLOUD_LOCATION=$GeminiLocation",
     "TASKS_QUEUE=proactive-checks", "TASKS_LOCATION=$Region",

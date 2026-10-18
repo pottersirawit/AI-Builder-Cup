@@ -19,7 +19,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/advise"
 	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/clock"
-	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/extract"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
@@ -28,17 +27,12 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/jobs"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/resolve"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
-	"github.com/pottersirawit/fontokmai/api/internal/vision"
 )
 
 type Server struct {
-	// ReportLimits bounds photo uploads; zero fields take the defaults.
-	ReportLimits ReportLimits
-	reportRL     uploadLimiter
 	// DemoMode replays the scenario when no X-Demo-Clock header is sent.
 	DemoMode bool
 	Planner  *planner.Planner
@@ -85,8 +79,6 @@ func (s *Server) Handler() http.Handler {
 	mux.HandleFunc("POST /v1/trips/sync", s.withClock(s.syncTrips))
 	mux.HandleFunc("GET /v1/places", s.withClock(s.places))
 	mux.Handle("POST /v1/decide", s.Limits.rateLimit("decide", s.Limits.decideRPM(), s.Limits.limitBody(s.withClock(s.decide))))
-	mux.HandleFunc("POST /v1/reports", s.withClock(s.createReport))
-	mux.HandleFunc("GET /v1/reports", s.withClock(s.listReports))
 	mux.HandleFunc("GET /v1/home-status", s.withClock(s.homeStatus))
 	mux.Handle("GET /v1/outlook", s.Limits.rateLimit("outlook", s.Limits.placesRPM(), s.withClock(s.outlook)))
 	mux.Handle("GET /v1/places/search", s.Limits.rateLimit("places", s.Limits.placesRPM(), http.HandlerFunc(s.searchPlaces)))
@@ -350,130 +342,7 @@ func (s *Server) decide(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 	}
 }
 
-type reportResponse struct {
-	domain.Report
-	NotifiedUsers        int `json:"notified_users"`
-	CorroboratingReports int `json:"corroborating_reports"`
-}
 
-func (s *Server) createReport(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	lim := s.ReportLimits.withDefaults()
-	if !s.reportRL.allow(clientIP(r), time.Now(), lim.Uploads, lim.Window) {
-		writeError(w, http.StatusTooManyRequests, "too many photo uploads, try again later")
-		return
-	}
-	r.Body = http.MaxBytesReader(w, r.Body, lim.MaxUploadBytes+(1<<20))
-	if err := r.ParseMultipartForm(8 << 20); err != nil {
-		var tooBig *http.MaxBytesError
-		if errors.As(err, &tooBig) {
-			writeError(w, http.StatusRequestEntityTooLarge, "photo too large")
-			return
-		}
-		writeError(w, http.StatusBadRequest, "want multipart/form-data with photo, lat, lng: "+err.Error())
-		return
-	}
-	lat, err1 := strconv.ParseFloat(r.FormValue("lat"), 64)
-	lng, err2 := strconv.ParseFloat(r.FormValue("lng"), 64)
-	if err1 != nil || err2 != nil || lat < -90 || lat > 90 || lng < -180 || lng > 180 {
-		writeError(w, http.StatusBadRequest, "lat and lng are required numbers")
-		return
-	}
-	file, header, err := r.FormFile("photo")
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "photo is required")
-		return
-	}
-	defer file.Close()
-	photo, err := io.ReadAll(io.LimitReader(file, lim.MaxUploadBytes+1))
-	if err != nil {
-		writeError(w, http.StatusBadRequest, "cannot read photo")
-		return
-	}
-	if int64(len(photo)) > lim.MaxUploadBytes {
-		writeError(w, http.StatusRequestEntityTooLarge, "photo too large")
-		return
-	}
-	if err := checkDimensions(photo, lim.MaxDimension); err != nil {
-		writeError(w, http.StatusRequestEntityTooLarge, "photo dimensions too large")
-		return
-	}
-	mime := header.Header.Get("Content-Type")
-	if mime == "" || mime == "application/octet-stream" {
-		mime = http.DetectContentType(photo)
-	}
-
-	point := domain.LatLng{Lat: lat, Lng: lng}
-	earlier, err := rc.prov.Reports.Near(r.Context(), point, reports.NotifyRadiusM, rc.now.Add(-30*time.Minute), rc.now)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	assessment, by := vision.Assess(r.Context(), s.Gemini, photo, mime, rc.lang)
-	if by == vision.GeneratedByRejected {
-		writeError(w, http.StatusBadRequest, assessment.DescriptionTH)
-		return
-	}
-	assessment.Lat, assessment.Lng, assessment.CreatedAt, assessment.GeneratedBy = lat, lng, rc.now, by
-	// Only a real Gemini reading of a flood photo is evidence; the fallback
-	// and rejected assessments go back to the caller but are never stored.
-	saved := assessment
-	if vision.IsEvidence(by) {
-		saved, err = rc.prov.Reports.Add(r.Context(), assessment)
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-	}
-	corroborating := 0
-	for _, e := range earlier {
-		if decision.UsableReport(e) {
-			corroborating++
-		}
-	}
-	writeJSON(w, http.StatusCreated, reportResponse{
-		Report:               saved,
-		NotifiedUsers:        reports.NotifiedUsers(s.Users, point),
-		CorroboratingReports: corroborating,
-	})
-}
-
-func (s *Server) listReports(w http.ResponseWriter, r *http.Request, rc reqCtx) {
-	q := r.URL.Query()
-	center, radius := domain.LatLng{Lat: 13.7563, Lng: 100.5018}, 60000.0
-	if q.Get("lat") != "" || q.Get("lng") != "" {
-		lat, err1 := strconv.ParseFloat(q.Get("lat"), 64)
-		lng, err2 := strconv.ParseFloat(q.Get("lng"), 64)
-		if err1 != nil || err2 != nil {
-			writeError(w, http.StatusBadRequest, "lat and lng must be numbers")
-			return
-		}
-		center, radius = domain.LatLng{Lat: lat, Lng: lng}, 1000
-	}
-	if v := q.Get("radius_m"); v != "" {
-		rm, err := strconv.ParseFloat(v, 64)
-		if err != nil || rm <= 0 {
-			writeError(w, http.StatusBadRequest, "radius_m must be a positive number")
-			return
-		}
-		radius = rm
-	}
-	reps, err := rc.prov.Reports.Near(r.Context(), center, radius, rc.now.Add(-24*time.Hour), rc.now)
-	if err != nil {
-		writeError(w, http.StatusInternalServerError, err.Error())
-		return
-	}
-	usable := []domain.Report{}
-	for _, rep := range reps {
-		if decision.UsableReport(rep) {
-			usable = append(usable, rep)
-		}
-	}
-	reps = usable
-	for i := range reps {
-		reps[i] = scenario.LocalizeReport(reps[i], rc.lang)
-	}
-	writeJSON(w, http.StatusOK, map[string]any{"reports": reps})
-}
 
 type needsPlaceResponse struct {
 	QueryTH    string          `json:"query_th"`
@@ -550,21 +419,12 @@ func (s *Server) homeStatus(w http.ResponseWriter, r *http.Request, rc reqCtx) {
 			rain = nil
 		}
 	}
-	nearbyCount := 0
-	if rc.prov.Reports != nil {
-		nearby, err := rc.prov.Reports.Near(ctx, p, 500, rc.now.Add(-time.Hour), rc.now)
-		if err != nil {
-			writeError(w, http.StatusInternalServerError, err.Error())
-			return
-		}
-		nearbyCount = len(nearby)
-	}
 	var spots []floodspot.Spot
 	if s.Planner != nil {
 		spots = s.Planner.Spots
 	}
 	status := homestatus.Evaluate(homestatus.Input{
-		Lang: rc.lang, Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: spots, NearbyReports: nearbyCount,
+		Lang: rc.lang, Now: rc.now, Home: home, Canals: canals, Rain: rain, Spots: spots,
 		CanalSource: canalSource, WeatherSource: weatherSource,
 	})
 	status.Place = scenario.LocalizePlace(status.Place, rc.lang)

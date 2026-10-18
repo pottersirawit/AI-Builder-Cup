@@ -5,7 +5,6 @@ import (
 	"context"
 	"errors"
 	"flag"
-	"fmt"
 	"log/slog"
 	"net/http"
 	"os"
@@ -26,7 +25,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/live"
 	"github.com/pottersirawit/fontokmai/api/internal/notify"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
@@ -59,12 +57,6 @@ func main() {
 	ctx, stop := signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	defer stop()
 
-	store, closeStore, err := newReportStore(ctx)
-	if err != nil {
-		slog.Error("cannot open report store", "err", err)
-		os.Exit(1)
-	}
-	defer closeStore()
 	bmaFloodScen := scenario.BMAFlood{}
 	bmaTidalScen := scenario.BMATidal{}
 	wnScen := scenario.WeatherNext{}
@@ -72,7 +64,6 @@ func main() {
 		Weather:     scenario.Weather{},
 		Routes:      scenario.Routes{},
 		Canals:      scenario.Canals{},
-		Reports:     store,
 		WeatherNext: wnScen,
 		BMAFlood:    bmaFloodScen,
 		BMATidal:    bmaTidalScen,
@@ -162,38 +153,11 @@ func main() {
 		_ = httpServer.Shutdown(shutdown)
 	}()
 	slog.Info("ฝนตกไหม API listening", "addr", addr, "demo_mode", demo, "gemini", gemini.Available(),
-		"google_maps_key", os.Getenv("GOOGLE_MAPS_API_KEY") != "", "report_store", env("REPORT_STORE", "memory"), "flood_spots", len(spots), "flood_points", path, "landmarks", len(landmarks),
+		"google_maps_key", os.Getenv("GOOGLE_MAPS_API_KEY") != "", "flood_spots", len(spots), "flood_points", path, "landmarks", len(landmarks),
 		"now_bangkok", time.Now().In(domain.Bangkok).Format(time.RFC3339))
 	if err := httpServer.ListenAndServe(); err != nil && !errors.Is(err, http.ErrServerClosed) {
 		slog.Error("server stopped", "err", err)
 		os.Exit(1)
-	}
-}
-
-// newReportStore picks REPORT_STORE: "memory" (default) or "firestore"
-// (collection FIRESTORE_COLLECTION in GOOGLE_CLOUD_PROJECT or the detected
-// project). Both start with the scenario's seeded reports; Firestore seeds by
-// fixed ID, so restarts do not duplicate them.
-func newReportStore(ctx context.Context) (domain.ReportStore, func(), error) {
-	switch kind := strings.ToLower(env("REPORT_STORE", "memory")); kind {
-	case "memory":
-		return reports.NewMemoryStore(scenario.SeedReports()...), func() {}, nil
-	case "firestore":
-		fs, err := reports.NewFirestoreStore(ctx, os.Getenv("GOOGLE_CLOUD_PROJECT"), env("FIRESTORE_COLLECTION", "reports"))
-		if err != nil {
-			return nil, nil, err
-		}
-		seedCtx, cancel := context.WithTimeout(ctx, 20*time.Second)
-		defer cancel()
-		for _, r := range scenario.SeedReports() {
-			if _, err := fs.Add(seedCtx, r); err != nil {
-				fs.Close()
-				return nil, nil, fmt.Errorf("seed reports: %w", err)
-			}
-		}
-		return fs, func() { _ = fs.Close() }, nil
-	default:
-		return nil, nil, fmt.Errorf("REPORT_STORE=%q: want memory or firestore", kind)
 	}
 }
 

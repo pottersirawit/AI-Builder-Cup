@@ -13,31 +13,30 @@ import (
 
 func at(hh, mm int) time.Time { return time.Date(2026, 9, 29, hh, mm, 0, 0, domain.Bangkok) }
 
-func scenarioInput(now time.Time, reports int) Input {
+func scenarioInput(now time.Time) Input {
 	ctx := context.Background()
 	canals, _ := scenario.Canals{}.Canals(ctx, scenario.Home.Point(), now)
 	day := time.Date(now.Year(), now.Month(), now.Day(), 0, 0, 0, 0, domain.Bangkok)
 	rain, _ := scenario.Weather{}.Rain(ctx, scenario.Home.Point(), day, now)
-	return Input{Now: now, Home: Home(scenario.HomeProfile), Canals: canals, Rain: rain, NearbyReports: reports}
+	return Input{Now: now, Home: Home(scenario.HomeProfile), Canals: canals, Rain: rain}
 }
 
 func TestEvaluateScenario(t *testing.T) {
 	tests := []struct {
 		name         string
 		now          time.Time
-		reports      int
 		wantLevel    Level
 		wantHeadline string
 		wantSummary  []string
 		wantFirst    string
 	}{
-		{"16:10 home card says watch", at(16, 10), 0, Watch, "คืนนี้เสี่ยงน้ำท่วม: ปานกลาง", []string{"คลองลาดพร้าว 1.4 ม. ต่ำกว่าตลิ่ง 0.4 ม."}, "ชาร์จ"},
-		{"21:40 flood mode", at(21, 40), 11, Danger, "น้ำจะถึงหน้าบ้านใน 40 นาที",
-			[]string{"(1.8 / 1.8 ม.)", "ขึ้น 40 ซม. ใน 2 ชั่วโมง", "ฝนสะสมวันนี้ 68 มม.", "รายงานผู้ใช้ 11 คน"}, "ย้ายรถไปจอดที่ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม. ถนนยังแห้งอีก 25 นาที"},
+		{"16:10 home card says watch", at(16, 10), Watch, "คืนนี้เสี่ยงน้ำท่วม: ปานกลาง", []string{"คลองลาดพร้าว 1.4 ม. ต่ำกว่าตลิ่ง 0.4 ม."}, "ชาร์จ"},
+		{"21:40 flood mode", at(21, 40), Danger, "น้ำจะถึงหน้าบ้านใน 40 นาที",
+			[]string{"(1.8 / 1.8 ม.)", "ขึ้น 40 ซม. ใน 2 ชั่วโมง", "ฝนสะสมวันนี้ 68 มม."}, "ย้ายรถไปจอดที่ลานจอดเซ็นทรัลลาดพร้าว 1.2 กม. ถนนยังแห้งอีก 25 นาที"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			st := Evaluate(scenarioInput(tt.now, tt.reports))
+			st := Evaluate(scenarioInput(tt.now))
 			if st.Level != tt.wantLevel || st.HeadlineTH != tt.wantHeadline {
 				t.Fatalf("got %s %q", st.Level, st.HeadlineTH)
 			}
@@ -107,21 +106,19 @@ func TestEvaluateWithoutCanalUsesRainAndFloodSpots(t *testing.T) {
 	tests := []struct {
 		name         string
 		rain         float64
-		reports      int
 		want         Level
 		wantHeadline string
 		wantSummary  []string
 	}{
-		{"dry", 0, 0, Normal, "แถวบ้านยังไม่มีน้ำท่วม", []string{"ไม่มีสถานีวัดระดับคลองใกล้บ้าน", "จุดน้ำท่วม กทม. 1 จุดในรัศมี 2 กม."}},
-		{"heavy rain floods Udom Suk", 52, 0, Danger, "น้ำท่วมถนนแถวบ้านได้ถึง 22 ซม.", []string{"สุขุมวิท อาจมีน้ำขัง 22 ซม.", "ฝนหนักสุด 52 มม./ชม."}},
-		{"moderate rain", 20, 0, Watch, "เฝ้าระวังน้ำขังแถวบ้าน", []string{"ไม่มีสถานีวัดระดับคลองใกล้บ้าน"}},
-		{"neighbours report water", 0, 3, Danger, "ถนนแถวบ้านน้ำท่วม", []string{"รายงานผู้ใช้ 3 คน"}},
+		{"dry", 0, Normal, "แถวบ้านยังไม่มีน้ำท่วม", []string{"ไม่มีสถานีวัดระดับคลองใกล้บ้าน", "จุดน้ำท่วม กทม. 1 จุดในรัศมี 2 กม."}},
+		{"heavy rain floods Udom Suk", 52, Danger, "น้ำท่วมถนนแถวบ้านได้ถึง 22 ซม.", []string{"สุขุมวิท อาจมีน้ำขัง 22 ซม.", "ฝนหนักสุด 52 มม./ชม."}},
+		{"moderate rain", 20, Watch, "เฝ้าระวังน้ำขังแถวบ้าน", []string{"ไม่มีสถานีวัดระดับคลองใกล้บ้าน"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			now := at(18, 30)
 			st := Evaluate(Input{Now: now, Home: Home{Place: bangNa}, Canals: canals, Rain: rainAt(now, tt.rain),
-				Spots: []floodspot.Spot{udomSuk, far}, NearbyReports: tt.reports, CanalSource: "ThaiWater", WeatherSource: "Weather"})
+				Spots: []floodspot.Spot{udomSuk, far}, CanalSource: "ThaiWater", WeatherSource: "Weather"})
 			if st.Canal != nil || st.MinutesToDoorstep != nil {
 				t.Fatalf("no canal within 3 km, got %+v", st.Canal)
 			}
@@ -139,7 +136,7 @@ func TestEvaluateWithoutCanalUsesRainAndFloodSpots(t *testing.T) {
 			if !st.InServiceArea || st.Place != bangNa || len(st.Actions) == 0 {
 				t.Fatalf("got %+v", st)
 			}
-			if strings.Join(st.Sources, ",") != "Weather,BMA flood spots,รายงานผู้ใช้" {
+			if strings.Join(st.Sources, ",") != "Weather,BMA flood spots" {
 				t.Fatalf("sources %v", st.Sources)
 			}
 		})
@@ -187,16 +184,15 @@ func TestEvaluateEnglishHasNoThai(t *testing.T) {
 		in   Input
 		want Level
 	}{
-		{"canal watch", scenarioInput(at(16, 10), 0), Watch},
+		{"canal watch", scenarioInput(at(16, 10)), Watch},
 		{"canal normal", Input{Now: at(12, 0), Home: Home{Place: scenario.Home}, Canals: []domain.CanalReading{{NameTH: "คลองลาดพร้าว", NameEN: "Lat Phrao Canal", Lat: 13.8185, Lng: 100.5935, LevelM: 0.5, BankM: 1.8}}}, Normal},
-		{"canal watch with reports", scenarioInput(at(19, 40), 2), Watch},
-		{"canal danger with door ETA", scenarioInput(at(21, 40), 11), Danger},
-		{"canal danger past bank", scenarioInput(at(23, 0), 1), Danger},
+		{"canal watch 19:40", scenarioInput(at(19, 40)), Watch},
+		{"canal danger with door ETA", scenarioInput(at(21, 40)), Danger},
+		{"canal danger past bank", scenarioInput(at(23, 0)), Danger},
 		{"no canal, out of area", Input{Now: at(18, 0), Home: Home{Place: chiangMai}, Rain: rainAt(at(18, 0), 30)}, Watch},
 		{"no canal, dry", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Canals: bangNaCanals, Rain: rainAt(at(18, 30), 0), Spots: []floodspot.Spot{udomSukEN}}, Normal},
 		{"no canal, deep water", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Canals: bangNaCanals, Rain: rainAt(at(18, 30), 52), Spots: []floodspot.Spot{udomSukEN}}, Danger},
 		{"no canal, spot without English name", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Rain: rainAt(at(18, 30), 20)}, Watch},
-		{"no canal, neighbours report", Input{Now: at(18, 30), Home: Home{Place: bangNa}, Rain: rainAt(at(18, 30), 0), NearbyReports: 3}, Danger},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -206,7 +202,8 @@ func TestEvaluateEnglishHasNoThai(t *testing.T) {
 			if en.Level != tt.want || en.Level != th.Level {
 				t.Fatalf("level en=%s th=%s want %s", en.Level, th.Level, tt.want)
 			}
-			fields := []string{en.HeadlineTH, en.SummaryTH, strings.Join(en.Sources, "|")}
+			fields := []string{en.HeadlineTH, en.SummaryTH}
+			fields = append(fields, en.Sources...)
 			for _, a := range en.Actions {
 				fields = append(fields, a.TextTH)
 			}
@@ -239,7 +236,7 @@ func TestCanalWordingMatchesTheReading(t *testing.T) {
 		if st.Level != Danger || !strings.Contains(st.SummaryTH, tt.wantSummary) || strings.Contains(st.SummaryTH, tt.notSummary) || strings.Contains(st.HeadlineTH, tt.notHeadline) {
 			t.Errorf("%s 8 cm below the bank: got %s %q / %q", tt.lang, st.Level, st.HeadlineTH, st.SummaryTH)
 		}
-		in := scenarioInput(at(8, 0), 0)
+		in := scenarioInput(at(8, 0))
 		in.Lang = tt.lang
 		if st := Evaluate(in); st.HeadlineTH != tt.morningHead {
 			t.Errorf("%s 08:00 headline = %q, want %q", tt.lang, st.HeadlineTH, tt.morningHead)
@@ -248,11 +245,11 @@ func TestCanalWordingMatchesTheReading(t *testing.T) {
 }
 
 func TestEvaluateEnglishWording(t *testing.T) {
-	st := Evaluate(func() Input { in := scenarioInput(at(21, 40), 11); in.Lang = domain.LangEN; return in }())
+	st := Evaluate(func() Input { in := scenarioInput(at(21, 40)); in.Lang = domain.LangEN; return in }())
 	if st.HeadlineTH != "Water will reach your door in 40 minutes" {
 		t.Errorf("headline = %q", st.HeadlineTH)
 	}
-	for _, s := range []string{"Lat Phrao Canal has reached its bank (1.8 / 1.8 m).", "Up 40 cm in 2 hours.", "Rain today: 68 mm.", "11 reports near home"} {
+	for _, s := range []string{"Lat Phrao Canal has reached its bank (1.8 / 1.8 m).", "Up 40 cm in 2 hours.", "Rain today: 68 mm."} {
 		if !strings.Contains(st.SummaryTH, s) {
 			t.Errorf("summary %q should contain %q", st.SummaryTH, s)
 		}

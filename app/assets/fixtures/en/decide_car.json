@@ -143,10 +143,6 @@
     {
       "tool": "get_flood_spots_on_route",
       "summary_th": "Ratchada-Lat Phrao floods above 40 mm of rain; dry for now"
-    },
-    {
-      "tool": "get_community_reports",
-      "summary_th": "No flooding reported on the route in the last hour"
     }
   ],
   "explanation": {

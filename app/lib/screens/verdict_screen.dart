@@ -828,7 +828,6 @@ class _TraceStep extends StatelessWidget {
       'get_rain_along_route' => l.verdictToolRain,
       'get_flood_spots_on_route' => l.verdictToolFloodSpots,
       'get_canal_levels' => l.verdictToolCanals,
-      'get_community_reports' => l.verdictToolReports,
       'evaluate_departure' => l.verdictToolEvaluate,
       'deterministic_baseline' =>
         l.isThai ? 'คำนวณความเสี่ยงด้วยแบบจำลอง' : 'Run deterministic risk model',
@@ -845,7 +844,7 @@ class _TraceStep extends StatelessWidget {
       ),
       'data_ai' => (
         l.isThai ? 'ข้อมูลจริง + AI' : 'Data + AI',
-        Symbols.photo_camera_rounded,
+        Symbols.auto_awesome_rounded,
       ),
       'rule' => (
         l.isThai ? 'กฎการคำนวณ' : 'Rule-based',
@@ -978,9 +977,6 @@ IconData _sourceIcon(String s) {
   }
   if (s.contains('Tidal') || s.contains('Canal') || s.contains('คลอง') || s.contains('ThaiWater')) {
     return Symbols.waves_rounded;
-  }
-  if (s.contains('Vision') || s.contains('รายงานน้ำท่วม') || s.contains('Community flood')) {
-    return Symbols.photo_camera_rounded;
   }
   if (s.contains('สายด่วน') || s.contains('Hotline') || s.contains('1784')) {
     return Symbols.phone_in_talk_rounded;

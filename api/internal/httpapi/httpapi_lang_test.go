@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"net/url"
-	"strings"
 	"testing"
 
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
@@ -43,27 +42,7 @@ func noThai(t *testing.T, field string, v any) {
 	}
 }
 
-func TestCreateReportAndListInEnglish(t *testing.T) {
-	h := newServer(t)
-	body, ct := multipartReport(t, "13.8130", "100.5760", true)
-	status, out := doEN(t, h, "POST", "/v1/reports", "2026-09-29T18:52:00+07:00", body, ct)
-	if status != 201 {
-		t.Fatalf("status %d %v", status, out)
-	}
-	if d := out["description_th"].(string); !strings.Contains(d, "halfway up a car wheel") {
-		t.Errorf("description = %q", d)
-	}
-	noThai(t, "description_th", out["description_th"])
 
-	_, list := doEN(t, h, "GET", "/v1/reports?lat=13.8130&lng=100.5760&radius_m=300", "2026-09-29T18:55:00+07:00", nil, "")
-	reps := list["reports"].([]any)
-	if len(reps) != 2 {
-		t.Fatalf("got %d reports", len(reps))
-	}
-	for _, r := range reps {
-		noThai(t, "report description_th", r.(map[string]any)["description_th"])
-	}
-}
 
 func TestHomeStatusInEnglish(t *testing.T) {
 	h := newServer(t)

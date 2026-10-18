@@ -15,7 +15,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
@@ -29,7 +28,7 @@ func session(t *testing.T, now time.Time) *planner.Session {
 		t.Fatal(err)
 	}
 	p := &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts}
-	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}}
 	s, err := p.NewSession(context.Background(), prov, now, "cal-dinner")
 	if err != nil {
 		t.Fatal(err)
@@ -536,7 +535,7 @@ func userSession(t *testing.T, req Request) *planner.Session {
 	_, file, _, _ := runtime.Caller(0)
 	spots, _ := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
 	p := &planner.Planner{Spots: spots, Trips: scenario.Trips, Places: scenario.Places, Whereabouts: scenario.Whereabouts}
-	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore()}
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}}
 	s, err := p.Open(context.Background(), prov, at(16, 10), tr)
 	if err != nil {
 		t.Fatal(err)

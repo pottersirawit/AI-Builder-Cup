@@ -81,21 +81,18 @@ func slowDepthCM(m domain.Mode) float64 {
 // advice may quote as facts.
 func Thresholds() map[string][]float64 {
 	return map[string][]float64{
-		"cm":  {carSlowDepthCM, carStallDepthCM, motoStallDepthCM, pickupSlowDepthCM, pickupStallDepthCM, soloReportCapCM},
+		"cm":  {carSlowDepthCM, carStallDepthCM, motoStallDepthCM, pickupSlowDepthCM, pickupStallDepthCM},
 		"mmh": {rainLight, rainModerate, rainHeavy},
 		"kmh": {motoWindGustCautionKMH, motoWindGustThresholdKMH},
 	}
 }
 
 // Water drains from a flood spot linearly over drainWindow after the rain that
-// caused it; a community report is trusted for reportTTL.
+// caused it.
 const (
 	drainWindow = 120 * time.Minute
-	reportTTL   = 60 * time.Minute
 	step        = 5 * time.Minute
 )
-
-const unnamedReportSpot = "จุดที่มีรายงาน"
 
 // TravelFunc returns base door-to-door minutes for a mode departing at t,
 // before weather delays.
@@ -114,7 +111,6 @@ type Input struct {
 
 	Rain        []domain.RainSample
 	Spots       []floodspot.Spot         // flood spots on the road route
-	Reports     []domain.Report          // community reports near the road route
 	RoadSensors []domain.RoadFloodSensor // live BMA road flood sensors near the route
 	Tidal       *domain.TidalReading     // BMA KlongMap tidal backwater status
 	WindGustKMH float64                  // peak wind gust on route (from WeatherNext 3)
@@ -315,11 +311,6 @@ func hazards(in Input, mode domain.Mode, from, to time.Time) (rain, depth float6
 				depth, deepest = d, sensorName(rs, in.Lang)
 			}
 		}
-		for _, r := range in.Reports {
-			if d := reportDepthCM(r, in.Reports, t); d > depth {
-				depth, deepest = d, nearestSpotName(in.Spots, r, in.Lang)
-			}
-		}
 	}
 	return rain, depth, prob, deepest
 }
@@ -414,69 +405,6 @@ func sensorName(s domain.RoadFloodSensor, l domain.Lang) string {
 	return s.Code
 }
 
-// Report weighting: a lone photo is cheap to fake, so a report only counts at
-// its full depth once another usable report nearby backs it up.
-const (
-	minReportConfidence   = 0.5
-	soloReportCapCM       = 15.0
-	corroborationRadiusM  = 300.0
-	corroborationWindow   = 30 * time.Minute
-	corroboratingReportsN = 2 // usable reports in the cluster, the report itself included
-)
-
-// UsableReport is false for the fallback hero assessment and for low-confidence
-// photos; those never reach the engine.
-func UsableReport(r domain.Report) bool {
-	return r.GeneratedBy != "fallback" && r.Confidence >= minReportConfidence
-}
-
-func usableReports(rs []domain.Report) int {
-	n := 0
-	for _, r := range rs {
-		if UsableReport(r) {
-			n++
-		}
-	}
-	return n
-}
-
-// reportCorroborated reports whether enough usable reports already existing at t
-// sit within corroborationRadiusM and corroborationWindow of r.
-func reportCorroborated(r domain.Report, all []domain.Report, t time.Time) bool {
-	n := 0
-	for _, o := range all {
-		if !UsableReport(o) || o.CreatedAt.After(t) {
-			continue
-		}
-		if o.CreatedAt.Sub(r.CreatedAt).Abs() <= corroborationWindow && geo.HaversineM(r.Point(), o.Point()) <= corroborationRadiusM {
-			n++
-		}
-	}
-	return n >= corroboratingReportsN
-}
-
-// reportDepthCM is the street water a report contributes at t: the full
-// DepthCMMax when corroborated, otherwise confidence-weighted and capped.
-func reportDepthCM(r domain.Report, all []domain.Report, t time.Time) float64 {
-	if t.Before(r.CreatedAt) || t.Sub(r.CreatedAt) >= reportTTL || !UsableReport(r) {
-		return 0
-	}
-	if reportCorroborated(r, all, t) {
-		return float64(r.DepthCMMax)
-	}
-	return math.Min(float64(r.DepthCMMax)*r.Confidence, soloReportCapCM)
-}
-
-func nearestSpotName(spots []floodspot.Spot, r domain.Report, l domain.Lang) string {
-	best, name := math.Inf(1), unnamedReportSpot
-	for _, s := range spots {
-		d := math.Hypot(s.Lat-r.Lat, s.Lng-r.Lng)
-		if d < best {
-			best, name = d, s.ShortName(l)
-		}
-	}
-	return name
-}
 
 // verdictFor applies the decision rules for one mode at in.DepartAt.
 func verdictFor(in Input, m domain.Mode, evals map[domain.Mode]Eval) (Verdict, *time.Time) {
@@ -620,30 +548,8 @@ func floodSpots(in Input, evals map[domain.Mode]Eval) []FloodSpot {
 			Risk:            depthRisk(d, in.Mode),
 		})
 	}
-	for _, r := range in.Reports {
-		d := 0.0
-		for t := window.Depart; t.Before(window.Arrive); t = t.Add(step) {
-			d = math.Max(d, reportDepthCM(r, in.Reports, t))
-		}
-		if d == 0 {
-			continue
-		}
-		out = append(out, FloodSpot{ID: "report-" + r.ID, NameTH: reportLabel(in, r),
-			Lat: r.Lat, Lng: r.Lng, ExpectedDepthCM: int(d), Risk: depthRisk(d, in.Mode)})
-	}
 	sort.SliceStable(out, func(i, j int) bool { return out[i].ExpectedDepthCM > out[j].ExpectedDepthCM })
 	return out
-}
-
-func reportLabel(in Input, r domain.Report) string {
-	near := nearestSpotName(in.Spots, r, in.Lang)
-	if in.Lang == domain.LangEN {
-		if near == unnamedReportSpot {
-			near = "a reported spot"
-		}
-		return "User report " + r.CreatedAt.Format("15:04") + " near " + near
-	}
-	return "รายงานผู้ใช้ " + r.CreatedAt.Format("15:04") + " ใกล้" + near
 }
 
 func depthRisk(d float64, mode domain.Mode) Risk {
@@ -656,19 +562,12 @@ func depthRisk(d float64, mode domain.Mode) Risk {
 	return RiskLow
 }
 
-// confidence decays with forecast horizon, drops when the answer sits on a
-// threshold, and rises when people on the ground confirm the water.
+// confidence decays with forecast horizon and drops when the answer sits on a threshold.
 func confidence(in Input, e Eval) float64 {
 	c := 0.9 - 0.04*e.Arrive.Sub(in.Now).Hours()
 	near := func(v, threshold, band float64) bool { return math.Abs(v-threshold) < band }
 	if near(e.MaxDepthCM, carSlowDepthCM, 2) || near(e.MaxDepthCM, carStallDepthCM, 3) || near(e.MaxRainMM, rainModerate, 2) {
 		c -= 0.08
-	}
-	for _, r := range in.Reports {
-		if UsableReport(r) && !r.CreatedAt.After(in.Now) && in.Now.Sub(r.CreatedAt) < reportTTL {
-			c += 0.03
-			break
-		}
 	}
 	return math.Round(math.Max(0.4, math.Min(0.95, c))*100) / 100
 }

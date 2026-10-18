@@ -105,10 +105,10 @@ Fields marked *(additive)* were added after v0 was agreed; v0 clients can ignore
 ```json
 {"level":"normal|watch|danger","headline_th":"น้ำจะถึงหน้าบ้านใน 40 นาที","summary_th":"…",
  "canal":{"name_th":"คลองลาดพร้าว","level_m":1.8,"bank_m":1.8,"rise_cm_2h":40},
- "minutes_to_doorstep":40,"rain_today_mm":68,"reports_nearby":11,
+ "minutes_to_doorstep":40,"rain_today_mm":68,
  "actions":[{"order":1,"text_th":"…"}],"sources":["ThaiWater (HII) (scenario)","…"]}
 ```
-*(additive)* `summary_th`, `minutes_to_doorstep` (`null` when the canal is not rising toward the house), `rain_today_mm`, `reports_nearby`.
+*(additive)* `summary_th`, `minutes_to_doorstep` (`null` when the canal is not rising toward the house), `rain_today_mm`.
 
 ## API contract v1 (additive, 2026-10-08)
 

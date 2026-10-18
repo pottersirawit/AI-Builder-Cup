@@ -192,12 +192,6 @@ func buildExplanationEN(in Input, res Result) Explanation {
 		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Travel time: about %d min, arriving around %s", e.Minutes, hhmm(e.Arrive)))
 	}
 
-	switch n := usableReports(in.Reports); {
-	case n == 1:
-		exp.FactorsTH = append(exp.FactorsTH, "Community reports: 1 real flood report near your route")
-	case n > 1:
-		exp.FactorsTH = append(exp.FactorsTH, fmt.Sprintf("Community reports: %d real flood reports near your route", n))
-	}
 
 	for _, s := range res.FloodSpots {
 		if s.ExpectedDepthCM > 0 || s.Risk == RiskHigh || s.Risk == RiskMedium {

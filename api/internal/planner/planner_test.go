@@ -12,7 +12,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
@@ -33,7 +32,6 @@ func scenarioProviders() Providers {
 		Weather:     scenario.Weather{},
 		Routes:      scenario.Routes{},
 		Canals:      scenario.Canals{},
-		Reports:     reports.NewMemoryStore(scenario.SeedReports()...),
 		WeatherNext: scenario.WeatherNext{},
 		BMAFlood:    scenario.BMAFlood{},
 		BMATidal:    scenario.BMATidal{},
@@ -81,8 +79,6 @@ func TestToolsAtTheHeroMoments(t *testing.T) {
 		{at(16, 10), "get_flood_spots_on_route", map[string]any{"depart_at": "16:10"}, "ยังไม่มีน้ำขัง"},
 		{at(16, 10), "get_flood_spots_on_route", map[string]any{"depart_at": "18:00"}, "ลึกสุดคาด"},
 		{at(16, 10), "get_canal_levels", nil, "คลองลาดพร้าว 1.4 ม. ตลิ่ง 1.8 ม."},
-		{at(16, 10), "get_community_reports", nil, "ยังไม่มีรายงาน"},
-		{at(18, 50), "get_community_reports", nil, "รายงานจากผู้ใช้ 2 รายการบนเส้นทาง ล่าสุด 18:47"},
 		{at(16, 10), "evaluate_departure", map[string]any{"mode": "car", "depart_at": "2026-09-29T20:00:00+07:00"}, "เลยนัด 150 นาที"},
 	}
 	p := newPlanner(t)

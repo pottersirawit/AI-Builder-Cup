@@ -214,39 +214,6 @@ class FonTokMaiApi {
   Future<List<PlaceCandidate>> localLandmarks() async =>
       _landmarks ??= _landmarkList(await _fixture('places_local'));
 
-  Future<ApiResult<FloodReport>> submitReport({
-    required Uint8List photo,
-    required String filename,
-    required double lat,
-    required double lng,
-  }) => _withFallback(() async {
-    final req = http.MultipartRequest('POST', _uri('/v1/reports'))
-      ..headers.addAll(_headers)
-      ..fields['lat'] = '$lat'
-      ..fields['lng'] = '$lng'
-      ..files.add(
-        http.MultipartFile.fromBytes('photo', photo, filename: filename),
-      );
-    final res = await http.Response.fromStream(
-      await _client.send(req).timeout(timeout),
-    );
-    return FloodReport.fromJson(_decode(res));
-  }, () async => FloodReport.fromJson(await _fixture('report')));
-
-  Future<ApiResult<List<FloodReport>>> reportsNear({
-    required double lat,
-    required double lng,
-    int radiusM = 500,
-  }) => _withFallback(
-    () async => FloodReport.listFromJson(
-      await _get('/v1/reports', {
-        'lat': '$lat',
-        'lng': '$lng',
-        'radius_m': '$radiusM',
-      }),
-    ),
-    () async => FloodReport.listFromJson(await _fixture('reports')),
-  );
 
   Future<ApiResult<T>> _withFallback<T>(
     Future<T> Function() live,

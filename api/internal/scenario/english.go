@@ -104,10 +104,6 @@ var english = map[string]string{
 	"ARL มักกะสัน":                          "ARL Makkasan",
 	"ARL รามคำแหง":                          "ARL Ramkhamhaeng",
 	"ARL ลาดกระบัง":                         "ARL Lat Krabang",
-	"น้ำขังเลนซ้าย รถเก๋งเริ่มชะลอ":         "Water pooling in the left lane; cars are starting to slow down.",
-	"น้ำเกือบครึ่งล้อ ทางเท้าจม":            "Water is almost halfway up a wheel and the pavement is under.",
-	"น้ำเอ่อจากคลองเข้าซอย":                 "Canal water is spilling into the soi.",
-	"น้ำถึงประมาณครึ่งล้อรถเก๋ง เห็นทางเท้าจมแล้ว รถเก๋งผ่านได้ช้า ๆ ทางเลนขวา มอเตอร์ไซค์ไม่ควรผ่าน": "Water is about halfway up a car wheel and the pavement is under. Cars can pass slowly in the right lane; motorbikes should not.",
 }
 
 // Text is a scenario display string in l. Text it does not know (user-entered
@@ -125,12 +121,6 @@ func Text(th string, l domain.Lang) string {
 func LocalizePlace(p domain.Place, l domain.Lang) domain.Place {
 	p.NameTH = Text(p.NameTH, l)
 	return p
-}
-
-// LocalizeReport gives r's description in l.
-func LocalizeReport(r domain.Report, l domain.Lang) domain.Report {
-	r.DescriptionTH = Text(r.DescriptionTH, l)
-	return r
 }
 
 // LocalizeTrip gives t's title and place names in l.

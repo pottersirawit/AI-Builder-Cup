@@ -243,7 +243,6 @@ void main() {
         'canal': null,
         'in_service_area': true,
         'rain_today_mm': 12.5,
-        'reports_nearby': 2,
         'flood_spots': [
           {'id': 'a', 'name_th': 'แยก', 'lat': 1, 'lng': 2, 'distance_m': 640, 'expected_depth_cm': 0, 'historical_max_depth_cm': 35},
         ],
@@ -251,7 +250,6 @@ void main() {
       expect(s.canal, isNull);
       expect(s.floodSpots.single.distanceM, 640);
       expect(s.floodSpots.single.risk, Risk.high);
-      expect(s.reportsNearby, 2);
     });
 
     test('a calendar trip whose place is unknown keeps its text', () {

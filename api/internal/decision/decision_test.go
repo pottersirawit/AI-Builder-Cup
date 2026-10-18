@@ -18,7 +18,7 @@ func at(hh, mm int) time.Time { return time.Date(2026, 9, 29, hh, mm, 0, 0, doma
 
 // heroInput builds the มิว trip (Silom to Lat Phrao, dinner at 18:30) from the
 // scenario providers and the real BMA flood spot dataset.
-func heroInput(t *testing.T, now, depart time.Time, mode domain.Mode, reports ...domain.Report) Input {
+func heroInput(t *testing.T, now, depart time.Time, mode domain.Mode) Input {
 	t.Helper()
 	_, file, _, _ := runtime.Caller(0)
 	spots, err := floodspot.Load(filepath.Join(filepath.Dir(file), "..", "..", "..", "data", "bkk_flood_risk_points.json"))
@@ -31,17 +31,11 @@ func heroInput(t *testing.T, now, depart time.Time, mode domain.Mode, reports ..
 	return Input{
 		Now: now, DepartAt: depart, ArriveBy: at(18, 30), Mode: mode,
 		DestinationTH: "บ้านลาดพร้าว", RoadViaTH: road.ViaTH,
-		Rain: rain, Spots: floodspot.OnRoute(spots, road.Polyline), Reports: reports,
+		Rain: rain, Spots: floodspot.OnRoute(spots, road.Polyline),
 		Travel: func(m domain.Mode, t time.Time) int {
 			return scenario.Routes{}.TravelMinutes(scenario.Silom.Point(), scenario.Home.Point(), m, t)
 		},
 	}
-}
-
-// withRatchadaSeeds backs r with the two scenario reports on Ratchada, which is
-// what makes a photo count at its full depth.
-func withRatchadaSeeds(r domain.Report) []domain.Report {
-	return append(scenario.SeedReports()[:2:2], r)
 }
 
 func TestHeroRouteCrossesTheExpectedFloodSpots(t *testing.T) {
@@ -58,12 +52,10 @@ func TestHeroRouteCrossesTheExpectedFloodSpots(t *testing.T) {
 }
 
 func TestDecideHeroBeats(t *testing.T) {
-	ratchadaReport := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84}
 	tests := []struct {
 		name         string
 		now, depart  time.Time
 		mode         domain.Mode
-		reports      []domain.Report
 		wantVerdict  Verdict
 		wantHeadline string
 		wantLeaveBy  string
@@ -99,14 +91,10 @@ func TestDecideHeroBeats(t *testing.T) {
 			wantVerdict: LeaveNow, wantHeadline: "ออก 20:00 ได้ แต่เลยนัด 18:30", wantLeaveBy: "16:45",
 			wantInText: []string{"เลยนัด 18:30 ไป 150 นาที"},
 		},
-		{
-			name: "18:52 photo report confirms 25 cm on Ratchada", now: at(18, 52), depart: at(18, 52), mode: domain.ModeCar, reports: withRatchadaSeeds(ratchadaReport),
-			wantVerdict: SwitchMode, wantInText: []string{"รัชดาภิเษก"},
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			res := Decide(heroInput(t, tt.now, tt.depart, tt.mode, tt.reports...))
+			res := Decide(heroInput(t, tt.now, tt.depart, tt.mode))
 			if res.Verdict != tt.wantVerdict {
 				t.Fatalf("verdict = %s, want %s (evals %+v)", res.Verdict, tt.wantVerdict, res.Evals)
 			}
@@ -147,12 +135,6 @@ func TestDecideHeroDetails(t *testing.T) {
 		if s.ExpectedDepthCM != 0 {
 			t.Errorf("no water expected before the rain, got %+v", s)
 		}
-	}
-
-	report := domain.Report{ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng, CreatedAt: at(18, 52), DepthCMMax: 25, Confidence: 0.84}
-	res = Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, withRatchadaSeeds(report)...))
-	if res.FloodSpots[0].ID != "report-r1" || res.FloodSpots[0].ExpectedDepthCM != 25 || res.FloodSpots[0].Risk != RiskHigh {
-		t.Errorf("deepest spot should be the photo report, got %+v", res.FloodSpots[0])
 	}
 }
 
@@ -309,12 +291,8 @@ func TestDecideExplanation(t *testing.T) {
 		t.Errorf("expected non-empty RouteAdviceTH, got empty")
 	}
 
-	// 2. High flood depth scenario on Ratchada: should advise switching mode and avoiding Ratchada
-	ratchadaReport := domain.Report{
-		ID: "r1", Lat: scenario.HeroReportPoint.Lat, Lng: scenario.HeroReportPoint.Lng,
-		CreatedAt: at(18, 52), DepthCMMax: 25, Confidence: 0.84,
-	}
-	resFlooded := Decide(heroInput(t, at(18, 52), at(18, 52), domain.ModeCar, withRatchadaSeeds(ratchadaReport)...))
+	// 2. High flood depth scenario on Ratchada during storm: should advise switching mode and avoiding Ratchada
+	resFlooded := Decide(heroInput(t, at(18, 0), at(18, 0), domain.ModeCar))
 	if !strings.Contains(resFlooded.Explanation.ReasonWhyTH, "รถไฟฟ้า") && !strings.Contains(resFlooded.Explanation.ReasonWhyTH, "น้ำท่วม") {
 		t.Errorf("ReasonWhyTH should mention transit or flood, got %q", resFlooded.Explanation.ReasonWhyTH)
 	}
@@ -323,37 +301,6 @@ func TestDecideExplanation(t *testing.T) {
 	}
 	if !strings.Contains(resFlooded.Explanation.RouteAdviceTH, "รัชดา") {
 		t.Errorf("RouteAdviceTH should mention avoiding Ratchada, got %q", resFlooded.Explanation.RouteAdviceTH)
-	}
-}
-
-func TestReportDepthWeighting(t *testing.T) {
-	p := scenario.HeroReportPoint
-	mk := func(id string, mm int, by string, conf float64, depthMax int) domain.Report {
-		return domain.Report{ID: id, Lat: p.Lat, Lng: p.Lng, CreatedAt: at(18, mm), DepthCMMin: depthMax - 5, DepthCMMax: depthMax, Confidence: conf, GeneratedBy: by}
-	}
-	now := at(19, 0)
-	tests := []struct {
-		name string
-		r    domain.Report
-		all  []domain.Report
-		want float64
-	}{
-		{"fallback hero assessment is ignored", mk("a", 50, "fallback", 0.84, 25), nil, 0},
-		{"fallback never corroborates", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), mk("b", 51, "fallback", 0.9, 40)}, 15},
-		{"low confidence is ignored", mk("a", 50, "gemini", 0.4, 40), nil, 0},
-		{"solo report is confidence weighted", mk("a", 50, "gemini", 0.5, 20), nil, 10},
-		{"solo report is capped at 15 cm", mk("a", 50, "gemini", 0.9, 100), nil, 15},
-		{"low confidence report does not corroborate", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), mk("b", 51, "gemini", 0.3, 40)}, 15},
-		{"two usable reports give the full depth", mk("a", 50, "gemini", 0.6, 40), []domain.Report{mk("a", 50, "gemini", 0.6, 40), mk("b", 51, "", 0.7, 30)}, 40},
-		{"corroborator outside the window does not count", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), {ID: "b", Lat: p.Lat, Lng: p.Lng, CreatedAt: at(17, 0), Confidence: 0.9}}, 15},
-		{"corroborator too far away does not count", mk("a", 50, "gemini", 0.9, 40), []domain.Report{mk("a", 50, "gemini", 0.9, 40), {ID: "b", Lat: p.Lat + 0.01, Lng: p.Lng, CreatedAt: at(18, 51), Confidence: 0.9}}, 15},
-	}
-	for _, tt := range tests {
-		t.Run(tt.name, func(t *testing.T) {
-			if got := reportDepthCM(tt.r, tt.all, now); got != tt.want {
-				t.Fatalf("got %v, want %v", got, tt.want)
-			}
-		})
 	}
 }
 
@@ -451,36 +398,6 @@ func TestWaitReasonNamesWaterOnlyWhenThereIsSome(t *testing.T) {
 	}
 }
 
-func TestOnlyUsableReportsCount(t *testing.T) {
-	unusable := []domain.Report{
-		{ID: "r1", Lat: 13.7, Lng: 100.5, CreatedAt: at(7, 50), DepthCMMax: 30, Confidence: 0.2},
-		{ID: "r2", Lat: 13.7, Lng: 100.5, CreatedAt: at(7, 55), DepthCMMax: 30, Confidence: 0.9, GeneratedBy: "fallback"},
-	}
-	usable := domain.Report{ID: "r3", Lat: 13.7, Lng: 100.5, CreatedAt: at(7, 55), DepthCMMax: 3, Confidence: 0.9, GeneratedBy: "gemini"}
-	for _, tt := range []struct {
-		lang   domain.Lang
-		factor string
-		one    string
-	}{{domain.LangTH, "รายงานชุมชน", "พื้นที่ 1 จุด"}, {domain.LangEN, "Community reports", "1 real flood report"}} {
-		base := Decide(dryInput(tt.lang, time.Time{}))
-		in := dryInput(tt.lang, time.Time{})
-		in.Reports = unusable
-		res := Decide(in)
-		if res.Confidence != base.Confidence {
-			t.Errorf("%s: unusable reports raised confidence %v -> %v", tt.lang, base.Confidence, res.Confidence)
-		}
-		for _, f := range res.Explanation.FactorsTH {
-			if strings.Contains(f, tt.factor) {
-				t.Errorf("%s: unusable reports listed as a factor: %q", tt.lang, f)
-			}
-		}
-		in.Reports = append(unusable, usable)
-		res = Decide(in)
-		if !slices.ContainsFunc(res.Explanation.FactorsTH, func(f string) bool { return strings.Contains(f, tt.one) }) || res.Confidence <= base.Confidence {
-			t.Errorf("%s: one usable report should count once and raise confidence: %q %v", tt.lang, res.Explanation.FactorsTH, res.Confidence)
-		}
-	}
-}
 
 func TestRainFactorSaysRainingNowMidStorm(t *testing.T) {
 	for _, tt := range []struct {

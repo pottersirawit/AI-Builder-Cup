@@ -119,19 +119,6 @@ void main() {
     });
   });
 
-  test('report fixture parses depth, confidence and passability', () {
-    final r = FloodReport.fromJson(fixture('report'));
-    expect((r.depthCmMin, r.depthCmMax), (20, 25));
-    expect(r.confidence, 0.84);
-    expect(r.passable, {
-      TravelMode.car: 'slow',
-      TravelMode.transit: 'yes',
-      TravelMode.moto: 'no',
-    });
-    expect(r.notifiedUsers, 27);
-    expect(r.corroboratingReports, 2);
-    expect(FloodReport.listFromJson(fixture('reports')), hasLength(1));
-  });
 
   test('home status fixtures parse with ordered actions', () {
     final watch = HomeStatus.fromJson(fixture('home_status_watch'));
@@ -189,37 +176,6 @@ void main() {
     );
   });
 
-  test('a flood report says whether Gemini analysed the photo', () {
-    final base = {
-      'id': 'r1',
-      'depth_cm_min': 20,
-      'depth_cm_max': 25,
-      'confidence': 0.8,
-      'description_th': '',
-      'passable': {'car': 'slow'},
-      'notified_users': 3,
-      'corroborating_reports': 0,
-    };
-    expect(
-      FloodReport.fromJson({
-        ...base,
-        'generated_by': 'gemini',
-      }).analysedByGemini,
-      isTrue,
-    );
-    expect(
-      FloodReport.fromJson({
-        ...base,
-        'generated_by': 'fallback',
-      }).analysedByGemini,
-      isFalse,
-    );
-    expect(FloodReport.fromJson(base).analysedByGemini, isFalse);
-    expect(
-      FloodReport.fromJson({...base, 'generated_by': 'rejected'}).rejected,
-      isTrue,
-    );
-  });
 
   group('real Calendar and Gmail events', () {
     Json trip(Map<String, Object?> extra) => {

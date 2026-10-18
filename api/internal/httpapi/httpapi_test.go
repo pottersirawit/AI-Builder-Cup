@@ -6,7 +6,6 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"mime/multipart"
 	"net/http"
 	"net/http/httptest"
 	"net/url"
@@ -17,17 +16,13 @@ import (
 	"testing"
 	"time"
 
-	"google.golang.org/genai"
-
 	"github.com/pottersirawit/fontokmai/api/internal/advise"
-	"github.com/pottersirawit/fontokmai/api/internal/agent"
 	"github.com/pottersirawit/fontokmai/api/internal/floodspot"
 	"github.com/pottersirawit/fontokmai/api/internal/geocode"
 	"github.com/pottersirawit/fontokmai/api/internal/homestatus"
 	"github.com/pottersirawit/fontokmai/api/internal/jobs"
 	"github.com/pottersirawit/fontokmai/api/internal/notify"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 	"github.com/pottersirawit/fontokmai/api/internal/users"
 )
@@ -53,7 +48,7 @@ func newTestServer(t *testing.T, demo bool) *Server {
 	if err != nil {
 		t.Fatal(err)
 	}
-	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}}
 	userStore := users.NewMemoryUserStore()
 	memNotifier := notify.NewMemoryNotifier()
 	eval := &advise.Evaluator{
@@ -179,12 +174,6 @@ func TestEndpoints(t *testing.T) {
 		{"decide bad mode", "POST", "/v1/decide", "", `{"mode":"boat"}`, 400, nil},
 		{"decide bad JSON", "POST", "/v1/decide", "", `{`, 400, nil},
 		{"bad demo clock", "GET", "/v1/trips", "yesterday", "", 400, nil},
-		{"reports near Ratchada at 18:50", "GET", "/v1/reports?lat=13.8130&lng=100.5760&radius_m=300", "2026-09-29T18:50:00+07:00", "", 200, func(t *testing.T, out map[string]any) {
-			if n := len(out["reports"].([]any)); n != 2 {
-				t.Fatalf("got %d reports", n)
-			}
-		}},
-		{"reports bad radius", "GET", "/v1/reports?radius_m=-1", "", "", 400, nil},
 		{"home status 16:10", "GET", "/v1/home-status", "", "", 200, func(t *testing.T, out map[string]any) {
 			if out["level"] != "watch" {
 				t.Fatal(out)
@@ -235,75 +224,7 @@ func TestEndpoints(t *testing.T) {
 	}
 }
 
-func multipartReport(t *testing.T, lat, lng string, photo bool) (*bytes.Buffer, string) {
-	t.Helper()
-	var buf bytes.Buffer
-	mw := multipart.NewWriter(&buf)
-	if lat != "" {
-		mw.WriteField("lat", lat)
-		mw.WriteField("lng", lng)
-	}
-	if photo {
-		fw, _ := mw.CreateFormFile("photo", "flood.jpg")
-		fw.Write([]byte("\xff\xd8\xff\xe0 fake jpeg"))
-	}
-	mw.Close()
-	return &buf, mw.FormDataContentType()
-}
 
-func TestCreateReportHero(t *testing.T) {
-	h := newServer(t)
-	body, ct := multipartReport(t, "13.8130", "100.5760", true)
-	status, out := do(t, h, "POST", "/v1/reports", "2026-09-29T18:52:00+07:00", body, ct)
-	if status != 201 {
-		t.Fatalf("status %d %v", status, out)
-	}
-	want := map[string]any{"id": "", "depth_cm_min": 20.0, "depth_cm_max": 25.0, "confidence": 0.84, "notified_users": 27.0, "corroborating_reports": 2.0, "generated_by": "fallback"}
-	for k, v := range want {
-		if out[k] != v {
-			t.Errorf("%s = %v, want %v", k, out[k], v)
-		}
-	}
-	if p := out["passable"].(map[string]any); p["car"] != "slow" || p["transit"] != "yes" || p["moto"] != "no" {
-		t.Errorf("passable = %v", p)
-	}
-	if !strings.Contains(out["description_th"].(string), "ครึ่งล้อ") {
-		t.Errorf("description = %v", out["description_th"])
-	}
-
-	// The fallback assessment is shown to the poster but is not evidence: it is
-	// not stored, and the two seeded Ratchada reports still push drivers to the train.
-	_, list := do(t, h, "GET", "/v1/reports?lat=13.8130&lng=100.5760&radius_m=300", "2026-09-29T18:55:00+07:00", nil, "")
-	if n := len(list["reports"].([]any)); n != 2 {
-		t.Fatalf("got %d reports after posting a fallback assessment, want the 2 seeded", n)
-	}
-	_, dec := do(t, h, "POST", "/v1/decide", "2026-09-29T18:55:00+07:00", bytes.NewBufferString(`{"mode":"car"}`), "application/json")
-	if dec["verdict"] != "switch_mode" {
-		t.Fatalf("decide after report: %v %v", dec["verdict"], dec["headline_th"])
-	}
-}
-
-func TestCreateReportValidation(t *testing.T) {
-	h := newServer(t)
-	tests := []struct {
-		name     string
-		lat, lng string
-		photo    bool
-	}{
-		{"missing photo", "13.8", "100.5", false},
-		{"missing lat", "", "", true},
-		{"bad lat", "north", "100.5", true},
-	}
-	for _, tt := range tests {
-		body, ct := multipartReport(t, tt.lat, tt.lng, tt.photo)
-		if status, _ := do(t, h, "POST", "/v1/reports", "", body, ct); status != 400 {
-			t.Errorf("%s: status %d, want 400", tt.name, status)
-		}
-	}
-	if status, _ := do(t, h, "POST", "/v1/reports", "", bytes.NewBufferString("{}"), "application/json"); status != 400 {
-		t.Errorf("JSON body: status %d, want 400", status)
-	}
-}
 
 func TestLiveModeTripsFollowTheRealClock(t *testing.T) {
 	h := newServerMode(t, false)
@@ -462,7 +383,7 @@ func TestPlacesSearchAndReverse(t *testing.T) {
 func TestProactivePipelineEndToEnd(t *testing.T) {
 	spots, _ := floodspot.Load(filepath.Join("..", "..", "..", "data", "bkk_flood_risk_points.json"))
 	landmarks, _ := geocode.LoadLandmarks(filepath.Join("..", "..", "..", "data", "bkk_landmarks.json"))
-	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}, Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	prov := planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}}
 	userStore := users.NewMemoryUserStore()
 	memNotifier := notify.NewMemoryNotifier()
 	eval := &advise.Evaluator{
@@ -615,27 +536,7 @@ func TestPubSubRaw_Base64Decoded(t *testing.T) {
 	}
 }
 
-type fakeGenWithText struct {
-	text string
-}
 
-func (f fakeGenWithText) GenerateContent(context.Context, string, []*genai.Content, *genai.GenerateContentConfig) (*genai.GenerateContentResponse, error) {
-	return &genai.GenerateContentResponse{Candidates: []*genai.Candidate{{Content: &genai.Content{Parts: []*genai.Part{{Text: f.text}}}}}}, nil
-}
-
-func TestCreateReport_RejectedReturnsBadRequest(t *testing.T) {
-	// Not a flood scene image should return 400 Bad Request
-	notFloodJSON := `{"depth_cm_min":30,"depth_cm_max":40,"confidence":0.9,"is_flood_scene":false,"looks_like_screenshot":false,"description_th":"ภาพแมว","passable":{"car":"no","transit":"yes","moto":"no"}}`
-	s := newTestServer(t, false)
-	s.Gemini = &agent.Gemini{Gen: fakeGenWithText{text: notFloodJSON}}
-	h := s.Handler()
-
-	body, ct := multipartReport(t, "13.8130", "100.5760", true)
-	status, out := do(t, h, "POST", "/v1/reports", "", body, ct)
-	if status != http.StatusBadRequest {
-		t.Fatalf("expected 400 Bad Request for non-flood photo, got %d (out: %v)", status, out)
-	}
-}
 
 func TestHomeStatus_NilProviders(t *testing.T) {
 	s := newTestServer(t, false)

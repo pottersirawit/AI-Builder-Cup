@@ -412,7 +412,6 @@ class ReasoningStep {
       'get_route' ||
       'get_rain_along_route' ||
       'get_canal_levels' => 'data',
-      'get_community_reports' => 'data_ai',
       'get_flood_spots_on_route' => 'data_rule',
       'evaluate_departure' ||
       'deterministic_baseline' ||
@@ -799,54 +798,6 @@ class DecideRequest {
   };
 }
 
-class FloodReport {
-  const FloodReport({
-    required this.id,
-    required this.depthCmMin,
-    required this.depthCmMax,
-    required this.confidence,
-    required this.descriptionTh,
-    required this.passable,
-    required this.notifiedUsers,
-    required this.corroboratingReports,
-    this.generatedBy = '',
-  });
-
-  factory FloodReport.fromJson(Json j) => FloodReport(
-    id: _str(j['id']),
-    depthCmMin: _int(j['depth_cm_min']),
-    depthCmMax: _int(j['depth_cm_max']),
-    confidence: _num(j['confidence']),
-    descriptionTh: _str(j['description_th']),
-    passable: (j['passable'] as Map? ?? const {}).map(
-      (k, v) => MapEntry(TravelMode.parse(k), _str(v)),
-    ),
-    notifiedUsers: _int(j['notified_users']),
-    corroboratingReports: _int(j['corroborating_reports']),
-    generatedBy: _str(j['generated_by']),
-  );
-
-  static List<FloodReport> listFromJson(Json j) =>
-      _list(j['reports']).map(FloodReport.fromJson).toList();
-
-  final String id;
-  final int depthCmMin;
-  final int depthCmMax;
-  final double confidence;
-  final String descriptionTh;
-
-  /// yes | slow | no per mode.
-  final Map<TravelMode, String> passable;
-  final int notifiedUsers;
-  final int corroboratingReports;
-
-  /// `gemini` when Gemini analysed the photo; anything else is a sample result.
-  final String generatedBy;
-  bool get analysedByGemini => generatedBy == 'gemini';
-
-  /// The photo was not usable as evidence (not a flood, a screenshot, too unsure).
-  bool get rejected => generatedBy == 'rejected';
-}
 
 enum HomeLevel {
   normal('normal'),
@@ -900,7 +851,6 @@ class HomeStatus {
     this.summaryTh = '',
     this.inServiceArea = true,
     this.floodSpots = const [],
-    this.reportsNearby,
     this.rainTodayMm,
   });
 
@@ -916,7 +866,6 @@ class HomeStatus {
       summaryTh: _str(j['summary_th']),
       inServiceArea: j['in_service_area'] as bool? ?? true,
       floodSpots: _list(j['flood_spots']).map(FloodSpot.fromJson).toList(),
-      reportsNearby: (j['reports_nearby'] as num?)?.toInt(),
       rainTodayMm: (j['rain_today_mm'] as num?)?.toDouble(),
     );
   }
@@ -935,9 +884,6 @@ class HomeStatus {
 
   /// BMA flood spots within 2 km of the point.
   final List<FloodSpot> floodSpots;
-
-  /// Community reports within 500 m, when the server counts them.
-  final int? reportsNearby;
   final double? rainTodayMm;
 }
 

@@ -1,7 +1,6 @@
 // Package scenario replays the มิว demo script (fontokmai.html) so every demo
 // beat is reproducible on camera regardless of real weather. Weather, traffic and
-// canal profiles are keyed by time of day, so any date replays the same evening;
-// seeded community reports live on the scenario date, 2026-09-29.
+// canal profiles are keyed by time of day, so any date replays the same evening.
 package scenario
 
 import (
@@ -32,7 +31,7 @@ var (
 	Rama9Hosp   = domain.Place{NameTH: "โรงพยาบาลพระราม 9", Lat: 13.7563, Lng: 100.5653}
 	// Online is where a video call happens: no coordinates, no travel.
 	Online = domain.Place{NameTH: "ออนไลน์"}
-	// HeroReportPoint is ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32, where มิว takes the 18:52 photo.
+	// HeroReportPoint is ถ.รัชดาภิเษก หน้าซอยลาดพร้าว 32.
 	HeroReportPoint = domain.LatLng{Lat: 13.8130, Lng: 100.5760}
 )
 
@@ -494,38 +493,7 @@ func Trips(now time.Time) []domain.Trip {
 	return trips
 }
 
-// HeroAssessment is what Gemini vision said about มิว's 18:52 photo; it is the
-// fallback when vision is unavailable.
-func HeroAssessment() domain.Report {
-	return domain.Report{
-		DepthCMMin: 20, DepthCMMax: 25, Confidence: 0.84,
-		DescriptionTH: "น้ำถึงประมาณครึ่งล้อรถเก๋ง เห็นทางเท้าจมแล้ว รถเก๋งผ่านได้ช้า ๆ ทางเลนขวา มอเตอร์ไซค์ไม่ควรผ่าน",
-		Passable:      domain.Passable{Car: "slow", Transit: "yes", Moto: "no"},
-	}
-}
 
-// SeedReports are the community reports that already exist on the scenario date:
-// two on Ratchada just before มิว's, and eleven in their soi during flood mode.
-func SeedReports() []domain.Report {
-	day := time.Date(2026, 9, 29, 0, 0, 0, 0, domain.Bangkok)
-	out := []domain.Report{
-		{ID: "seed-ratchada-1", Lat: 13.8122, Lng: 100.5755, CreatedAt: at(day, 18, 41), DepthCMMin: 15, DepthCMMax: 20, Confidence: 0.78,
-			DescriptionTH: "น้ำขังเลนซ้าย รถเก๋งเริ่มชะลอ", Passable: domain.Passable{Car: "slow", Transit: "yes", Moto: "no"}},
-		{ID: "seed-ratchada-2", Lat: 13.8138, Lng: 100.5768, CreatedAt: at(day, 18, 47), DepthCMMin: 18, DepthCMMax: 24, Confidence: 0.81,
-			DescriptionTH: "น้ำเกือบครึ่งล้อ ทางเท้าจม", Passable: domain.Passable{Car: "slow", Transit: "yes", Moto: "no"}},
-	}
-	for i := 0; i < 11; i++ {
-		angle := float64(i) * 2 * math.Pi / 11
-		out = append(out, domain.Report{
-			ID:  fmt.Sprintf("seed-soi-%02d", i+1),
-			Lat: Home.Lat + 0.0012*math.Sin(angle), Lng: Home.Lng + 0.0012*math.Cos(angle),
-			CreatedAt:  at(day, 20, 55).Add(time.Duration(i*4) * time.Minute),
-			DepthCMMin: 5 + i, DepthCMMax: 10 + i, Confidence: 0.7,
-			DescriptionTH: "น้ำเอ่อจากคลองเข้าซอย", Passable: domain.Passable{Car: "slow", Transit: "yes", Moto: "no"},
-		})
-	}
-	return out
-}
 
 // MockUsers are commuters with known routes: 27 cross Ratchada at Lat Phrao 32,
 // the rest drive elsewhere in the city.

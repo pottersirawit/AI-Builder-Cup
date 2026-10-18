@@ -9,6 +9,9 @@ import (
 
 const earthRadiusM = 6371000.0
 
+// CommuterNotifyRadiusM is how close a route corridor or point must be to a sensor/hazard (300m).
+const CommuterNotifyRadiusM = 300.0
+
 // HaversineM is the great-circle distance in metres.
 func HaversineM(a, b domain.LatLng) float64 {
 	phi1, phi2 := rad(a.Lat), rad(b.Lat)

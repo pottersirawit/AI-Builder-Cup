@@ -18,7 +18,6 @@ import (
 	"github.com/pottersirawit/fontokmai/api/internal/decision"
 	"github.com/pottersirawit/fontokmai/api/internal/domain"
 	"github.com/pottersirawit/fontokmai/api/internal/planner"
-	"github.com/pottersirawit/fontokmai/api/internal/reports"
 	"github.com/pottersirawit/fontokmai/api/internal/scenario"
 )
 
@@ -104,11 +103,9 @@ type Options struct {
 	Judge bool
 }
 
-// Providers are the scenario providers with a fresh report store, so every
-// case sees only the seeded reports its clock has reached.
+// Providers are the scenario providers.
 func Providers() planner.Providers {
-	return planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{},
-		Reports: reports.NewMemoryStore(scenario.SeedReports()...)}
+	return planner.Providers{Weather: scenario.Weather{}, Routes: scenario.Routes{}, Canals: scenario.Canals{}}
 }
 
 func demoAt(hh, mm int) time.Time { return time.Date(2026, 9, 29, hh, mm, 0, 0, domain.Bangkok) }

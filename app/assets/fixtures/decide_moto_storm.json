@@ -146,10 +146,6 @@
     {
       "tool": "get_flood_spots_on_route",
       "summary_th": "แยกรัชดา-ลาดพร้าว คาดน้ำขัง 25 ซม. มอเตอร์ไซค์ผ่านไม่ได้"
-    },
-    {
-      "tool": "get_community_reports",
-      "summary_th": "ผู้ใช้ 3 คนรายงานน้ำถึงครึ่งล้อที่รัชดา"
     }
   ],
   "sources": [
